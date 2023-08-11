@@ -19,7 +19,7 @@ mod memory;
 // add wasm_bindgen to any function you would like to expose for call from js
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {
-    logging::setup_logging(logging::Info);
+    logging::setup_logging(logging::Debug);
 }
 
 // this enum will represent a creep's lock on a specific target object, storing a js reference
@@ -47,6 +47,7 @@ pub fn game_loop() {
             memory.write_memory();
         } else {
             run_creep(&creep.unwrap(), &mut memory.creeps.get_mut(&name).unwrap());
+            memory.write_memory();
         }
     }
 
@@ -69,8 +70,6 @@ pub fn game_loop() {
             }
         }
     }
-
-    memory.write_memory();
     info!("Done! cpu: {}", game::cpu::get_used());
 }
 

@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-
-
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct CreepMemory{
@@ -35,11 +33,22 @@ structstruck::strike! {
 impl Memory {
     pub fn init_memory() -> Self {
         let memory_jsstring = screeps::raw_memory::get();
-        let memory: Memory = serde_json::from_str(&memory_jsstring.as_string().unwrap()).unwrap();
-        return memory;
+        let memory_string = memory_jsstring.as_string().unwrap();
+        if memory_string == "" {
+            let memory = Memory {
+                creeps: HashMap::new(),
+            };
+            memory.write_memory();
+            memory
+        } else {
+            let memory: Memory = serde_json::from_str(&memory_string).unwrap();
+            memory
+        }
     }
 
     pub fn write_memory(&self) {
-        screeps::raw_memory::set(&JsString::from(serde_json::to_string(&self).unwrap()));
+        //let serialized = serde_json::to_string(&self).unwrap();
+        //et js_serialized = JsString::from(serialized);
+        //screeps::raw_memory::set(&js_serialized);
     }
 }

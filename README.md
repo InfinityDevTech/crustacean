@@ -1,21 +1,5 @@
-# screeps-starter-rust
 
-Starter Rust AI for [Screeps: World][screeps], the JavaScript-based MMO game.
-
-This uses the [`screeps-game-api`] bindings from the [rustyscreeps] organization.
-
-While it's possible to compile using [`wasm-pack`] directly using the Node.js target,
-some modifications are needed to load the output within the Screep environment, so it's
-recommended to use [`cargo-screeps`] for building and deploying your code.
-
-The documentation is currently a bit sparse. API docs which list functions one
-can use are located at https://docs.rs/screeps-game-api/.
-
-Almost all crates on https://crates.io/ are usable (only things which interact with OS
-apis are broken).
-
-Quickstart:
-
+## init
 ```sh
 # Install CLI dependency:
 cargo install cargo-screeps

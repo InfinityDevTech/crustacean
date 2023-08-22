@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Direction, HasPosition, Creep, RoomPosition, Position};
+use screeps::{game, Direction, HasPosition, Position};
 
 use crate::memory::{Movement, CreepMemory};
 
@@ -40,7 +40,7 @@ pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory
 
     let serialized_vec = serialized_vec[1..].to_vec();
     let serialized_path = serialized_vec.iter().map(|x| x.to_string()).collect::<Vec<String>>().join("");
-    if serialized_vec.len() == 0 {
+    if serialized_vec.is_empty() {
         memory.set_movement(None);
     } else {
         memory.set_movement(Some(Movement {
@@ -55,7 +55,7 @@ pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory
     for step in serialized_vec {
         let dir = num_to_dir(step);
         let (x, y) = dir_to_coords(dir, cursor.0, cursor.1);
-        points.push((x as f32, y as f32));
+        points.push((x, y));
         cursor = (x, y);
     }
 }
@@ -76,13 +76,13 @@ pub fn num_to_dir(num: u8) -> Direction {
 
 pub fn dir_to_coords(dir: Direction, x: f32, y: f32) -> (f32, f32) {
     match dir {
-        Direction::Top => (x, y - 1 as f32),
-        Direction::TopRight => (x + 1 as f32, y - 1 as f32),
-        Direction::Right => (x + 1 as f32, y),
-        Direction::BottomRight => (x + 1 as f32, y + 1 as f32),
-        Direction::Bottom => (x, y + 1 as f32),
-        Direction::BottomLeft => (x - 1 as f32, y + 1 as f32),
-        Direction::Left => (x - 1 as f32, y),
-        Direction::TopLeft => (x - 1 as f32, y - 1 as f32),
+        Direction::Top => (x, y - 1_f32),
+        Direction::TopRight => (x + 1_f32, y - 1_f32),
+        Direction::Right => (x + 1_f32, y),
+        Direction::BottomRight => (x + 1_f32, y + 1_f32),
+        Direction::Bottom => (x, y + 1_f32),
+        Direction::BottomLeft => (x - 1_f32, y + 1_f32),
+        Direction::Left => (x - 1_f32, y),
+        Direction::TopLeft => (x - 1_f32, y - 1_f32),
     }
 }

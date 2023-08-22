@@ -5,7 +5,6 @@ use movement::creep;
 use screeps::ConstructionSite;
 use screeps::{
     constants::{Part, ResourceType},
-    enums::StructureObject,
     find, game,
     local::ObjectId,
     objects::{Creep, Source, StructureController},
@@ -167,8 +166,7 @@ pub fn big_red_button() {
         let _ = creep.suicide();
     }
     for room in game::rooms().values() {
-        match room.controller() {
-            Some(controller) => {
+        if let Some(controller) = room.controller() {
                 for structure in room.find(find::MY_STRUCTURES, None) {
                     let _ = structure.destroy();
                 }
@@ -176,8 +174,6 @@ pub fn big_red_button() {
                     let _ = csite.remove();
                 }
                 let _ = controller.unclaim();
-            },
-            None => {},
         }
     }
     let mut memory = memory::ScreepsMemory::init_memory();

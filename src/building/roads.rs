@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{Source, StructureSpawn, HasPosition, pathfinder::{SearchOptions, MultiRoomCostResult, self}, RoomName, LocalCostMatrix, game, StructureType, find, StructureProperties, look, ConstructionSite};
+use screeps::{Source, StructureSpawn, HasPosition, pathfinder::{SearchOptions, MultiRoomCostResult, self}, RoomName, LocalCostMatrix, game, StructureType, find, StructureProperties, look};
 
 pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
     let opts = SearchOptions::new(road_callback).max_ops(100000000).plain_cost(2).swamp_cost(5).max_rooms(1);

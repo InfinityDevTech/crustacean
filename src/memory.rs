@@ -48,7 +48,7 @@ impl ScreepsMemory {
     pub fn init_memory() -> Self {
         let memory_jsstring = screeps::raw_memory::get();
         let memory_string = memory_jsstring.as_string().unwrap();
-        if memory_string == "" {
+        if memory_string.is_empty() {
             let memory = ScreepsMemory {
                 creeps: HashMap::new(),
                 rooms: HashMap::new(),

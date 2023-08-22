@@ -10,11 +10,6 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, site: ConstructionSite) 
             creepmem.work = None;
         });
     } else {
-        let movet = movement::move_target::MoveTarget {
-            pos: site.pos(),
-            range: 3
-        }.find_path_to(creep.pos());
-        creepmem.movement = Some(movet.clone());
-        movement::creep::move_by_path(creep.name(), movet, creepmem);
+        movement::creep::move_to(&creep.name(), creepmem, site.pos());
     }
 }

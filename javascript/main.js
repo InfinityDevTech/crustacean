@@ -2,7 +2,7 @@
 let wasm_module;
 
 // replace this with the name of your module
-const MODULE_NAME = "screeps";
+const MODULE_NAME = "crustacean";
 let EXECUTION_PAUSED = false;
 let RED_BUTTON = false;
 
@@ -50,6 +50,8 @@ module.exports.loop = function () {
     if (wasm_module) {
       if (RED_BUTTON) {
         wasm_module.red_button();
+        RED_BUTTON = false;
+        EXECUTION_PAUSED = false;
       }
       if (!EXECUTION_PAUSED) {
         wasm_module.loop();

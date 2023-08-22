@@ -1,9 +1,27 @@
 use std::collections::HashMap;
 
 use log::error;
+use screeps::{ObjectId, Source, StructureController, StructureSpawn, Room, find, HasTypedId};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub enum Careers {
+    Mining,
+    Odd
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub enum Task {
+    // Mining industry
+    Miner(ObjectId<Source>),
+    Hauler(ObjectId<StructureSpawn>),
+
+    // Odd industry
+    Rename(ObjectId<StructureController>)
+}
+
 
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
@@ -17,7 +35,10 @@ pub struct CreepMemory{
     pub path: String,
     pub room: String
     }>,
-    pub work: Option<crate::CreepTarget>,
+    pub work: Option<pub struct {
+        pub career: Careers,
+        pub task: Option<Task>,
+    }>
 }
 }
 
@@ -48,7 +69,7 @@ impl ScreepsMemory {
     pub fn init_memory() -> Self {
         let memory_jsstring = screeps::raw_memory::get();
         let memory_string = memory_jsstring.as_string().unwrap();
-        if memory_string == "" {
+        if memory_string.is_empty() {
             let memory = ScreepsMemory {
                 creeps: HashMap::new(),
                 rooms: HashMap::new(),
@@ -75,12 +96,15 @@ impl ScreepsMemory {
         screeps::raw_memory::set(&js_serialized);
     }
 
-    pub fn create_creep(&mut self, name: &str) {
+    pub fn create_creep(&mut self, name: &str, room: Room) {
         self.creeps.insert(
             name.to_string(),
             CreepMemory {
                 movement: None,
-                work: None,
+                work: Some(Work {
+                    career: Careers::Mining,
+                    task: Some(Task::Miner(room.find(find::SOURCES, None).first().unwrap().id()))
+                }),
             },
         );
     }
@@ -93,15 +117,5 @@ impl ScreepsMemory {
                 sources: HashMap::new(),
             },
         );
-    }
-}
-
-impl CreepMemory {
-    pub fn set_movement(&mut self, movement: Option<Movement>) {
-        self.movement = movement;
-    }
-
-    pub fn set_work(&mut self, work: Option<crate::CreepTarget>) {
-        self.work = work;
     }
 }

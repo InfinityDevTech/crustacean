@@ -1,7 +1,6 @@
 use log::warn;
 use screeps::{
-    pathfinder::{self, MultiRoomCostResult, SearchOptions},
-    Direction, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,
+    pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,
     RoomName, StructureObject, find
 };
 
@@ -37,7 +36,7 @@ impl MoveTarget {
             if pos.room_name() == cur_pos.room_name() {
                 match pos.get_direction_to(cur_pos) {
                     Some(dir) => {
-                        steps.push(Direction::from(-dir));
+                        steps.push(-dir);
                     }
                     None => {
                         warn!("Couldn't get direction to {:?} from {:?}", pos, cur_pos);

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use log::warn;
 use screeps::{ConstructionSite, Creep, HasPosition, SharedCreepProperties};
 

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use log::info;
 use screeps::{find, game, HasPosition, HasTypedId, ObjectId, Part, Room};
 
-use crate::{memory::{ScreepsMemory, Task}, movement::creep};
+use crate::memory::{ScreepsMemory, Task};
 
 use super::industries;
 

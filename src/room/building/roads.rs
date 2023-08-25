@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use log::info;
 use screeps::{Source, StructureSpawn, HasPosition, pathfinder::{SearchOptions, MultiRoomCostResult, self}, RoomName, LocalCostMatrix, game, StructureType, find, StructureProperties, look};
 

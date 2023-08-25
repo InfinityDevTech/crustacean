@@ -14,8 +14,8 @@ pub struct MoveTarget {
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position) -> memory::Movement {
         let opts = SearchOptions::new(path_call)
-            .plain_cost(1)
-            .swamp_cost(1)
+            .plain_cost(2)
+            .swamp_cost(5)
             .max_rooms(1)
             .max_ops(100000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));

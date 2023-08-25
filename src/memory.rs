@@ -20,6 +20,9 @@ pub enum Task {
     Miner(ObjectId<Source>),
     Hauler(ObjectId<Structure>),
 
+    // Construction industry
+    Upgrader(ObjectId<StructureController>),
+
     // Odd industry
     Rename(ObjectId<StructureController>),
 }
@@ -59,7 +62,8 @@ pub struct RoomMemory{
     }>,
     pub creep_count: pub struct {
         pub miner: u8,
-        pub hauler: u8
+        pub hauler: u8,
+        pub upgrader: u8,
     }
 }
 }
@@ -130,6 +134,7 @@ impl ScreepsMemory {
                 creep_count: CreepCount {
                     miner: 0,
                     hauler: 0,
+                    upgrader: 0
                 },
             },
         );

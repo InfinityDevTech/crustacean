@@ -17,19 +17,14 @@ pub fn pre_market(
             if let Some(task) = &work.task {
                 let creep = game::creeps().get(name).unwrap();
                 match task {
-                    crate::memory::Task::Miner(source_id) => {
-                        if let Some(source) = source_id.resolve() {
-                            crate::roles::local::harvester::harvest(&creep, creepmem, source)
+                    crate::memory::Task::Upgrader(controller_id) => {
+                        if let Some(controller) = controller_id.resolve() {
+                            crate::roles::local::upgrader::upgrade(&creep, creepmem, controller)
                         } else {
                             creepmem.work = None;
                         }
-                    }
-                    crate::memory::Task::Hauler(building_id) => {
-                        if let Some(building) = building_id.resolve() {
-                            crate::roles::local::hauler::haul(&creep, creepmem, building)
-                        }
-                    }
-                    _ => {},
+                    },
+                    _ => {}
                 }
             }
         }

@@ -1,2 +1,3 @@
-pub mod local;
-pub mod spawning;
+pub mod democracy;
+pub mod building;
+pub mod industries;

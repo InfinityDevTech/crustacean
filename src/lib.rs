@@ -1,58 +1,90 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
+use getrandom::register_custom_getrandom;
 use log::*;
-use screeps::{
-    find, game,
-    prelude::*
-};
+use rand::{rngs::StdRng, SeedableRng, RngCore};
+use screeps::{find, game, prelude::*, RoomName};
 use wasm_bindgen::prelude::*;
 
 use crate::memory::ScreepsMemory;
 
-mod building;
-mod industries;
 mod logging;
 mod memory;
 mod movement;
 mod roles;
 mod room;
+mod visual;
 
-// add wasm_bindgen to any function you would like to expose for call from js
+fn custom_getrandom(buf: &mut [u8]) -> Result<(), getrandom::Error> {
+    let mut rng = StdRng::seed_from_u64(js_sys::Math::random().to_bits());
+    rng.fill_bytes(buf);
+    Ok(())
+}
+
+register_custom_getrandom!(custom_getrandom);
+
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {
     logging::setup_logging(logging::Info);
 }
 
-// to use a reserved name as a function name, use `js_name`:
+pub fn recently_respawned(memory: &mut ScreepsMemory) -> bool {
+    if memory.spawn_tick || game::time() == 0 {
+        return true;
+    }
+
+    let creeps = game::creeps().keys().collect::<Vec<String>>();
+    if !creeps.is_empty() {
+        return false;
+    }
+
+    let names: Vec<RoomName> = game::rooms().keys().collect();
+    if names.len() != 1 {
+        return false;
+    }
+
+    // check for controller, progress and safe mode
+    let room = game::rooms().get(names[0]).unwrap();
+    let controller = room.controller();
+    if controller.is_none()|| !controller.clone().unwrap().my() || controller.clone().unwrap().level() != 1 || controller.clone().unwrap().progress() > 0 ||
+       controller.clone().unwrap().safe_mode().is_none() {
+        return false;
+    }
+
+    let spawns: Vec<String> = game::spawns().keys().collect();
+    if spawns.len() != 1 {
+        return false;
+    }
+
+    memory.spawn_tick = true;
+    true
+}
+
 #[wasm_bindgen(js_name = loop)]
 pub fn game_loop() {
     debug!("Loop starting! CPU: {}", game::cpu::get_used());
     let mut memory = ScreepsMemory::init_memory();
 
-    industries::mining::pre_market(&mut memory);
-
-    // This is done so infrequently for a few reasons:
-    // 1. Im too lazy to figure out a way to iterate creeps in the main loop
-    // 2. Because it doesnt use much decrease modulo as bot succeeds.
-    // 3. Because fuck you thats why
-    let mut detected_creeps: Vec<String> = Vec::new();
-    if game::time() % 20 == 0 {
-        for creep in game::creeps().keys() {
-            match memory.creeps.get_mut(&creep) {
-                Some(_) => {
-                    detected_creeps.push(creep);
-                },
-                None => {
-                    memory.create_creep(&creep, game::creeps().get(creep.clone()).unwrap().room().unwrap());
-                    detected_creeps.push(creep);
-                },
+    if recently_respawned(&mut memory) {
+        for room in game::rooms().keys() {
+            let room = game::rooms().get(room).unwrap();
+            if memory.rooms.get(&room.name().to_string()).is_some() {
+                continue;
+            }
+            if let Some(controller) = room.controller() {
+                if controller.my() {
+                    memory.create_room(&room.name().to_string());
+                }
             }
         }
+        memory.spawn_tick = false
     }
 
-    memory.creeps.retain(|x, _| detected_creeps.contains(x));
+    for room in memory.clone().rooms.values() {
+        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
+    }
 
-    room::spawning::run_spawns(&mut memory);
+    visual::map::classify_rooms(&memory);
 
     // Bot is finished, write the local copy of memory.
     // This is run only once per tick as it serializes the memory.
@@ -70,17 +102,16 @@ pub fn big_red_button() {
     }
     for room in game::rooms().values() {
         if let Some(controller) = room.controller() {
-                for structure in room.find(find::MY_STRUCTURES, None) {
-                    let _ = structure.destroy();
-                }
-                for csite in room.find(find::MY_CONSTRUCTION_SITES, None) {
-                    let _ = csite.remove();
-                }
-                let _ = controller.unclaim();
+            for structure in room.find(find::MY_STRUCTURES, None) {
+                let _ = structure.destroy();
+            }
+            for csite in room.find(find::MY_CONSTRUCTION_SITES, None) {
+                let _ = csite.remove();
+            }
+            let _ = controller.unclaim();
         }
     }
     let mut memory = memory::ScreepsMemory::init_memory();
-    memory.creeps = HashMap::new();
     memory.rooms = HashMap::new();
     memory.write_memory();
 }

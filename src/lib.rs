@@ -1,8 +1,6 @@
 use std::{collections::HashMap, str::FromStr};
 
-use getrandom::register_custom_getrandom;
 use log::*;
-use rand::{rngs::StdRng, SeedableRng, RngCore};
 use screeps::{find, game, prelude::*, RoomName};
 use wasm_bindgen::prelude::*;
 
@@ -14,14 +12,6 @@ mod movement;
 mod roles;
 mod room;
 mod visual;
-
-fn custom_getrandom(buf: &mut [u8]) -> Result<(), getrandom::Error> {
-    let mut rng = StdRng::seed_from_u64(js_sys::Math::random().to_bits());
-    rng.fill_bytes(buf);
-    Ok(())
-}
-
-register_custom_getrandom!(custom_getrandom);
 
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {
@@ -62,7 +52,7 @@ pub fn recently_respawned(memory: &mut ScreepsMemory) -> bool {
 
 #[wasm_bindgen(js_name = loop)]
 pub fn game_loop() {
-    debug!("Loop starting! CPU: {}", game::cpu::get_used());
+    info!("---------------- CURRENT TICK - {} ----------------", game::time());
     let mut memory = ScreepsMemory::init_memory();
 
     if recently_respawned(&mut memory) {
@@ -81,7 +71,7 @@ pub fn game_loop() {
     }
 
     for room in memory.clone().rooms.values() {
-        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
+        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.n).unwrap()).unwrap(), &mut memory);
     }
 
     visual::map::classify_rooms(&memory);
@@ -91,7 +81,19 @@ pub fn game_loop() {
     // This is done like this because its basically MemHack for you JS people.
     memory.write_memory();
 
-    info!("Done! Cpu used: {}", game::cpu::get_used());
+    info!("[DICTATOR] Government ran and memory written... Here are some stats!");
+    info!("CPU used: {}. Bucket: {}", game::cpu::get_used(), game::cpu::bucket());
+    info!("GCL level {}. Next level: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
+    info!("Market credits: {}", game::market::credits());
+}
+
+#[wasm_bindgen(js_name = wipe_memory)]
+pub fn wipe_memory() {
+    let mut memory = ScreepsMemory::init_memory();
+    memory.rooms = HashMap::new();
+    memory.creeps = HashMap::new();
+    memory.spawn_tick = true;
+    memory.write_memory();
 }
 
 #[wasm_bindgen(js_name = red_button)]

@@ -30,37 +30,39 @@ pub enum Task {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct CreepMemory{
-    pub movement: Option<pub struct {
-        pub dest: struct {
-        pub x: u8,
-        pub y: u8,
-        pub room: String
-    },
-    pub path: String,
-    pub room: String
-    }>,
-    pub work: Option<pub struct {
-        pub career: Careers,
-        pub task: Option<Task>,
-    }>
+    // Owning room
+    pub o_r: String,
+    // Path
+    pub p: Option<String>,
+    // Career
+    pub c: Careers,
+    // Task
+    pub t: Option<Task>,
 }
 }
 
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct RoomMemory{
-    pub name: String,
-    pub room_type: String,
-    pub creeps: HashMap<String, CreepMemory>,
-    pub sources: HashMap<String, pub struct {
-        pub id: String,
-        pub spot_count: u8,
-        pub spots: Vec<pub struct {
-            pub x: u8,
-            pub y: u8
-        }>
+    // Name
+    pub n: String,
+    // Room type
+    pub r_t: String,
+    // Creeps
+    pub cs: Vec<String>,
+    // Creeps made
+    pub c_m: u64,
+    // Initialised
+    pub init: bool,
+    // Available mining spots, makes my life easier.
+    pub avs: u8,
+    // Mining stuffs
+    pub mine: HashMap<ObjectId<Source>, pub struct {
+        pub s: u8,
+        pub u: u8,
     }>,
-    pub creep_count: pub struct {
+    // Creep Count
+    pub c_c: pub struct {
         pub miner: u8,
         pub hauler: u8,
         pub upgrader: u8,
@@ -72,7 +74,7 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
         pub rooms: HashMap<String, RoomMemory>,
-
+        pub creeps: HashMap<String, CreepMemory>,
         pub spawn_tick: bool
 }
 }
@@ -84,6 +86,7 @@ impl ScreepsMemory {
         if memory_string.is_empty() {
             let memory = ScreepsMemory {
                 rooms: HashMap::new(),
+                creeps: HashMap::new(),
                 spawn_tick: true,
             };
             memory.write_memory();
@@ -96,30 +99,29 @@ impl ScreepsMemory {
                     error!("This is a critical error, memory MUST be reset to default state.");
                     ScreepsMemory {
                         rooms: HashMap::new(),
-                        spawn_tick: true
+                        creeps: HashMap::new(),
+                        spawn_tick: true,
                     }
                 }
             }
         }
     }
     pub fn write_memory(&self) {
-        info!("Writing memory");
         let serialized = serde_json::to_string(&self).unwrap();
         let js_serialized = JsString::from(serialized);
         screeps::raw_memory::set(&js_serialized);
     }
 
-    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, task: Task) {
-        self.rooms.get_mut(room_name).unwrap().creeps.insert(
-            creep_name.to_string(),
-            CreepMemory {
-                movement: None,
-                work: Some(Work {
-                    career: Careers::Mining,
-                    task: Some(task),
-                }),
-            },
-        );
+    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, career: Careers, task: Option<Task>) {
+        let room = self.rooms.get_mut(room_name).unwrap();
+        let creep = CreepMemory {
+            p: None,
+            o_r: room_name.to_string(),
+            c: career,
+            t: task,
+        };
+        room.cs.push(creep_name.to_string());
+        self.creeps.insert(creep_name.to_string(), creep);
         info!("Created creep");
     }
 
@@ -127,11 +129,14 @@ impl ScreepsMemory {
         self.rooms.insert(
             name.to_string(),
             RoomMemory {
-                name: name.to_string(),
-                room_type: "local".to_string(),
-                creeps: HashMap::new(),
-                sources: HashMap::new(),
-                creep_count: CreepCount {
+                n: name.to_string(),
+                r_t: "local".to_string(),
+                init: false,
+                cs: Vec::new(),
+                c_m: 0,
+                avs: 0,
+                mine: HashMap::new(),
+                c_c: CC {
                     miner: 0,
                     hauler: 0,
                     upgrader: 0

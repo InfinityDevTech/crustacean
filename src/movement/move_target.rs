@@ -4,15 +4,13 @@ use screeps::{
     RoomName, StructureObject, find
 };
 
-use crate::memory;
-
 pub struct MoveTarget {
     pub pos: Position,
     pub range: u32
 }
 
 impl MoveTarget {
-    pub fn find_path_to(&mut self, from: Position) -> memory::Movement {
+    pub fn find_path_to(&mut self, from: Position) -> String {
         let opts = SearchOptions::new(path_call)
             .plain_cost(2)
             .swamp_cost(5)
@@ -52,15 +50,7 @@ impl MoveTarget {
             let intstring = int.to_string();
             steps_string = steps_string + &intstring;
         }
-        memory::Movement {
-            dest: memory::Dest {
-                x: self.pos.x().into(),
-                y: self.pos.y().into(),
-                room: self.pos.room_name().to_string(),
-            },
-            path: steps_string,
-            room: self.pos.room_name().to_string(),
-        }
+        steps_string
     }
 }
 

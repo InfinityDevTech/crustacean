@@ -1,13 +1,13 @@
 use log::info;
 use screeps::{game, Direction, HasPosition, Position};
 
-use crate::memory::{Movement, CreepMemory};
+use crate::memory::CreepMemory;
 
 use super::move_target::MoveTarget;
 
 pub fn move_to(creep_name: &String, creep_memory: &mut CreepMemory, target: Position) {
     let creep = game::creeps().get(creep_name.to_string()).unwrap();
-    match &creep_memory.movement {
+    match &creep_memory.p {
         Some(path) => {
             move_by_path(creep_name.to_string(), path.clone(), creep_memory)
         }
@@ -16,20 +16,20 @@ pub fn move_to(creep_name: &String, creep_memory: &mut CreepMemory, target: Posi
                 pos: target,
                 range: 1,
             }.find_path_to(creep.pos());
-            creep_memory.movement = Some(target.clone());
+            creep_memory.p = Some(target.clone());
             move_by_path(creep_name.to_string(), target, creep_memory);
         }
 
     }
 }
 
-pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory) {
+pub fn move_by_path(creep_name: String, path: String, memory: &mut CreepMemory) {
     let creep = game::creeps().get(creep_name).unwrap();
 
     if creep.fatigue() > 0 {
         return;
     }
-    let serialized_path = path.path;
+    let serialized_path = path;
     let serialized_vec = serialized_path.split("").filter(|x| x != &"").map(|x| x.parse::<u8>().unwrap()).collect::<Vec<u8>>();
     let step_dir = num_to_dir(serialized_vec[0]);
 
@@ -41,13 +41,9 @@ pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory
     let serialized_vec = serialized_vec[1..].to_vec();
     let serialized_path = serialized_vec.iter().map(|x| x.to_string()).collect::<Vec<String>>().join("");
     if serialized_vec.is_empty() {
-        memory.movement = None;
+        memory.p = None
     } else {
-        memory.movement = Some(Movement {
-            dest: path.dest,
-            path: serialized_path,
-            room: path.room,
-        });
+        memory.p = Some(serialized_path);
     }
 
     let mut points = vec![];

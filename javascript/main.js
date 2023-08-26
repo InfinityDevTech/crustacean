@@ -5,6 +5,7 @@ let wasm_module;
 const MODULE_NAME = "crustacean";
 let EXECUTION_PAUSED = false;
 let RED_BUTTON = false;
+let WIPE_MEMORY = false;
 
 function console_error(...args) {
   console.log(...args);
@@ -29,6 +30,11 @@ global.big_red_button = function (input) {
   }
 };
 
+global.wipe_memory = function () {
+  EXECUTION_PAUSED = true;
+  console.log("Wiping memory");
+}
+
 global.toggle_exec = function () {
     EXECUTION_PAUSED = !EXECUTION_PAUSED
     return `Successfully toggled execution pause to: ${EXECUTION_PAUSED}`
@@ -51,6 +57,11 @@ module.exports.loop = function () {
       if (RED_BUTTON) {
         wasm_module.red_button();
         RED_BUTTON = false;
+        EXECUTION_PAUSED = false;
+      }
+      if (WIPE_MEMORY) {
+        wasm_module.wipe_memory();
+        WIPE_MEMORY = false;
         EXECUTION_PAUSED = false;
       }
       if (!EXECUTION_PAUSED) {

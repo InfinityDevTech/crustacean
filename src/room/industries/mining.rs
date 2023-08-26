@@ -8,20 +8,19 @@ pub fn pre_market(
     creeps: Vec<String>,
     memory: &mut ScreepsMemory,
 ) {
-    let roommem = memory.rooms.get_mut(&room.name().to_string()).unwrap();
-    info!("{}", creeps.len());
+
+    info!("[INDUSTRIES] Running mining industry...");
 
     for name in creeps {
-        let creepmem = roommem.creeps.get_mut(&name).unwrap();
-        if let Some(work) = &creepmem.work {
-            if let Some(task) = &work.task {
+        let creepmem = memory.creeps.get_mut(&name).unwrap();
+        if let Some(task) = &creepmem.t {
                 let creep = game::creeps().get(name).unwrap();
                 match task {
                     crate::memory::Task::Miner(source_id) => {
                         if let Some(source) = source_id.resolve() {
                             crate::roles::local::harvester::harvest(&creep, creepmem, source)
                         } else {
-                            creepmem.work = None;
+                            creepmem.t = None;
                         }
                     }
                     crate::memory::Task::Hauler(building_id) => {
@@ -31,7 +30,6 @@ pub fn pre_market(
                     }
                     _ => {},
                 }
-            }
         }
     }
 }

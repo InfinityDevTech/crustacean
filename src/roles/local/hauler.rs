@@ -33,7 +33,6 @@ pub fn haul(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure) {
                 .get_free_capacity(Some(ResourceType::Energy))
                 > 0
             {
-                info!("Running haul.");
                 if creep.pos().is_near_to(structure.pos()) {
                     let _ = creep.transfer(
                         structure,

@@ -4,7 +4,7 @@ use log::*;
 use screeps::{find, game, prelude::*, RoomName};
 use wasm_bindgen::prelude::*;
 
-use crate::memory::ScreepsMemory;
+use crate::memory::{ScreepsMemory, Stats};
 
 mod logging;
 mod memory;
@@ -70,21 +70,38 @@ pub fn game_loop() {
         memory.spawn_tick = false
     }
 
+    if game::time() % 10 == 0 {
+        for room in game::rooms().values() {
+            if let Some(controller) = room.controller() {
+                if controller.my() && !memory.rooms.get(&room.name().to_string()).unwrap().init {
+                    memory.create_room(&room.name().to_string());
+                }
+            }
+        }
+    }
+
     for room in memory.clone().rooms.values() {
         room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.n).unwrap()).unwrap(), &mut memory);
     }
 
     visual::map::classify_rooms(&memory);
 
-    // Bot is finished, write the local copy of memory.
+    // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
-    memory.write_memory();
 
     info!("[DICTATOR] Government ran and memory written... Here are some stats!");
     info!("CPU used: {}. Bucket: {}", game::cpu::get_used(), game::cpu::bucket());
     info!("GCL level {}. Next level: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
     info!("Market credits: {}", game::market::credits());
+    if memory.stats.is_some() {
+    info!("Creeps removed this tick: {}", memory.stats.as_mut().unwrap().crm);
+    memory.stats = Some(Stats {
+        crm: 0,
+    });
+    }
+
+    memory.write_memory();
 }
 
 #[wasm_bindgen(js_name = wipe_memory)]

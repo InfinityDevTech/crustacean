@@ -5,7 +5,7 @@ use screeps::{
     find, Creep, HasPosition, ResourceType, SharedCreepProperties, Structure, StructureObject,
 };
 
-use crate::{memory::CreepMemory, movement};
+use crate::{memory::CreepMemory, movement::{self, creep}};
 
 pub fn haul(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure) {
     let name = creep.name();
@@ -24,6 +24,25 @@ pub fn haul(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure) {
             }
         }
     } else {
+        if let Some(sign) = creep.room().unwrap().controller().unwrap().sign() {
+            if sign.text() != "Ferris FTW!" {
+                let controller = creep.room().unwrap().controller().unwrap();
+                if creep.pos().is_near_to(controller.pos()) {
+                    let _ = creep.sign_controller(&controller, "Ferris FTW!");
+                } else {
+                    movement::creep::move_to(&name, creepmem, controller.pos());
+                }
+                return;
+            }
+        } else {
+            let controller = creep.room().unwrap().controller().unwrap();
+            if creep.pos().is_near_to(controller.pos()) {
+                let _ = creep.sign_controller(&controller, "Ferris FTW!");
+            } else {
+                movement::creep::move_to(&name, creepmem, controller.pos());
+            }
+            return;
+        }
         let structure_object = StructureObject::from(deposit);
         if let Some(structure) = structure_object.as_transferable() {
             if structure_object
@@ -49,7 +68,6 @@ pub fn haul(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure) {
                     movement::creep::move_to(&name, creepmem, structure.pos());
                 }
             } else {
-                info!("Running construction.");
                 let csite = creep.pos().find_closest_by_range(find::CONSTRUCTION_SITES);
                 if let Some(site) = csite {
                     if creep.pos().is_near_to(site.pos()) {

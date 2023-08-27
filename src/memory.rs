@@ -75,6 +75,9 @@ structstruck::strike! {
     pub struct ScreepsMemory {
         pub rooms: HashMap<String, RoomMemory>,
         pub creeps: HashMap<String, CreepMemory>,
+        pub stats: Option<pub struct {
+            pub crm: u64,
+        }>,
         pub spawn_tick: bool
 }
 }
@@ -87,6 +90,7 @@ impl ScreepsMemory {
             let memory = ScreepsMemory {
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
+                stats: None,
                 spawn_tick: true,
             };
             memory.write_memory();
@@ -100,6 +104,7 @@ impl ScreepsMemory {
                     ScreepsMemory {
                         rooms: HashMap::new(),
                         creeps: HashMap::new(),
+                        stats: None,
                         spawn_tick: true,
                     }
                 }

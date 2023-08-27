@@ -3,6 +3,7 @@ use screeps::{Room, Part, find};
 use crate::memory::{ScreepsMemory, Task};
 
 pub fn create_miner(memory: &mut ScreepsMemory, room: Room) -> bool {
+    if memory.rooms.get(&room.name().to_string()).unwrap().c_c.miner >= 1 && memory.rooms.get(&room.name().to_string()).unwrap().c_c.hauler < 1 {return false;}
     let sources = memory.clone().rooms.get(&room.name().to_string()).unwrap().mine.clone();
     let mut selected_source = None;
     for (source_id, source_mem) in sources {

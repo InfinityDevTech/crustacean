@@ -98,7 +98,9 @@ pub fn get_room_creeps_and_clean(memory: &mut ScreepsMemory, room: &Room) -> Vec
             }
         }
     }
-    info!("Removed {} creeps this tick.", removed_creeps);
+    if memory.stats.is_some() {
+        memory.stats.as_mut().unwrap().crm += removed_creeps;
+    }
     creeps
 }
 
@@ -109,7 +111,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     let spawn = binding.first().unwrap();
 
     if population::create_miner(memory, room.clone()) {
-    } else if roommem_readonly.c_c.hauler < HAULER_COUNT {
+    } else if memory.rooms.get(&room.name().to_string()).unwrap().c_c.hauler < (memory.rooms.get(&room.name().to_string()).unwrap().c_c.miner / 2) {
         let name = format!("h-{}", roommem_readonly.c_m);
         let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);
@@ -138,7 +140,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
                 .hauler += 1;
             memory.rooms.get_mut(&room.name().to_string()).unwrap().c_m += 1;
         }
-    } else if roommem_readonly.c_c.upgrader < UPGRADER_COUNT {
+    } else if memory.rooms.get(&room.name().to_string()).unwrap().c_c.upgrader < UPGRADER_COUNT {
         let name = format!("u-{}", roommem_readonly.c_m);
         let body = [Part::Move, Part::Carry, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);

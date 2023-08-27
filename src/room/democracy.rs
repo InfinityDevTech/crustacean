@@ -14,7 +14,6 @@ use crate::{
 
 use super::industries;
 
-const HAULER_COUNT: u8 = 4;
 const UPGRADER_COUNT: u8 = 4;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {

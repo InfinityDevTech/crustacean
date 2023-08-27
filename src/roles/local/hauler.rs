@@ -1,11 +1,10 @@
 use std::cmp::min;
 
-use log::info;
 use screeps::{
     find, Creep, HasPosition, ResourceType, SharedCreepProperties, Structure, StructureObject,
 };
 
-use crate::{memory::CreepMemory, movement::{self, creep}};
+use crate::{memory::CreepMemory, movement};
 
 pub fn haul(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure) {
     let name = creep.name();

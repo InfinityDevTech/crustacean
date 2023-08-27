@@ -84,7 +84,7 @@ pub fn game_loop() {
         room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.n).unwrap()).unwrap(), &mut memory);
     }
 
-    visual::map::classify_rooms(&memory);
+    visual::room::classify_rooms(&memory);
 
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.

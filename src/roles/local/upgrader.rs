@@ -1,9 +1,8 @@
-use screeps::{Creep, SharedCreepProperties, StructureController, HasPosition, ResourceType, find};
+use screeps::{Creep, StructureController, HasPosition, ResourceType, find};
 
-use crate::{memory::CreepMemory, movement};
+use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
 pub fn upgrade(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController) {
-    let name = creep.name();
     let inventory = creep.store();
     if inventory.get_free_capacity(None)
         > inventory.get_used_capacity(Some(ResourceType::Energy)) as i32
@@ -15,12 +14,12 @@ pub fn upgrade(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureC
             if creep.pos().is_near_to(energy.clone().pos()) {
                 let _ = creep.pickup(&energy);
             } else {
-                movement::creep::move_to(&name, creepmem, energy.pos())
+                creep.better_move_to(creepmem, energy.pos(), 1);
             }
         }
     } else if creep.pos().is_near_to(controller.pos()) {
         let _ = creep.upgrade_controller(&controller);
     } else {
-        movement::creep::move_to(&name, creepmem, controller.pos())
+        creep.better_move_to(creepmem, controller.pos(), 2)
     }
 }

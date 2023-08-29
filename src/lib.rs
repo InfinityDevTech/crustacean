@@ -4,7 +4,7 @@ use log::*;
 use screeps::{find, game, prelude::*, RoomName};
 use wasm_bindgen::prelude::*;
 
-use crate::memory::{ScreepsMemory, Stats};
+use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
 mod logging;
 mod memory;
@@ -12,6 +12,7 @@ mod movement;
 mod roles;
 mod room;
 mod visual;
+mod traits;
 
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {
@@ -53,17 +54,23 @@ pub fn recently_respawned(memory: &mut ScreepsMemory) -> bool {
 #[wasm_bindgen(js_name = loop)]
 pub fn game_loop() {
     info!("---------------- CURRENT TICK - {} ----------------", game::time());
+    let before_memory = game::cpu::get_used();
     let mut memory = ScreepsMemory::init_memory();
+    memory.stats.cpu.memory += game::cpu::get_used() - before_memory;
+    memory.stats.cpu.rooms = 0.0;
+    memory.stats.cpu.memory = 0.0;
+    memory.stats.cpu.total = 0.0;
+    memory.stats.cpu.bucket = 0;
 
     if recently_respawned(&mut memory) {
         for room in game::rooms().keys() {
             let room = game::rooms().get(room).unwrap();
-            if memory.rooms.get(&room.name().to_string()).is_some() {
+            if memory.rooms.get(&room.name_str()).is_some() {
                 continue;
             }
             if let Some(controller) = room.controller() {
                 if controller.my() {
-                    memory.create_room(&room.name().to_string());
+                    memory.create_room(&room.name_str());
                 }
             }
         }
@@ -73,11 +80,26 @@ pub fn game_loop() {
     if game::time() % 10 == 0 {
         for room in game::rooms().values() {
             if let Some(controller) = room.controller() {
-                if controller.my() && !memory.rooms.get(&room.name().to_string()).unwrap().init {
-                    memory.create_room(&room.name().to_string());
+                if controller.my() && !memory.get_room(&room.name_str()).init {
+                    memory.create_room(&room.name_str());
                 }
             }
         }
+        for creep in memory.clone().creeps.keys() {
+            if game::creeps().get(creep.clone()).is_none() {
+                memory.creeps.remove(creep);
+            }
+        }
+        for room in memory.clone().rooms.values() {
+            let mut to_remove = Vec::new();
+            for creep_name in room.cs.clone() {
+                if game::creeps().get(creep_name.clone()).is_none() {
+                    to_remove.push(creep_name);
+                }
+            }
+            memory.get_room(&room.n).cs = room.cs.clone().into_iter().filter(|x| !to_remove.contains(x)).collect();
+        }
+
     }
 
     for room in memory.clone().rooms.values() {
@@ -89,19 +111,19 @@ pub fn game_loop() {
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
+    memory.stats.cpu.total = game::cpu::get_used();
+    memory.stats.cpu.bucket = game::cpu::bucket();
+    memory.write_memory();
 
     info!("[DICTATOR] Government ran and memory written... Here are some stats!");
-    info!("CPU used: {}. Bucket: {}", game::cpu::get_used(), game::cpu::bucket());
     info!("GCL level {}. Next level: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
     info!("Market credits: {}", game::market::credits());
-    if memory.stats.is_some() {
-    info!("Creeps removed this tick: {}", memory.stats.as_mut().unwrap().crm);
-    memory.stats = Some(Stats {
-        crm: 0,
-    });
-    }
-
-    memory.write_memory();
+    info!("Creeps removed this tick: {}", memory.stats.cpu.rooms);
+    info!("CPU Usage:");
+    info!("     Rooms: {}", memory.stats.cpu.rooms);
+    info!("     Memory: {}", memory.stats.cpu.rooms);
+    info!("     Total: {}", game::cpu::get_used());
+    info!("     Bucket: {}", game::cpu::bucket());
 }
 
 #[wasm_bindgen(js_name = wipe_memory)]
@@ -111,6 +133,7 @@ pub fn wipe_memory() {
     memory.creeps = HashMap::new();
     memory.spawn_tick = true;
     memory.write_memory();
+    info!("Memory wiped and written!");
 }
 
 #[wasm_bindgen(js_name = red_button)]

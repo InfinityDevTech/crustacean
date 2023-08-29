@@ -48,6 +48,7 @@ impl MoveTarget {
         for dirint in steps {
             let int = dirint as u8;
             let intstring = int.to_string();
+
             steps_string = steps_string + &intstring;
         }
         steps_string

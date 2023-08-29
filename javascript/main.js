@@ -32,6 +32,7 @@ global.big_red_button = function (input) {
 
 global.wipe_memory = function () {
   EXECUTION_PAUSED = true;
+  WIPE_MEMORY = true;
   console.log("Wiping memory");
 }
 
@@ -54,6 +55,9 @@ module.exports.loop = function () {
   global.Memory = {};
   try {
     if (wasm_module) {
+      if (!EXECUTION_PAUSED) {
+        wasm_module.loop();
+      }
       if (RED_BUTTON) {
         wasm_module.red_button();
         RED_BUTTON = false;
@@ -63,9 +67,6 @@ module.exports.loop = function () {
         wasm_module.wipe_memory();
         WIPE_MEMORY = false;
         EXECUTION_PAUSED = false;
-      }
-      if (!EXECUTION_PAUSED) {
-        wasm_module.loop();
       }
     } else {
       // attempt to load the wasm only if there's enough bucket to do a bunch of work this tick

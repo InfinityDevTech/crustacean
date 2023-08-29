@@ -9,19 +9,24 @@ use screeps::{
 
 use crate::{
     memory::{Mine, ScreepsMemory, Task},
-    room::population,
+    room::population, traits::room::RoomExtensions,
 };
 
 use super::industries;
 
-const UPGRADER_COUNT: u8 = 4;
+const UPGRADER_COUNT: u8 = 8;
+const BUILDER_COUNT: u8 = 4;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
+    let starting_cpu = game::cpu::get_used();
+    if memory.stats.rooms.get(&room.name_str()).is_none() {
+        memory.stats.create_room(&room.name_str(), room.controller().unwrap().level());
+    }
     // Horray, i did it better.
     let creeps = get_room_creeps_and_clean(memory, &room);
-    let roommem_readonly = memory.rooms.get(&room.name().to_string()).unwrap();
+    let roommem = memory.get_room(&room.name_str());
 
-    if !roommem_readonly.init {
+    if !roommem.init {
         if game::cpu::bucket() >= 100 {
             info!("Initialising room: {}", room.name().to_string());
             let sources = room.find(find::SOURCES, None);
@@ -46,9 +51,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
                     },
                 );
             }
-            memory.rooms.get_mut(&room.name().to_string()).unwrap().avs = mining_spots.len() as u8;
-            memory.rooms.get_mut(&room.name().to_string()).unwrap().mine = mining_spots;
-            memory.rooms.get_mut(&room.name().to_string()).unwrap().init = true;
+            roommem.avs = mining_spots.len() as u8;
+            roommem.mine = mining_spots;
+            roommem.init = true;
         } else {
             info!(
                 "CPU bucket is too low to initialise room: {}",
@@ -62,6 +67,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     industries::construction::pre_market(&room, creeps.clone(), memory);
 
     do_spawning(memory, &room);
+    memory.stats.cpu.rooms += game::cpu::get_used() - starting_cpu;
+    memory.stats.rooms.get_mut(&room.name_str()).unwrap().cpu += game::cpu::get_used() - starting_cpu;
 }
 
 pub fn get_room_creeps_and_clean(memory: &mut ScreepsMemory, room: &Room) -> Vec<String> {
@@ -70,7 +77,7 @@ pub fn get_room_creeps_and_clean(memory: &mut ScreepsMemory, room: &Room) -> Vec
     for creep_name in &memory
         .clone()
         .rooms
-        .get_mut(&room.name().to_string())
+        .get_mut(&room.name_str())
         .unwrap()
         .cs
     {
@@ -82,41 +89,51 @@ pub fn get_room_creeps_and_clean(memory: &mut ScreepsMemory, room: &Room) -> Vec
             creeps.push(creep_name.to_string());
         } else if game::creeps().get(creep_name.to_string()).is_none() {
             removed_creeps += 1;
-            let t = &memory.creeps.get(&creep_name.to_string()).unwrap().t;
-            match t.clone().unwrap() {
+            match &memory
+                .creeps
+                .get(&creep_name.to_string())
+                .unwrap()
+                .t
+                .clone()
+                .unwrap()
+            {
                 Task::Miner(_) => {
-                    population::miner_died(memory, creep_name, &room.name().to_string())
+                    population::miner_died(memory, creep_name, &room.name_str())
                 }
                 Task::Hauler(_) => {
-                    population::hauler_died(memory, creep_name, &room.name().to_string())
+                    population::hauler_died(memory, creep_name, &room.name_str())
                 }
                 Task::Upgrader(_) => {
-                    population::upgrader_died(memory, creep_name, &room.name().to_string())
+                    population::upgrader_died(memory, creep_name, &room.name_str())
+                }
+                Task::Builder() => {
+                    population::builder_died(memory, creep_name, &room.name_str())
                 }
                 _ => {}
             }
         }
     }
-    if memory.stats.is_some() {
-        memory.stats.as_mut().unwrap().crm += removed_creeps;
-    }
+    memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_removed += removed_creeps;
     creeps
 }
 
 pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     let binding = memory.clone();
-    let roommem_readonly = binding.rooms.get(&room.name().to_string()).unwrap();
+    let roommem_readonly = binding.rooms.get(&room.name_str()).unwrap();
     let binding = room.find(find::MY_SPAWNS, None);
     let spawn = binding.first().unwrap();
+    let room_name = &room.name_str();
 
     if population::create_miner(memory, room.clone()) {
-    } else if memory.rooms.get(&room.name().to_string()).unwrap().c_c.hauler < (memory.rooms.get(&room.name().to_string()).unwrap().c_c.miner / 2) {
+    } else if memory.get_room(&room.name_str()).c_c.hauler
+        <= ((memory.get_room(&room.name_str()).c_c.miner / 2) as f32).round() as u8
+    {
         let name = format!("h-{}", roommem_readonly.c_m);
         let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
-                &room.name().to_string(),
+                room_name,
                 &name,
                 crate::memory::Careers::Mining,
                 Some(Task::Hauler(
@@ -131,21 +148,17 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
                     .unwrap(),
                 )),
             );
-            memory
-                .rooms
-                .get_mut(&room.name().to_string())
-                .unwrap()
-                .c_c
-                .hauler += 1;
-            memory.rooms.get_mut(&room.name().to_string()).unwrap().c_m += 1;
+            memory.get_room(&room.name_str()).c_c.hauler += 1;
+            memory.get_room(&room.name_str()).c_m += 1;
+            memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }
-    } else if memory.rooms.get(&room.name().to_string()).unwrap().c_c.upgrader < UPGRADER_COUNT {
+    } else if memory.get_room(&room.name_str()).c_c.upgrader < UPGRADER_COUNT {
         let name = format!("u-{}", roommem_readonly.c_m);
         let body = [Part::Move, Part::Carry, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
-                &room.name().to_string(),
+                room_name,
                 &name,
                 crate::memory::Careers::Mining,
                 Some(Task::Upgrader(
@@ -154,11 +167,27 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
             );
             memory
                 .rooms
-                .get_mut(&room.name().to_string())
+                .get_mut(&room.name_str())
                 .unwrap()
                 .c_c
                 .upgrader += 1;
-            memory.rooms.get_mut(&room.name().to_string()).unwrap().c_m += 1;
+            memory.get_room(&room.name_str()).c_m += 1;
+            memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
+        }
+    } else if memory.get_room(&room.name_str()).c_c.builder < BUILDER_COUNT {
+        let name = format!("b-{}", roommem_readonly.c_m);
+        let body = [Part::Move, Part::Carry, Part::Carry, Part::Work];
+        let spawn_res = spawn.spawn_creep(&body, &name);
+        if spawn_res.is_ok() {
+            memory.create_creep(
+                room_name,
+                &name,
+                crate::memory::Careers::Mining,
+                Some(Task::Builder()),
+            );
+            memory.get_room(&room.name_str()).c_c.builder += 1;
+            memory.get_room(&room.name_str()).c_m += 1;
+            memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }
     }
 }

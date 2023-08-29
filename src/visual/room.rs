@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use screeps::{control, game, HasPosition, RoomName, RoomVisual, TextStyle};
+use screeps::{game, HasPosition, RoomName, RoomVisual, TextStyle};
 
 use crate::memory::ScreepsMemory;
 
@@ -34,14 +34,20 @@ pub fn classify_rooms(memory: &ScreepsMemory) {
                 format!("Upgraders: {}", roommem.c_c.upgrader),
                 white_left.clone(),
             );
+            roomvis.text(
+                1_f32,
+                5_f32,
+                format!("Builders: {}", roommem.c_c.builder),
+                white_left.clone(),
+            );
 
             let controller = room.controller().unwrap();
             roomvis.text(
                 controller.pos().x().u8() as f32,
-                (controller.pos().y().u8() + 1) as f32,
+                (controller.pos().y().u8() - 1) as f32,
                 format!(
                     "% {:.2}",
-                    (controller.progress() * 100) / controller.progress_total()
+                    controller.progress() as f64 / controller.progress_total() as f64 * 100.0
                 ),
                 Some(
                     TextStyle::default()

@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
-use screeps::{game, HasPosition, RoomName, RoomVisual, TextStyle};
+use screeps::{game, HasPosition, RoomName, RoomVisual, TextStyle, MapVisual, Position, RoomCoordinate};
 
-use crate::memory::ScreepsMemory;
+use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
 pub fn classify_rooms(memory: &ScreepsMemory) {
     for name in memory.rooms.keys() {
@@ -56,5 +56,26 @@ pub fn classify_rooms(memory: &ScreepsMemory) {
                 ),
             );
         }
+    }
+
+    for room in game::rooms().values() {
+        let pos = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(3).unwrap(), room.name());
+        MapVisual::text(pos, get_room_type(&room.name_str()), Some(TextStyle::default().color("#ffffff").align(screeps::TextAlign::Center)));
+    }
+}
+
+pub fn get_room_type(name: &str) -> String {
+    if let Some(room) = game::rooms().get(RoomName::from_str(name).unwrap()) {
+        if room.is_highway() {
+            "highway".to_string()
+        } else if room.is_intersection() {
+            return "intersection".to_string();
+        } else if room.is_source_keeper() {
+            return "source_keeper".to_string();
+        } else {
+            return "normal".to_string();
+        }
+    } else {
+        "none".to_string()
     }
 }

@@ -22,6 +22,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     if memory.stats.rooms.get(&room.name_str()).is_none() {
         memory.stats.create_room(&room.name_str(), room.controller().unwrap().level());
     }
+    memory.stats.get_room(&room.name_str()).cpu = 0.0;
+    memory.stats.get_room(&room.name_str()).mining = 0.0;
+    memory.stats.get_room(&room.name_str()).construction = 0.0;
+    memory.stats.get_room(&room.name_str()).energy_harvested = 0;
     // Horray, i did it better.
     let creeps = get_room_creeps_and_clean(memory, &room);
     let roommem = memory.get_room(&room.name_str());
@@ -87,7 +91,7 @@ pub fn get_room_creeps_and_clean(memory: &mut ScreepsMemory, room: &Room) -> Vec
             }
 
             creeps.push(creep_name.to_string());
-        } else if game::creeps().get(creep_name.to_string()).is_none() {
+        } else {
             removed_creeps += 1;
             match &memory
                 .creeps
@@ -111,6 +115,7 @@ pub fn get_room_creeps_and_clean(memory: &mut ScreepsMemory, room: &Room) -> Vec
                 }
                 _ => {}
             }
+            memory.creeps.remove(creep_name);
         }
     }
     memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_removed += removed_creeps;
@@ -154,7 +159,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if memory.get_room(&room.name_str()).c_c.upgrader < UPGRADER_COUNT {
         let name = format!("u-{}", roommem_readonly.c_m);
-        let body = [Part::Move, Part::Carry, Part::Carry, Part::Work];
+        let body = [Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(

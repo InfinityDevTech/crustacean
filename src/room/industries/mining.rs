@@ -18,7 +18,7 @@ pub fn pre_market(
                 match task {
                     crate::memory::Task::Miner(source_id) => {
                         if let Some(source) = source_id.resolve() {
-                            crate::roles::local::harvester::harvest(&creep, creepmem, source)
+                            crate::roles::local::harvester::harvest(&creep, memory, source)
                         } else {
                             creepmem.t = None;
                         }

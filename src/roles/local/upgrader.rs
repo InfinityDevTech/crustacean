@@ -4,9 +4,7 @@ use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
 pub fn upgrade(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController) {
     let inventory = creep.store();
-    if inventory.get_free_capacity(None)
-        > inventory.get_used_capacity(Some(ResourceType::Energy)) as i32
-    {
+    if creepmem.s == "energy" {
         let closest_energy = creep
             .pos()
             .find_closest_by_path(find::DROPPED_RESOURCES, None);
@@ -17,9 +15,20 @@ pub fn upgrade(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureC
                 creep.better_move_to(creepmem, energy.pos(), 1);
             }
         }
-    } else if creep.pos().is_near_to(controller.pos()) {
-        let _ = creep.upgrade_controller(&controller);
     } else {
-        creep.better_move_to(creepmem, controller.pos(), 2)
+        match creep.upgrade_controller(&controller) {
+            Ok(_) => {},
+            Err(test) => {
+                if let screeps::ErrorCode::NotInRange = test {
+                    creep.better_move_to(creepmem, controller.pos(), 2);
+                }
+            },
+        }
+    }
+    if inventory.get_used_capacity(Some(ResourceType::Energy)) == 0 {
+        creepmem.s = "energy".to_string();
+    }
+    if inventory.get_free_capacity(Some(ResourceType::Energy)) == 0 {
+        creepmem.s = "work".to_string();
     }
 }

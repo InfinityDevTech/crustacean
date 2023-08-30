@@ -62,6 +62,30 @@ pub fn game_loop() {
     memory.stats.cpu.total = 0.0;
     memory.stats.cpu.bucket = 0;
 
+    if game::time() % 10 == 0 {
+        for creep in memory.clone().creeps.keys() {
+            if game::creeps().get(creep.clone()).is_none() {
+                memory.creeps.remove(creep);
+            }
+        }
+        for room in game::rooms().values() {
+            if let Some(controller) = room.controller() {
+                if controller.my() && !memory.get_room(&room.name_str()).init {
+                    memory.create_room(&room.name_str());
+                }
+            }
+        }
+        for room in memory.clone().rooms.values() {
+            let mut to_remove = Vec::new();
+            for creep_name in room.cs.clone() {
+                if game::creeps().get(creep_name.clone()).is_none() {
+                    to_remove.push(creep_name);
+                }
+            }
+            memory.get_room(&room.n).cs = room.cs.clone().into_iter().filter(|x| !to_remove.contains(x)).collect();
+        }
+    }
+
     if recently_respawned(&mut memory) {
         for room in game::rooms().keys() {
             let room = game::rooms().get(room).unwrap();
@@ -75,31 +99,6 @@ pub fn game_loop() {
             }
         }
         memory.spawn_tick = false
-    }
-
-    if game::time() % 10 == 0 {
-        for room in game::rooms().values() {
-            if let Some(controller) = room.controller() {
-                if controller.my() && !memory.get_room(&room.name_str()).init {
-                    memory.create_room(&room.name_str());
-                }
-            }
-        }
-        for creep in memory.clone().creeps.keys() {
-            if game::creeps().get(creep.clone()).is_none() {
-                memory.creeps.remove(creep);
-            }
-        }
-        for room in memory.clone().rooms.values() {
-            let mut to_remove = Vec::new();
-            for creep_name in room.cs.clone() {
-                if game::creeps().get(creep_name.clone()).is_none() {
-                    to_remove.push(creep_name);
-                }
-            }
-            memory.get_room(&room.n).cs = room.cs.clone().into_iter().filter(|x| !to_remove.contains(x)).collect();
-        }
-
     }
 
     for room in memory.clone().rooms.values() {

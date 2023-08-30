@@ -24,6 +24,8 @@ pub enum Task {
 
     // Odd industry
     Rename(ObjectId<StructureController>),
+
+    Scout(),
 }
 
 structstruck::strike! {
@@ -92,7 +94,10 @@ structstruck::strike! {
                 pub rcl: u8,
                 pub creeps_made: u64,
                 pub creeps_removed: u64,
+                pub energy_harvested: u64,
+                pub energy_harvested_total: u64,
             }>,
+            pub energy_harvested: u64,
         },
         pub spawn_tick: bool
 }
@@ -100,14 +105,13 @@ structstruck::strike! {
 
 impl ScreepsMemory {
     pub fn init_memory() -> Self {
-
         let memory_jsstring = screeps::raw_memory::get();
         let memory_string = memory_jsstring.as_string().unwrap();
         if memory_string.is_empty() {
             let mut memory = ScreepsMemory {
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
-                stats: Stats { cpu: Cpu { memory: 0.0, rooms: 0.0, total: 0.0, bucket: 0 }, rooms: HashMap::new() },
+                stats: Stats { cpu: Cpu { memory: 0.0, rooms: 0.0, total: 0.0, bucket: 0 }, rooms: HashMap::new(), energy_harvested: 0 },
                 spawn_tick: true,
             };
             memory.write_memory();
@@ -124,7 +128,7 @@ impl ScreepsMemory {
                     ScreepsMemory {
                         rooms: HashMap::new(),
                         creeps: HashMap::new(),
-                        stats: Stats { cpu: Cpu { memory: 0.0, rooms: 0.0, total: 0.0, bucket: 0 }, rooms: HashMap::new() },
+                        stats: Stats { cpu: Cpu { memory: 0.0, rooms: 0.0, total: 0.0, bucket: 0 }, rooms: HashMap::new(), energy_harvested: 0 },
                         spawn_tick: true,
                     }
                 }
@@ -177,7 +181,7 @@ impl ScreepsMemory {
     }
 
     pub fn get_room(&mut self, name: &str) -> &mut RoomMemory {
-        self.rooms.get_mut(&name.to_string()).unwrap()
+        self.rooms.get_mut(&name.to_string()).expect("Failed to get room from memory, attempted room name")
     }
 
     pub fn get_creep(&mut self, name: &str) -> &mut CreepMemory {
@@ -196,7 +200,13 @@ impl Stats {
                 rcl,
                 creeps_removed: 0,
                 cpu: 0.0,
+                energy_harvested: 0,
+                energy_harvested_total: 0,
               }
         );
+    }
+
+    pub fn get_room(&mut self, name: &str) -> &mut Rooms {
+        self.rooms.get_mut(&name.to_string()).expect("Failed to get room from stats")
     }
 }

@@ -41,6 +41,13 @@ global.toggle_exec = function () {
     return `Successfully toggled execution pause to: ${EXECUTION_PAUSED}`
 }
 
+global.suicide_all = function() {
+  for (creep in Game.creeps) {
+    let c = Game.creeps[creep];
+    c.suicide()
+  }
+}
+
 module.exports.loop = function () {
   // Replace the Memory object (which gets populated into our global each tick) with an empty
   // object, so that accesses to it from within the driver that we can't prevent (such as

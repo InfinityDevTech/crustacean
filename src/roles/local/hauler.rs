@@ -1,10 +1,10 @@
 use std::cmp::min;
 
 use screeps::{
-    find, Creep, HasPosition, ResourceType, SharedCreepProperties, Structure, StructureObject,
+    find, Creep, HasPosition, ResourceType, SharedCreepProperties, Structure, StructureObject, HasTypedId,
 };
 
-use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
+use crate::{memory::{CreepMemory, Task}, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure) {
     if creepmem.s == "energy" {
@@ -62,6 +62,12 @@ pub fn haul_energy(creep: &Creep, creepmem: &mut CreepMemory, deposit: Structure
                     )));
                 } else {
                     creep.better_move_to(creepmem, structure.pos(), 1);
+                }
+            } else {
+                let find_res = creep.room().unwrap().find(find::MY_STRUCTURES, None);
+                let new_target = find_res.iter().filter(|s| s.as_transferable().is_some()).find(|s| s.as_has_store().unwrap().store().get_free_capacity(Some(ResourceType::Energy)) > 0);
+                if let Some(new_target) = new_target {
+                    creepmem.t = Some(Task::Hauler(new_target.as_structure().id()));
                 }
             }
         }

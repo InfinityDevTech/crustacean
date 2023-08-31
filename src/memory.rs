@@ -44,34 +44,26 @@ pub struct CreepMemory{
 }
 }
 
-
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct RoomMemory{
     // Name
-    pub n: String,
+    pub name: String,
     // Room type
-    pub r_t: String,
-    // Creeps
-    pub cs: Vec<String>,
+    pub room_type: String,
     // Creeps made
-    pub c_m: u64,
+    pub creeps_made: u64,
     // Initialised
     pub init: bool,
     // Available mining spots, makes my life easier.
-    pub avs: u8,
+    pub available_mining: u8,
     // Mining stuffs
     pub mine: HashMap<ObjectId<Source>, pub struct {
         pub s: u8,
         pub u: u8,
     }>,
-    // Creep Count
-    pub c_c: pub struct {
-        pub miner: u8,
-        pub hauler: u8,
-        pub upgrader: u8,
-        pub builder: u8,
-    }
+    // Creeps by role
+    pub creeps: HashMap<String, String>
 }
 }
 
@@ -96,6 +88,8 @@ structstruck::strike! {
                 pub creeps_removed: u64,
                 pub energy_harvested: u64,
                 pub energy_harvested_total: u64,
+                pub energy_available: u64,
+                pub energy_capacity_available: u64
             }>,
             pub energy_harvested: u64,
         },
@@ -146,7 +140,6 @@ impl ScreepsMemory {
     }
 
     pub fn create_creep(&mut self, room_name: &str, creep_name: &str, career: Careers, task: Option<Task>) {
-        let room = self.rooms.get_mut(room_name).unwrap();
         let creep = CreepMemory {
             p: None,
             o_r: room_name.to_string(),
@@ -154,7 +147,6 @@ impl ScreepsMemory {
             t: task,
             s: "energy".to_string(),
         };
-        room.cs.push(creep_name.to_string());
         self.creeps.insert(creep_name.to_string(), creep);
         info!("Created creep");
     }
@@ -163,19 +155,13 @@ impl ScreepsMemory {
         self.rooms.insert(
             name.to_string(),
             RoomMemory {
-                n: name.to_string(),
-                r_t: "local".to_string(),
+                name: name.to_string(),
+                room_type: "local".to_string(),
                 init: false,
-                cs: Vec::new(),
-                c_m: 0,
-                avs: 0,
+                creeps_made: 0,
+                available_mining: 0,
                 mine: HashMap::new(),
-                c_c: CC {
-                    miner: 0,
-                    hauler: 0,
-                    upgrader: 0,
-                    builder: 0,
-                },
+                creeps: HashMap::new(),
             },
         );
     }
@@ -186,6 +172,12 @@ impl ScreepsMemory {
 
     pub fn get_creep(&mut self, name: &str) -> &mut CreepMemory {
         self.creeps.get_mut(&name.to_string()).unwrap()
+    }
+}
+
+impl RoomMemory {
+    pub fn get_creeps_by_role(&self, role: &str) -> Vec<String> {
+        self.creeps.clone().into_iter().filter(|x| x.1 == *role).map(|x| x.0).collect()
     }
 }
 
@@ -202,6 +194,8 @@ impl Stats {
                 cpu: 0.0,
                 energy_harvested: 0,
                 energy_harvested_total: 0,
+                energy_available: 0,
+                energy_capacity_available: 0
               }
         );
     }

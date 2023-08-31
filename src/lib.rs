@@ -9,7 +9,6 @@ use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 mod logging;
 mod memory;
 mod movement;
-mod roles;
 mod room;
 mod visual;
 mod traits;
@@ -35,7 +34,7 @@ pub fn recently_respawned(memory: &mut ScreepsMemory) -> bool {
     }
 
     // check for controller, progress and safe mode
-    let room = game::rooms().get(names[0]).unwrap();
+    let room = game::rooms().get(names[0]).expect("Failed to get room");
     let controller = room.controller();
     if controller.is_none()|| !controller.clone().unwrap().my() || controller.clone().unwrap().level() != 1 || controller.clone().unwrap().progress() > 0 ||
        controller.clone().unwrap().safe_mode().is_none() {
@@ -63,26 +62,12 @@ pub fn game_loop() {
     memory.stats.cpu.bucket = 0;
 
     if game::time() % 10 == 0 {
-        for creep in memory.clone().creeps.keys() {
-            if game::creeps().get(creep.clone()).is_none() {
-                memory.creeps.remove(creep);
-            }
-        }
         for room in game::rooms().values() {
             if let Some(controller) = room.controller() {
                 if controller.my() && !memory.get_room(&room.name_str()).init {
                     memory.create_room(&room.name_str());
                 }
             }
-        }
-        for room in memory.clone().rooms.values() {
-            let mut to_remove = Vec::new();
-            for creep_name in room.cs.clone() {
-                if game::creeps().get(creep_name.clone()).is_none() {
-                    to_remove.push(creep_name);
-                }
-            }
-            memory.get_room(&room.n).cs = room.cs.clone().into_iter().filter(|x| !to_remove.contains(x)).collect();
         }
     }
 
@@ -102,7 +87,7 @@ pub fn game_loop() {
     }
 
     for room in memory.clone().rooms.values() {
-        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.n).unwrap()).unwrap(), &mut memory);
+        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
     }
 
     visual::room::classify_rooms(&memory);
@@ -115,14 +100,15 @@ pub fn game_loop() {
     memory.write_memory();
 
     info!("[DICTATOR] Government ran and memory written... Here are some stats!");
-    info!("GCL level {}. Next level: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
-    info!("Market credits: {}", game::market::credits());
-    info!("Creeps removed this tick: {}", memory.stats.cpu.rooms);
-    info!("CPU Usage:");
-    info!("     Rooms: {}", memory.stats.cpu.rooms);
-    info!("     Memory: {}", memory.stats.cpu.rooms);
-    info!("     Total: {}", game::cpu::get_used());
-    info!("     Bucket: {}", game::cpu::bucket());
+    info!("[STATS] Statistics are as follows: ");
+    info!("  GCL {}. Next: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
+    //info!("  Credits: {}", game::market::credits());
+    info!("  Creeps removed this tick: {}", memory.stats.rooms.values().map(|x| x.creeps_removed).sum::<u64>());
+    info!("  CPU Usage:");
+    info!("       Rooms: {}", memory.stats.cpu.rooms);
+    info!("       Memory: {}", memory.stats.cpu.rooms);
+    info!("       Total: {}", game::cpu::get_used());
+    info!("       Bucket: {}", game::cpu::bucket());
 }
 
 #[wasm_bindgen(js_name = wipe_memory)]

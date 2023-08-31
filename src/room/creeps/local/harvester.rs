@@ -2,7 +2,7 @@ use screeps::{Source, HasPosition, Creep, ResourceType, Part, SharedCreepPropert
 
 use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions};
 
-pub fn harvest(creep: &Creep, memory: &mut ScreepsMemory, source: Source) {
+pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, source: Source) {
     let owning_room = memory.get_creep(&creep.name()).o_r.clone();
     if creep.pos().is_near_to(source.pos()) {
 

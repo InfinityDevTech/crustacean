@@ -42,7 +42,7 @@ global.toggle_exec = function () {
 }
 
 global.suicide_all = function() {
-  for (creep in Game.creeps) {
+  for (let creep in Game.creeps) {
     let c = Game.creeps[creep];
     c.suicide()
   }

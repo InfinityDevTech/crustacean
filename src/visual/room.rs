@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use screeps::{game, HasPosition, RoomName, RoomVisual, TextStyle, MapVisual, Position, RoomCoordinate};
+use screeps::{
+    game, HasPosition, MapVisual, Position, RoomCoordinate, RoomName, RoomVisual, TextStyle,
+};
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
@@ -15,29 +17,32 @@ pub fn classify_rooms(memory: &ScreepsMemory) {
                     .align(screeps::TextAlign::Left),
             );
             // Creep counters
-            roomvis.text(1_f32, 1_f32, "Stats".to_string(), white_left.clone());
+            roomvis.text(0_f32, 1_f32, "Stats".to_string(), white_left.clone());
             roomvis.text(
-                1_f32,
+                0_f32,
                 2_f32,
-                format!("Miners: {}", roommem.c_c.miner),
+                format!("Miners: {}", roommem.get_creeps_by_role("miner").len()),
                 white_left.clone(),
             );
             roomvis.text(
-                1_f32,
+                0_f32,
                 3_f32,
-                format!("Haulers: {}", roommem.c_c.hauler),
+                format!("Haulers: {}", roommem.get_creeps_by_role("hauler").len()),
                 white_left.clone(),
             );
             roomvis.text(
-                1_f32,
+                0_f32,
                 4_f32,
-                format!("Upgraders: {}", roommem.c_c.upgrader),
+                format!(
+                    "Upgraders: {}",
+                    roommem.get_creeps_by_role("upgrader").len()
+                ),
                 white_left.clone(),
             );
             roomvis.text(
-                1_f32,
+                0_f32,
                 5_f32,
-                format!("Builders: {}", roommem.c_c.builder),
+                format!("Builders: {}", roommem.get_creeps_by_role("builder").len()),
                 white_left.clone(),
             );
 
@@ -59,8 +64,20 @@ pub fn classify_rooms(memory: &ScreepsMemory) {
     }
 
     for room in game::rooms().values() {
-        let pos = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(3).unwrap(), room.name());
-        MapVisual::text(pos, get_room_type(&room.name_str()), Some(TextStyle::default().color("#ffffff").align(screeps::TextAlign::Center)));
+        let pos = Position::new(
+            RoomCoordinate::new(25).unwrap(),
+            RoomCoordinate::new(3).unwrap(),
+            room.name(),
+        );
+        MapVisual::text(
+            pos,
+            get_room_type(&room.name_str()),
+            Some(
+                TextStyle::default()
+                    .color("#ffffff")
+                    .align(screeps::TextAlign::Center),
+            ),
+        );
     }
 }
 

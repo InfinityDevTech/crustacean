@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use screeps::{Creep, game, Position, RoomCoordinate};
 
 use crate::{memory::CreepMemory, traits::creep::CreepExtensions};

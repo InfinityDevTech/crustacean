@@ -20,4 +20,6 @@ jobs:
       uses: baptiste0928/cargo-install@v2.1.0
       with:
           crate: cargo-screeps
+    - name: Build code
+      run: cargo screeps build
           

@@ -1,11 +1,8 @@
 use log::warn;
 use screeps::{
-    pathfinder::{self, MultiRoomCostResult, SearchOptions},
-    Direction, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,
-    RoomName, StructureObject, find
+    pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,
+    RoomName, StructureObject, find, StructureType
 };
-
-use crate::memory;
 
 pub struct MoveTarget {
     pub pos: Position,
@@ -13,21 +10,21 @@ pub struct MoveTarget {
 }
 
 impl MoveTarget {
-    pub fn find_path_to(&mut self, from: Position) -> memory::Movement {
+    pub fn find_path_to(&mut self, from: Position) -> String {
         let opts = SearchOptions::new(path_call)
-            .plain_cost(1)
-            .swamp_cost(1)
+            .plain_cost(2)
+            .swamp_cost(5)
             .max_rooms(1)
             .max_ops(100000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));
 
         if search.incomplete() {
-            warn!(
-                "Incomplete pathfinding search {} {} {}",
-                search.ops(),
-                search.cost(),
-                self.pos
-            );
+            //warn!(
+            //    "Incomplete pathfinding search {} {} {}",
+            //    search.ops(),
+            //    search.cost(),
+            //    self.pos
+            //);
         }
 
         let mut cur_pos = from;
@@ -48,29 +45,24 @@ impl MoveTarget {
             cur_pos = pos;
         }
         let mut steps_string = "".to_string();
+        let steps = &steps[0..std::cmp::min(steps.len(), 5)];
         for dirint in steps {
-            let int = dirint as u8;
+            let int = *dirint as u8;
             let intstring = int.to_string();
+
             steps_string = steps_string + &intstring;
         }
-        memory::Movement {
-            dest: memory::Dest {
-                x: self.pos.x().into(),
-                y: self.pos.y().into(),
-                room: self.pos.room_name().to_string(),
-            },
-            path: steps_string,
-            room: self.pos.room_name().to_string(),
-        }
+        steps_string
     }
 }
 
 pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
     if let Some(room) = screeps::game::rooms().get(room_name) {
-        let objects = room.find(find::STRUCTURES, None);
+        let structures = room.find(find::STRUCTURES, None);
+        let constructions = room.find(find::CONSTRUCTION_SITES, None);
         let creeps = room.find(find::CREEPS, None);
-        for structure in objects {
+        for structure in structures {
             let pos = structure.pos();
             match structure {
                 StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 1),
@@ -83,6 +75,19 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
                 }
                 StructureObject::StructureRoad(_) => matrix.set(pos.xy(), 1),
                 StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
+                _ => {
+                    matrix.set(pos.xy(), 255);
+                }
+            }
+        }
+
+        for csite in constructions {
+            let pos = csite.pos();
+            match csite.structure_type() {
+                StructureType::Container => matrix.set(pos.xy(), 1),
+                StructureType::Rampart => matrix.set(pos.xy(), 1),
+                StructureType::Road => matrix.set(pos.xy(), 1),
+                StructureType::Wall => matrix.set(pos.xy(), 255),
                 _ => {
                     matrix.set(pos.xy(), 255);
                 }

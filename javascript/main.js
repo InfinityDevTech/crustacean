@@ -2,9 +2,10 @@
 let wasm_module;
 
 // replace this with the name of your module
-const MODULE_NAME = "screeps";
+const MODULE_NAME = "crustacean";
 let EXECUTION_PAUSED = false;
 let RED_BUTTON = false;
+let WIPE_MEMORY = false;
 
 function console_error(...args) {
   console.log(...args);
@@ -29,9 +30,22 @@ global.big_red_button = function (input) {
   }
 };
 
+global.wipe_memory = function () {
+  EXECUTION_PAUSED = true;
+  WIPE_MEMORY = true;
+  console.log("Wiping memory");
+}
+
 global.toggle_exec = function () {
     EXECUTION_PAUSED = !EXECUTION_PAUSED
     return `Successfully toggled execution pause to: ${EXECUTION_PAUSED}`
+}
+
+global.suicide_all = function() {
+  for (let creep in Game.creeps) {
+    let c = Game.creeps[creep];
+    c.suicide()
+  }
 }
 
 module.exports.loop = function () {
@@ -48,11 +62,18 @@ module.exports.loop = function () {
   global.Memory = {};
   try {
     if (wasm_module) {
-      if (RED_BUTTON) {
-        wasm_module.red_button();
-      }
       if (!EXECUTION_PAUSED) {
         wasm_module.loop();
+      }
+      if (RED_BUTTON) {
+        wasm_module.red_button();
+        RED_BUTTON = false;
+        EXECUTION_PAUSED = false;
+      }
+      if (WIPE_MEMORY) {
+        wasm_module.wipe_memory();
+        WIPE_MEMORY = false;
+        EXECUTION_PAUSED = false;
       }
     } else {
       // attempt to load the wasm only if there's enough bucket to do a bunch of work this tick

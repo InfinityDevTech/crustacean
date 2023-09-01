@@ -12,7 +12,7 @@ use crate::{
     room::population, traits::room::RoomExtensions,
 };
 
-use super::creeps;
+use super::{creeps, tower};
 
 const UPGRADER_COUNT: u8 = 8;
 const BUILDER_COUNT: u8 = 4;
@@ -69,6 +69,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     }
 
     creeps::market::run_creeps(&room, memory);
+    tower::run_towers(&room);
 
     do_spawning(memory, &room);
     memory.stats.cpu.rooms += game::cpu::get_used() - starting_cpu;
@@ -83,9 +84,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     let room_name = &room.name_str();
 
     if population::create_miner(memory, room.clone()) {
-    } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() as u8
-        <= memory.get_room(&room.name_str()).get_creeps_by_role("harvester").len() as u8
-    {
+    } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < 5 {
         let name = format!("h-{}", roommem_readonly.creeps_made);
         let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);

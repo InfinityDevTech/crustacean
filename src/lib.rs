@@ -106,7 +106,7 @@ pub fn game_loop() {
     info!("  Creeps removed this tick: {}", memory.stats.rooms.values().map(|x| x.creeps_removed).sum::<u64>());
     info!("  CPU Usage:");
     info!("       Rooms: {}", memory.stats.cpu.rooms);
-    info!("       Memory: {}", memory.stats.cpu.rooms);
+    info!("       Memory: {}", memory.stats.cpu.memory);
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
 }

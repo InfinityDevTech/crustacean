@@ -88,7 +88,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     let room_name = &room.name_str();
 
     if population::create_miner(memory, room.clone()) {
-    } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < 3 {
+    } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < memory.get_room(&room.name_str()).get_creeps_by_role("miner").len() {
         let name = format!("h-{}", roommem_readonly.creeps_made);
         let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
         let spawn_res = spawn.spawn_creep(&body, &name);

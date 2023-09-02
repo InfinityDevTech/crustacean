@@ -28,6 +28,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     memory.stats.get_room(&room.name_str()).energy_harvested = 0;
     memory.stats.get_room(&room.name_str()).energy_available = room.energy_available() as u64;
     memory.stats.get_room(&room.name_str()).energy_capacity_available = room.energy_capacity_available() as u64;
+
+    if game::time() % 1000 == 0 {
+        game::notify(&format!("Room name: {} - RCL progress: {:.2}", room.name_str(), room.controller().unwrap().progress() as f64 / room.controller().unwrap().progress_total() as f64 * 100.0), None)
+    }
     // Horray, i did it better.
     let roommem = memory.get_room(&room.name_str());
 

@@ -102,6 +102,6 @@ impl CreepExtensions for screeps::Creep {
         let creep_x = self.pos().x().u8();
         let creep_y = self.pos().y().u8();
         let int = (creep_x - x).pow(2) + (creep_y - y).pow(2);
-        (((int as f64).sqrt() * 10.0).round() / 10.0) as u8
+        (int as f64).sqrt() as u8
     }
 }

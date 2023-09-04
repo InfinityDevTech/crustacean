@@ -148,7 +148,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if (memory.get_room(&room.name_str()).get_creeps_by_role("attacker").len() as u8) < 3 {
         let name = format!("a-{}", roommem_readonly.creeps_made);
-        let body = [Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack];
+        let body = get_max_body(room.clone(), &[Part::Attack, Part::Tough, Part::Move, Part::Move]);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(

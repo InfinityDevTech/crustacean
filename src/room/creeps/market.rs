@@ -1,7 +1,7 @@
 use log::info;
 use screeps::{Room, game};
 
-use crate::{memory::ScreepsMemory, traits::room::RoomExtensions, room::population};
+use crate::{memory::ScreepsMemory, traits::room::RoomExtensions, room::{population, creeps::enemy}};
 
 use super::local;
 
@@ -43,6 +43,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory) {
                         local::upgrader::run_creep(&creep, creep_memory, structure)
                     }
                 },
+                crate::memory::Task::Attacker() => enemy::attacker::run_creep(&creep, creep_memory),
                 crate::memory::Task::Builder() => local::builder::run_creep(&creep, creep_memory),
                 _ => {}
             }

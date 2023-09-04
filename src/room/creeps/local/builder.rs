@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-use log::info;
 use screeps::{find, Creep, HasPosition, ResourceType};
 
 use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
@@ -8,7 +6,6 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
     if creepmem.s == "energy" {
         find_energy(creep, creepmem);
     } else if creepmem.s == "work" && !build(creep, creepmem) {
-        info!("Running repair");
         repair(creep, creepmem);
     }
 }
@@ -33,7 +30,6 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory) -> bool {
 }
 
 pub fn repair(creep: &Creep, creepmem: &mut CreepMemory) {
-    info!("Repair");
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         creepmem.s = "energy".to_string();
         find_energy(creep, creepmem);
@@ -42,9 +38,20 @@ pub fn repair(creep: &Creep, creepmem: &mut CreepMemory) {
     let closest_site = creep.room().unwrap().find(find::STRUCTURES, None);
     for csite in closest_site {
         if let Some(attackable) = csite.as_attackable() {
-            info!("Is attackable! {}  {}", attackable.hits(), attackable.hits_max());
             if attackable.hits() < attackable.hits_max() {
-                info!("Repairing!");
+                match csite.as_structure().structure_type() {
+                    screeps::StructureType::Wall => {
+                        if attackable.hits() > 100000 {
+                            continue;
+                        }
+                    },
+                    screeps::StructureType::Rampart => {
+                        if attackable.hits() > 100000 {
+                            continue;
+                        }
+                    },
+                    _ => {},
+                }
                 if creep.pos().is_near_to(attackable.pos()) {
                     let _ = creep.repair(csite.as_structure());
                     break;

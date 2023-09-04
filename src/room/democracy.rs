@@ -14,7 +14,7 @@ use crate::{
 
 use super::{creeps, tower};
 
-const UPGRADER_COUNT: u8 = 8;
+const UPGRADER_COUNT: u8 = 4;
 const BUILDER_COUNT: u8 = 4;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
@@ -142,6 +142,21 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
                 Some(Task::Builder()),
             );
             memory.get_room(&room.name_str()).creeps.insert(name.to_string(), "builder".to_string());
+            memory.get_room(&room.name_str()).creeps_made += 1;
+            memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
+        }
+    } else if (memory.get_room(&room.name_str()).get_creeps_by_role("attacker").len() as u8) < 3 {
+        let name = format!("a-{}", roommem_readonly.creeps_made);
+        let body = [Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Tough,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Move,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack,Part::Attack];
+        let spawn_res = spawn.spawn_creep(&body, &name);
+        if spawn_res.is_ok() {
+            memory.create_creep(
+                room_name,
+                &name,
+                crate::memory::Careers::Mining,
+                Some(Task::Attacker()),
+            );
+            memory.get_room(&room.name_str()).creeps.insert(name.to_string(), "attacker".to_string());
             memory.get_room(&room.name_str()).creeps_made += 1;
             memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }

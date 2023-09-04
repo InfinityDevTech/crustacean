@@ -26,6 +26,8 @@ pub enum Task {
     Rename(ObjectId<StructureController>),
 
     Scout(),
+
+    Attacker(),
 }
 
 structstruck::strike! {

@@ -1,5 +1,6 @@
 use std::{collections::HashMap, str::FromStr};
 
+use js_sys::Math::ceil;
 use log::info;
 use screeps::{
     find, game,
@@ -14,7 +15,7 @@ use crate::{
 
 use super::{creeps, tower};
 
-const UPGRADER_COUNT: u8 = 4;
+const UPGRADER_COUNT: u8 = 8;
 const BUILDER_COUNT: u8 = 4;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
@@ -90,7 +91,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     if population::create_miner(memory, room.clone()) {
     } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < memory.get_room(&room.name_str()).get_creeps_by_role("miner").len() {
         let name = format!("h-{}", roommem_readonly.creeps_made);
-        let body = [Part::Move, Part::Move, Part::Carry, Part::Work];
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Carry]);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -115,7 +116,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if (memory.get_room(&room.name_str()).get_creeps_by_role("upgrader").len() as u8) < UPGRADER_COUNT {
         let name = format!("u-{}", roommem_readonly.creeps_made);
-        let body = [Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work];
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work]);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -132,7 +133,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if (memory.get_room(&room.name_str()).get_creeps_by_role("builder").len() as u8) < BUILDER_COUNT {
         let name = format!("b-{}", roommem_readonly.creeps_made);
-        let body = [Part::Move, Part::Carry, Part::Carry, Part::Work];
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work]);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -161,4 +162,18 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
             memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }
     }
+}
+
+pub fn get_max_body(room: Room, body: &[Part]) -> Vec<Part> {
+    let mut max_body = Vec::new();
+    let body = body.to_vec();
+    info!("Got body {:?}", body);
+    let body_cost = body.iter().map(|x| x.cost()).sum::<u32>();
+    info!("Cost {}", body_cost);
+    let max_cycles = ((room.energy_available() / body_cost) as f32).ceil();
+    info!("Test {}", max_cycles);
+    for _ in 0..max_cycles as u32 {
+        max_body.append(&mut body.clone());
+    }
+    max_body
 }

@@ -38,8 +38,8 @@ lto = true
 # -g - leave debug info in place, allowing for more descriptive stack traces on panic
 # --disable-sign-ext - prevents opcodes that the screeps servers can't load (see
 # https://github.com/rustyscreeps/screeps-game-api/issues/391)
-wasm-opt = ["-O4", "--disable-sign-ext"]
-#wasm-opt = ["-g", "--disable-sign-ext"]
+#wasm-opt = ["-O4", "--disable-sign-ext"]
+wasm-opt = ["-g", "--disable-sign-ext"]
 
 [features]
 default = []

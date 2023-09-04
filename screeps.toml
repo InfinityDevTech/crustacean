@@ -22,7 +22,7 @@ destination = "/home/jwjoh/.config/Screeps/scripts/super_directconnect_wyatt_wor
 [copy.build]
   # set the sim feature to allow for use with the coordinates in the simulation room
   extra_options = ["--features=sim", "--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort", "-Z", "build-std-features=panic_immediate_abort", "--debug"]
-  build-target = "release"
+  #build-target = "release"
 
 [season]
 auth_token = "your screeps.com auth token"

@@ -5,6 +5,8 @@ use crate::{
     traits::room::RoomExtensions,
 };
 
+use super::democracy::get_max_body;
+
 pub fn create_miner(memory: &mut ScreepsMemory, room: Room) -> bool {
     if !memory.get_room(&room.name_str()).get_creeps_by_role("miner").is_empty() && memory.get_room(&room.name_str()).get_creeps_by_role("hauler").is_empty() {
         return false;
@@ -21,7 +23,7 @@ pub fn create_miner(memory: &mut ScreepsMemory, room: Room) -> bool {
     }
     if let Some(source) = selected_source {
         let name = format!("m-{}", memory.get_room(&room.name_str()).creeps_made);
-        let body = [Part::Move, Part::Work, Part::Work];
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Work, Part::Work]);
         let spawn_res = room
             .find(find::MY_SPAWNS, None)
             .first()

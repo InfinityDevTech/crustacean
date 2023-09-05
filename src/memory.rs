@@ -35,14 +35,18 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct CreepMemory{
     // Owning room
+    #[serde(default)]
     pub o_r: String,
     // Path
+    #[serde(default)]
     pub p: Option<String>,
     // Career
     pub c: Careers,
     // Task
+    #[serde(default)]
     pub t: Option<Task>,
     // State
+    #[serde(default)]
     pub s: String,
 }
 }
@@ -51,47 +55,75 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct RoomMemory{
     // Name
+    #[serde(default)]
     pub name: String,
     // Room type
+    #[serde(default)]
     pub room_type: String,
     // Creeps made
+    #[serde(default)]
     pub creeps_made: u64,
     // Initialised
+    #[serde(default)]
     pub init: bool,
     // Available mining spots, makes my life easier.
+    #[serde(default)]
     pub available_mining: u8,
     // Mining stuffs
+    #[serde(default)]
     pub mine: HashMap<ObjectId<Source>, pub struct {
+        #[serde(default)]
         pub s: u8,
+        #[serde(default)]
         pub u: u8,
     }>,
     // Creeps by role
+    #[serde(default)]
     pub creeps: HashMap<String, String>
 }
 }
 
 structstruck::strike! {
-    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone, Default)]]
     pub struct ScreepsMemory {
+        #[serde(default)]
         pub rooms: HashMap<String, RoomMemory>,
+        #[serde(default)]
         pub creeps: HashMap<String, CreepMemory>,
+        #[serde(default)]
         pub stats: pub struct {
+            #[serde(default)]
             pub cpu: pub struct {
+                #[serde(default)]
                 pub memory: f64,
+                #[serde(default)]
                 pub rooms: f64,
+                #[serde(default)]
                 pub total: f64,
+                #[serde(default)]
                 pub bucket: i32,
             },
+            #[serde(default)]
             pub rooms: HashMap<String, pub struct {
+                #[serde(default)]
                 pub cpu: f64,
+                #[serde(default)]
                 pub mining: f64,
+                #[serde(default)]
                 pub construction: f64,
+                #[serde(default)]
                 pub rcl: u8,
+                #[serde(default)]
                 pub creeps_made: u64,
+                #[serde(default)]
                 pub creeps_removed: u64,
+                #[serde(default)]
                 pub energy_harvested: u64,
+                #[serde(default)]
                 pub energy_harvested_total: u64,
+                #[serde(default)]
                 pub energy_available: u64,
+                #[serde(default)]
                 pub energy_capacity_available: u64
             }>,
             pub energy_harvested: u64,
@@ -206,4 +238,6 @@ impl Stats {
     pub fn get_room(&mut self, name: &str) -> &mut Rooms {
         self.rooms.get_mut(&name.to_string()).expect("Failed to get room from stats")
     }
+
+    //pub fn default()
 }

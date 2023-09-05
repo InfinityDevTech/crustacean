@@ -1,9 +1,13 @@
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, Terrain};
+use screeps::{CostMatrix, Terrain, Creep};
+
+use crate::ALLIES;
 
 pub trait RoomExtensions {
     fn name_str(&self) -> String;
+
+    fn get_enemy_creeps(&self) -> Vec<Creep>;
 
     fn split_room_name(&self) -> (String, u32, String, u32);
 
@@ -17,6 +21,10 @@ pub trait RoomExtensions {
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()
+    }
+
+    fn get_enemy_creeps(&self) -> Vec<Creep> {
+        self.find(screeps::constants::find::HOSTILE_CREEPS, None).into_iter().filter(|c| !ALLIES.contains(&&c.owner().username().to_string().as_str())).collect()
     }
 
     fn split_room_name(&self) -> (String, u32, String, u32) {
@@ -43,7 +51,6 @@ impl RoomExtensions for screeps::Room {
         }
         false
     }
-
     fn is_intersection(&self) -> bool {
         let split_name = self.split_room_name();
         let east_west_distance = split_name.1;
@@ -54,7 +61,6 @@ impl RoomExtensions for screeps::Room {
         }
         false
     }
-
     fn is_source_keeper(&self) -> bool {
         let split_name = self.split_room_name();
         let east_west_distance = split_name.1;

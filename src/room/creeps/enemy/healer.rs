@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{find, Creep, HasPosition};
+use screeps::{find, Creep, HasPosition, SharedCreepProperties};
 
 use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
@@ -18,16 +18,17 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
         } else if flag.name().to_string() == "heal" {
             info!(
                 "{} {} {}",
-                creep.hits() <= (creep.hits_max() - 100),
+                creep.hits() <= creep.hits_max(),
                 creep.hits(),
                 creep.hits_max()
             );
-            if creep.hits() != (creep.hits_max() - 100) {
+            if creep.hits() != creep.hits_max() {
+                info!("Healing self");
                 let _ = creep.heal(creep);
             } else {
                 let my_creep = creep.room().unwrap().find(find::MY_CREEPS, None).into_iter().find(|c| c.hits() != c.hits_max());
                 if let Some(my_creep) = my_creep {
-                    info!("Found creep, moving");
+                    info!("Found creep, moving {}", my_creep.name());
                     if creep.pos().is_near_to(creep.pos()) {
                         let _ = creep.heal(&my_creep);
                     } else {

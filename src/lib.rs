@@ -8,10 +8,13 @@ use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
 mod logging;
 mod memory;
+mod cache;
 mod movement;
 mod room;
 mod visual;
 mod traits;
+
+const ALLIES: [&str; 1] = ["PandaMaster"];
 
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {

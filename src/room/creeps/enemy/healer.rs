@@ -5,7 +5,7 @@ use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
     info!("Healer");
-    if let Some(flag) = screeps::game::flags().values().next() {
+    if let Some(flag) = screeps::game::flags().values().find(|f| f.name().to_string() == "move" || f.name().to_string() == "heal") {
         if flag.name().to_string() != "move" && flag.name().to_string() != "heal" {
             return;
         }

@@ -23,7 +23,7 @@ pub fn create_miner(memory: &mut ScreepsMemory, room: Room) -> bool {
     }
     if let Some(source) = selected_source {
         let name = format!("m-{}", memory.get_room(&room.name_str()).creeps_made);
-        let body = get_max_body(room.clone(), &[Part::Move, Part::Work, Part::Work]);
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Work, Part::Work], 3);
         let spawn_res = room
             .find(find::MY_SPAWNS, None)
             .first()

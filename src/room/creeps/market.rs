@@ -44,6 +44,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory) {
                     }
                 },
                 crate::memory::Task::Attacker() => enemy::attacker::run_creep(&creep, creep_memory),
+                crate::memory::Task::Healer() => enemy::healer::run_creep(&creep, creep_memory),
                 crate::memory::Task::Builder() => local::builder::run_creep(&creep, creep_memory),
                 _ => {}
             }

@@ -1,6 +1,8 @@
 "use strict";
 let wasm_module;
 
+//TEST
+
 // replace this with the name of your module
 const MODULE_NAME = "crustacean";
 let EXECUTION_PAUSED = false;

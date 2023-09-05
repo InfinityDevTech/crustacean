@@ -28,6 +28,7 @@ pub enum Task {
     Scout(),
 
     Attacker(),
+    Healer(),
 }
 
 structstruck::strike! {

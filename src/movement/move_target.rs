@@ -14,7 +14,7 @@ impl MoveTarget {
         let opts = SearchOptions::new(path_call)
             .plain_cost(2)
             .swamp_cost(5)
-            .max_rooms(2)
+            .max_rooms(3)
             .max_ops(100000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));
 

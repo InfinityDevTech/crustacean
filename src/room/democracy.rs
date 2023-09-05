@@ -1,6 +1,5 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, cmp};
 
-use js_sys::Math::ceil;
 use log::info;
 use screeps::{
     find, game,
@@ -91,7 +90,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     if population::create_miner(memory, room.clone()) {
     } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < memory.get_room(&room.name_str()).get_creeps_by_role("miner").len() {
         let name = format!("h-{}", roommem_readonly.creeps_made);
-        let body = get_max_body(room.clone(), &[Part::Move, Part::Carry]);
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Carry], 5);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -116,7 +115,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if (memory.get_room(&room.name_str()).get_creeps_by_role("upgrader").len() as u8) < UPGRADER_COUNT {
         let name = format!("u-{}", roommem_readonly.creeps_made);
-        let body = get_max_body(room.clone(), &[Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work]);
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work], 9);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -133,7 +132,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if (memory.get_room(&room.name_str()).get_creeps_by_role("builder").len() as u8) < BUILDER_COUNT {
         let name = format!("b-{}", roommem_readonly.creeps_made);
-        let body = get_max_body(room.clone(), &[Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work]);
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Move, Part::Carry, Part::Carry, Part::Work], 9);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -148,7 +147,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
         }
     } else if (memory.get_room(&room.name_str()).get_creeps_by_role("attacker").len() as u8) < 3 {
         let name = format!("a-{}", roommem_readonly.creeps_made);
-        let body = get_max_body(room.clone(), &[Part::Attack, Part::Tough, Part::Move, Part::Move]);
+        let body = get_max_body(room.clone(), &[Part::Attack, Part::Tough, Part::Move, Part::Move], 9);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -161,17 +160,29 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
             memory.get_room(&room.name_str()).creeps_made += 1;
             memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }
+    } else if (memory.get_room(&room.name_str()).get_creeps_by_role("healer").len() as u8) < 3 {
+        let name = format!("h-{}", roommem_readonly.creeps_made);
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Heal], 50);
+        let spawn_res = spawn.spawn_creep(&body, &name);
+        if spawn_res.is_ok() {
+            memory.create_creep(
+                room_name,
+                &name,
+                crate::memory::Careers::Mining,
+                Some(Task::Healer()),
+            );
+            memory.get_room(&room.name_str()).creeps.insert(name.to_string(), "healer".to_string());
+            memory.get_room(&room.name_str()).creeps_made += 1;
+            memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
+        }
     }
 }
 
-pub fn get_max_body(room: Room, body: &[Part]) -> Vec<Part> {
+pub fn get_max_body(room: Room, body: &[Part], max: u8) -> Vec<Part> {
     let mut max_body = Vec::new();
     let body = body.to_vec();
-    info!("Got body {:?}", body);
     let body_cost = body.iter().map(|x| x.cost()).sum::<u32>();
-    info!("Cost {}", body_cost);
-    let max_cycles = ((room.energy_available() / body_cost) as f32).ceil();
-    info!("Test {}", max_cycles);
+    let max_cycles = cmp::min(((room.energy_available() / body_cost) as f32).ceil() as u8, max);
     for _ in 0..max_cycles as u32 {
         max_body.append(&mut body.clone());
     }

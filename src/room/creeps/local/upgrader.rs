@@ -1,18 +1,17 @@
 use screeps::{Creep, StructureController, HasPosition, ResourceType, find};
 
-use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
+use crate::{memory::CreepMemory, traits::{creep::CreepExtensions, room::RoomExtensions}, cache::ScreepsCache};
 
-pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController) {
+pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController, cache: &mut ScreepsCache) {
     let inventory = creep.store();
     if creepmem.s == "energy" {
-        let closest_energy = creep
-            .pos()
-            .find_closest_by_path(find::DROPPED_RESOURCES, None);
-        if let Some(energy) = closest_energy {
+        let closest_energy = cache.energy.get(&creep.room().unwrap().name_str()).unwrap().first();
+        if let Some(energy_id) = closest_energy {
+            let energy = energy_id.resolve().unwrap();
             if creep.pos().is_near_to(energy.clone().pos()) {
                 let _ = creep.pickup(&energy);
             } else {
-                creep.better_move_to(creepmem, energy.pos(), 1);
+                creep.better_move_to(creepmem, cache, energy.pos(), 1);
             }
         }
     } else {
@@ -20,7 +19,7 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: Structur
             Ok(_) => {},
             Err(test) => {
                 if let screeps::ErrorCode::NotInRange = test {
-                    creep.better_move_to(creepmem, controller.pos(), 2);
+                    creep.better_move_to(creepmem, cache, controller.pos(), 2);
                 }
             },
         }

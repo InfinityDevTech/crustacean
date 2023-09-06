@@ -1,8 +1,6 @@
 "use strict";
 let wasm_module;
 
-//TEST
-
 // replace this with the name of your module
 const MODULE_NAME = "crustacean";
 let EXECUTION_PAUSED = false;
@@ -49,6 +47,7 @@ global.suicide_all = function() {
     c.suicide()
   }
 }
+
 module.exports.loop = function () {
   // Replace the Memory object (which gets populated into our global each tick) with an empty
   // object, so that accesses to it from within the driver that we can't prevent (such as

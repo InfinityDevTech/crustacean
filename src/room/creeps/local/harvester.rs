@@ -1,14 +1,17 @@
-use screeps::{Source, HasPosition, Creep, ResourceType, Part, SharedCreepProperties};
+use log::info;
+use screeps::{Source, HasPosition, Creep, ResourceType, Part, SharedCreepProperties, game};
 
-use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions};
+use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions, cache::ScreepsCache};
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, source: Source) {
+pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, source: Source, cache: &mut ScreepsCache) {
+    let start_time = game::cpu::get_used();
     let owning_room = memory.get_creep(&creep.name()).o_r.clone();
     if creep.pos().is_near_to(source.pos()) {
 
         if creep.store().get_free_capacity(Some(ResourceType::Energy)) > creep.store().get_used_capacity(Some(ResourceType::Energy)) as i32 {
 
             let _ = creep.drop(ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy))));
+            info!("Drop time: {}", game::cpu::get_used() - start_time);
 
         } else {
 
@@ -18,10 +21,11 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, source: Source) {
         memory.stats.get_room(&owning_room).energy_harvested += energy_harvested;
         memory.stats.get_room(&owning_room).energy_harvested_total += energy_harvested;
         memory.stats.energy_harvested += energy_harvested;
+        info!("Harvest time: {}", game::cpu::get_used() - start_time);
     }
     } else {
 
-        creep.better_move_to(memory.get_creep(&creep.name()), source.pos(), 1)
-
+        creep.better_move_to(memory.get_creep(&creep.name()), cache, source.pos(), 1);
+        info!("Move time (Harvester): {}", game::cpu::get_used() - start_time);
     }
 }

@@ -3,7 +3,7 @@ use screeps::{find, Creep, HasPosition, StructureObject, StructureType};
 use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
-    if let Some(flag) = screeps::game::flags()
+/*    if let Some(flag) = screeps::game::flags()
         .values()
         .find(|f| f.name().to_string() == "move" || f.name().to_string() == "attack")
     {
@@ -44,4 +44,5 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
             }
         }
     }
+    */
 }

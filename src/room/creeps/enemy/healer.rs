@@ -1,9 +1,9 @@
 use log::info;
 use screeps::{find, Creep, HasPosition, SharedCreepProperties};
 
-use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
+use crate::{memory::CreepMemory, traits::creep::CreepExtensions, cache::ScreepsCache};
 
-pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
+pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
     info!("Healer");
     if let Some(flag) = screeps::game::flags()
         .values()
@@ -14,7 +14,7 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
         }
         info!("Flag {}", flag.name());
         if flag.name().to_string() == "move" && !creep.pos().is_near_to(flag.pos()) {
-            creep.better_move_to(creepmem, flag.pos(), 1);
+            creep.better_move_to(creepmem, cache, flag.pos(), 1);
         } else if flag.name().to_string() == "heal" {
             info!(
                 "{} {} {}",
@@ -32,11 +32,11 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
                     if creep.pos().is_near_to(creep.pos()) {
                         let _ = creep.heal(&my_creep);
                     } else {
-                        creep.better_move_to(creepmem, creep.pos(), 1);
+                        creep.better_move_to(creepmem, cache, creep.pos(), 1);
                     }
                 } else if !creep.pos().is_near_to(flag.pos()) {
                     info!("Moving to flag");
-                    creep.better_move_to(creepmem, flag.pos(), 1);
+                    creep.better_move_to(creepmem, cache, flag.pos(), 1);
                 }
             }
         }

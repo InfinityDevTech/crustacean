@@ -1,12 +1,13 @@
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, Terrain, Creep};
+use screeps::{CostMatrix, Terrain, Creep, find, SharedCreepProperties, MaybeHasTypedId, StructureProperties};
 
-use crate::ALLIES;
+use crate::{ALLIES, cache::ScreepsCache};
 
 pub trait RoomExtensions {
     fn name_str(&self) -> String;
 
+    fn initialise_cache(&self, cache: &mut ScreepsCache);
     fn get_enemy_creeps(&self) -> Vec<Creep>;
 
     fn split_room_name(&self) -> (String, u32, String, u32);
@@ -23,8 +24,40 @@ impl RoomExtensions for screeps::Room {
         self.name().to_string()
     }
 
+    fn initialise_cache(&self, cache: &mut ScreepsCache) {
+        let enemy_creeps = self.find(find::HOSTILE_CREEPS, None);
+        let structures = self.find(find::STRUCTURES, None);
+        let construction_sites = self.find(find::CONSTRUCTION_SITES, None);
+        let energy = self.find(find::DROPPED_RESOURCES, None);
+        for creep in enemy_creeps {
+            cache.enemy_creeps.push(creep.try_id().unwrap());
+        }
+        for structure in structures {
+            match cache.structures.entry(structure.structure_type()) {
+                std::collections::hash_map::Entry::Occupied(v) => v.into_mut().push(structure.as_structure().try_id().unwrap()),
+                std::collections::hash_map::Entry::Vacant(_) => {
+                    cache.structures.insert(structure.structure_type(), vec![structure.as_structure().try_id().unwrap()]);
+                }
+            }
+        }
+        for csite in construction_sites {
+            if let Some(c) = cache.csites.get_mut(&self.name_str()) {
+                c.push(csite.try_id().unwrap());
+            } else {
+                cache.csites.insert(self.name_str(), vec![csite.try_id().unwrap()]);
+            }
+        }
+        for energy in energy {
+            if let Some(e) = cache.energy.get_mut(&self.name_str()) {
+                e.push(energy.try_id().unwrap());
+            } else {
+                cache.energy.insert(self.name_str(), vec![energy.try_id().unwrap()]);
+            }
+        }
+    }
+
     fn get_enemy_creeps(&self) -> Vec<Creep> {
-        self.find(screeps::constants::find::HOSTILE_CREEPS, None).into_iter().filter(|c| !ALLIES.contains(&&c.owner().username().to_string().as_str())).collect()
+        self.find(screeps::constants::find::HOSTILE_CREEPS, None).into_iter().filter(|c| !ALLIES.contains((&c.owner().username().to_string().as_str()))).collect()
     }
 
     fn split_room_name(&self) -> (String, u32, String, u32) {

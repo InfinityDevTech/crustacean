@@ -1,10 +1,13 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, sync::Mutex};
 
 use log::*;
 use screeps::{find, game, prelude::*, RoomName};
 use wasm_bindgen::prelude::*;
 
-use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
+#[macro_use]
+extern crate lazy_static;
+
+use crate::{memory::ScreepsMemory, traits::room::RoomExtensions, cache::ScreepsCache};
 
 mod logging;
 mod memory;
@@ -15,6 +18,11 @@ mod visual;
 mod traits;
 
 const ALLIES: [&str; 1] = ["PandaMaster"];
+
+lazy_static! {
+    static ref MEMORY: Mutex<ScreepsMemory> = Mutex::new(ScreepsMemory::init_memory());
+    static ref CACHE: Mutex<ScreepsCache> = Mutex::new(ScreepsCache::init_cache());
+}
 
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {
@@ -57,7 +65,9 @@ pub fn recently_respawned(memory: &mut ScreepsMemory) -> bool {
 pub fn game_loop() {
     info!("---------------- CURRENT TICK - {} ----------------", game::time());
     let before_memory = game::cpu::get_used();
-    let mut memory = ScreepsMemory::init_memory();
+    let mut memory = MEMORY.lock().unwrap();
+    let mut cache = CACHE.lock().unwrap();
+    cache.clean_cache();
     memory.stats.cpu.memory += game::cpu::get_used() - before_memory;
     memory.stats.cpu.rooms = 0.0;
     memory.stats.cpu.memory = 0.0;
@@ -90,7 +100,7 @@ pub fn game_loop() {
     }
 
     for room in memory.clone().rooms.values() {
-        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
+        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory, &mut cache);
     }
 
     visual::room::classify_rooms(&memory);
@@ -100,7 +110,9 @@ pub fn game_loop() {
     // This is done like this because its basically MemHack for you JS people.
     memory.stats.cpu.total = game::cpu::get_used();
     memory.stats.cpu.bucket = game::cpu::bucket();
-    memory.write_memory();
+    if game::time() % 10 == 0 {
+        memory.write_memory();
+    }
 
     info!("[DICTATOR] Government ran and memory written... Here are some stats!");
     info!("[STATS] Statistics are as follows: ");

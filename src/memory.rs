@@ -5,6 +5,7 @@ use screeps::{game, ObjectId, Source, Structure, StructureController};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
+use serde_json::Value;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Careers {
@@ -128,9 +129,13 @@ structstruck::strike! {
             }>,
             pub energy_harvested: u64,
         },
-        pub spawn_tick: bool
+        #[serde(default)]
+        pub spawn_tick: bool,
 }
 }
+
+unsafe impl Send for ScreepsMemory {}
+unsafe impl Sync for ScreepsMemory {}
 
 impl ScreepsMemory {
     pub fn init_memory() -> Self {

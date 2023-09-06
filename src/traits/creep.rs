@@ -1,18 +1,18 @@
 use log::info;
-use screeps::{HasPosition, Position};
+use screeps::{HasPosition, Position, game};
 
 use crate::{
     memory::CreepMemory,
     movement::{
         move_target::MoveTarget,
         utils::{dir_to_coords, num_to_dir, visualise_path},
-    },
+    }, cache::ScreepsCache,
 };
 
 pub trait CreepExtensions {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory);
-    fn better_move_to(&self, creep_memory: &mut CreepMemory, target: Position, range: u16);
+    fn better_move_to(&self, creep_memory: &mut CreepMemory, cache: &mut ScreepsCache, target: Position, range: u16);
 
     fn better_is_near(&self, x: u8, y: u8) -> u8;
 }
@@ -20,6 +20,7 @@ pub trait CreepExtensions {
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory) {
+        let start_cpu = game::cpu::get_used();
         let creep = self;
 
         if creep.fatigue() > 0 {
@@ -69,8 +70,9 @@ impl CreepExtensions for screeps::Creep {
                 info!("Creep move failed, {:?}", e)
             }
         };
+        info!("     Move time (Better move by path) {}", game::cpu::get_used() - start_cpu);
     }
-    fn better_move_to(&self, creep_memory: &mut CreepMemory, target: Position, range: u16) {
+    fn better_move_to(&self, creep_memory: &mut CreepMemory, cache: &mut ScreepsCache, target: Position, range: u16) {
         let creep = self;
         match creep_memory.clone().p {
             Some(path) => {
@@ -86,7 +88,7 @@ impl CreepExtensions for screeps::Creep {
                     pos: target,
                     range: range.into(),
                 }
-                .find_path_to(creep.pos());
+                .find_path_to(creep.pos(), cache);
                 creep_memory.p = Some(target.clone());
                 visualise_path(
                     target.clone().to_string(),

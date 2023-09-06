@@ -1,17 +1,21 @@
-use log::warn;
+use log::{info, warn};
 use screeps::{
-    pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,
-    RoomName, StructureObject, find, StructureType
+    find, game,
+    pathfinder::{self, MultiRoomCostResult, SearchOptions},
+    HasPosition, LocalCostMatrix, OwnedStructureProperties, Position, RoomName, Structure,
+    StructureObject, StructureType,
 };
+
+use crate::cache::ScreepsCache;
 
 pub struct MoveTarget {
     pub pos: Position,
-    pub range: u32
+    pub range: u32,
 }
 
 impl MoveTarget {
-    pub fn find_path_to(&mut self, from: Position) -> String {
-        let opts = SearchOptions::new(path_call)
+    pub fn find_path_to(&mut self, from: Position, cache: &mut ScreepsCache) -> String {
+        let opts = SearchOptions::new(|room_name: RoomName| path_call(room_name, cache))
             .plain_cost(2)
             .swamp_cost(5)
             .max_rooms(20)
@@ -56,48 +60,95 @@ impl MoveTarget {
     }
 }
 
-pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
-    let mut matrix = LocalCostMatrix::new();
-    if let Some(room) = screeps::game::rooms().get(room_name) {
-        let structures = room.find(find::STRUCTURES, None);
-        let constructions = room.find(find::CONSTRUCTION_SITES, None);
-        let creeps = room.find(find::CREEPS, None);
-        for structure in structures {
-            let pos = structure.pos();
-            match structure {
-                StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 1),
-                StructureObject::StructureRampart(rampart) => {
-                    if rampart.my() {
-                        matrix.set(pos.xy(), 1);
-                    } else {
+pub fn path_call(room_name: RoomName, cache: &mut ScreepsCache) -> MultiRoomCostResult {
+    if cache.cost_matrixes.get(&room_name.to_string()).is_none() {
+        let starting_cpu = game::cpu::get_used();
+        let mut matrix = LocalCostMatrix::new();
+        if let Some(room) = screeps::game::rooms().get(room_name) {
+            info!("     Room get CPU {}", game::cpu::get_used() - starting_cpu);
+            let structures = cache.structures.values();
+            info!(
+                "     Structures get CPU {}",
+                game::cpu::get_used() - starting_cpu
+            );
+            if let Some(constructions) = cache.csites.get(&room_name.to_string()) {
+                for csite_id in constructions {
+                    let csite = csite_id.resolve().unwrap();
+                    if csite.room().unwrap().name() != room_name {
+                        continue;
+                    }
+                    let pos = csite.pos();
+                    match csite.structure_type() {
+                        StructureType::Container => matrix.set(pos.xy(), 2),
+                        StructureType::Rampart => matrix.set(pos.xy(), 2),
+                        StructureType::Road => matrix.set(pos.xy(), 2),
+                        StructureType::Wall => matrix.set(pos.xy(), 255),
+                        _ => {
+                            matrix.set(pos.xy(), 255);
+                        }
+                    }
+                }
+            }
+            info!(
+                "     Constructions get CPU {}",
+                game::cpu::get_used() - starting_cpu
+            );
+            let creeps = room.find(find::CREEPS, None);
+            info!("     Structure count {}", structures.len());
+            for structure_id in structures.flatten() {
+                let structure = structure_id.resolve().unwrap();
+                if structure.room().unwrap().name() != room_name {
+                    continue;
+                }
+                let pos = structure.pos();
+                match StructureObject::from(structure) {
+                    StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 1),
+                    StructureObject::StructureRampart(rampart) => {
+                        if rampart.my() {
+                            matrix.set(pos.xy(), 1);
+                        } else {
+                            matrix.set(pos.xy(), 255);
+                        }
+                    }
+                    StructureObject::StructureRoad(_) => matrix.set(pos.xy(), 1),
+                    StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
+                    _ => {
                         matrix.set(pos.xy(), 255);
                     }
                 }
-                StructureObject::StructureRoad(_) => matrix.set(pos.xy(), 1),
-                StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
-                _ => {
-                    matrix.set(pos.xy(), 255);
-                }
             }
-        }
+            info!(
+                "     Structures write CPU {}",
+                game::cpu::get_used() - starting_cpu
+            );
 
-        for csite in constructions {
-            let pos = csite.pos();
-            match csite.structure_type() {
-                StructureType::Container => matrix.set(pos.xy(), 2),
-                StructureType::Rampart => matrix.set(pos.xy(), 2),
-                StructureType::Road => matrix.set(pos.xy(), 2),
-                StructureType::Wall => matrix.set(pos.xy(), 255),
-                _ => {
-                    matrix.set(pos.xy(), 255);
-                }
+            info!(
+                "     Constructions CPU {}",
+                game::cpu::get_used() - starting_cpu
+            );
+
+            for creep in creeps {
+                let pos = creep.pos();
+                matrix.set(pos.xy(), 255);
             }
-        }
 
-        for creep in creeps {
-            let pos = creep.pos();
-            matrix.set(pos.xy(), 255);
+            info!("     Creeps CPU {}", game::cpu::get_used() - starting_cpu);
         }
+        info!("     Total CPU {}", game::cpu::get_used() - starting_cpu);
+        cache
+            .cost_matrixes
+            .insert(room_name.to_string(), matrix.clone());
+        info!("Cached matrix!");
+        MultiRoomCostResult::CostMatrix(matrix.into())
+    } else {
+        info!("Returned cached matrix!");
+        MultiRoomCostResult::CostMatrix(
+            cache
+                .cost_matrixes
+                .get(&room_name.to_string())
+                .unwrap()
+                .clone()
+                .into(),
+        )
     }
-    MultiRoomCostResult::CostMatrix(matrix.into())
 }

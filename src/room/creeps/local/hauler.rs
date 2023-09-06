@@ -24,12 +24,14 @@ pub fn run_creep(
             creepmem.s = "work".to_string();
             haul_energy(creep, creepmem, deposit, cache);
         }
+        return;
     } else if creepmem.s == "work" && rename(creep, creepmem, cache) {
         haul_energy(creep, creepmem, deposit, cache);
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
             creepmem.s = "energy".to_string();
             get_energy(creep, creepmem, cache);
         }
+        return;
     }
 }
 

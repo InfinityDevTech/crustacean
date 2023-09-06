@@ -78,7 +78,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Scre
     let creep_run_time_start = game::cpu::get_used();
     creeps::manager::run_creeps(&room, memory, cache);
     info!("Creep run time {}", game::cpu::get_used() - creep_run_time_start);
-    tower::run_towers(&room);
+    tower::run_towers(&room, cache);
 
     do_spawning(memory, &room);
     memory.stats.cpu.rooms += game::cpu::get_used() - starting_cpu;

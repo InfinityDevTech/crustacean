@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use log::info;
 use regex::Regex;
 use screeps::{CostMatrix, Terrain, Creep, find, SharedCreepProperties, MaybeHasTypedId, StructureProperties};
@@ -29,29 +31,42 @@ impl RoomExtensions for screeps::Room {
         let structures = self.find(find::STRUCTURES, None);
         let construction_sites = self.find(find::CONSTRUCTION_SITES, None);
         let energy = self.find(find::DROPPED_RESOURCES, None);
+        if cache.room_specific.get(&self.name_str()).is_none() {
+            cache.room_specific.insert(
+                self.name_str(),
+                crate::cache::RoomSpecific {
+                    enemy_creeps: Vec::new(),
+                    towers: Vec::new(),
+                    structures: HashMap::new(),
+                    csites: HashMap::new(),
+                    cost_matrix: None,
+                    energy: HashMap::new(),
+                },
+            );
+        }
         for creep in enemy_creeps {
-            cache.enemy_creeps.push(creep.try_id().unwrap());
+            cache.room_specific.get_mut(&self.name_str()).unwrap().enemy_creeps.push(creep.try_id().unwrap());
         }
         for structure in structures {
-            match cache.structures.entry(structure.structure_type()) {
+            match cache.room_specific.get_mut(&self.name_str()).unwrap().structures.entry(structure.structure_type()) {
                 std::collections::hash_map::Entry::Occupied(v) => v.into_mut().push(structure.as_structure().try_id().unwrap()),
                 std::collections::hash_map::Entry::Vacant(_) => {
-                    cache.structures.insert(structure.structure_type(), vec![structure.as_structure().try_id().unwrap()]);
+                    cache.room_specific.get_mut(&self.name_str()).unwrap().structures.insert(structure.structure_type(), vec![structure.as_structure().try_id().unwrap()]);
                 }
             }
         }
         for csite in construction_sites {
-            if let Some(c) = cache.csites.get_mut(&self.name_str()) {
+            if let Some(c) = cache.room_specific.get_mut(&self.name_str()).unwrap().csites.get_mut(&self.name_str()) {
                 c.push(csite.try_id().unwrap());
             } else {
-                cache.csites.insert(self.name_str(), vec![csite.try_id().unwrap()]);
+                cache.room_specific.get_mut(&self.name_str()).unwrap().csites.insert(self.name_str(), vec![csite.try_id().unwrap()]);
             }
         }
         for energy in energy {
-            if let Some(e) = cache.energy.get_mut(&self.name_str()) {
+            if let Some(e) = cache.room_specific.get_mut(&self.name_str()).unwrap().energy.get_mut(&self.name_str()) {
                 e.push(energy.try_id().unwrap());
             } else {
-                cache.energy.insert(self.name_str(), vec![energy.try_id().unwrap()]);
+                cache.room_specific.get_mut(&self.name_str()).unwrap().energy.insert(self.name_str(), vec![energy.try_id().unwrap()]);
             }
         }
     }

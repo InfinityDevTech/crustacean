@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{Creep, StructureController, HasPosition, ResourceType, find, game};
+use screeps::{Creep, StructureController, HasPosition, ResourceType, find, game, ErrorCode};
 
 use crate::{memory::CreepMemory, traits::{creep::CreepExtensions, room::RoomExtensions}, cache::ScreepsCache};
 
@@ -7,20 +7,10 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: Structur
     let starting_cpu = game::cpu::get_used();
     let inventory = creep.store();
     if creepmem.s == "energy" {
-        let closest_energy = cache.energy.get(&creep.room().unwrap().name_str()).unwrap().first();
-        if let Some(energy_id) = closest_energy {
-            let energy = energy_id.resolve().unwrap();
-            if creep.pos().is_near_to(energy.clone().pos()) {
-                let _ = creep.pickup(&energy);
-                info!("     Pickup time: {:?}", game::cpu::get_used() - starting_cpu);
-            } else {
-                creep.better_move_to(creepmem, cache, energy.pos(), 1);
-                info!("     Move time energy: {:?}", game::cpu::get_used() - starting_cpu);
-            }
-        }
-    } else if !creep.pos().in_range_to(controller.pos(), 2) {
-        creep.better_move_to(creepmem, cache, controller.pos(), 2);
-        info!("     Move time controller: {:?}", game::cpu::get_used() - starting_cpu);
+        get_energy(creep, creepmem, cache);
+    } else if creepmem.s == "work" {
+        info!("Move time controller: {:?}", game::cpu::get_used() - starting_cpu);
+        upgrade(creep, creepmem, cache);
     }
     if inventory.get_used_capacity(Some(ResourceType::Energy)) == 0 {
         creepmem.s = "energy".to_string();
@@ -28,4 +18,33 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: Structur
     if inventory.get_free_capacity(Some(ResourceType::Energy)) == 0 {
         creepmem.s = "work".to_string();
     }
+}
+
+pub fn upgrade(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
+    let starting_cpu = game::cpu::get_used();
+    let controller = creep.room().unwrap().controller().unwrap();
+    if creep.better_is_near(controller.pos()) <= 3 {
+        let _ = creep.upgrade_controller(&controller);
+    } else {
+        creep.better_move_to(creepmem, cache, controller.pos(), 2);
+        info!("     Move time controller: {:?}", game::cpu::get_used() - starting_cpu);
+    }
+    info!("     Upgrade time: {:?}", game::cpu::get_used() - starting_cpu);
+}
+
+pub fn get_energy(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
+    let starting_cpu = game::cpu::get_used();
+    let closest_energy = cache.energy.get(&creep.room().unwrap().name_str()).unwrap().first();
+        if let Some(energy_id) = closest_energy {
+            let energy = energy_id.resolve().unwrap();
+            info!("Distance {}", creep.better_is_near(energy.pos()));
+            if creep.better_is_near(energy.pos()) <= 1 {
+                let _ = creep.pickup(&energy);
+                info!("     Pickup time: {:?}", game::cpu::get_used() - starting_cpu);
+            } else {
+                info!("     Before Move time energy: {:?}", game::cpu::get_used() - starting_cpu);
+                creep.better_move_to(creepmem, cache, energy.pos(), 1);
+                info!("     Move time energy: {:?}", game::cpu::get_used() - starting_cpu);
+            }
+        }
 }

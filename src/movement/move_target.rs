@@ -6,7 +6,7 @@ use screeps::{
     StructureObject, StructureType,
 };
 
-use crate::cache::ScreepsCache;
+use crate::{cache::ScreepsCache, traits::room::RoomExtensions};
 
 pub struct MoveTarget {
     pub pos: Position,
@@ -61,17 +61,17 @@ impl MoveTarget {
 }
 
 pub fn path_call(room_name: RoomName, cache: &mut ScreepsCache) -> MultiRoomCostResult {
-    if cache.cost_matrixes.get(&room_name.to_string()).is_none() {
+    if cache.room_specific.get(&room_name.to_string()).unwrap().cost_matrix.is_none() {
         let starting_cpu = game::cpu::get_used();
         let mut matrix = LocalCostMatrix::new();
         if let Some(room) = screeps::game::rooms().get(room_name) {
             info!("     Room get CPU {}", game::cpu::get_used() - starting_cpu);
-            let structures = cache.structures.values();
+            let room_cache = cache.room_specific.get_mut(&room.name_str()).unwrap();
             info!(
                 "     Structures get CPU {}",
                 game::cpu::get_used() - starting_cpu
             );
-            if let Some(constructions) = cache.csites.get(&room_name.to_string()) {
+            if let Some(constructions) = room_cache.csites {
                 for csite_id in constructions {
                     let csite = csite_id.resolve().unwrap();
                     if csite.room().unwrap().name() != room_name {

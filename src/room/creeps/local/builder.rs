@@ -23,7 +23,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache
     if let Some(csites) = cache.csites.get(&creep.room().unwrap().name_str()) {
         if let Some(site_id) = csites.first() {
             let site = site_id.resolve().unwrap();
-            if creep.pos().is_near_to(site.clone().pos()) {
+            if creep.better_is_near(site.clone().pos()) <= 1 {
                 let _ = creep.build(&site);
                 return true;
             } else {
@@ -33,7 +33,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache
         }
         false
     } else {
-        true
+        false
     }
 }
 
@@ -82,7 +82,7 @@ pub fn find_energy(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut Screep
         .first();
     if let Some(energy_id) = closest_energy {
         let energy = energy_id.resolve().unwrap();
-        if creep.pos().is_near_to(energy.clone().pos()) {
+        if creep.better_is_near(energy.clone().pos()) <= 1{
             let _ = creep.pickup(&energy);
         } else {
             creep.better_move_to(creepmem, cache, energy.pos(), 1)

@@ -14,7 +14,7 @@ pub trait CreepExtensions {
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory);
     fn better_move_to(&self, creep_memory: &mut CreepMemory, cache: &mut ScreepsCache, target: Position, range: u16);
 
-    fn better_is_near(&self, x: u8, y: u8) -> u8;
+    fn better_is_near(&self, object: Position) -> u64;
 }
 
 impl CreepExtensions for screeps::Creep {
@@ -100,10 +100,11 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
-    fn better_is_near(&self, x: u8, y: u8) -> u8 {
-        let creep_x = self.pos().x().u8();
-        let creep_y = self.pos().y().u8();
-        let int = (creep_x - x).pow(2) + (creep_y - y).pow(2);
-        (int as f64).sqrt() as u8
+    fn better_is_near(&self, object: Position) -> u64 {
+        let x1 = self.pos().x().u8() as f64;
+        let y1 = self.pos().y().u8() as f64;
+        let x2 = object.x().u8() as f64;
+        let y2 = object.y().u8() as f64;
+        std::cmp::max((x1 - x2).abs() as u64, (y1 - y2).abs() as u64)
     }
 }

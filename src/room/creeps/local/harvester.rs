@@ -6,7 +6,7 @@ use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions, cache::Screep
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, source: Source, cache: &mut ScreepsCache) {
     let start_time = game::cpu::get_used();
     let owning_room = memory.get_creep(&creep.name()).o_r.clone();
-    if creep.pos().is_near_to(source.pos()) {
+    if creep.better_is_near(source.pos()) <= 1 {
 
         if creep.store().get_free_capacity(Some(ResourceType::Energy)) > creep.store().get_used_capacity(Some(ResourceType::Energy)) as i32 {
 

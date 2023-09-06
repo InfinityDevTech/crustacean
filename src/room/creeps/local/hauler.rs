@@ -24,14 +24,12 @@ pub fn run_creep(
             creepmem.s = "work".to_string();
             haul_energy(creep, creepmem, deposit, cache);
         }
-        return;
     } else if creepmem.s == "work" && rename(creep, creepmem, cache) {
         haul_energy(creep, creepmem, deposit, cache);
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
             creepmem.s = "energy".to_string();
             get_energy(creep, creepmem, cache);
         }
-        return;
     }
 }
 
@@ -40,7 +38,7 @@ pub fn get_energy(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut Screeps
     let closest_energy = creep.pos().find_closest_by_range(find::DROPPED_RESOURCES);
     if let Some(energy) = closest_energy {
         info!("     Find time: {:?}", game::cpu::get_used() - starting_cpu);
-        if creep.pos().is_near_to(energy.clone().pos()) {
+        if creep.better_is_near(energy.clone().pos()) <= 1 {
             let _ = creep.pickup(&energy);
             info!(
                 "     Pickup time: {:?}",
@@ -77,7 +75,7 @@ pub fn haul_energy(
             > 0
         {
             info!("    Got structure {}", game::cpu::get_used() - starting_cpu);
-            if creep.pos().is_near_to(structure.pos()) {
+            if creep.better_is_near(structure.pos()) <= 1 {
                 let _ = creep.transfer(
                     structure,
                     ResourceType::Energy,
@@ -93,6 +91,7 @@ pub fn haul_energy(
                 );
                 info!("    Transfered {}", game::cpu::get_used() - starting_cpu);
             } else {
+                info!("    Before move {}", game::cpu::get_used() - starting_cpu);
                 creep.better_move_to(creepmem, cache, structure.pos(), 1);
                 info!("    Moved {}", game::cpu::get_used() - starting_cpu);
             }
@@ -129,7 +128,7 @@ pub fn rename(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCach
     if let Some(sign) = creep.room().unwrap().controller().unwrap().sign() {
         if sign.text() != "Ferris FTW!" {
             let controller = creep.room().unwrap().controller().unwrap();
-            if creep.pos().is_near_to(controller.pos()) {
+            if creep.better_is_near(controller.pos()) <= 1 {
                 let _ = creep.sign_controller(&controller, "Ferris FTW!");
                 return false;
             } else {
@@ -140,7 +139,7 @@ pub fn rename(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCach
         true
     } else {
         let controller = creep.room().unwrap().controller().unwrap();
-        if creep.pos().is_near_to(controller.pos()) {
+        if creep.better_is_near(controller.pos()) <= 1 {
             let _ = creep.sign_controller(&controller, "Ferris FTW!");
             false
         } else {

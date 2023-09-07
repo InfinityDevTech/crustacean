@@ -188,7 +188,6 @@ impl ScreepsMemory {
             s: "energy".to_string(),
         };
         self.creeps.insert(creep_name.to_string(), creep);
-        info!("Created creep");
     }
 
     pub fn create_room(&mut self, name: &str) {

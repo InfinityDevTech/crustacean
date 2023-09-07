@@ -14,6 +14,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut ScreepsCa
             if creep.spawning() {
                 continue;
             }
+        info!("Running creep {}", creep_name);
 
         let creep_memory = memory.get_creep(&creep_name);
 
@@ -39,7 +40,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut ScreepsCa
                 crate::memory::Task::Builder() => local::builder::run_creep(&creep, creep_memory, cache),
                 _ => {}
             }
-            info!("Creep type: {}, used CPU: {}", creep.name(), game::cpu::get_used() - starting_cpu);
+            info!("Used CPU: {}", game::cpu::get_used() - starting_cpu);
         }
     } else {
         let creep_mem = memory.get_creep(&creep_name);

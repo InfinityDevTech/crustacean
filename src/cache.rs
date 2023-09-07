@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{StructureType, Structure, ObjectId, Creep, ConstructionSite, LocalCostMatrix, Resource};
+use screeps::{StructureType, Structure, ObjectId, Creep, ConstructionSite, LocalCostMatrix, Resource, StructureTower};
 use serde::{Deserialize, Serialize};
 
 structstruck::strike! {
@@ -8,11 +8,11 @@ structstruck::strike! {
     pub struct ScreepsCache {
         pub room_specific: HashMap<String, pub struct {
             pub enemy_creeps: Vec<ObjectId<Creep>>,
-            pub towers: Vec<ObjectId<Structure>>,
+            pub towers: Vec<ObjectId<StructureTower>>,
             pub structures: HashMap<StructureType, Vec<ObjectId<Structure>>>,
-            pub csites: HashMap<String, Vec<ObjectId<ConstructionSite>>>,
+            pub csites: Vec<ObjectId<ConstructionSite>>,
             pub cost_matrix: Option<LocalCostMatrix>,
-            pub energy: HashMap<String, Vec<ObjectId<Resource>>>
+            pub energy: Vec<ObjectId<Resource>>
         }>,
     }
 }
@@ -25,6 +25,10 @@ impl ScreepsCache {
         ScreepsCache {
             room_specific: HashMap::new(),
         }
+    }
+
+    pub fn get_room(&mut self, room_name: &str) -> Option<&mut crate::cache::RoomSpecific> {
+        self.room_specific.get_mut(room_name)
     }
 
     pub fn clean_cache(&mut self) {

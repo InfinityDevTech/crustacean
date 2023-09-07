@@ -18,7 +18,12 @@ prefix = "ptr"
 [copy]
 #destination = "/home/jwjoh/.config/Screeps/scripts/vps_bezoka_pl___21025"
 #destination = "/home/jwjoh/.config/Screeps/scripts/127_0_0_1___21025"
-destination = "/home/jwjoh/.config/Screeps/scripts/super_directconnect_wyatt_world___21025"
+#destination = "/home/jwjoh/.config/Screeps/scripts/super_directconnect_wyatt_world___21025"
+hostname = "super.directconnect.wyatt.world"
+port = 21025
+ssl = false
+username = "InfDev"
+password = "InfinityDev"
 [copy.build]
   # set the sim feature to allow for use with the coordinates in the simulation room
   extra_options = ["--features=sim", "--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort", "-Z", "build-std-features=panic_immediate_abort", "--debug"]

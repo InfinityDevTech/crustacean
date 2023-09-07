@@ -20,8 +20,8 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache
         find_energy(creep, creepmem, cache);
         return true;
     }
-    if let Some(csites) = cache.csites.get(&creep.room().unwrap().name_str()) {
-        if let Some(site_id) = csites.first() {
+    if let Some(csites) = cache.room_specific.get(&creep.room().unwrap().name().to_string()) {
+        if let Some(site_id) = csites.csites.first() {
             let site = site_id.resolve().unwrap();
             if creep.better_is_near(site.clone().pos()) <= 1 {
                 let _ = creep.build(&site);
@@ -76,10 +76,7 @@ pub fn repair(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCach
 
 pub fn find_energy(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
     let closest_energy = cache
-        .energy
-        .get(&creep.room().unwrap().name_str())
-        .unwrap()
-        .first();
+        .room_specific.get(&creep.room().unwrap().name().to_string()).unwrap().energy.first();
     if let Some(energy_id) = closest_energy {
         let energy = energy_id.resolve().unwrap();
         if creep.better_is_near(energy.clone().pos()) <= 1{

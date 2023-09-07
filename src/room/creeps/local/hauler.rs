@@ -9,7 +9,7 @@ use screeps::{
 use crate::{
     cache::ScreepsCache,
     memory::{CreepMemory, Task},
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, room::RoomExtensions},
 };
 
 pub fn run_creep(
@@ -35,8 +35,9 @@ pub fn run_creep(
 
 pub fn get_energy(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
     let starting_cpu = game::cpu::get_used();
-    let closest_energy = creep.pos().find_closest_by_range(find::DROPPED_RESOURCES);
-    if let Some(energy) = closest_energy {
+    let closest_energy = cache.room_specific.get(&creep.room().unwrap().name_str()).unwrap().energy.first();
+    if let Some(energy_id) = closest_energy {
+        let energy = energy_id.resolve().unwrap();
         info!("     Find time: {:?}", game::cpu::get_used() - starting_cpu);
         if creep.better_is_near(energy.clone().pos()) <= 1 {
             let _ = creep.pickup(&energy);

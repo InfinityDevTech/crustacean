@@ -58,6 +58,11 @@ pub fn repair(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCach
                             continue;
                         }
                     }
+                    screeps::StructureType::Road => {
+                        if attackable.hits() > 4000 {
+                            continue;
+                        }
+                    }
                     _ => {}
                 }
                 if creep.pos().is_near_to(attackable.pos()) {

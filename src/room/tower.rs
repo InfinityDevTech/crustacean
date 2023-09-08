@@ -2,7 +2,7 @@ use screeps::{Room, StructureTower};
 
 use crate::cache::ScreepsCache;
 
-pub fn run_towers(room: &Room, cache: &mut ScreepsCache) {
+pub fn run_towers(room: &Room, cache: &ScreepsCache) {
     let towers = &cache.room_specific.get(&room.name().to_string()).unwrap().towers;
 
     for tower_id in towers {

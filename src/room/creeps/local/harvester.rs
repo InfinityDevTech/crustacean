@@ -1,4 +1,4 @@
-use screeps::{game, Creep, HasPosition, Part, ResourceType, SharedCreepProperties, Source};
+use screeps::{Creep, HasPosition, Part, ResourceType, SharedCreepProperties, Source};
 
 use crate::{cache::ScreepsCache, memory::ScreepsMemory, traits::creep::CreepExtensions};
 

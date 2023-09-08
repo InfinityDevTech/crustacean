@@ -1,9 +1,9 @@
 use screeps::{find, Creep, HasPosition, ResourceType};
 
 use crate::{
-    cache::{self, ScreepsCache},
+    cache::ScreepsCache,
     memory::CreepMemory,
-    traits::{creep::CreepExtensions, room::RoomExtensions},
+    traits::creep::CreepExtensions,
 };
 
 pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
@@ -55,11 +55,6 @@ pub fn repair(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCach
                     }
                     screeps::StructureType::Rampart => {
                         if attackable.hits() > 100000 {
-                            continue;
-                        }
-                    }
-                    screeps::StructureType::Road => {
-                        if attackable.hits() > 4000 {
                             continue;
                         }
                     }

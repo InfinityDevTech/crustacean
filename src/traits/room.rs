@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, Terrain, Creep, find, SharedCreepProperties, MaybeHasTypedId, StructureProperties, HasTypedId};
+use screeps::{CostMatrix, Terrain, Creep, find, MaybeHasTypedId, StructureProperties, HasTypedId, StructureObject};
 
 use crate::{ALLIES, cache::ScreepsCache};
 
@@ -48,6 +48,9 @@ impl RoomExtensions for screeps::Room {
             cache.room_specific.get_mut(&self.name_str()).unwrap().enemy_creeps.push(creep.try_id().unwrap());
         }
         for structure in structures {
+            if let StructureObject::StructureTower(t) = structure.clone() {
+                cache.room_specific.get_mut(&self.name_str()).unwrap().towers.push(t.try_id().unwrap());
+            }
             match cache.room_specific.get_mut(&self.name_str()).unwrap().structures.entry(structure.structure_type()) {
                 std::collections::hash_map::Entry::Occupied(v) => v.into_mut().push(structure.as_structure().try_id().unwrap()),
                 std::collections::hash_map::Entry::Vacant(_) => {

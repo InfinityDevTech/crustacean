@@ -1,12 +1,11 @@
-use log::{info, warn};
+use log::warn;
 use screeps::{
     find, game,
     pathfinder::{self, MultiRoomCostResult, SearchOptions},
-    HasPosition, LocalCostMatrix, OwnedStructureProperties, Position, RoomName, Structure,
-    StructureObject, StructureType,
+    HasPosition, LocalCostMatrix, OwnedStructureProperties, Position, RoomName, StructureObject, StructureType,
 };
 
-use crate::{cache::ScreepsCache, traits::room::RoomExtensions, room};
+use crate::{cache::ScreepsCache, traits::room::RoomExtensions};
 
 pub struct MoveTarget {
     pub pos: Position,
@@ -18,7 +17,7 @@ impl MoveTarget {
         let opts = SearchOptions::new(|room_name: RoomName| path_call(room_name, cache))
             .plain_cost(2)
             .swamp_cost(5)
-            .max_rooms(1)
+            .max_rooms(10)
             .max_ops(100000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));
 

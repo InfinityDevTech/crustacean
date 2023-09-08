@@ -6,7 +6,7 @@ use crate::{
     memory::CreepMemory,
     movement::{
         move_target::MoveTarget,
-        utils::{dir_to_coords, num_to_dir, visualise_path},
+        utils::num_to_dir,
     },
 };
 

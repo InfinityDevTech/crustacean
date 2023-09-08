@@ -1,9 +1,9 @@
 use log::info;
-use screeps::{Creep, StructureController, HasPosition, ResourceType, find, game, ErrorCode};
+use screeps::{Creep, StructureController, HasPosition, ResourceType, game};
 
 use crate::{memory::CreepMemory, traits::{creep::CreepExtensions, room::RoomExtensions}, cache::ScreepsCache};
 
-pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController, cache: &mut ScreepsCache) {
+pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, _controller: StructureController, cache: &mut ScreepsCache) {
     let starting_cpu = game::cpu::get_used();
     let inventory = creep.store();
     if creepmem.s == "energy" {

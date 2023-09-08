@@ -9,7 +9,7 @@ use screeps::{
 
 use crate::{
     memory::{Mine, ScreepsMemory, Task},
-    room::population, traits::room::RoomExtensions, MEMORY, cache::ScreepsCache,
+    room::population, traits::room::RoomExtensions, cache::ScreepsCache,
 };
 
 use super::{creeps, tower};
@@ -95,7 +95,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     if population::create_miner(memory, room.clone()) {
     } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < memory.get_room(&room.name_str()).get_creeps_by_role("miner").len() {
         let name = format!("h-{}", roommem_readonly.creeps_made);
-        let body = get_max_body(room.clone(), &[Part::Move, Part::Carry], 5);
+        let body = get_max_body(room.clone(), &[Part::Move, Part::Carry], 25);
         let spawn_res = spawn.spawn_creep(&body, &name);
         if spawn_res.is_ok() {
             memory.create_creep(
@@ -150,7 +150,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
             memory.get_room(&room.name_str()).creeps_made += 1;
             memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }
-    } /*else if (memory.get_room(&room.name_str()).get_creeps_by_role("attacker").len() as u8) < 3 {
+    } else if (memory.get_room(&room.name_str()).get_creeps_by_role("attacker").len() as u8) < 3 {
         let name = format!("a-{}", roommem_readonly.creeps_made);
         let body = get_max_body(room.clone(), &[Part::Attack, Part::Tough, Part::Move, Part::Move], 9);
         let spawn_res = spawn.spawn_creep(&body, &name);
@@ -181,7 +181,6 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
             memory.stats.rooms.get_mut(&room.name_str()).unwrap().creeps_made += 1;
         }
     }
-    */
 }
 
 pub fn get_max_body(room: Room, body: &[Part], max: u8) -> Vec<Part> {

@@ -33,6 +33,13 @@ pub fn run_creep(
     }
 }
 
+//pub fn get_tombstones(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
+//    let container_p = cache.get_room(&creep.room().unwrap().name_str()).unwrap().structures.get(&screeps::StructureType::Container).unwrap().first();
+//    if let Some(container) = container_p {
+//        let tombstone_p = cache.get_room(&creep.room().unwrap().name_str()).unwrap().structures.get(&screeps::StructureType::)
+//    }
+// }
+
 pub fn get_energy(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut ScreepsCache) {
     let starting_cpu = game::cpu::get_used();
     let closest_energy = cache.room_specific.get(&creep.room().unwrap().name_str()).unwrap().energy.first();

@@ -43,7 +43,7 @@ pub struct RoomMemory{
     // Initialised
     pub init: bool,
     // Mining stuffs
-    pub sources: HashMap<ObjectId<Source>, pub struct {
+    pub sources: HashMap<ObjectId<Source>, pub struct ScoutedSource {
         pub mining_spots: u8,
         pub assigned_creeps: u8,
     }>,
@@ -114,7 +114,7 @@ impl ScreepsMemory {
         info!("Created creep");
     }
 
-    pub fn create_room(&mut self, name: &str) {
+    pub fn create_room(&mut self, name: &RoomName) {
         self.rooms.insert(
             name.to_string(),
             RoomMemory {

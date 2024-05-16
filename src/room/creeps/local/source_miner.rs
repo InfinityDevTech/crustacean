@@ -4,8 +4,8 @@ use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions, utils::creep:
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory) {
     let owning_room = memory.get_creep(&creep.name()).o_r.clone();
-    if creep.pos().is_near_to(source.pos()) {
 
+    if creep.pos().is_near_to(source.pos()) {
         if creep.store().get_free_capacity(Some(ResourceType::Energy)) > creep.store().get_used_capacity(Some(ResourceType::Energy)) as i32 {
 
             let _ = creep.drop(ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy))));

@@ -2,7 +2,7 @@ use screeps::{Creep, StructureController, HasPosition, ResourceType, find};
 
 use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
-pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController) {
+pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
     let inventory = creep.store();
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let closest_energy = creep

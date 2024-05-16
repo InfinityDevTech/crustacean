@@ -71,7 +71,7 @@ pub fn classify_rooms(memory: &ScreepsMemory) {
         );
         MapVisual::text(
             pos,
-            get_room_type(&room.name_str()),
+            get_room_type(&room.name()),
             Some(
                 TextStyle::default()
                     .color("#ffffff")

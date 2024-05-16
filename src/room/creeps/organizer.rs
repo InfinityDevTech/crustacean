@@ -1,12 +1,12 @@
 use log::info;
 use screeps::{creep, game, Room};
 
-use crate::{memory::{Role, ScreepsMemory}, room::census, traits::room::RoomExtensions};
+use crate::{memory::{Role, ScreepsMemory}, traits::room::RoomExtensions};
 
 use super::local;
 
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory) {
-    info!("[CREEPS] Running creeps in room: {}", room.name_str());
+    info!("[CREEPS] Running creeps in room: {}", room.name());
     let creeps = memory.get_room(&room.name()).creeps.clone();
 
     for creep_name in creeps {

@@ -63,7 +63,7 @@ pub fn game_loop() {
         for room in game::rooms().values() {
             if let Some(controller) = room.controller() {
                 if controller.my() && !memory.get_room(&room.name()).init {
-                    memory.create_room(&room.name_str());
+                    memory.create_room(&room.name());
                 }
             }
         }
@@ -77,7 +77,7 @@ pub fn game_loop() {
             }
             if let Some(controller) = room.controller() {
                 if controller.my() {
-                    memory.create_room(&room.name_str());
+                    memory.create_room(&room.name());
                 }
             }
         }

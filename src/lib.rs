@@ -7,11 +7,14 @@ use wasm_bindgen::prelude::*;
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
 mod logging;
+mod utils;
 mod memory;
 mod movement;
 mod room;
 mod visual;
 mod traits;
+
+pub const MEMORY_VERSION: u8 = 1;
 
 #[wasm_bindgen(js_name = setup)]
 pub fn setup() {
@@ -36,7 +39,7 @@ pub fn recently_respawned(memory: &mut ScreepsMemory) -> bool {
     // check for controller, progress and safe mode
     let room = game::rooms().get(names[0]).expect("Failed to get room");
     let controller = room.controller();
-    if controller.is_none()|| !controller.clone().unwrap().my() || controller.clone().unwrap().level() != 1 || controller.clone().unwrap().progress() > 0 ||
+    if controller.is_none()|| !controller.clone().unwrap().my() || controller.clone().unwrap().level() != 1 || controller.clone().unwrap().progress().unwrap() > 0 ||
        controller.clone().unwrap().safe_mode().is_none() {
         return false;
     }
@@ -55,16 +58,11 @@ pub fn game_loop() {
     info!("---------------- CURRENT TICK - {} ----------------", game::time());
     let before_memory = game::cpu::get_used();
     let mut memory = ScreepsMemory::init_memory();
-    memory.stats.cpu.memory += game::cpu::get_used() - before_memory;
-    memory.stats.cpu.rooms = 0.0;
-    memory.stats.cpu.memory = 0.0;
-    memory.stats.cpu.total = 0.0;
-    memory.stats.cpu.bucket = 0;
 
     if game::time() % 10 == 0 {
         for room in game::rooms().values() {
             if let Some(controller) = room.controller() {
-                if controller.my() && !memory.get_room(&room.name_str()).init {
+                if controller.my() && !memory.get_room(&room.name()).init {
                     memory.create_room(&room.name_str());
                 }
             }
@@ -95,18 +93,12 @@ pub fn game_loop() {
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
-    memory.stats.cpu.total = game::cpu::get_used();
-    memory.stats.cpu.bucket = game::cpu::bucket();
     memory.write_memory();
 
     info!("[DICTATOR] Government ran and memory written... Here are some stats!");
     info!("[STATS] Statistics are as follows: ");
     info!("  GCL {}. Next: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
-    //info!("  Credits: {}", game::market::credits());
-    info!("  Creeps removed this tick: {}", memory.stats.rooms.values().map(|x| x.creeps_removed).sum::<u64>());
     info!("  CPU Usage:");
-    info!("       Rooms: {}", memory.stats.cpu.rooms);
-    info!("       Memory: {}", memory.stats.cpu.rooms);
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
 }

@@ -4,7 +4,7 @@ use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: StructureController) {
     let inventory = creep.store();
-    if creepmem.s == "energy" {
+    if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let closest_energy = creep
             .pos()
             .find_closest_by_path(find::DROPPED_RESOURCES, None);
@@ -25,9 +25,7 @@ pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory, controller: Structur
             },
         }
     }
-    if inventory.get_used_capacity(Some(ResourceType::Energy)) == 0 {
-        creepmem.s = "energy".to_string();
-    }
+
     if inventory.get_free_capacity(Some(ResourceType::Energy)) == 0 {
         creepmem.s = "work".to_string();
     }

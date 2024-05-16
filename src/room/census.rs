@@ -1,7 +1,7 @@
 use screeps::{find, Part, Room};
 
 use crate::{
-    memory::{ScreepsMemory, Task},
+    memory::{ScreepsMemory, ColonyRole},
     traits::room::RoomExtensions,
 };
 

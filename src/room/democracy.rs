@@ -4,12 +4,12 @@ use log::info;
 use screeps::{
     find, game,
     look::{self, LookResult},
-    HasPosition, HasTypedId, ObjectId, Part, Room,
+    HasPosition, ObjectId, Part, Room,
 };
 
 use crate::{
-    memory::{Mine, ScreepsMemory, Task},
-    room::population, traits::room::RoomExtensions,
+    memory::{, ScreepsMemory},
+    room::census, traits::room::RoomExtensions,
 };
 
 use super::{creeps, tower};
@@ -18,16 +18,6 @@ const UPGRADER_COUNT: u8 = 8;
 const BUILDER_COUNT: u8 = 4;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
-    let starting_cpu = game::cpu::get_used();
-    if memory.stats.rooms.get(&room.name_str()).is_none() {
-        memory.stats.create_room(&room.name_str(), room.controller().unwrap().level());
-    }
-    memory.stats.get_room(&room.name_str()).cpu = 0.0;
-    memory.stats.get_room(&room.name_str()).mining = 0.0;
-    memory.stats.get_room(&room.name_str()).construction = 0.0;
-    memory.stats.get_room(&room.name_str()).energy_harvested = 0;
-    memory.stats.get_room(&room.name_str()).energy_available = room.energy_available() as u64;
-    memory.stats.get_room(&room.name_str()).energy_capacity_available = room.energy_capacity_available() as u64;
     // Horray, i did it better.
     let roommem = memory.get_room(&room.name_str());
 
@@ -68,7 +58,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         }
     }
 
-    creeps::market::run_creeps(&room, memory);
+    creeps::organizer::run_creeps(&room, memory);
     tower::run_towers(&room);
 
     do_spawning(memory, &room);
@@ -83,7 +73,7 @@ pub fn do_spawning(memory: &mut ScreepsMemory, room: &Room) {
     let spawn = binding.first().unwrap();
     let room_name = &room.name_str();
 
-    if population::create_miner(memory, room.clone()) {
+    if census::create_miner(memory, room.clone()) {
     } else if memory.get_room(&room.name_str()).get_creeps_by_role("hauler").len() < 5 {
         let name = format!("h-{}", roommem_readonly.creeps_made);
         let body = [Part::Move, Part::Move, Part::Carry, Part::Work];

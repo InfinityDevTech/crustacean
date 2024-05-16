@@ -4,10 +4,11 @@ use screeps::{find, Creep, HasPosition, ResourceType};
 use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
-    if creepmem.s == "energy" {
-        find_energy(creep, creepmem);
-    } else if creepmem.s == "work" {
-        build(creep, creepmem);
+    let needs_energy = creepmem.n_e.unwrap_or_else(|| {false});
+    if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+        find_energy(creep, creepmem)
+    } else {
+        build(creep, creepmem)
     }
 }
 
@@ -19,10 +20,6 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory) {
             } else {
                 creep.better_move_to(creepmem, site.pos(), 1)
             }
-        }
-        if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-            creepmem.s = "energy".to_string();
-            find_energy(creep, creepmem);
         }
 }
 
@@ -36,9 +33,5 @@ pub fn find_energy(creep: &Creep, creepmem: &mut CreepMemory) {
             } else {
                 creep.better_move_to(creepmem, energy.pos(), 1)
             }
-        }
-        if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
-            creepmem.s = "work".to_string();
-            build(creep, creepmem);
         }
 }

@@ -1,14 +1,16 @@
 #![allow(dead_code)]
-use screeps::{find, Creep, HasPosition, ResourceType};
+use screeps::{find, Creep, HasPosition, ResourceType, SharedCreepProperties};
 
-use crate::{memory::CreepMemory, traits::creep::CreepExtensions};
+use crate::{memory::{CreepMemory, ScreepsMemory}, traits::creep::CreepExtensions};
 
-pub fn run_creep(creep: &Creep, creepmem: &mut CreepMemory) {
-    let needs_energy = creepmem.n_e.unwrap_or_else(|| {false});
+pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory) {
+    let creep_memory = memory.get_creep_mut(creep.name().as_str());
+    let needs_energy = creep_memory.n_e.unwrap_or_else(|| {false});
+
     if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-        find_energy(creep, creepmem)
+        find_energy(creep, creep_memory)
     } else {
-        build(creep, creepmem)
+        build(creep, creep_memory)
     }
 }
 

@@ -4,7 +4,7 @@ use log::{error, info};
 use screeps::{game, ObjectId, RoomName, Source, Structure, StructureController};
 use serde::{Deserialize, Serialize};
 
-use js_sys::JsString;
+use js_sys::{JsString, Object};
 
 use crate::MEMORY_VERSION;
 
@@ -32,6 +32,10 @@ pub struct CreepMemory{
     pub r: Role,
     // Needs Energy?
     pub n_e: Option<bool>,
+    // This is a pointer that changes based on the role of the creep
+    // Hauler - A reference to the ID of the current haul orders
+    // Miner - A reference to the source in the vec of sources
+    pub t_id: Option<u8>,
 }
 }
 
@@ -40,12 +44,16 @@ structstruck::strike! {
 pub struct RoomMemory{
     // Name
     pub name: String,
-    // Initialised
-    pub init: bool,
     // Mining stuffs
-    pub sources: HashMap<ObjectId<Source>, pub struct ScoutedSource {
+    pub sources: Vec<pub struct ScoutedSource {
+        pub id: ObjectId<Source>,
         pub mining_spots: u8,
         pub assigned_creeps: u8,
+    }>,
+
+    pub haul_orders: Vec<pub struct HaulOrder {
+        pub target_id: ObjectId<Structure>,
+        pub target_type: String,
     }>,
     // Creeps by role
     pub creeps: Vec<String>,
@@ -57,8 +65,7 @@ structstruck::strike! {
     pub struct ScreepsMemory {
         pub mem_version: u8,
         pub rooms: HashMap<String, RoomMemory>,
-        pub creeps: HashMap<String, CreepMemory>,
-        pub spawn_tick: bool
+        pub creeps: HashMap<String, CreepMemory>
     }
 }
 
@@ -71,7 +78,6 @@ impl ScreepsMemory {
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
-                spawn_tick: true,
             };
             memory.write_memory();
             memory
@@ -88,7 +94,6 @@ impl ScreepsMemory {
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
                         creeps: HashMap::new(),
-                        spawn_tick: true,
                     }
                 }
             }
@@ -96,7 +101,6 @@ impl ScreepsMemory {
     }
 
     pub fn write_memory(&mut self) {
-        let starting_cpu = game::cpu::get_used();
         let serialized = serde_json::to_string(&self).unwrap();
         let js_serialized = JsString::from(serialized);
 
@@ -108,7 +112,8 @@ impl ScreepsMemory {
             p: None,
             o_r: room_name.to_string(),
             r: role,
-            n_e: None
+            n_e: None,
+            t_id: None,
         };
         self.creeps.insert(creep_name.to_string(), creep);
         info!("Created creep");
@@ -119,19 +124,25 @@ impl ScreepsMemory {
             name.to_string(),
             RoomMemory {
                 name: name.to_string(),
-                init: false,
-                sources: HashMap::new(),
+                sources: Vec::new(),
+                haul_orders: Vec::new(),
                 creeps: Vec::new(),
             },
         );
     }
 
-    pub fn get_room(&mut self, name: &RoomName) -> &mut RoomMemory {
-        self.rooms.get_mut(&name.to_string()).expect("Failed to get room from memory, attempted room name")
+    pub fn get_room_mut(&mut self, name: &RoomName) -> &mut RoomMemory {
+        self.rooms.get_mut(&name.to_string()).expect("Failure to resolve room in memory.")
+    }
+    pub fn get_creep_mut(&mut self, name: &str) -> &mut CreepMemory {
+        self.creeps.get_mut(&name.to_string()).expect("Failure to resolve creep in memory.")
     }
 
-    pub fn get_creep(&mut self, name: &str) -> &mut CreepMemory {
-        self.creeps.get_mut(&name.to_string()).unwrap()
+    pub fn get_room(&self, name: &RoomName) -> RoomMemory {
+        self.rooms.get(&name.to_string()).expect("Failure to resolve room in memory.").clone()
+    }
+    pub fn get_creep(&self, name: &str) -> CreepMemory {
+        self.creeps.get(&name.to_string()).expect("Failure to resolve in memory.").clone()
     }
 }
 

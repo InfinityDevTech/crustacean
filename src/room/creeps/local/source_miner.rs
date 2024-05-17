@@ -1,22 +1,24 @@
-use screeps::{Source, HasPosition, Creep, ResourceType, Part, SharedCreepProperties};
+use std::str::FromStr;
 
-use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions, utils::creep::creep_parts_of_type};
+use screeps::{game, Creep, HasPosition, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+
+use crate::{memory::{CreepMemory, ScreepsMemory}, traits::creep::CreepExtensions, utils::creep::creep_parts_of_type};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory) {
-    let owning_room = memory.get_creep(&creep.name()).o_r.clone();
+    let CreepMemory {o_r, t_id, ..} = memory.get_creep(&creep.name());
+    let room_memory = memory.get_room(&RoomName::from_str(&o_r).unwrap());
+
+    let pointer_index = t_id.unwrap() as usize;
+    let scouted_source = &room_memory.sources[pointer_index];
+    let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
     if creep.pos().is_near_to(source.pos()) {
         if creep.store().get_free_capacity(Some(ResourceType::Energy)) > creep.store().get_used_capacity(Some(ResourceType::Energy)) as i32 {
-
             let _ = creep.drop(ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy))));
         } else {
-
-        creep.harvest(&source).unwrap_or(());
-            let energy_harvested = std::cmp::min(creep_parts_of_type(&creep, Part::Work) * 2, source.energy()) as u64;
+            creep.harvest(&source).unwrap_or(());
         }
     } else {
-
-        creep.better_move_to(memory.get_creep(&creep.name()), source.pos(), 1)
-
+        creep.better_move_to(memory.get_creep_mut(creep.name().as_str()), source.pos(), 1)
     }
 }

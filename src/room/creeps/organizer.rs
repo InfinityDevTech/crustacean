@@ -32,12 +32,12 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory) {
                 local::source_miner::run_creep(&creep, memory)
             }
             Role::Hauler => {
-                local::hauler::run_creep(&creep, creep_memory)
+                local::hauler::run_creep(&creep, memory)
             }
             Role::Upgrader => {
-                local::upgrader::run_creep(&creep, creep_memory)
+                local::upgrader::run_creep(&creep, memory)
             }
-            Role::Builder => local::builder::run_creep(&creep, creep_memory),
+            Role::Builder => local::builder::run_creep(&creep, memory),
             _ => {}
         }
     }

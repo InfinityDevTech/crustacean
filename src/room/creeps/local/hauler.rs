@@ -11,7 +11,7 @@ use crate::{
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory) {
     let creep_memory = memory.get_creep_mut(&creep.name());
-    let needs_energy = creep_memory.n_e.unwrap_or_else(|| false);
+    let needs_energy = creep_memory.n_e.unwrap_or(false);
 
     if creep.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
         get_energy(creep, creep_memory);

@@ -2,25 +2,22 @@ use std::{collections::HashMap, str::FromStr};
 
 use log::info;
 use screeps::{
-    find, game, look::{self, LookResult}, HasId, HasPosition, ObjectId, Part, Room, Terrain
+    find, game, look::{self, LookResult}, ErrorCode, HasId, HasPosition, ObjectId, Part, Room, Terrain
 };
 
-use crate::{memory::{ScoutedSource, ScreepsMemory}, traits::room::RoomExtensions};
+use crate::{memory::{ScoutedSource, ScreepsMemory}, room::structure_cache::RoomStructureCache, traits::room::RoomExtensions};
 
 use super::{creeps, planning::creep::miner::formulate_miner, tower};
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     info!("[GOVERNMENT] Starting government for room: {}", room.name());
-    let spawn = room.find(find::MY_SPAWNS, None).pop().expect("Failed to find spawn in room");
+    let structure_cache = RoomStructureCache::new_from_room(&room);
 
-    let (cost, body) = formulate_miner(&room);
+    let spawn = structure_cache.spawns.iter().next();
 
-    info!("Cost: {}", cost);
-    info!("Body: {:?}", room.energy_available());
-
-    if cost < room.energy_available() {
-        info!("Building");
-        info!("{:?}", spawn.spawn_creep(&body, "Minors"));
+    if formulate_miner(&room, memory, spawn.unwrap().1.clone()).is_ok() {
+        let room_memory = memory.get_room_mut(&room.name());
+        room_memory.creeps_manufactured += 1
     }
 
     tower::run_towers(&room);

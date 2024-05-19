@@ -5,7 +5,7 @@ use screeps::{find, game, prelude::*, RoomName};
 use utils::utils::just_reset;
 use wasm_bindgen::prelude::*;
 
-use crate::{memory::ScreepsMemory, room::planning, traits::room::RoomExtensions};
+use crate::{memory::ScreepsMemory, room::planning::{self, room::plan_room}, traits::room::RoomExtensions};
 
 mod logging;
 mod utils;
@@ -31,7 +31,7 @@ pub fn game_loop() {
         for room in game::rooms().values() {
             if let Some(controller) = room.controller() {
                 if controller.my() && !memory.rooms.contains_key(&room.name_str()) {
-                    memory.create_room(&room.name());
+                    plan_room(&room, &mut memory);
                 }
             }
         }

@@ -29,7 +29,7 @@ impl CreepExtensions for screeps::Creep {
             .filter(|x| x != &"")
             .map(|x| {
                 x.parse::<u8>()
-                    .expect(&format!("Failed to parse character as u8 {}", x))
+                    .unwrap_or_else(|_| panic!("Failed to parse character as u8 {}", x))
             })
             .collect::<Vec<u8>>();
         if serialized_vec.is_empty() {
@@ -72,11 +72,6 @@ impl CreepExtensions for screeps::Creep {
         let creep = self;
         match creep_memory.clone().p {
             Some(path) => {
-                visualise_path(
-                    path.clone().to_string(),
-                    creep.clone().room().unwrap().name().to_string(),
-                    (creep.pos().x().u8() as f32, creep.pos().y().u8() as f32),
-                );
                 self.better_move_by_path(path.clone(), creep_memory);
             }
             None => {
@@ -85,12 +80,9 @@ impl CreepExtensions for screeps::Creep {
                     range: range.into(),
                 }
                 .find_path_to(creep.pos());
+
                 creep_memory.p = Some(target.clone());
-                visualise_path(
-                    target.clone().to_string(),
-                    creep.clone().room().unwrap().name().to_string(),
-                    (creep.pos().x().u8() as f32, creep.pos().y().u8() as f32),
-                );
+
                 self.better_move_by_path(target.clone(), creep_memory);
             }
         }

@@ -5,7 +5,7 @@ use crate::{memory::{CreepMemory, ScreepsMemory}, traits::creep::CreepExtensions
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory) {
     let creep_memory = memory.get_creep_mut(creep.name().as_str());
 
-    let needs_energy = creep_memory.n_e.unwrap_or_else(|| false);
+    let needs_energy = creep_memory.n_e.unwrap_or(false);
     let controller = creep.room().unwrap().controller().unwrap();
 
     if needs_energy{

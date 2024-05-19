@@ -1,10 +1,14 @@
 use std::cmp;
 
-use screeps::{BodyPart, Part, Room};
+use screeps::{look, BodyPart, ErrorCode, HasPosition, Part, Room, StructureSpawn};
 
-pub fn formulate_miner(room: &Room) -> (u32, Vec<Part>) {
+use crate::{memory::{RoomMemory, ScreepsMemory}, traits::room::RoomExtensions};
+
+pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: StructureSpawn) -> Result<(), screeps::ErrorCode> {
     let mut cost = 0;
     let mut parts = Vec::new();
+
+    let mut room_memory = memory.get_room_mut(&room.name());
 
     parts.push(Part::Move);
     parts.push(Part::Move);
@@ -20,5 +24,19 @@ pub fn formulate_miner(room: &Room) -> (u32, Vec<Part>) {
         cost += 100;
     }
 
-    (cost, parts)
+    let name = format!("sm-{}-{}", room_memory.creeps.len() + 1, room.name());
+
+    if cost < room.energy_available() {
+        let x = spawn.pos().x().u8();
+        let y = spawn.pos().y().u8();
+
+        let area_to_move = room.look_for_at_area(look::CREEPS, y - 1, x - 1, y + 1, x + 1);
+        let spawn_result = spawn.spawn_creep(&parts, &name);
+
+        memory.create_creep(&room.name_str(), &name, crate::memory::Role::Miner);
+
+        return spawn_result;
+    }
+
+    Err(ErrorCode::NotEnough)
 }

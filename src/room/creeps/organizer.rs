@@ -1,7 +1,7 @@
 use log::info;
 use screeps::{creep, game, Room};
 
-use crate::{memory::{Role, ScreepsMemory}, traits::room::RoomExtensions};
+use crate::{memory::{Role, ScreepsMemory}, traits::room::RoomExtensions, utils::creep::creep_tired};
 
 use super::local;
 
@@ -23,20 +23,16 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory) {
         let creep = creep.unwrap();
         let creep_memory = memory.get_creep(&creep_name);
 
-        if creep.spawning() {
+        if creep.spawning() || creep_tired(&creep) {
             continue;
         }
 
+        info!("Running creep: {}", creep_name);
+
         match creep_memory.r {
-            Role::Miner => {
-                local::source_miner::run_creep(&creep, memory)
-            }
-            Role::Hauler => {
-                local::hauler::run_creep(&creep, memory)
-            }
-            Role::Upgrader => {
-                local::upgrader::run_creep(&creep, memory)
-            }
+            Role::Miner => local::source_miner::run_creep(&creep, memory),
+            Role::Hauler => local::hauler::run_creep(&creep, memory),
+            Role::Upgrader => local::upgrader::run_creep(&creep, memory),
             Role::Builder => local::builder::run_creep(&creep, memory),
             _ => {}
         }

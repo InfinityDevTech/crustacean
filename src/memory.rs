@@ -27,14 +27,17 @@ pub struct CreepMemory{
     // Owning room
     pub o_r: String,
     // Path
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub p: Option<String>,
     // Career
     pub r: Role,
     // Needs Energy?
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub n_e: Option<bool>,
     // This is a pointer that changes based on the role of the creep
     // Hauler - A reference to the ID of the current haul orders
     // Miner - A reference to the source in the vec of sources
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub t_id: Option<u8>,
 }
 }
@@ -57,6 +60,7 @@ pub struct RoomMemory{
     }>,
     // Creeps by role
     pub creeps: Vec<String>,
+    pub creeps_manufactured: u128,
 }
 }
 
@@ -116,18 +120,15 @@ impl ScreepsMemory {
             t_id: None,
         };
         self.creeps.insert(creep_name.to_string(), creep);
-        info!("Created creep");
+
+        let room = self.get_room_mut(&RoomName::new(room_name).unwrap());
+        room.creeps.push(creep_name.to_string());
     }
 
-    pub fn create_room(&mut self, name: &RoomName) {
+    pub fn create_room(&mut self, name: &RoomName, object: &RoomMemory) {
         self.rooms.insert(
             name.to_string(),
-            RoomMemory {
-                name: name.to_string(),
-                sources: Vec::new(),
-                haul_orders: Vec::new(),
-                creeps: Vec::new(),
-            },
+            object.clone()
         );
     }
 

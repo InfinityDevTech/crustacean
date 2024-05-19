@@ -18,10 +18,13 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
         creeps: Vec::new(),
         sources: Vec::new(),
         haul_orders: Vec::new(),
+        creeps_manufactured: 0
     };
 
     let sources = resources::find_sources(room);
 
     room_memory.sources = sources;
+
+    memory.create_room(&room.name(), &room_memory);
     return true;
 }

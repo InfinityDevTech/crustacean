@@ -61,11 +61,6 @@ pub fn game_loop() {
         room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
     }
 
-    let sources = memory.rooms.get("W7N7").unwrap().sources.clone();
-    for source in sources {
-        info!("  Source: {:?}", source);
-    }
-
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.

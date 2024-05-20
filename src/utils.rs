@@ -1,14 +1,13 @@
 use crate::memory::Role;
 
 pub fn role_to_name(role: Role) -> String {
-    let mut data: &str = "";
-    match role {
-        Role::Miner => { data = "sm" },
-        Role::Hauler => { data = "mb" },
-        Role::Upgrader => { data = "ud" },
-        Role::Builder => { data = "bd" },
-        Role::Scout => { data = "fg" },
-    }
+    let data = match role {
+        Role::Miner => "sm",
+        Role::Hauler => "mb",
+        Role::Upgrader => "ud",
+        Role::Builder => "bd",
+        Role::Scout => "fg",
+    };
     data.to_string()
 }
 

@@ -93,7 +93,6 @@ impl CreepExtensions for screeps::Creep {
                 self.better_move_by_path(target.clone(), creep_memory);
             }
         }
-        let options = MoveToOptions::new().range(range as u32);
     }
 
     fn parts_of_type(&self, part: screeps::Part) -> u32 {

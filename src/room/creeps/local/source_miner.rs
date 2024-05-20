@@ -7,6 +7,12 @@ use crate::{memory::{CreepMemory, RoomMemory, ScreepsMemory}, room::structure_ca
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structures: &RoomStructureCache) {
 
+    if creep.near_age_death() {
+        let _ = creep.say("👴", true);
+        handle_death(creep, memory);
+        return;
+    }
+
     let cloned_memory = memory.clone();
     let creep_memory = memory.get_creep_mut(&creep.name());
     let room_memory = cloned_memory.get_room(&RoomName::from_str(&creep_memory.o_r).unwrap());

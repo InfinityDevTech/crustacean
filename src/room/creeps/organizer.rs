@@ -1,7 +1,7 @@
 use log::info;
 use screeps::{game, Room};
 
-use crate::{memory::{Role, ScreepsMemory}, room::structure_cache::{self, RoomStructureCache}, traits::creep::CreepExtensions};
+use crate::{memory::{Role, ScreepsMemory}, room::structure_cache::RoomStructureCache, traits::creep::CreepExtensions};
 
 use super::local;
 

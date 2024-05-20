@@ -1,11 +1,9 @@
 use log::info;
-use screeps::{Part, 
-    Room}
-;
+use screeps::Room;
 
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::{creeps::organizer, structure_cache::RoomStructureCache}, traits::room::RoomExtensions, utils::role_to_name};
+use crate::{memory::ScreepsMemory, room::{creeps::organizer, structure_cache::RoomStructureCache}};
 
-use super::{creeps, planning::creep::miner::formulate_miner, tower};
+use super::{planning::creep::miner::formulate_miner, tower};
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     info!("[GOVERNMENT] Starting government for room: {}", room.name());

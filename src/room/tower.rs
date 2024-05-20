@@ -1,4 +1,4 @@
-use screeps::{Room, find, StructureType, StructureProperties, StructureObject};
+use screeps::{Room, find};
 
 use super::structure_cache::RoomStructureCache;
 

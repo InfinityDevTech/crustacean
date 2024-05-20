@@ -1,9 +1,8 @@
 use std::str::FromStr;
 
-use log::info;
-use screeps::{game, Creep, ErrorCode, HasPosition, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+use screeps::{game, Creep, HasPosition, Part, ResourceType, RoomName, SharedCreepProperties, Source};
 
-use crate::{memory::{CreepMemory, RoomMemory, ScreepsMemory}, room::structure_cache::RoomStructureCache, traits::{creep::CreepExtensions, room::RoomExtensions}};
+use crate::{memory::{CreepMemory, RoomMemory, ScreepsMemory}, room::structure_cache::RoomStructureCache, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structures: &RoomStructureCache) {
 
@@ -65,7 +64,7 @@ fn link_deposit(creep: &Creep, creep_memory: &CreepMemory, room_memory: &RoomMem
         }
         return false;
     }
-    return false;
+    false
 }
 
 fn drop_deposit(creep: &Creep, creep_memory: &mut CreepMemory, structures: &RoomStructureCache) {

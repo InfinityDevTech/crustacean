@@ -1,9 +1,8 @@
-use log::info;
 use screeps::{find, Creep, ErrorCode, HasPosition, ResourceType, SharedCreepProperties};
 
 use crate::{memory::ScreepsMemory, room::structure_cache::RoomStructureCache, traits::creep::CreepExtensions};
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structure_cache: &RoomStructureCache) {
+pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, _structure_cache: &RoomStructureCache) {
     let creep_memory = memory.get_creep_mut(creep.name().as_str());
 
     let needs_energy = creep_memory.n_e.unwrap_or(false);

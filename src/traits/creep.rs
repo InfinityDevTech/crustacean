@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{HasPosition, MoveToOptions, Position, SharedCreepProperties};
+use screeps::{HasPosition, Position};
 
 use crate::{
     memory::CreepMemory,

@@ -1,7 +1,7 @@
 use std::cmp;
 
 use log::info;
-use screeps::{look, ErrorCode, HasPosition, Part, Room, StructureSpawn};
+use screeps::{Part, Room, StructureSpawn};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, traits::room::RoomExtensions, utils::role_to_name};
 
@@ -9,7 +9,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: Structure
     let mut cost = 0;
     let mut parts = Vec::new();
 
-    let mut room_memory = memory.get_room_mut(&room.name());
+    let room_memory = memory.get_room_mut(&room.name());
 
     let needed = room.get_target_for_miner(&room_memory.clone());
 
@@ -56,7 +56,9 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: Structure
         let spawn_result = spawn.spawn_creep(&parts, &name);
 
         if spawn_result.is_ok() {
-            info!("  [Spawn] Successfully spawned a miner!");
+
+            info!("  [SPANWER] Spawned a new miner!");
+
             let cmemory = CreepMemory {
                 r: crate::memory::Role::Miner,
                 n_e: Some(true),
@@ -66,22 +68,12 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: Structure
                 p: None,
             };
 
-            info!("  Creating creep memory for {}", name);
-
             memory.create_creep(&room.name_str(), &name, &cmemory);
             let room_memory = memory.get_room_mut(&room.name());
 
             room_memory.creeps_manufactured += 1;
-            info!("  Before: {:?}", room_memory.sources.get(needed.unwrap() as usize).unwrap());
             room_memory.sources.get_mut(needed.unwrap() as usize).unwrap().work_parts += parts.len() as u8 - 3;
             room_memory.sources.get_mut(needed.unwrap() as usize).unwrap().assigned_creeps += 1;
-            info!("  After: {:?}", room_memory.sources.get(needed.unwrap() as usize).unwrap());
-
-            memory.write_memory();
-            info!("  Wrote Memory");
-
-            let mem_test = ScreepsMemory::init_memory();
-            info!("  Memory: {:?}", mem_test.get_room(&room.name()).sources.get(needed.unwrap() as usize).unwrap());
         }
     }
 

@@ -1,6 +1,6 @@
-use screeps::{find, look::{self, LookResult}, HasId, HasPosition, ObjectId, Room, Source, Terrain};
+use screeps::{find, look::{self, LookResult}, HasId, HasPosition, Room, Terrain};
 
-use crate::memory::{ScoutedSource, ScreepsMemory};
+use crate::memory::ScoutedSource;
 
 pub fn find_sources(room: &Room) -> Vec<ScoutedSource> {
     let mut planned_sources = Vec::new();

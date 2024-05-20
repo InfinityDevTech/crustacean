@@ -24,7 +24,8 @@ pub fn find_sources(room: &Room) -> Vec<ScoutedSource> {
         planned_sources.push(ScoutedSource {
             id: source.id(),
             assigned_creeps: 0,
-            mining_spots: available_spots as u8,
+            max_creeps: available_spots,
+            work_parts: 0,
         });
     }
 

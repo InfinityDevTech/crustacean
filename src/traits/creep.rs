@@ -1,11 +1,11 @@
 use log::info;
-use screeps::{HasPosition, Position};
+use screeps::{HasPosition, MoveToOptions, Position, SharedCreepProperties};
 
 use crate::{
     memory::CreepMemory,
     movement::{
         move_target::MoveTarget,
-        utils::{dir_to_coords, num_to_dir, visualise_path},
+        utils::{dir_to_coords, num_to_dir},
     },
 };
 
@@ -13,6 +13,11 @@ pub trait CreepExtensions {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory);
     fn better_move_to(&self, creep_memory: &mut CreepMemory, target: Position, range: u16);
+
+    fn parts_of_type(&self, part: screeps::Part) -> u32;
+
+    fn tired(&self) -> bool;
+    fn near_age_death(&self) -> bool;
 }
 
 impl CreepExtensions for screeps::Creep {
@@ -20,9 +25,6 @@ impl CreepExtensions for screeps::Creep {
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory) {
         let creep = self;
 
-        if creep.fatigue() > 0 {
-            return;
-        }
         let serialized_path = path;
         let serialized_vec = serialized_path
             .split("")
@@ -70,6 +72,11 @@ impl CreepExtensions for screeps::Creep {
     }
     fn better_move_to(&self, creep_memory: &mut CreepMemory, target: Position, range: u16) {
         let creep = self;
+
+        if creep.tired() {
+            return;
+        }
+
         match creep_memory.clone().p {
             Some(path) => {
                 self.better_move_by_path(path.clone(), creep_memory);
@@ -85,6 +92,26 @@ impl CreepExtensions for screeps::Creep {
 
                 self.better_move_by_path(target.clone(), creep_memory);
             }
+        }
+        let options = MoveToOptions::new().range(range as u32);
+    }
+
+    fn parts_of_type(&self, part: screeps::Part) -> u32 {
+        self.body().iter().filter(|p| p.part() == part).count() as u32
+    }
+
+    fn tired(&self) -> bool {
+        self.fatigue() > 0
+    }
+
+    fn near_age_death(&self) -> bool {
+        if let Some(life_time) = self.ticks_to_live() {
+            if life_time < 100 {
+                return true;
+            }
+            false
+        } else {
+            false
         }
     }
 }

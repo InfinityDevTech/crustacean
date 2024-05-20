@@ -18,6 +18,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
         creeps: Vec::new(),
         sources: Vec::new(),
         haul_orders: Vec::new(),
+        links: None,
         creeps_manufactured: 0
     };
 

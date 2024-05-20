@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::{cmp, collections::HashMap};
 
-use log::{error, info};
-use screeps::{game, ObjectId, RoomName, Source, Structure, StructureController};
+use log::error;
+use screeps::{game, ObjectId, RoomName, Source, Structure, StructureLink};
 use serde::{Deserialize, Serialize};
 
-use js_sys::{JsString, Object};
+use js_sys::JsString;
 
 use crate::MEMORY_VERSION;
 
@@ -34,6 +34,11 @@ pub struct CreepMemory{
     // Needs Energy?
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n_e: Option<bool>,
+    // This is miner specific, the ID of the link next to it
+    // If this is empty, then the miner is not linked to a link and it will drop resources on the ground
+    // If it is, but the link isnt next to it, the miner will clear the link id. If it is, the miner will deposit resources into the link
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub l_id: Option<u8>,
     // This is a pointer that changes based on the role of the creep
     // Hauler - A reference to the ID of the current haul orders
     // Miner - A reference to the source in the vec of sources
@@ -50,14 +55,17 @@ pub struct RoomMemory{
     // Mining stuffs
     pub sources: Vec<pub struct ScoutedSource {
         pub id: ObjectId<Source>,
-        pub mining_spots: u8,
         pub assigned_creeps: u8,
+        pub max_creeps: u8,
+        pub work_parts: u8,
     }>,
 
     pub haul_orders: Vec<pub struct HaulOrder {
         pub target_id: ObjectId<Structure>,
         pub target_type: String,
     }>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub links: Option<Vec<ObjectId<StructureLink>>>,
     // Creeps by role
     pub creeps: Vec<String>,
     pub creeps_manufactured: u128,
@@ -93,7 +101,7 @@ impl ScreepsMemory {
                 Err(e) => {
                     error!("Error parsing memory: {}", e);
                     error!("This is a critical error, memory MUST be reset to default state.");
-                    
+
                     ScreepsMemory {
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
@@ -111,15 +119,8 @@ impl ScreepsMemory {
         screeps::raw_memory::set(&js_serialized);
     }
 
-    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, role: Role) {
-        let creep = CreepMemory {
-            p: None,
-            o_r: room_name.to_string(),
-            r: role,
-            n_e: None,
-            t_id: None,
-        };
-        self.creeps.insert(creep_name.to_string(), creep);
+    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, object: &CreepMemory) {
+        self.creeps.insert(creep_name.to_string(), object.clone());
 
         let room = self.get_room_mut(&RoomName::new(room_name).unwrap());
         room.creeps.push(creep_name.to_string());
@@ -136,17 +137,28 @@ impl ScreepsMemory {
         self.rooms.get_mut(&name.to_string()).expect("Failure to resolve room in memory.")
     }
     pub fn get_creep_mut(&mut self, name: &str) -> &mut CreepMemory {
-        self.creeps.get_mut(&name.to_string()).expect("Failure to resolve creep in memory.")
+        self.creeps.get_mut(name).expect("Failure to resolve creep in memory.")
     }
 
     pub fn get_room(&self, name: &RoomName) -> RoomMemory {
         self.rooms.get(&name.to_string()).expect("Failure to resolve room in memory.").clone()
     }
     pub fn get_creep(&self, name: &str) -> CreepMemory {
-        self.creeps.get(&name.to_string()).expect("Failure to resolve in memory.").clone()
+        self.creeps.get(name).expect("Failure to resolve in memory.").clone()
     }
 }
 
-impl RoomMemory {
+impl ScoutedSource {
+    pub fn parts_needed(&self) -> u8 {
+        let source: Source = game::get_object_by_id_typed(&self.id).unwrap();
+        let max_energy = source.energy_capacity();
 
+        // Each work part equates to 2 energy per tick
+        // Each source refills energy every 300 ticks.
+        let max_work_needed = (max_energy / 300) + 2;
+
+        let work_parts_needed = max_work_needed - self.work_parts as u32;
+
+        cmp::max(work_parts_needed, 0) as u8
+    }
 }

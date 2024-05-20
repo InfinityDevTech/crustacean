@@ -4,7 +4,7 @@ default_deploy_mode = "upload"
 # options to allow building code against rust versions >=1.70 without opcodes
 # incompatible with screeps server environments; requires nightly rust. See 
 # https://github.com/rustyscreeps/screeps-game-api/issues/391
-extra_options = ["--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort", "-Z", "build-std-features=panic_immediate_abort"]
+extra_options = ["--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort"]
 
 [upload]
 auth_token = "fbfeb887-6c37-4ef9-922f-01eea5b927f0"
@@ -16,14 +16,19 @@ auth_token = "your screeps.com auth token"
 prefix = "ptr"
 
 [copy]
-#destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\127_0_0_1___21025"
-destination = "/home/jwjoh/.config/Screeps/scripts/127_0_0_1___21025"
+# Windows Desktop
+destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\127_0_0_1___21025"
+# Linux Laptop
+#destination = "/home/jwjoh/.config/Screeps/scripts/127_0_0_1___21025"
+# Bot arena
+#destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\botarena_screepspl_us___21025"
+
 branch = "default"
 [copy.build]
   # set the sim feature to allow for use with the coordinates in the simulation room
-  #extra_options = ["--features=sim", "--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort", "-Z", "build-std-features=panic_immediate_abort"]
-  #build-target = "release"
+  #extra_options = ["--features=sim", "--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort"]
   extra_options = ["--features=sim"]
+  #build-target = "release"
 
 [season]
 auth_token = "your screeps.com auth token"

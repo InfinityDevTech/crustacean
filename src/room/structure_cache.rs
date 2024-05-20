@@ -1,12 +1,18 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
-use screeps::{find, HasId, ObjectId, Room, Source, StructureObject::StructureTower, StructureSpawn, StructureTower as StructType};
+use screeps::{find, HasId, ObjectId, Resource, Room, Source, StructureController, StructureExtension, StructureLink, StructureObject, StructureSpawn, StructureTower};
 
 #[derive(Debug, Clone)]
 pub struct RoomStructureCache {
     pub sources: HashMap<ObjectId<Source>, Source>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
-    pub towers: HashMap<ObjectId<StructType>, StructType>
+    pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
+    pub dropped_resources: Vec<ObjectId<Resource>>,
+
+    pub controller: Option<StructureController>,
+
+    pub links: HashMap<ObjectId<StructureLink>, StructureLink>,
+    pub towers: HashMap<ObjectId<StructureTower>, StructureTower>
 }
 
 impl RoomStructureCache {
@@ -14,13 +20,31 @@ impl RoomStructureCache {
         let mut cache = RoomStructureCache {
             sources: HashMap::new(),
             towers: HashMap::new(),
-            spawns: HashMap::new()
+            spawns: HashMap::new(),
+            dropped_resources: Vec::new(),
+
+            controller: None,
+
+            links: HashMap::new(),
+            extensions: HashMap::new()
         };
 
+        if let Some(controller) = room.controller() {
+            cache.controller = Some(controller);
+        }
+
         cache.refresh_source_cache(room);
-        cache.refresh_tower_cache(room);
+        cache.refresh_structure_cache(room);
         cache.refresh_spawn_cache(room);
+        cache.refresh_dropped_resources(room);
         cache
+    }
+
+    pub fn refresh_dropped_resources(&mut self, room: &Room) {
+        let resources = room.find(find::DROPPED_RESOURCES, None);
+        for resource in resources {
+            self.dropped_resources.push(resource.id());
+        }
     }
 
     pub fn refresh_spawn_cache(&mut self, room: &Room) {
@@ -31,18 +55,22 @@ impl RoomStructureCache {
         }
     }
 
-    pub fn refresh_tower_cache(&mut self, room: &Room) {
-        let towers = room.find(find::MY_STRUCTURES, None).into_iter().filter_map(|structure| {
-            match structure {
-                StructureTower(tower) => {
-                    return Some(tower);
-                }
-                _ => None
-            }
-        });
+    pub fn refresh_structure_cache(&mut self, room: &Room) {
+        let structures = room.find(find::MY_STRUCTURES, None).into_iter();
 
-        for tower in towers {
-            self.towers.insert(tower.id(), tower);
+        for structure in structures {
+            match structure {
+                StructureObject::StructureTower(tower) => {
+                    self.towers.insert(tower.id(), tower);
+                }
+                StructureObject::StructureExtension(extension) => {
+                    self.extensions.insert(extension.id(), extension);
+                }
+                StructureObject::StructureLink(link) => {
+                    self.links.insert(link.id(), link);
+                }
+                _ => {}
+            }
         }
     }
 

@@ -26,9 +26,10 @@ pub fn move_to(creep_name: &String, creep_memory: &mut CreepMemory, target: Posi
 pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory) {
     let creep = game::creeps().get(creep_name).unwrap();
 
-    if creep.fatigue() > 0 {
+    if creep.tired() {
         return;
     }
+
     let serialized_path = path.path;
     let serialized_vec = serialized_path.split("").filter(|x| x != &"").map(|x| x.parse::<u8>().unwrap()).collect::<Vec<u8>>();
     let step_dir = num_to_dir(serialized_vec[0]);

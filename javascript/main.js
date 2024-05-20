@@ -1,16 +1,27 @@
 "use strict";
-let wasm_module;
 
 // replace this with the name of your module
 const MODULE_NAME = "crustacean";
 let EXECUTION_PAUSED = false;
 let RED_BUTTON = false;
-let WIPE_MEMORY = false;
 
-function console_error(...args) {
-  console.log(...args);
-  Game.notify(args.join(" "));
+let ERROR = false;
+let js_memory = {};
+
+function console_error() {
+  const processedArgs = _.map(arguments, (arg) => {
+      if (arg instanceof Error) {
+          // On this version of Node, the `stack` property of errors contains
+          // the message as well.
+          return arg.stack;
+      } else {
+          return arg;
+      }
+  }).join(' ');
+  console.log("ERROR:", processedArgs);
+  Game.notify(processedArgs);
 }
+
 
 global.big_red_button = function (input) {
   EXECUTION_PAUSED = true;
@@ -31,9 +42,11 @@ global.big_red_button = function (input) {
 };
 
 global.wipe_memory = function () {
-  EXECUTION_PAUSED = true;
-  WIPE_MEMORY = true;
   console.log("Wiping memory");
+
+  global.RawMemory._parsed = {};
+  global.Memory = {};
+  global.Memory.rooms = {}
 }
 
 global.toggle_exec = function () {
@@ -48,61 +61,63 @@ global.suicide_all = function() {
   }
 }
 
-module.exports.loop = function () {
-  // Replace the Memory object (which gets populated into our global each tick) with an empty
-  // object, so that accesses to it from within the driver that we can't prevent (such as
-  // when a creep is spawned) won't trigger an attempt to parse RawMemory. Replace the object
-  // with one unattached to memory magic - game functions will access the `Memory` object and
-  // can throw data in here, and it'll go away at the end of tick.
+function run_loop() {
+  if (ERROR) {
+    // Stops memory leak present in WASM if rust were to error out.
+    // Forces our global JS VM restart, (Basically a global reset)
+    // A 10/10 way to stop memory leaks.
+    Game.cpu.halt();
+  } else {
+    ERROR = true;
 
-  // Because it's in place, RawMemory's string won't be thrown to JSON.parse to deserialize -
-  // and because that didn't happen, RawMemory._parsed isn't set and won't trigger a
-  // post-tick serialize.
-  delete global.Memory;
-  global.Memory = {};
-  try {
-    if (wasm_module) {
+    delete global.Memory;
+    global.Memory = js_memory;
+
+    console.error = console_error
+    try {
+
+      console.log(wasm_module)
+
       if (!EXECUTION_PAUSED) {
         wasm_module.loop();
       }
       if (RED_BUTTON) {
         wasm_module.red_button();
+        global.wipe_memory();
         RED_BUTTON = false;
         EXECUTION_PAUSED = false;
       }
-      if (WIPE_MEMORY) {
-        wasm_module.wipe_memory();
-        WIPE_MEMORY = false;
-        EXECUTION_PAUSED = false;
+
+      // If the WASM module were to break, execution wouldnt get to this point
+      // Meaning ERROR would still be true, causing the reset.
+      ERROR = false;
+    } catch (e) {
+      console.error("ERROR: Found an error! Resetting VM next tick...", e);
+    }
+  }
+}
+
+let wasm_module;
+
+module.exports.loop = function () {
+      // Fixes a memory corruption issue.
+      if (!global.Memory) {
+        global.RawMemory._parsed = {}; global.Memory = {}; global.Memory.rooms = {}
       }
-    } else {
+
       // attempt to load the wasm only if there's enough bucket to do a bunch of work this tick
       if (Game.cpu.bucket < 500) {
         console.log("Not enough in the CPU bucket, not going to compile - CPU: " + JSON.stringify(Game.cpu));
         return;
       }
 
-      // delect the module from the cache, so we can reload it
-      if (MODULE_NAME in require.cache) {
-        delete require.cache[MODULE_NAME];
-      }
-      // load the wasm module
-      wasm_module = require(MODULE_NAME);
-      if (wasm_module != undefined) {
-        // load the wasm instance!
+      if (!wasm_module) {
+        wasm_module = require(MODULE_NAME);
         wasm_module.initialize_instance();
-        // run the setup function, which configures logging
-        wasm_module.setup();
-      } else {
-        console.log("Wasm module is undefined, is the name correct?");
       }
-    }
-  } catch (error) {
-    console_error("Found error: ", error);
-    if (error.stack) {
-      console_error("Stack trace: ", error.stack);
-    }
-    console_error("Reloading wasm module");
-    wasm_module = null;
-  }
+
+      delete require.cache[MODULE_NAME];
+
+      module.exports.loop = run_loop;
+      console.log("WASM module loaded successfully! Used CPU: " + Game.cpu.getUsed())
 };

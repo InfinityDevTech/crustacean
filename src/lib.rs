@@ -1,30 +1,32 @@
-use std::{collections::HashMap, panic, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 use log::*;
 use screeps::{find, game, prelude::*, RoomName};
-use utils::utils::just_reset;
 use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, room::planning::{self, room::plan_room}, traits::room::RoomExtensions};
 
 mod logging;
-mod utils;
 mod memory;
+mod utils;
 mod movement;
 mod room;
 mod traits;
 
 pub const MEMORY_VERSION: u8 = 1;
-
-#[wasm_bindgen(js_name = setup)]
-pub fn setup() {
-    logging::setup_logging(logging::Info);
-}
+static INIT_LOGGING: std::sync::Once = std::sync::Once::new();
 
 #[wasm_bindgen(js_name = loop)]
 pub fn game_loop() {
+    INIT_LOGGING.call_once(|| {
+        // show all output of Info level, adjust as needed
+        logging::setup_logging(logging::Info);
+    });
+
+
     info!("---------------- CURRENT TICK - {} ----------------", game::time());
-    panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+
     let mut memory = ScreepsMemory::init_memory();
 
     if game::time() % 10 == 0 {
@@ -33,6 +35,12 @@ pub fn game_loop() {
                 if controller.my() && !memory.rooms.contains_key(&room.name_str()) {
                     plan_room(&room, &mut memory);
                 }
+            }
+        }
+
+        for creep in memory.clone().creeps.keys() {
+            if game::creeps().get(creep.clone()).is_none() {
+                memory.creeps.remove(&creep.clone());
             }
         }
     }
@@ -53,6 +61,11 @@ pub fn game_loop() {
         room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
     }
 
+    let sources = memory.rooms.get("W7N7").unwrap().sources.clone();
+    for source in sources {
+        info!("  Source: {:?}", source);
+    }
+
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
@@ -63,15 +76,6 @@ pub fn game_loop() {
     info!("  CPU Usage:");
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
-}
-
-#[wasm_bindgen(js_name = wipe_memory)]
-pub fn wipe_memory() {
-    let mut memory = ScreepsMemory::init_memory();
-    memory.rooms = HashMap::new();
-    memory.creeps = HashMap::new();
-    memory.write_memory();
-    info!("Memory wiped and written!");
 }
 
 #[wasm_bindgen(js_name = red_button)]
@@ -94,4 +98,21 @@ pub fn big_red_button() {
     let mut memory = memory::ScreepsMemory::init_memory();
     memory.rooms = HashMap::new();
     memory.write_memory();
+}
+
+pub fn just_reset() -> bool {
+    if game::time() == 0 { return true; }
+
+    if game::creeps().entries().count() >= 1 { return false; }
+    if game::rooms().entries().count() > 1 { return false; }
+
+    let room = game::rooms().values().next().unwrap();
+
+    if room.controller().is_none() || !room.controller().unwrap().my() || room.controller().unwrap().level() != 1 || room.controller().unwrap().progress().unwrap() > 0 || room.controller().unwrap().safe_mode().unwrap() > 0 {
+        return false;
+    }
+
+    if game::spawns().entries().count() != 1 { return false; }
+
+    true
 }

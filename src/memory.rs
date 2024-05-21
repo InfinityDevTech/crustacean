@@ -1,12 +1,12 @@
 use std::{cmp, collections::HashMap};
 
 use log::error;
-use screeps::{game, ObjectId, RoomName, Source, Structure, StructureLink};
+use screeps::{game, ObjectId, Resource, ResourceType, RoomName, Source, Structure, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::MEMORY_VERSION;
+use crate::{room::hauling::HaulPriorities, MEMORY_VERSION};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Role {
@@ -52,6 +52,7 @@ structstruck::strike! {
 pub struct RoomMemory{
     // Name
     pub name: String,
+    pub id: u128,
     // Mining stuffs
     pub sources: Vec<pub struct ScoutedSource {
         pub id: ObjectId<Source>,
@@ -61,8 +62,12 @@ pub struct RoomMemory{
     }>,
 
     pub haul_orders: Vec<pub struct HaulOrder {
+        pub id: u128,
+        pub priority: HaulPriorities,
         pub target_id: ObjectId<Structure>,
-        pub target_type: String,
+        pub target_type: ResourceType,
+        pub responder: Option<String>,
+        pub amount: u32,
     }>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Vec<ObjectId<StructureLink>>>,

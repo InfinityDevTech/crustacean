@@ -15,6 +15,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
 
     let mut room_memory = RoomMemory {
         name: room.name_str(),
+        id: 0,
         creeps: Vec::new(),
         sources: Vec::new(),
         haul_orders: Vec::new(),

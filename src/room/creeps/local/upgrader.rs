@@ -1,11 +1,11 @@
 use screeps::{find, Creep, ErrorCode, HasPosition, ResourceType, SharedCreepProperties};
 
-use crate::{memory::ScreepsMemory, room::structure_cache::RoomStructureCache, traits::creep::CreepExtensions};
+use crate::{memory::ScreepsMemory, room::object_cache::RoomStructureCache, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, _structure_cache: &RoomStructureCache) {
-    let creep_memory = memory.get_creep_mut(creep.name().as_str());
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    let needs_energy = creep_memory.n_e.unwrap_or(false);
+    let needs_energy = creep_memory.needs_energy.unwrap_or(false);
     let controller = creep.room().unwrap().controller().unwrap();
 
     if needs_energy {
@@ -14,10 +14,10 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, _structure_cache: &R
             .find_closest_by_range(find::DROPPED_RESOURCES);
 
         if let Some(energy) = closest_energy {
-            if creep.pos().is_near_to(energy.clone().pos()) {
+            if creep.pos().is_near_to(energy.pos()) {
                 let _ = creep.pickup(&energy);
                 if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
-                    creep_memory.n_e = None;
+                    creep_memory.needs_energy = None;
                 }
             } else {
                 creep.better_move_to(creep_memory, energy.pos(), 1);
@@ -30,7 +30,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, _structure_cache: &R
                 creep.better_move_to(creep_memory, controller.pos(), 2);
             }
             Err(ErrorCode::NotEnough) => {
-                creep_memory.n_e = Some(true);
+                creep_memory.needs_energy = Some(true);
             }
             _ => {}
         }

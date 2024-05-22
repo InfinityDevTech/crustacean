@@ -42,6 +42,15 @@ impl RoomMemory {
     }
 
     pub fn create_haul_order(&mut self, priority: HaulPriorities, target_id: RawObjectId, resource: ResourceType, amount: u32, haul_type: HaulType) {
+        let t = self.clone();
+        let mut existing_orders = t.haul_orders.values().filter(|order| order.target_id == target_id && order.haul_type == haul_type);
+
+        if existing_orders.clone().count() > 0 {
+            let order = existing_orders.next().unwrap();
+
+            let new_amount = order.amount + amount;
+            self.haul_orders.get_mut(&order.id).unwrap().amount = new_amount;
+        }
         let id = self.create_unique_id();
 
         let order = HaulOrder {
@@ -55,23 +64,6 @@ impl RoomMemory {
         };
 
         self.haul_orders.insert(id, order);
-    }
-
-    pub fn find_haul_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory) -> Option<&HaulOrder> {
-        let mut orders = self.haul_orders.values().collect::<Vec<&HaulOrder>>();
-        orders.sort_by(|a, b| a.priority.cmp(&b.priority));
-
-        let unresponded_order = orders.into_iter().find(|&order| order.responder.is_none());
-
-        if let Some(order) = unresponded_order {
-            let order = self.get_haul_order_mut(order.id).unwrap();
-            order.add_responder(creep);
-            let creep_memory = memory.get_creep_mut(&creep.name());
-            creep_memory.t_id = Some(order.id);
-            Some(order)
-        } else {
-            None
-        }
     }
 
     pub fn get_haul_order(&self, order_id: u128) -> Option<&HaulOrder> {

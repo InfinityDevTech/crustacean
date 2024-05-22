@@ -29,6 +29,6 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
 
     room_memory.sources = sources;
 
-    memory.create_room(&room.name(), &room_memory);
+    memory.create_room(&room.name(), room_memory);
     true
 }

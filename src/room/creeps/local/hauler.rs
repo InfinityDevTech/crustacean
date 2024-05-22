@@ -1,30 +1,50 @@
 use std::{cmp::min, str::FromStr};
 
 use screeps::{
-    find, game, Creep, HasPosition, ObjectId, Resource, ResourceType, RoomName, SharedCreepProperties, Structure, StructureObject, Transferable
+    find, game, Creep, HasPosition, ObjectId, Resource, ResourceType, Room, RoomName, SharedCreepProperties, Structure, StructureObject, Transferable
 };
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory}, room, traits::creep::CreepExtensions
+    memory::{CreepMemory, HaulOrder, ScreepsMemory}, room, traits::creep::CreepExtensions
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory) {
-    let creep_memory = memory.get_creep_mut(&creep.name());
+    let creep_memory = memory.creeps.get(&creep.name()).unwrap();
 
-    let order = creep_memory.t_id;
+    let order = creep_memory.task_id;
     if let Some(order_id) = order {
         execute_order(creep, memory, order_id)
     } else {
-        let room_memory = memory.get_room_mut(&RoomName::from_str(&creep_memory.o_r).unwrap());
-        let new_order = room_memory.find_haul_order(creep, memory);
+        let new_order = find_haul_order(creep, memory);
         if let Some(order) = new_order {
             execute_order(creep, memory, order.id);
         }
     }
 }
 
+pub fn find_haul_order(creep: &Creep, memory: &mut ScreepsMemory) -> Option<HaulOrder> {
+    let creep_memory = memory.creeps.get(&creep.name()).unwrap();
+    let room_memory = memory.rooms.get_mut(&RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
+
+    let order_list = room_memory.haul_orders.clone();
+    let mut orders = order_list.values().collect::<Vec<&HaulOrder>>();
+    orders.sort_by(|a, b| a.priority.cmp(&b.priority));
+
+    let unresponded_orders = orders.into_iter().filter(|&order| order.responder.is_none());
+
+    if let Some(order) = unresponded_orders.into_iter().next() {
+        let order = room_memory.haul_orders.get_mut(&order.id).unwrap();
+        order.add_responder(creep);
+        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+        creep_memory.task_id = Some(order.id);
+        Some(order.clone())
+    } else {
+        None
+    }
+}
+
 pub fn execute_order(creep: &Creep, memory: &mut ScreepsMemory, order_id: u128) {
-    let room_memory = memory.get_room_mut(&RoomName::from_str(&memory.get_creep(&creep.name()).o_r).unwrap());
+    let room_memory = memory.rooms.get_mut(&RoomName::from_str(&memory.creeps.get(&creep.name()).unwrap().owning_room).unwrap()).unwrap();
 
     let order = room_memory.get_haul_order(order_id).unwrap();
     let pickup_target = order.target_id;
@@ -32,7 +52,7 @@ pub fn execute_order(creep: &Creep, memory: &mut ScreepsMemory, order_id: u128) 
     let position = order.get_target_position();
 
     if position.get_range_to(creep.pos()) > 1 {
-        let creep_memory = memory.get_creep_mut(&creep.name());
+        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
         creep.better_move_to(creep_memory, position, 1);
         return;
     }

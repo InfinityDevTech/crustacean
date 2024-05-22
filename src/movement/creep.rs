@@ -9,14 +9,14 @@ pub fn move_to(creep_name: &String, creep_memory: &mut CreepMemory, target: Posi
     let creep = game::creeps().get(creep_name.to_string()).unwrap();
     match &creep_memory.movement {
         Some(path) => {
-            move_by_path(creep_name.to_string(), path.clone(), creep_memory)
+            move_by_path(creep_name.to_string(), path, creep_memory)
         }
         None => {
             let target = MoveTarget {
                 pos: target,
                 range: 1,
             }.find_path_to(creep.pos());
-            creep_memory.movement = Some(target.clone());
+            creep_memory.movement = Some(target);
             move_by_path(creep_name.to_string(), target, creep_memory);
         }
 

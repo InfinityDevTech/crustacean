@@ -32,15 +32,9 @@ pub fn game_loop() {
     if game::time() % 10 == 0 {
         for room in game::rooms().values() {
             if let Some(controller) = room.controller() {
-                if controller.my() && !memory.rooms.contains_key(&room.name_str()) {
+                if controller.my() && !memory.rooms.contains_key(&room.name()) {
                     plan_room(&room, &mut memory);
                 }
-            }
-        }
-
-        for creep in memory.clone().creeps.keys() {
-            if game::creeps().get(creep.clone()).is_none() {
-                memory.creeps.remove(&creep.clone());
             }
         }
     }
@@ -57,8 +51,13 @@ pub fn game_loop() {
         }
     }
 
-    for room in memory.clone().rooms.values() {
-        room::democracy::start_government(game::rooms().get(RoomName::from_str(&room.name).unwrap()).unwrap(), &mut memory);
+    for room in game::rooms().keys() {
+        let game_room = game::rooms().get(room).unwrap();
+        let room_memory = memory.rooms.get(&game_room.name());
+
+        if room_memory.is_none() && game_room.my() { plan_room(&game_room, &mut memory); }
+
+        room::democracy::start_government(game::rooms().get(room).unwrap(), &mut memory);
     }
 
     // Bot is finished, write the stats and local copy of memory.

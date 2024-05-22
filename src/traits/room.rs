@@ -56,7 +56,7 @@ impl RoomExtensions for screeps::Room {
 
     fn creeps_of_role(&self, room_memory: &RoomMemory, desired_role: Role) -> Vec<String> {
         room_memory.creeps.iter().filter_map(|creep_name| {
-            let creep_role = utils::name_to_role(&creep_name.clone());
+            let creep_role = utils::name_to_role(&creep_name);
 
             if creep_role == desired_role {
                 Some(creep_name.clone())

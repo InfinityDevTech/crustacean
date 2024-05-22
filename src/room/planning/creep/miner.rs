@@ -9,27 +9,27 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: Structure
     let mut cost = 0;
     let mut parts = Vec::new();
 
-    let room_memory = memory.get_room_mut(&room.name());
+    let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-    let needed = room.get_target_for_miner(&room_memory.clone());
+    let needed = room.get_target_for_miner(&room_memory);
 
     if needed.is_none() {
-        let body = [Part::Move, Part::Work, Part::Carry];
-        let role_name = role_to_name(Role::Upgrader);
+        let body = [Part::Carry, Part::Work, Part::Carry];
+        let role_name = role_to_name(Role::Hauler);
         let name = format!("{}-{}-{}", role_name, memory.creeps.len() + 1, room.name());
 
         let spawn_result = spawn.spawn_creep(&body, &name);
         if spawn_result.is_ok() {
             let cmemory = CreepMemory {
-                r: Role::Upgrader,
-                n_e: Some(true),
-                t_id: None,
-                l_id: None,
-                o_r: room.name().to_string(),
-                p: None,
+                role: Role::Hauler,
+                needs_energy: None,
+                task_id: None,
+                link_id: None,
+                owning_room: room.name().to_string(),
+                path: None,
             };
 
-            memory.create_creep(&room.name_str(), &name, &cmemory);
+            memory.create_creep(&room.name_str(), &name, cmemory);
         }
         return false;
     }
@@ -60,16 +60,16 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: Structure
             info!("  [SPANWER] Spawned a new miner!");
 
             let cmemory = CreepMemory {
-                r: crate::memory::Role::Miner,
-                n_e: Some(true),
-                t_id: Some(needed.unwrap().into()),
-                l_id: None,
-                o_r: room.name().to_string(),
-                p: None,
+                role: crate::memory::Role::Miner,
+                needs_energy: Some(true),
+                task_id: Some(needed.unwrap().into()),
+                link_id: None,
+                owning_room: room.name().to_string(),
+                path: None,
             };
 
-            memory.create_creep(&room.name_str(), &name, &cmemory);
-            let room_memory = memory.get_room_mut(&room.name());
+            memory.create_creep(&room.name_str(), &name, cmemory);
+            let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
             room_memory.creeps_manufactured += 1;
             room_memory.sources.get_mut(needed.unwrap() as usize).unwrap().work_parts += parts.len() as u8 - 3;

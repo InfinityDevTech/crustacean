@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
-use screeps::{game, Creep, HasPosition, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+use log::info;
+use screeps::{game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
 
-use crate::{memory::{CreepMemory, RoomMemory, ScreepsMemory}, room::structure_cache::RoomStructureCache, traits::creep::CreepExtensions};
+use crate::{memory::{CreepMemory, HaulOrder, RoomMemory, ScreepsMemory}, room::{hauling::HaulPriorities, object_cache::RoomStructureCache}, traits::{creep::CreepExtensions, room::RoomExtensions}};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structures: &RoomStructureCache) {
 
@@ -12,35 +13,55 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structures: &RoomStr
         return;
     }
 
-    let cloned_memory = memory.clone();
-    let creep_memory = memory.get_creep_mut(&creep.name());
-    let room_memory = cloned_memory.get_room(&RoomName::from_str(&creep_memory.o_r).unwrap());
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let room_memory = memory.rooms.get(&RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
 
-    if creep_memory.t_id.is_none() {
+    if creep_memory.task_id.is_none() {
         let _ = creep.say("kurt kob", true);
         let _ = creep.suicide();
     }
 
-    let pointer_index = creep_memory.t_id.unwrap() as usize;
+    let pointer_index = creep_memory.task_id.unwrap() as usize;
     let scouted_source = &room_memory.sources[pointer_index];
     let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
-    if creep_memory.n_e.unwrap_or(false) {
+    if creep_memory.needs_energy.unwrap_or(false) {
 
         harvest_source(creep, source, creep_memory);
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) >= creep.store().get_capacity(Some(ResourceType::Energy)) {
-            creep_memory.n_e = None;
+            creep_memory.needs_energy = None;
         }
     } else {
-        if !link_deposit(creep, creep_memory, &room_memory, structures) {
-            drop_deposit(creep, creep_memory, structures);
+        if !link_deposit(creep, creep_memory, room_memory, structures) {
+            let room_mem = memory.rooms.get_mut(&RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
+            drop_deposit(creep, room_mem, creep_memory, structures);
         }
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-            creep_memory.n_e = Some(true);
+            creep_memory.needs_energy = Some(true);
         }
     }
+}
+
+fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, room_memory: &mut RoomMemory, structures: &RoomStructureCache) -> bool {
+    let spawn = structures.spawns.values().next().unwrap();
+    let spawn = game::get_object_by_id_typed(&spawn.id()).unwrap();
+
+    let room = game::rooms().get(RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
+
+    let haulers = room.creeps_of_role(room_memory, crate::memory::Role::Hauler);
+    if haulers.is_empty() {
+        let _ = creep.say("🚚", true);
+       // info!("{:#?}", creep.transfer(&spawn, ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy)))).err().unwrap());
+        if creep.transfer(&spawn, ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy)))) == Err(ErrorCode::NotInRange) {
+            creep.better_move_to(creep_memory, spawn.pos(), 1);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return false;
 }
 
 fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory) {
@@ -52,7 +73,7 @@ fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory) {
 }
 
 fn link_deposit(creep: &Creep, creep_memory: &CreepMemory, room_memory: &RoomMemory, structures: &RoomStructureCache) -> bool {
-    let link_pos = creep_memory.l_id;
+    let link_pos = creep_memory.link_id;
 
     if let Some(links) = &room_memory.links {
         let link_id = links.get(link_pos.unwrap() as usize).unwrap();
@@ -67,26 +88,30 @@ fn link_deposit(creep: &Creep, creep_memory: &CreepMemory, room_memory: &RoomMem
     false
 }
 
-fn drop_deposit(creep: &Creep, creep_memory: &mut CreepMemory, structures: &RoomStructureCache) {
-    //let spawn = structures.spawns.iter().next().unwrap().1;
-    let spawn = structures.controller.clone().unwrap();
+fn drop_deposit(creep: &Creep, room_memory: &mut RoomMemory, creep_memory: &mut CreepMemory, structures: &RoomStructureCache) {
 
-    //info!("Euclidean: {} - Chebeshev: {}", creep.pos().distance_to(spawn.pos()), creep.pos().get_range_to(spawn.pos()));
-    if creep.pos().get_range_to(spawn.pos()) <= 2 {
-        //let _ = creep.transfer(spawn, ResourceType::Energy, None);
-        let _ = creep.upgrade_controller(&spawn);
-    } else {
-        creep.better_move_to(creep_memory, spawn.pos(), 2);
+    if needs_haul_manually(creep, creep_memory, room_memory, structures) {
+        return;
     }
+
+    let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
+    let dropped = creep.drop(ResourceType::Energy, Some(amount));
+
+    room_memory.create_haul_order(HaulPriorities::Normal,
+        creep.try_id().unwrap().into(),
+        ResourceType::Energy,
+        amount,
+        crate::room::hauling::HaulType::Pickup);
 }
 
 fn handle_death(creep: &Creep, memory: &mut ScreepsMemory) {
-    let creep_memory = memory.clone().get_creep(&creep.name());
+    let CreepMemory {task_id, owning_room, ..} = memory.creeps.get(&creep.name()).unwrap().clone();
 
-    memory.get_room(&RoomName::from_str(&creep_memory.o_r).unwrap()).creeps.retain(|x| x != &creep.name());
+    let room_memory = memory.rooms.get_mut(&RoomName::from_str(&owning_room).unwrap()).unwrap();
+
+    room_memory.creeps.retain(|x| x != &creep.name());
     memory.creeps.remove(&creep.name());
 
-    let room_memory = memory.get_room_mut(&RoomName::from_str(&creep_memory.o_r).unwrap());
-    room_memory.sources[creep_memory.t_id.unwrap() as usize].assigned_creeps -= 1;
-    room_memory.sources[creep_memory.t_id.unwrap() as usize].work_parts -= creep.parts_of_type(Part::Work) as u8;
+    room_memory.sources[task_id.unwrap() as usize].assigned_creeps -= 1;
+    room_memory.sources[task_id.unwrap() as usize].work_parts -= creep.parts_of_type(Part::Work) as u8;
 }

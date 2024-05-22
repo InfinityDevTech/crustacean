@@ -1,34 +1,25 @@
 use log::info;
-use screeps::{game, Room};
+use screeps::{game, Room, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, room::structure_cache::RoomStructureCache, traits::creep::CreepExtensions};
+use crate::{memory::{Role, ScreepsMemory}, room::object_cache::RoomStructureCache, traits::creep::CreepExtensions};
 
 use super::local;
 
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, structure_cache: &RoomStructureCache) {
     info!("  [CREEPS] Running creeps in room: {}", room.name());
-    let creeps = memory.get_room(&room.name()).creeps.clone();
+
+    let creeps = memory.rooms.get(&room.name()).unwrap().creeps.clone();
 
     for creep_name in creeps {
-        let creep = game::creeps().get(creep_name.clone());
-
-        if creep.is_none() {
-            memory.creeps.remove(&creep_name);
-            memory
-                .get_room(&room.name())
-                .creeps
-                .retain(|x| x != &creep_name);
-            continue;
-        }
-        let creep = creep.unwrap();
-        let creep_memory = memory.get_creep(&creep_name);
+        let creep = game::creeps().get(creep_name.to_string()).unwrap();
+        let creep_memory = memory.creeps.get(&creep.name()).unwrap();
 
         if creep.spawning() || creep.tired() {
             let _ = creep.say("😴", false);
             continue;
         }
 
-        match creep_memory.r {
+        match creep_memory.role {
             Role::Miner => local::source_miner::run_creep(&creep, memory, structure_cache),
             Role::Hauler => local::hauler::run_creep(&creep, memory),
             Role::Upgrader => local::upgrader::run_creep(&creep, memory, structure_cache),

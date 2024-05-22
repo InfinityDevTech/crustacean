@@ -1,13 +1,13 @@
 use log::info;
 use screeps::Room;
 
-use crate::{memory::ScreepsMemory, room::{creeps::organizer, structure_cache::RoomStructureCache}};
+use crate::{memory::ScreepsMemory, room::{creeps::organizer, object_cache::RoomStructureCache}};
 
 use super::{planning::creep::miner::formulate_miner, tower};
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     info!("[GOVERNMENT] Starting government for room: {}", room.name());
-    let structure_cache = RoomStructureCache::new_from_room(&room);
+    let structure_cache = RoomStructureCache::new_from_room(&room, memory);
 
     let spawn = structure_cache.spawns.iter().next();
 

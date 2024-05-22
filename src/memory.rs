@@ -1,6 +1,7 @@
 use std::{cmp, collections::HashMap};
 
 use log::error;
+use qcell::QCell;
 use screeps::{game, ObjectId, RawObjectId, Resource, ResourceType, RoomName, Source, Structure, StructureLink};
 use serde::{Deserialize, Serialize};
 
@@ -25,25 +26,31 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct CreepMemory{
     // Owning room
-    pub o_r: String,
+    #[serde(rename = "0")]
+    pub owning_room: String,
     // Path
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub p: Option<String>,
+    #[serde(rename = "1")]
+    pub path: Option<String>,
     // Career
-    pub r: Role,
+    #[serde(rename = "2")]
+    pub role: Role,
     // Needs Energy?
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub n_e: Option<bool>,
+    #[serde(rename = "3")]
+    pub needs_energy: Option<bool>,
     // This is miner specific, the ID of the link next to it
     // If this is empty, then the miner is not linked to a link and it will drop resources on the ground
     // If it is, but the link isnt next to it, the miner will clear the link id. If it is, the miner will deposit resources into the link
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub l_id: Option<u8>,
+    #[serde(rename = "4")]
+    pub link_id: Option<u8>,
     // This is a pointer that changes based on the role of the creep
     // Hauler - A reference to the ID of the current haul orders
     // Miner - A reference to the source in the vec of sources
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub t_id: Option<u128>,
+    #[serde(rename = "5")]
+    pub task_id: Option<u128>,
 }
 }
 
@@ -62,12 +69,19 @@ pub struct RoomMemory{
     }>,
 
     pub haul_orders: HashMap<u128, pub struct HaulOrder {
+        #[serde(rename = "0")]
         pub id: u128,
+        #[serde(rename = "1")]
         pub priority: HaulPriorities,
+        #[serde(rename = "2")]
         pub target_id: RawObjectId,
+        #[serde(rename = "3")]
         pub target_type: ResourceType,
+        #[serde(rename = "4")]
         pub responder: Option<String>,
+        #[serde(rename = "5")]
         pub haul_type: HaulType,
+        #[serde(rename = "6")]
         pub amount: u32,
     }>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -82,7 +96,7 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
         pub mem_version: u8,
-        pub rooms: HashMap<String, RoomMemory>,
+        pub rooms: HashMap<RoomName, RoomMemory>,
         pub creeps: HashMap<String, CreepMemory>
     }
 }
@@ -92,11 +106,13 @@ impl ScreepsMemory {
         let memory_jsstring = screeps::raw_memory::get();
         let memory_string = memory_jsstring.as_string().unwrap();
         if memory_string.is_empty() {
+
             let mut memory = ScreepsMemory {
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
             };
+
             memory.write_memory();
             memory
         } else {
@@ -125,32 +141,18 @@ impl ScreepsMemory {
         screeps::raw_memory::set(&js_serialized);
     }
 
-    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, object: &CreepMemory) {
-        self.creeps.insert(creep_name.to_string(), object.clone());
+    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, object: CreepMemory) {
+        self.creeps.insert(creep_name.to_string(), object);
 
-        let room = self.get_room_mut(&RoomName::new(room_name).unwrap());
+        let room = self.rooms.get_mut(&RoomName::new(room_name).unwrap()).unwrap();
         room.creeps.push(creep_name.to_string());
     }
 
-    pub fn create_room(&mut self, name: &RoomName, object: &RoomMemory) {
+    pub fn create_room(&mut self, name: &RoomName, object: RoomMemory) {
         self.rooms.insert(
-            name.to_string(),
-            object.clone()
+            *name,
+            object
         );
-    }
-
-    pub fn get_room_mut(&mut self, name: &RoomName) -> &mut RoomMemory {
-        self.rooms.get_mut(&name.to_string()).expect("Failure to resolve room in memory.")
-    }
-    pub fn get_creep_mut(&mut self, name: &str) -> &mut CreepMemory {
-        self.creeps.get_mut(name).expect("Failure to resolve creep in memory.")
-    }
-
-    pub fn get_room(&self, name: &RoomName) -> RoomMemory {
-        self.rooms.get(&name.to_string()).expect("Failure to resolve room in memory.").clone()
-    }
-    pub fn get_creep(&self, name: &str) -> CreepMemory {
-        self.creeps.get(name).expect("Failure to resolve in memory.").clone()
     }
 }
 

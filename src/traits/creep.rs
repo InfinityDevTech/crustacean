@@ -35,7 +35,7 @@ impl CreepExtensions for screeps::Creep {
             })
             .collect::<Vec<u8>>();
         if serialized_vec.is_empty() {
-            memory.p = None;
+            memory.path = None;
             return;
         }
         let step_dir = num_to_dir(serialized_vec[0]);
@@ -49,10 +49,10 @@ impl CreepExtensions for screeps::Creep {
                     .collect::<Vec<String>>()
                     .join("");
                 if serialized_vec.is_empty() {
-                    memory.p = None;
+                    memory.path = None;
                     return;
                 } else {
-                    memory.p = Some(serialized_path);
+                    memory.path = Some(serialized_path);
                 }
 
                 let mut points = vec![];
@@ -65,7 +65,7 @@ impl CreepExtensions for screeps::Creep {
                 }
             }
             Err(e) => {
-                memory.p = None;
+                memory.path = None;
                 info!("Creep move failed, {:?}", e)
             }
         };
@@ -77,9 +77,9 @@ impl CreepExtensions for screeps::Creep {
             return;
         }
 
-        match creep_memory.clone().p {
+        match &creep_memory.path {
             Some(path) => {
-                self.better_move_by_path(path.clone(), creep_memory);
+                self.better_move_by_path(path.to_string(), creep_memory);
             }
             None => {
                 let target = MoveTarget {
@@ -88,9 +88,9 @@ impl CreepExtensions for screeps::Creep {
                 }
                 .find_path_to(creep.pos());
 
-                creep_memory.p = Some(target.clone());
+                creep_memory.path = Some(target.clone());
 
-                self.better_move_by_path(target.clone(), creep_memory);
+                self.better_move_by_path(target, creep_memory);
             }
         }
     }

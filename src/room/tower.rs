@@ -1,6 +1,6 @@
 use screeps::{Room, find};
 
-use super::structure_cache::RoomStructureCache;
+use super::object_cache::RoomStructureCache;
 
 pub fn run_towers(room: &Room, structure_cache: &RoomStructureCache) {
     let towers = structure_cache.towers.values();

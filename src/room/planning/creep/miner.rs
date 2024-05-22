@@ -62,7 +62,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, spawn: Structure
             let cmemory = CreepMemory {
                 r: crate::memory::Role::Miner,
                 n_e: Some(true),
-                t_id: Some(needed.unwrap()),
+                t_id: Some(needed.unwrap().into()),
                 l_id: None,
                 o_r: room.name().to_string(),
                 p: None,

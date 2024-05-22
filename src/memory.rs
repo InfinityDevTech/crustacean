@@ -1,12 +1,12 @@
 use std::{cmp, collections::HashMap};
 
 use log::error;
-use screeps::{game, ObjectId, Resource, ResourceType, RoomName, Source, Structure, StructureLink};
+use screeps::{game, ObjectId, RawObjectId, Resource, ResourceType, RoomName, Source, Structure, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{room::hauling::HaulPriorities, MEMORY_VERSION};
+use crate::{room::hauling::{HaulPriorities, HaulType}, MEMORY_VERSION};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Role {
@@ -43,7 +43,7 @@ pub struct CreepMemory{
     // Hauler - A reference to the ID of the current haul orders
     // Miner - A reference to the source in the vec of sources
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub t_id: Option<u8>,
+    pub t_id: Option<u128>,
 }
 }
 
@@ -61,12 +61,13 @@ pub struct RoomMemory{
         pub work_parts: u8,
     }>,
 
-    pub haul_orders: Vec<pub struct HaulOrder {
+    pub haul_orders: HashMap<u128, pub struct HaulOrder {
         pub id: u128,
         pub priority: HaulPriorities,
-        pub target_id: ObjectId<Structure>,
+        pub target_id: RawObjectId,
         pub target_type: ResourceType,
         pub responder: Option<String>,
+        pub haul_type: HaulType,
         pub amount: u32,
     }>,
     #[serde(skip_serializing_if = "Option::is_none")]

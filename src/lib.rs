@@ -66,11 +66,14 @@ pub fn game_loop() {
     // This is done like this because its basically MemHack for you JS people.
     memory.write_memory();
 
+    let heap = game::cpu::get_heap_statistics();
+
     info!("[STATS] Statistics are as follows: ");
     info!("  GCL {}. Next: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
     info!("  CPU Usage:");
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
+    info!("       Heap: {:.1}/{:.1}", (heap.total_heap_size() / 1000000), (heap.heap_size_limit() / 1000000));
 }
 
 #[wasm_bindgen(js_name = red_button)]

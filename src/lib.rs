@@ -48,7 +48,7 @@ pub fn game_loop() {
             if room.my() && !planning::room::plan_room(&room, &mut memory) { return; }
         }
     }
-
+    
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
         let room_memory = memory.rooms.get(&game_room.name());
@@ -77,7 +77,7 @@ pub fn game_loop() {
 #[wasm_bindgen(js_name = red_button)]
 pub fn big_red_button() {
     for creep in game::creeps().values() {
-        let _ = creep.say("GOD WHY IS THIS HAPPENING???", true);
+        let _ = creep.say("WHY???", true);
         let _ = creep.suicide();
     }
     for room in game::rooms().values() {

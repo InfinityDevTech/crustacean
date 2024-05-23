@@ -4,6 +4,7 @@ use screeps::{game, Room};
 use crate::{memory::{RoomMemory, ScreepsMemory}, traits::room::RoomExtensions};
 
 pub mod resources;
+pub mod construction;
 
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
     if game::cpu::bucket() < 100 {

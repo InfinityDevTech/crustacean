@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, Creep, HasId, ObjectId, Resource, Room, SharedCreepProperties, Source, StructureController, StructureExtension, StructureLink, StructureObject, StructureSpawn, StructureTower};
+use screeps::{find, HasId, ObjectId, Room, Source, StructureController, StructureExtension, StructureLink, StructureObject, StructureSpawn, StructureTower};
 
 use crate::memory::ScreepsMemory;
 
@@ -9,30 +9,24 @@ pub struct RoomStructureCache {
     pub sources: HashMap<ObjectId<Source>, Source>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
-    pub dropped_resources: Vec<ObjectId<Resource>>,
 
     pub controller: Option<StructureController>,
 
     pub links: HashMap<ObjectId<StructureLink>, StructureLink>,
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
-
-    pub creeps: HashMap<String, Creep>,
 }
 
 impl RoomStructureCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> RoomStructureCache {
+    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
             sources: HashMap::new(),
             towers: HashMap::new(),
             spawns: HashMap::new(),
-            dropped_resources: Vec::new(),
 
             controller: None,
 
             links: HashMap::new(),
             extensions: HashMap::new(),
-
-            creeps: HashMap::new(),
         };
 
         if let Some(controller) = room.controller() {
@@ -42,16 +36,7 @@ impl RoomStructureCache {
         cache.refresh_source_cache(room);
         cache.refresh_structure_cache(room);
         cache.refresh_spawn_cache(room);
-        cache.refresh_dropped_resources(room);
-        cache.get_creep_cache(room, memory);
         cache
-    }
-
-    pub fn refresh_dropped_resources(&mut self, room: &Room) {
-        let resources = room.find(find::DROPPED_RESOURCES, None);
-        for resource in resources {
-            self.dropped_resources.push(resource.id());
-        }
     }
 
     pub fn refresh_spawn_cache(&mut self, room: &Room) {
@@ -85,19 +70,6 @@ impl RoomStructureCache {
         let sources = room.find(find::SOURCES, None);
         for source in sources {
             self.sources.insert(source.id(), source);
-        }
-    }
-
-    pub fn get_creep_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
-        let creeps = &mut memory.rooms.get_mut(&room.name()).unwrap().creeps;
-
-        for creep_name in creeps.clone().iter() {
-            let in_game_creep = game::creeps().get(creep_name.to_string());
-            if let Some(creep) = in_game_creep {
-                self.creeps.insert(creep.name(), creep);
-            } else {
-                creeps.retain(|x| x != creep_name);
-            }
         }
     }
 }

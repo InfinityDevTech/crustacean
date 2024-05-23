@@ -1,7 +1,7 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use log::*;
-use screeps::{find, game, prelude::*, RoomName};
+use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, room::planning::{self, room::plan_room}, traits::room::RoomExtensions};
@@ -43,11 +43,9 @@ pub fn game_loop() {
         for room in game::rooms().keys() {
             let room = game::rooms().get(room).unwrap();
 
-            let controller = room.controller().unwrap();
-
             // If the planner says false on the first game tick, it doesnt have enough CPU to plan the room.
             // So we can fill teh bucket and try again next tick.
-            if controller.my() && !planning::room::plan_room(&room, &mut memory) { return; }
+            if room.my() && !planning::room::plan_room(&room, &mut memory) { return; }
         }
     }
 
@@ -66,13 +64,14 @@ pub fn game_loop() {
     memory.write_memory();
 
     let heap = game::cpu::get_heap_statistics();
+    let used = (heap.total_heap_size() / heap.heap_size_limit()) * 100;
 
     info!("[STATS] Statistics are as follows: ");
     info!("  GCL {}. Next: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
     info!("  CPU Usage:");
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
-    info!("       Heap: {:.1}/{:.1}", (heap.total_heap_size() / 1000000), (heap.heap_size_limit() / 1000000));
+    info!("       Heap: {:.2}%", used);
 }
 
 #[wasm_bindgen(js_name = red_button)]

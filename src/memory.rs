@@ -1,15 +1,16 @@
 use std::{cmp, collections::HashMap};
 
 use log::error;
-use qcell::QCell;
-use screeps::{game, ObjectId, RawObjectId, Resource, ResourceType, RoomName, Source, Structure, StructureLink};
+use screeps::{game, ObjectId, RawObjectId, ResourceType, RoomName, Source, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{room::hauling::{HaulPriorities, HaulType}, MEMORY_VERSION};
+use crate::{room::cache::hauling::{HaulingPriority, HaulingType}, MEMORY_VERSION};
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+pub const ALLIES: [&str; 2] = ["MarvinTMB", "Tigga"];
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
 pub enum Role {
     // Mining industry
     Miner,
@@ -44,13 +45,27 @@ pub struct CreepMemory{
     // If it is, but the link isnt next to it, the miner will clear the link id. If it is, the miner will deposit resources into the link
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "4")]
-    pub link_id: Option<u8>,
+    pub link_id: Option<ObjectId<StructureLink>>,
     // This is a pointer that changes based on the role of the creep
-    // Hauler - A reference to the ID of the current haul orders
     // Miner - A reference to the source in the vec of sources
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "5")]
     pub task_id: Option<u128>,
+    // The hauling task if a creep is a hauler.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "6")]
+    pub hauling_task: Option<pub struct CreepHaulTask {
+        #[serde(rename = "0")]
+        pub target_id: RawObjectId,
+        #[serde(rename = "1")]
+        pub haul_type: HaulingType,
+        #[serde(rename = "2")]
+        pub priority: HaulingPriority,
+        #[serde(rename = "3")]
+        pub resource: ResourceType,
+        #[serde(rename = "4")]
+        pub amount: u32,
+    }>,
 }
 }
 
@@ -67,25 +82,6 @@ pub struct RoomMemory{
         pub max_creeps: u8,
         pub work_parts: u8,
     }>,
-
-    pub haul_orders: HashMap<u128, pub struct HaulOrder {
-        #[serde(rename = "0")]
-        pub id: u128,
-        #[serde(rename = "1")]
-        pub priority: HaulPriorities,
-        #[serde(rename = "2")]
-        pub target_id: RawObjectId,
-        #[serde(rename = "3")]
-        pub target_type: ResourceType,
-        #[serde(rename = "4")]
-        pub responder: Option<String>,
-        #[serde(rename = "5")]
-        pub haul_type: HaulType,
-        #[serde(rename = "6")]
-        pub amount: u32,
-    }>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub links: Option<Vec<ObjectId<StructureLink>>>,
     // Creeps by role
     pub creeps: Vec<String>,
     pub creeps_manufactured: u128,

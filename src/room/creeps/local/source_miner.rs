@@ -1,11 +1,10 @@
 use std::str::FromStr;
 
-use log::info;
-use screeps::{game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+use screeps::{game, Creep, ErrorCode, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
 
-use crate::{memory::{CreepMemory, HaulOrder, RoomMemory, ScreepsMemory}, room::{hauling::HaulPriorities, object_cache::RoomStructureCache}, traits::{creep::CreepExtensions, room::RoomExtensions}};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structures: &RoomStructureCache) {
+pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
     if creep.near_age_death() {
         let _ = creep.say("👴", true);
@@ -31,37 +30,39 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, structures: &RoomStr
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) >= creep.store().get_capacity(Some(ResourceType::Energy)) {
             creep_memory.needs_energy = None;
+            if !link_deposit(creep, creep_memory, cache) {
+                drop_deposit(creep, creep_memory, cache);
+            }
         }
     } else {
-        if !link_deposit(creep, creep_memory, room_memory, structures) {
-            let room_mem = memory.rooms.get_mut(&RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
-            drop_deposit(creep, room_mem, creep_memory, structures);
+        if !link_deposit(creep, creep_memory, cache) {
+            drop_deposit(creep, creep_memory, cache);
         }
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
             creep_memory.needs_energy = Some(true);
+            harvest_source(creep, source, creep_memory);
         }
     }
 }
 
-fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, room_memory: &mut RoomMemory, structures: &RoomStructureCache) -> bool {
-    let spawn = structures.spawns.values().next().unwrap();
-    let spawn = game::get_object_by_id_typed(&spawn.id()).unwrap();
+fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache) -> bool {
+    let count = if let Some(creeps) = cache.creeps.creeps_of_role.get(&Role::Hauler) {
+        creeps.len()
+    } else {
+        0
+    };
 
-    let room = game::rooms().get(RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
-
-    let haulers = room.creeps_of_role(room_memory, crate::memory::Role::Hauler);
-    if haulers.is_empty() {
+    if count == 0 {
         let _ = creep.say("🚚", true);
-       // info!("{:#?}", creep.transfer(&spawn, ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy)))).err().unwrap());
-        if creep.transfer(&spawn, ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy)))) == Err(ErrorCode::NotInRange) {
+
+        let spawn = cache.structures.spawns.clone().into_iter().next().unwrap().1;
+        if creep.transfer(&spawn, ResourceType::Energy, None) == Err(ErrorCode::NotInRange) {
             creep.better_move_to(creep_memory, spawn.pos(), 1);
-            return true;
-        } else {
-            return false;
         }
+        return true;
     }
-    return false;
+    false
 }
 
 fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory) {
@@ -72,36 +73,31 @@ fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory) {
     }
 }
 
-fn link_deposit(creep: &Creep, creep_memory: &CreepMemory, room_memory: &RoomMemory, structures: &RoomStructureCache) -> bool {
-    let link_pos = creep_memory.link_id;
+fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache) -> bool {
+    let link_id = creep_memory.link_id;
 
-    if let Some(links) = &room_memory.links {
-        let link_id = links.get(link_pos.unwrap() as usize).unwrap();
-        let link = structures.links.get(link_id).unwrap();
+    if let Some(linkid) = link_id {
+        let link = cache.structures.links.get(&linkid).unwrap();
 
         if creep.pos().is_near_to(link.pos()) {
-            let _ = creep.transfer(link, ResourceType::Energy, None);
-            return true;
+            let _ = creep.transfer(link, ResourceType::Energy, Some(creep.store().get_used_capacity(Some(ResourceType::Energy))));
+        } else {
+            return false;
         }
-        return false;
     }
     false
 }
 
-fn drop_deposit(creep: &Creep, room_memory: &mut RoomMemory, creep_memory: &mut CreepMemory, structures: &RoomStructureCache) {
+fn drop_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) {
 
-    if needs_haul_manually(creep, creep_memory, room_memory, structures) {
+    if needs_haul_manually(creep, creep_memory, cache) {
         return;
     }
 
     let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
-    let dropped = creep.drop(ResourceType::Energy, Some(amount));
 
-    room_memory.create_haul_order(HaulPriorities::Normal,
-        creep.try_id().unwrap().into(),
-        ResourceType::Energy,
-        amount,
-        crate::room::hauling::HaulType::Pickup);
+    //let mut mutable = cache.hauling.borrow_mut();
+    cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, amount, HaulingPriority::Energy, HaulingType::Pickup);
 }
 
 fn handle_death(creep: &Creep, memory: &mut ScreepsMemory) {

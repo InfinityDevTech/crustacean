@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use log::info;
 use screeps::{game, Room};
 
@@ -20,8 +18,6 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
         id: 0,
         creeps: Vec::new(),
         sources: Vec::new(),
-        haul_orders: HashMap::new(),
-        links: None,
         creeps_manufactured: 0
     };
 

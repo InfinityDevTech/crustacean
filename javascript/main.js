@@ -76,8 +76,6 @@ function run_loop() {
     console.error = console_error
     try {
 
-      console.log(wasm_module)
-
       if (!EXECUTION_PAUSED) {
         wasm_module.loop();
       }

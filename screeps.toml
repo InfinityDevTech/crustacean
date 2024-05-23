@@ -7,7 +7,7 @@ default_deploy_mode = "upload"
 extra_options = ["--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort"]
 
 [upload]
-auth_token = "fbfeb887-6c37-4ef9-922f-01eea5b927f0"
+auth_token = "fa04ae5b-7def-4016-a063-ea641ab8e68e"
 [upload.build]
   build-target="release"
 

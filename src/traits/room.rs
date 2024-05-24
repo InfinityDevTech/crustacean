@@ -9,8 +9,6 @@ pub trait RoomExtensions {
     fn split_name(&self) -> (String, u32, String, u32);
     fn my(&self) -> bool;
 
-    fn creeps_of_role(&self, room_memory: &RoomMemory, role: Role) -> Vec<String>;
-
     fn get_target_for_miner(&self, room_memory: &RoomMemory) -> Option<u8>;
 
     fn is_highway(&self) -> bool;
@@ -52,18 +50,6 @@ impl RoomExtensions for screeps::Room {
         }
 
         None
-    }
-
-    fn creeps_of_role(&self, room_memory: &RoomMemory, desired_role: Role) -> Vec<String> {
-        room_memory.creeps.iter().filter_map(|creep_name| {
-            let creep_role = utils::name_to_role(&creep_name);
-
-            if creep_role == desired_role {
-                Some(creep_name.clone())
-            } else {
-                None
-            }
-        }).collect()
     }
 
     fn is_highway(&self) -> bool {

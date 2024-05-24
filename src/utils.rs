@@ -11,13 +11,13 @@ pub fn role_to_name(role: Role) -> String {
     data.to_string()
 }
 
-pub fn name_to_role(name: &str) -> Role {
-    match name {
-        "sm" => { Role::Miner },
-        "mb" => { Role::Hauler },
-        "ud" => { Role::Upgrader },
-        "bd" => { Role::Builder },
-        "fg" => { Role::Scout },
-        _ => { Role::Miner },
+pub fn name_to_role(name: &str) -> Option<Role> {
+    match &name[..2] {
+        "sm" => { Some(Role::Miner) },
+        "mb" => { Some(Role::Hauler) },
+        "ud" => { Some(Role::Upgrader) },
+        "bd" => { Some(Role::Builder) },
+        "fg" => { Some(Role::Scout) },
+        _ => { None },
     }
 }

@@ -2,7 +2,7 @@ use log::info;
 use screeps::{game, Room, RoomVisual};
 use wasm_bindgen::convert::IntoWasmAbi;
 
-use crate::{memory::ScreepsMemory, room::{cache::RoomCache, creeps::{local::hauler, organizer}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
+use crate::{memory::ScreepsMemory, room::{cache::RoomCache, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
 
 use super::planning::creep::miner::formulate_miner;
 
@@ -34,6 +34,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     let things = get_bunker_plan();
 
     let mut viz = RoomVisualExt::new(room.name());
+
+    if game::time() % 10 == 0 {
+        recover_creeps(memory);
+    }
 
     for thing in things.iter() {
         let x_offset = thing.0 + coords.0;

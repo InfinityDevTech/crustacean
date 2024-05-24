@@ -17,10 +17,10 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
 
     let mut room_memory = RoomMemory {
         name: room.name_str(),
+        rcl: room.controller().unwrap().level(),
         id: 0,
         creeps: Vec::new(),
         sources: Vec::new(),
-        creeps_manufactured: 0
     };
 
     let sources = resources::find_sources(room);

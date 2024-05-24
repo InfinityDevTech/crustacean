@@ -74,17 +74,21 @@ structstruck::strike! {
 pub struct RoomMemory{
     // Name
     pub name: String,
+    pub rcl: u8,
     pub id: u128,
     // Mining stuffs
     pub sources: Vec<pub struct ScoutedSource {
+        #[serde(rename = "0")]
         pub id: ObjectId<Source>,
+        #[serde(rename = "1")]
         pub assigned_creeps: u8,
+        #[serde(rename = "2")]
         pub max_creeps: u8,
+        #[serde(rename = "3")]
         pub work_parts: u8,
     }>,
     // Creeps by role
     pub creeps: Vec<String>,
-    pub creeps_manufactured: u128,
 }
 }
 

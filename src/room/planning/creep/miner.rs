@@ -124,7 +124,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 memory.create_creep(&room.name_str(), &name, cmemory);
                 let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-                room_memory.creeps_manufactured += 1;
                 room_memory
                     .sources
                     .get_mut(needed.unwrap() as usize)

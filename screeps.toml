@@ -17,11 +17,11 @@ prefix = "ptr"
 
 [copy]
 # Windows Desktop
-destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\127_0_0_1___21025"
+#destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\127_0_0_1___21025"
 # Linux Laptop
 #destination = "/home/jwjoh/.config/Screeps/scripts/127_0_0_1___21025"
 # Bot arena
-#destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\botarena_screepspl_us___21025"
+destination = "C:\\Users\\jwjoh\\AppData\\Local\\Screeps\\scripts\\botarena_screepspl_us___21025"
 
 branch = "default"
 [copy.build]

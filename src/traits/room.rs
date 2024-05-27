@@ -1,15 +1,15 @@
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, OwnedStructureProperties, Terrain};
+use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
 
-use crate::{memory::{Role, RoomMemory}, utils};
+use crate::{memory::{Role, RoomMemory}, room::cache::RoomCache, utils};
 
 pub trait RoomExtensions {
     fn name_str(&self) -> String;
     fn split_name(&self) -> (String, u32, String, u32);
     fn my(&self) -> bool;
 
-    fn get_target_for_miner(&self, room_memory: &RoomMemory) -> Option<u8>;
+    fn get_target_for_miner(&self, room_memory: &Room, cache: &mut RoomCache) -> Option<u8>;
 
     fn is_highway(&self) -> bool;
     fn is_intersection(&self) -> bool;
@@ -40,11 +40,11 @@ impl RoomExtensions for screeps::Room {
             .map_or(false, |controller| controller.my())
     }
 
-    fn get_target_for_miner(&self, room_memory: &RoomMemory) -> Option<u8> {
-        let sources = &room_memory.sources;
+    fn get_target_for_miner(&self, room: &Room, cache: &mut RoomCache) -> Option<u8> {
+        let sources = &cache.structures.sources;
 
         for (i, source) in sources.iter().enumerate() {
-            if source.work_parts < source.parts_needed() && source.assigned_creeps < source.max_creeps {
+            if source.calculate_work_parts() < source.parts_needed() && source.creeps.len() < source.calculate_mining_spots(room).into() {
                 return Some(i as u8);
             }
         }

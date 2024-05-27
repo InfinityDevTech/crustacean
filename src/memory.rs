@@ -1,26 +1,29 @@
 use std::{cmp, collections::HashMap};
 
 use log::error;
-use screeps::{game, ObjectId, RawObjectId, ResourceType, RoomName, Source, StructureLink};
+use screeps::{game, look::{self, LookResult}, Creep, HasPosition, ObjectId, Part, RawObjectId, ResourceType, Room, RoomName, Source, StructureLink, Terrain};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{room::cache::hauling::{HaulingPriority, HaulingType}, MEMORY_VERSION};
+use crate::{room::{self, cache::hauling::{HaulingPriority, HaulingType}}, MEMORY_VERSION};
 
 pub const ALLIES: [&str; 2] = ["MarvinTMB", "Tigga"];
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
+// The roles listed in creep memory
+// The order of this also is the order in which
+// Traffic Priority is handled.
 pub enum Role {
     // Mining industry
-    Miner,
-    Hauler,
+    Miner = 0,
+    Hauler = 1,
 
     // Construction industry
-    Upgrader,
-    Builder,
+    Upgrader = 2,
+    Builder = 3,
 
-    Scout,
+    Scout = 10,
 }
 
 structstruck::strike! {
@@ -76,17 +79,7 @@ pub struct RoomMemory{
     pub name: String,
     pub rcl: u8,
     pub id: u128,
-    // Mining stuffs
-    pub sources: Vec<pub struct ScoutedSource {
-        #[serde(rename = "0")]
-        pub id: ObjectId<Source>,
-        #[serde(rename = "1")]
-        pub assigned_creeps: u8,
-        #[serde(rename = "2")]
-        pub max_creeps: u8,
-        #[serde(rename = "3")]
-        pub work_parts: u8,
-    }>,
+    pub planned: bool,
     // Creeps by role
     pub creeps: Vec<String>,
 }
@@ -153,20 +146,5 @@ impl ScreepsMemory {
             *name,
             object
         );
-    }
-}
-
-impl ScoutedSource {
-    pub fn parts_needed(&self) -> u8 {
-        let source: Source = game::get_object_by_id_typed(&self.id).unwrap();
-        let max_energy = source.energy_capacity();
-
-        // Each work part equates to 2 energy per tick
-        // Each source refills energy every 300 ticks.
-        let max_work_needed = (max_energy / 300) + 2;
-
-        let work_parts_needed = max_work_needed - self.work_parts as u32;
-
-        cmp::max(work_parts_needed, 0) as u8
     }
 }

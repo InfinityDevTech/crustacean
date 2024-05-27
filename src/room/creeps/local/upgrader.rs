@@ -5,6 +5,11 @@ use crate::{memory::ScreepsMemory, room::cache::{hauling::{HaulingPriority, Haul
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let controller = cache.structures.controller.as_ref().unwrap();
 
+    if creep.spawning() || creep.tired() {
+        let _ = creep.say("😴", false);
+        return;
+    }
+
     if (creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (creep.store().get_free_capacity(Some(ResourceType::Energy)) as f32 * 0.5) {
         cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(), HaulingPriority::Energy, HaulingType::Transfer);
     }

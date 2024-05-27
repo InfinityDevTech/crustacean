@@ -1,6 +1,8 @@
 use screeps::{
-    game, Creep, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties
+    game, Creep, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, Structure, StructureObject, StructureStorage
 };
+
+use wasm_bindgen::JsCast;
 
 use crate::{
     memory::{CreepHaulTask, CreepMemory, ScreepsMemory}, room::cache::{hauling::HaulingType, RoomCache}, traits::creep::CreepExtensions
@@ -9,12 +11,17 @@ use crate::{
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get(&creep.name()).unwrap();
 
+    if creep.spawning() || creep.tired() {
+        let _ = creep.say("😴", false);
+        return;
+    }
+
     let order = &creep_memory.hauling_task.clone();
     if let Some(order) = order {
         execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), order);
     } else {
         let _ = creep.say("📋", false);
-        let new_order = cache.hauling.find_new_order(creep, memory);
+        let new_order = cache.hauling.find_new_order(creep, memory, None, None);
         if let Some(order) = new_order {
             execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), &order);
         }
@@ -57,13 +64,15 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, order: &Cree
         },
         HaulingType::Withdraw => todo!(),
         HaulingType::Transfer => {
-            let target: Option<Creep> = game::get_object_by_id_typed(&ObjectId::from(pickup_target));
+            let target = game::get_object_by_id_erased(&pickup_target);
             if let Some(target) = target {
-                let _ = creep.transfer(&target, ResourceType::Energy, None);
+                let _ = creep.transfer(target.unchecked_ref::<StructureStorage>(), ResourceType::Energy, None);
                 success = true;
             }
         },
-        HaulingType::Deposit => todo!()
+        HaulingType::Offer => {
+            success = true;
+        }
     }
 
     if success {

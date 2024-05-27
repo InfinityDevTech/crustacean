@@ -1,16 +1,31 @@
-use std::collections::HashMap;
+use std::{cmp, collections::HashMap};
 
-use screeps::{find, HasId, ObjectId, Room, Source, StructureController, StructureExtension, StructureLink, StructureObject, StructureSpawn, StructureTower};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, LocalCostMatrix, LocalRoomTerrain, ObjectId, Part, Resource, ResourceType, Room, Source, Structure, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureTower, Terrain};
 
 use crate::memory::ScreepsMemory;
 
+use super::hauling::{HaulingCache, HaulingPriority, HaulingType};
+
+#[derive(Debug, Clone)]
+pub struct CachedSource {
+    pub id: ObjectId<Source>,
+    pub creeps: Vec<ObjectId<Creep>>
+}
+
 #[derive(Debug, Clone)]
 pub struct RoomStructureCache {
-    pub sources: HashMap<ObjectId<Source>, Source>,
+    pub all_structures: Vec<StructureObject>,
+    pub construction_sites: Vec<ConstructionSite>,
+
+    pub sources: Vec<CachedSource>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
+    pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
 
     pub controller: Option<StructureController>,
+
+    pub terrain: LocalRoomTerrain,
+    pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
 
     pub links: HashMap<ObjectId<StructureLink>, StructureLink>,
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
@@ -19,11 +34,18 @@ pub struct RoomStructureCache {
 impl RoomStructureCache {
     pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
-            sources: HashMap::new(),
+            all_structures: Vec::new(),
+            construction_sites: Vec::new(),
+
+            sources: Vec::new(),
             towers: HashMap::new(),
             spawns: HashMap::new(),
+            containers: HashMap::new(),
 
             controller: None,
+
+            terrain: LocalRoomTerrain::from(room.get_terrain()),
+            roads: HashMap::new(),
 
             links: HashMap::new(),
             extensions: HashMap::new(),
@@ -36,6 +58,7 @@ impl RoomStructureCache {
         cache.refresh_source_cache(room);
         cache.refresh_structure_cache(room);
         cache.refresh_spawn_cache(room);
+        cache.refresh_construction_cache(room);
         cache
     }
 
@@ -47,10 +70,52 @@ impl RoomStructureCache {
         }
     }
 
+    pub fn temp(&mut self, hauling: &mut HaulingCache) {
+        for source in self.extensions.values() {
+            if source.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+                hauling.create_order(
+                    source.raw_id(),
+                    ResourceType::Energy,
+                    source.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(),
+                    HaulingPriority::Energy,
+                    HaulingType::Transfer
+                );
+            }
+        }
+    }
+
+    pub fn check_containers(&mut self, hauling: &mut HaulingCache) {
+        for container in self.containers.values() {
+            let used_capacity = container.store().get_used_capacity(Some(ResourceType::Energy));
+            let max_capacity = container.store().get_capacity(Some(ResourceType::Energy));
+
+            hauling.create_order(
+                container.raw_id(),
+                ResourceType::Energy,
+                used_capacity,
+                HaulingPriority::Energy,
+                HaulingType::Offer
+            );
+
+            if (used_capacity as f32) < (max_capacity as f32 * 0.5) {
+                hauling.create_order(
+                    container.raw_id(),
+                    ResourceType::Energy,
+                    container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(),
+                    HaulingPriority::Energy,
+                    HaulingType::Transfer
+                );
+            }
+        }
+    }
+
     pub fn refresh_structure_cache(&mut self, room: &Room) {
         let structures = room.find(find::MY_STRUCTURES, None).into_iter();
 
         for structure in structures {
+
+            self.all_structures.push(structure.clone());
+
             match structure {
                 StructureObject::StructureTower(tower) => {
                     self.towers.insert(tower.id(), tower);
@@ -61,15 +126,86 @@ impl RoomStructureCache {
                 StructureObject::StructureLink(link) => {
                     self.links.insert(link.id(), link);
                 }
+                StructureObject::StructureRoad(road) => {
+                    self.roads.insert(road.id(), road);
+                }
+                StructureObject::StructureContainer(container) => {
+                    self.containers.insert(container.id(), container);
+                }
                 _ => {}
             }
         }
     }
 
+    pub fn refresh_construction_cache(&mut self, room: &Room) {
+        let mut construction_sites = room.find(find::CONSTRUCTION_SITES, None);
+
+        self.construction_sites.append(&mut construction_sites);
+    }
+
     pub fn refresh_source_cache(&mut self, room: &Room) {
         let sources = room.find(find::SOURCES, None);
         for source in sources {
-            self.sources.insert(source.id(), source);
+            let constructed_source = CachedSource {
+                id: source.id(),
+                creeps: Vec::new()
+            };
+
+            self.sources.push(constructed_source);
         }
+    }
+}
+
+impl CachedSource {
+    pub fn parts_needed(&self) -> u8 {
+        let source: Source = game::get_object_by_id_typed(&self.id).unwrap();
+        let max_energy = source.energy_capacity();
+
+        // Each work part equates to 2 energy per tick
+        // Each source refills energy every 300 ticks.
+        let max_work_needed = (max_energy / 300) + 2;
+
+        let work_parts_needed = max_work_needed - self.calculate_work_parts() as u32;
+
+        cmp::max(work_parts_needed, 0) as u8
+    }
+
+    pub fn calculate_mining_spots(&self, room: &Room) -> u8 {
+        let source = game::get_object_by_id_typed(&self.id).unwrap();
+
+        let x = source.pos().x().u8();
+        let y = source.pos().y().u8();
+
+        let areas = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
+        let mut available_spots = 0;
+
+        for area in areas {
+            match area.look_result {
+                LookResult::Terrain(Terrain::Plain) => available_spots += 1,
+                LookResult::Terrain(Terrain::Swamp) => available_spots += 1,
+                _ => {}
+
+           }
+        }
+
+        available_spots
+    }
+
+    pub fn calculate_work_parts(&self) -> u8 {
+        let creeps = &self.creeps;
+
+        let mut work_parts: u8 = 0;
+
+        for creep in creeps {
+            let creep = game::get_object_by_id_typed(creep);
+            if creep.is_none() { continue; }
+
+            let mut body = creep.unwrap().body();
+            body.retain(|part| part.part() == Part::Work);
+
+            work_parts += body.len() as u8
+        }
+
+        work_parts
     }
 }

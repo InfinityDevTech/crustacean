@@ -3,7 +3,6 @@ use screeps::{game, Room};
 
 use crate::{memory::{RoomMemory, ScreepsMemory}, traits::room::RoomExtensions};
 
-pub mod resources;
 pub mod construction;
 pub mod structure_visuals;
 
@@ -18,14 +17,10 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
     let mut room_memory = RoomMemory {
         name: room.name_str(),
         rcl: room.controller().unwrap().level(),
+        planned: false,
         id: 0,
         creeps: Vec::new(),
-        sources: Vec::new(),
     };
-
-    let sources = resources::find_sources(room);
-
-    room_memory.sources = sources;
 
     memory.create_room(&room.name(), room_memory);
     true

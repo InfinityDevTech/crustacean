@@ -1,16 +1,10 @@
 use std::str::FromStr;
 
-use screeps::{game, Creep, ErrorCode, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+use screeps::{game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-
-    if creep.near_age_death() {
-        let _ = creep.say("👴", false);
-        handle_death(creep, memory);
-        return;
-    }
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_memory = memory.rooms.get(&RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
@@ -21,8 +15,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
     let pointer_index = creep_memory.task_id.unwrap() as usize;
-    let scouted_source = &room_memory.sources[pointer_index];
+    cache.structures.sources[pointer_index].creeps.push(creep.try_id().unwrap());
+    let scouted_source = &cache.structures.sources[pointer_index];
     let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
+
+    if creep.spawning() || creep.tired() {
+        let _ = creep.say("😴", false);
+        return;
+    }
 
     if creep_memory.needs_energy.unwrap_or(false) {
         harvest_source(creep, source, creep_memory);
@@ -103,16 +103,4 @@ fn drop_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomC
 
     //let mut mutable = cache.hauling.borrow_mut();
     cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, amount, HaulingPriority::Energy, HaulingType::Pickup);
-}
-
-fn handle_death(creep: &Creep, memory: &mut ScreepsMemory) {
-    let CreepMemory {task_id, owning_room, ..} = memory.creeps.get(&creep.name()).unwrap().clone();
-
-    let room_memory = memory.rooms.get_mut(&RoomName::from_str(&owning_room).unwrap()).unwrap();
-
-    room_memory.creeps.retain(|x| x != &creep.name());
-    memory.creeps.remove(&creep.name());
-
-    room_memory.sources[task_id.unwrap() as usize].assigned_creeps -= 1;
-    room_memory.sources[task_id.unwrap() as usize].work_parts -= creep.parts_of_type(Part::Work) as u8;
 }

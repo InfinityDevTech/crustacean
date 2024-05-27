@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use log::info;
-use screeps::{game, Creep, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
+use screeps::{game, Creep, HasPosition, Position, RawObjectId, Resource, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};
 
 use crate::memory::{CreepHaulTask, ScreepsMemory};
@@ -17,7 +17,7 @@ pub enum HaulingPriority {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum HaulingType {
-    Deposit = 0,
+    Offer = 0,
     Withdraw = 1,
     Pickup = 2,
     Transfer = 3
@@ -70,14 +70,21 @@ impl HaulingCache {
         self.new_orders.insert(id, order);
     }
 
-    pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory) -> Option<CreepHaulTask> {
+    pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Option<HaulingType>) -> Option<CreepHaulTask> {
         let unsorted_orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>();
         let mut orders = unsorted_orders.clone();
 
+        if let Some(order_type) = order_type {
+            orders.retain(|x| x.haul_type == order_type);
+        }
+        if let Some(resource_type) = resource {
+            orders.retain(|rsc| rsc.resource == resource_type);
+        }
+
         orders.sort_by(|a, b| a.priority.cmp(&b.priority));
 
-        if creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32 == 0 {
-            orders.retain(|x| x.haul_type == HaulingType::Deposit || x.haul_type == HaulingType::Transfer);
+        if creep.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+            orders.retain(|x| x.haul_type == HaulingType::Transfer);
             info!("Hauling: Deposit or Transfer {}", orders.len());
         } else {
             orders.retain(|x| x.haul_type == HaulingType::Withdraw || x.haul_type == HaulingType::Pickup);

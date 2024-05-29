@@ -1,6 +1,7 @@
 use std::{cmp, collections::HashMap};
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, LocalCostMatrix, LocalRoomTerrain, ObjectId, Part, Resource, ResourceType, Room, Source, Structure, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureTower, Terrain};
+use log::info;
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, LocalCostMatrix, LocalRoomTerrain, ObjectId, OwnedStructureProperties, Part, Resource, ResourceType, Room, Ruin, Source, Structure, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureTower, Terrain};
 
 use crate::memory::ScreepsMemory;
 
@@ -9,7 +10,12 @@ use super::hauling::{HaulingCache, HaulingPriority, HaulingType};
 #[derive(Debug, Clone)]
 pub struct CachedSource {
     pub id: ObjectId<Source>,
-    pub creeps: Vec<ObjectId<Creep>>
+    pub creeps: Vec<ObjectId<Creep>>,
+
+    pub link: Option<ObjectId<StructureLink>>,
+    pub container: Option<ObjectId<StructureContainer>>,
+
+    pub csites: Vec<ConstructionSite>,
 }
 
 #[derive(Debug, Clone)]
@@ -18,6 +24,7 @@ pub struct RoomStructureCache {
     pub construction_sites: Vec<ConstructionSite>,
 
     pub sources: Vec<CachedSource>,
+    pub ruins: HashMap<ObjectId<Ruin>, Ruin>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
     pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
@@ -38,6 +45,7 @@ impl RoomStructureCache {
             construction_sites: Vec::new(),
 
             sources: Vec::new(),
+            ruins: HashMap::new(),
             towers: HashMap::new(),
             spawns: HashMap::new(),
             containers: HashMap::new(),
@@ -59,6 +67,7 @@ impl RoomStructureCache {
         cache.refresh_structure_cache(room);
         cache.refresh_spawn_cache(room);
         cache.refresh_construction_cache(room);
+        cache.refresh_ruin_cache(room);
         cache
     }
 
@@ -89,6 +98,21 @@ impl RoomStructureCache {
             let used_capacity = container.store().get_used_capacity(Some(ResourceType::Energy));
             let max_capacity = container.store().get_capacity(Some(ResourceType::Energy));
 
+            let mut i = 0;
+            let mut matching = false;
+            loop {
+                if self.sources.len() <= i { break }
+                if matching { break }
+
+                if let Some(source_container) = self.sources[i].get_container() {
+                    if container.id() == source_container.id() {
+                        matching = true;
+                    }
+                }
+
+                i += 1;
+            }
+
             hauling.create_order(
                 container.raw_id(),
                 ResourceType::Energy,
@@ -97,7 +121,7 @@ impl RoomStructureCache {
                 HaulingType::Offer
             );
 
-            if (used_capacity as f32) < (max_capacity as f32 * 0.5) {
+            if !matching && (used_capacity as f32) <= (max_capacity as f32 * 0.5) {
                 hauling.create_order(
                     container.raw_id(),
                     ResourceType::Energy,
@@ -109,8 +133,20 @@ impl RoomStructureCache {
         }
     }
 
+    pub fn refresh_ruin_cache(&mut self, room: &Room) {
+        //if game::time() % 100 != 0 {
+        //    return;
+        //}
+
+        let ruins = room.find(find::RUINS, None).into_iter();
+
+        for ruin in ruins {
+            self.ruins.insert(ruin.id(), ruin);
+        }
+    }
+
     pub fn refresh_structure_cache(&mut self, room: &Room) {
-        let structures = room.find(find::MY_STRUCTURES, None).into_iter();
+        let structures = room.find(find::STRUCTURES, None).into_iter();
 
         for structure in structures {
 
@@ -118,12 +154,15 @@ impl RoomStructureCache {
 
             match structure {
                 StructureObject::StructureTower(tower) => {
+                    if !tower.my() {continue;}
                     self.towers.insert(tower.id(), tower);
                 }
                 StructureObject::StructureExtension(extension) => {
+                    if !extension.my() {continue;}
                     self.extensions.insert(extension.id(), extension);
                 }
                 StructureObject::StructureLink(link) => {
+                    if !link.my() {continue;}
                     self.links.insert(link.id(), link);
                 }
                 StructureObject::StructureRoad(road) => {
@@ -146,9 +185,15 @@ impl RoomStructureCache {
     pub fn refresh_source_cache(&mut self, room: &Room) {
         let sources = room.find(find::SOURCES, None);
         for source in sources {
+            let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 1);
+
             let constructed_source = CachedSource {
                 id: source.id(),
-                creeps: Vec::new()
+                creeps: Vec::new(),
+
+                link: None,
+                container: None,
+                csites,
             };
 
             self.sources.push(constructed_source);
@@ -157,6 +202,31 @@ impl RoomStructureCache {
 }
 
 impl CachedSource {
+    pub fn get_container(&mut self) -> Option<StructureContainer> {
+        if let Some(container_id) = self.container {
+            return Some(game::get_object_by_id_typed(&container_id).unwrap());
+        }
+
+        let source = game::get_object_by_id_typed(&self.id).unwrap();
+        let pos = source.pos();
+
+        let mut find = pos.find_in_range(find::STRUCTURES, 1);
+        find.retain(|c| {
+            matches!(c, StructureObject::StructureContainer(_))
+        });
+
+        if !find.is_empty() {
+            let container = find[0].clone();
+            if let StructureObject::StructureContainer(container) = container {
+                self.container = Some(container.id());
+                return Some(container);
+            }
+            return None;
+        }
+
+        None
+    }
+
     pub fn parts_needed(&self) -> u8 {
         let source: Source = game::get_object_by_id_typed(&self.id).unwrap();
         let max_energy = source.energy_capacity();

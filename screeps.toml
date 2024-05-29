@@ -21,7 +21,9 @@ prefix = "ptr"
 # Linux Laptop
 #destination = "/home/jwjoh/.config/Screeps/scripts/127_0_0_1___21025"
 # Bot arena
-destination = "/home/jwjoh/.config/Screeps/scripts/botarena_screepspl_us___21025"
+#destination = "/home/jwjoh/.config/Screeps/scripts/botarena_screepspl_us___21025"
+# Botarematch
+destination = "/home/jwjoh/.config/Screeps/scripts/screeps_infinity_dev_xyz___21025"
 
 branch = "default"
 [copy.build]

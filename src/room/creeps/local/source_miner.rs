@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use screeps::{game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+use log::info;
+use screeps::{game, Creep, ErrorCode, HasHits, HasId, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
 
@@ -66,7 +67,7 @@ fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, cache: &Ro
 
 fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory) {
     if !creep.pos().is_near_to(source.pos()) {
-        let _ = creep.say("⬆️", false);
+        let _ = creep.say("🚚", false);
         creep.better_move_to(memory, source.pos(), 1);
     } else {
         let _ = creep.say("⛏️", false);
@@ -96,11 +97,60 @@ fn drop_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomC
         return;
     }
 
+    if build_around_source(creep, creep_memory, cache) { return; }
+    if repair_container(creep, creep_memory, cache) { return; }
     let _ = creep.say("📦", false);
 
-    let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
-    let _ = creep.drop(ResourceType::Energy, Some(amount));
+    if let Some(container) = cache.structures.sources[creep_memory.task_id.unwrap() as usize].get_container() {
+        if creep.pos().is_near_to(container.pos()) {
+            let _ = creep.transfer(&container, ResourceType::Energy, None);
+        } else {
+            creep.better_move_to(creep_memory, container.pos(), 1);
+        }
+    } else {
+        cache.hauling.create_order(
+            creep.try_raw_id().unwrap(),
+            ResourceType::Energy,
+            creep.store().get_used_capacity(Some(ResourceType::Energy)),
+            HaulingPriority::Energy,
+            HaulingType::Pickup
+        );
+        let _ = creep.drop(ResourceType::Energy, None);
+    }
+}
 
-    //let mut mutable = cache.hauling.borrow_mut();
-    cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, amount, HaulingPriority::Energy, HaulingType::Pickup);
+fn build_around_source(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
+    let csites = &cache.structures.sources[creep_memory.task_id.unwrap() as usize].csites;
+    if csites.is_empty() { return false; }
+
+    let csite = csites.first().unwrap();
+
+    if creep.pos().is_near_to(csite.pos()) {
+        let _ = creep.say("🔨", false);
+        let _ = creep.build(csite);
+        true
+    } else {
+        let _ = creep.say("🚚", false);
+        creep.better_move_to(creep_memory, csite.pos(), 1);
+        true
+    }
+}
+
+fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
+    let container = cache.structures.sources[creep_memory.task_id.unwrap() as usize].get_container();
+
+    if let Some(container) = container {
+        if (container.hits() as f32) < container.hits_max() as f32 * 0.75 {
+        if container.pos().get_range_to(creep.pos()) > 1 {
+            let _ = creep.say("🚚", false);
+            creep.better_move_to(creep_memory, container.pos(), 1);
+            return true;
+        } else {
+            let _ = creep.say("🔧", false);
+            let _ = creep.repair(&container);
+            return true;
+        }
+    }
+}
+    false
 }

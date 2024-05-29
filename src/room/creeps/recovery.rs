@@ -19,7 +19,6 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
         if let Some(role) = role {
             if role == crate::memory::Role::Hauler {
                 let cmemory = CreepMemory {
-                    role: Role::Hauler,
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
@@ -31,7 +30,6 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                 memory.create_creep(room, &creep.name(), cmemory);
             } else if role == crate::memory::Role::Builder {
                 let cmemory = CreepMemory {
-                    role: Role::Builder,
                     needs_energy: None,
                     task_id: None,
                     link_id: None,

@@ -70,7 +70,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             let spawn_result = spawn.spawn_creep(&body, &name);
             if spawn_result.is_ok() {
                 let cmemory = CreepMemory {
-                    role: Role::Hauler,
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
@@ -104,7 +103,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             let spawn_result = spawn.spawn_creep(&body, &name);
             if spawn_result.is_ok() {
                 let cmemory = CreepMemory {
-                    role: Role::Upgrader,
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
@@ -138,7 +136,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             let spawn_result = spawn.spawn_creep(&body, &name);
             if spawn_result.is_ok() {
                 let cmemory = CreepMemory {
-                    role: Role::Builder,
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
@@ -174,7 +171,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             if spawn_result.is_ok() {
                 let cmemory = CreepMemory {
-                    role: crate::memory::Role::Miner,
                     needs_energy: Some(true),
                     task_id: Some(needed.unwrap().into()),
                     hauling_task: None,

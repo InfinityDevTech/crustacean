@@ -4,7 +4,7 @@ use screeps::{game, Room, SharedCreepProperties};
 use crate::{
     memory::{Role, ScreepsMemory},
     room::cache::RoomCache,
-    traits::creep::CreepExtensions,
+    traits::creep::CreepExtensions, utils,
 };
 
 use super::local;
@@ -25,9 +25,13 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
         let creep = creep.unwrap();
 
-        let creep_memory = memory.creeps.get(&creep.name()).unwrap();
+        if creep.spawning() { return; }
 
-        match creep_memory.role {
+        let role = utils::name_to_role(&creep.name());
+
+        if role.is_none() { return; }
+
+        match role.unwrap() {
             Role::Miner => local::source_miner::run_creep(&creep, memory, cache),
             Role::Hauler => {
                 cache.hauling.haulers.push(creep.name());

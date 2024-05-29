@@ -61,6 +61,11 @@ global.suicide_all = function() {
   }
 }
 
+global.reset_ivm = function() {
+  console.log("Resetting IVM...");
+  Game.cpu.halt();
+}
+
 function run_loop() {
   if (ERROR) {
     // Stops memory leak present in WASM if rust were to error out.
@@ -75,10 +80,8 @@ function run_loop() {
 
     console.error = console_error
     try {
-
-      if (!EXECUTION_PAUSED) {
-        wasm_module.loop();
-      }
+      wasm_module.loop();
+      
       if (RED_BUTTON) {
         wasm_module.red_button();
         global.wipe_memory();
@@ -98,6 +101,7 @@ function run_loop() {
 let wasm_module;
 
 module.exports.loop = function () {
+      if (EXECUTION_PAUSED) {console.log("Execution is paused, not running..."); return;}
       // Fixes a memory corruption issue.
       if (!global.Memory) {
         global.RawMemory._parsed = {}; global.Memory = {}; global.Memory.rooms = {}

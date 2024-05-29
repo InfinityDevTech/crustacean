@@ -1,10 +1,10 @@
 use std::{cmp, collections::HashMap};
 
 use log::error;
-use screeps::{game, look::{self, LookResult}, Creep, HasPosition, ObjectId, Part, RawObjectId, ResourceType, Room, RoomName, Source, StructureLink, Terrain};
+use screeps::{game, look::{self, LookResult}, Creep, HasPosition, ObjectId, Part, RawObjectId, ResourceType, Room, RoomName, Source, StructureContainer, StructureLink, Terrain};
 use serde::{Deserialize, Serialize};
 
-use js_sys::JsString;
+use js_sys::{JsString, Object};
 
 use crate::{room::{self, cache::hauling::{HaulingPriority, HaulingType}}, MEMORY_VERSION};
 
@@ -37,8 +37,8 @@ pub struct CreepMemory{
     #[serde(rename = "1")]
     pub path: Option<String>,
     // Career
-    #[serde(rename = "2")]
-    pub role: Role,
+    //#[serde(rename = "2")]
+    //pub role: Role,
     // Needs Energy?
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "3")]

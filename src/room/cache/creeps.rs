@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use screeps::{find, Creep, Room, SharedCreepProperties};
 
-use crate::memory::{Role, ScreepsMemory, ALLIES};
+use crate::{memory::{Role, ScreepsMemory, ALLIES}, utils};
 
 #[derive(Debug, Clone)]
 pub struct CreepCache {
@@ -40,10 +40,13 @@ impl CreepCache {
 
                 let creep_memory = creep_memory.unwrap();
 
-                if let Some(role_vec) = self.creeps_of_role.get_mut(&creep_memory.role) {
+                let role = utils::name_to_role(&creep.name());
+                if role.is_none() { continue; }
+
+                if let Some(role_vec) = self.creeps_of_role.get_mut(&role.unwrap()) {
                     role_vec.push(creep.name());
                 } else {
-                    self.creeps_of_role.insert(creep_memory.role, vec![creep.name()]);
+                    self.creeps_of_role.insert(role.unwrap(), vec![creep.name()]);
                 }
 
                 self.creeps.insert(creep.name(), creep);

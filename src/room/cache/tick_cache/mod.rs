@@ -1,8 +1,8 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap};
 
 use screeps::Room;
 
-use crate::memory::ScreepsMemory;
+use crate::{heap_cache, memory::ScreepsMemory, traits::room::RoomExtensions, HEAP_CACHE};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
 
@@ -28,7 +28,14 @@ pub struct RoomCache {
 }
 
 impl RoomCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, room_heap: RoomHeapCache) -> RoomCache {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> RoomCache {
+        let room_heap = heap_cache();
+
+        let room_heap = room_heap.rooms.get(&room.name_str()).unwrap_or_else(|| {
+            room_heap.rooms.insert(room.name_str(), RoomHeapCache::new(room));
+            room_heap.rooms.get(&room.name_str()).unwrap()
+        });
+
         RoomCache {
             structures: RoomStructureCache::new_from_room(room, memory),
             creeps: CreepCache::new_from_room(room, memory),

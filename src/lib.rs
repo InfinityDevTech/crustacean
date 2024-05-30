@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, sync::Mutex};
+use std::{cell::RefCell, collections::HashMap, sync::{Mutex, OnceLock}};
 
 use heap_cache::GlobalHeapCache;
 use log::*;
@@ -24,8 +24,10 @@ mod room;
 mod traits;
 mod utils;
 
-pub static HEAP_CACHE: Lazy<Mutex<GlobalHeapCache>> =
-    Lazy::new(|| Mutex::new(GlobalHeapCache::new()));
+pub fn heap_cache() -> &'static GlobalHeapCache {
+    static HEAP_CACHE: OnceLock<GlobalHeapCache> = OnceLock::new();
+    HEAP_CACHE.get_or_init(|| GlobalHeapCache::new())
+}
 
 #[wasm_bindgen]
 pub fn init() {
@@ -48,8 +50,6 @@ pub fn game_loop() {
         "---------------- CURRENT TICK - {} ----------------",
         game::time()
     );
-
-    let mut heap_cache = HEAP_CACHE.lock().unwrap();
 
     let mut memory = ScreepsMemory::init_memory();
 
@@ -83,16 +83,9 @@ pub fn game_loop() {
             plan_room(&game_room, &mut memory);
         }
 
-        if heap_cache.rooms.get(&game_room.name_str()).is_none() {
-            heap_cache
-                .rooms
-                .insert(game_room.name_str(), RoomHeapCache::new(&game_room));
-        }
-
         room::democracy::start_government(
             game::rooms().get(room).unwrap(),
             &mut memory,
-            heap_cache.rooms.get(&game_room.name_str()).unwrap(),
         );
     }
 

@@ -3,21 +3,26 @@ use screeps::{game, SharedCreepProperties};
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, utils::name_to_role};
 
 pub fn recover_creeps(memory: &mut ScreepsMemory) {
-    let creeps = game::creeps().keys();
-    for creep in creeps {
-        if memory.creeps.contains_key(&creep) {
+    let creep_names = game::creeps().keys();
+    for creep_name in creep_names {
+        if memory.creeps.contains_key(&creep_name) {
             continue;
         }
 
-        let mut split_name = creep.split('-');
+        let mut split_name = creep_name.split('-');
         let role = name_to_role(split_name.next().unwrap());
         let time = split_name.next().unwrap();
         let room = split_name.next().unwrap();
 
-        let creep = game::creeps().get(creep.clone()).unwrap();
+        let creep = game::creeps().get(creep_name.clone()).unwrap();
 
-        if let Some(role) = role {
-            if role == crate::memory::Role::Hauler {
+        let Some(role) = role else {
+            let _ = creep.suicide();
+            continue;
+        };
+
+        match role {
+            Role::Hauler => {
                 let cmemory = CreepMemory {
                     needs_energy: None,
                     task_id: None,
@@ -28,7 +33,8 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                 };
 
                 memory.create_creep(room, &creep.name(), cmemory);
-            } else if role == crate::memory::Role::Builder {
+            }
+            Role::Builder => {
                 let cmemory = CreepMemory {
                     needs_energy: None,
                     task_id: None,
@@ -39,11 +45,10 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                 };
 
                 memory.create_creep(room, &creep.name(), cmemory);
-            } else {
+            }
+            _ => {
                 let _ = creep.suicide();
             }
-        } else {
-            let _ = creep.suicide();
         }
     }
 }

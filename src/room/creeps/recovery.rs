@@ -46,6 +46,18 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
 
                 memory.create_creep(room, &creep.name(), cmemory);
             }
+            Role::Upgrader => {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    link_id: None,
+                    hauling_task: None,
+                    owning_room: room.to_string(),
+                    path: None,
+                };
+
+                memory.create_creep(room, &creep.name(), cmemory);
+            }
             _ => {
                 let _ = creep.suicide();
             }

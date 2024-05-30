@@ -1,8 +1,7 @@
-use std::{cell::RefCell, collections::HashMap, sync::{Mutex, OnceLock}};
+use std::{collections::HashMap, sync::OnceLock};
 
 use heap_cache::GlobalHeapCache;
 use log::*;
-use once_cell::sync::Lazy;
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
@@ -11,8 +10,6 @@ use crate::{
     room::planning::{self, room::plan_room},
     traits::room::RoomExtensions,
 };
-
-use room::cache::heap_cache::RoomHeapCache;
 
 mod combat;
 mod config;
@@ -24,10 +21,12 @@ mod room;
 mod traits;
 mod utils;
 
-pub fn heap_cache() -> &'static GlobalHeapCache {
-    static HEAP_CACHE: OnceLock<GlobalHeapCache> = OnceLock::new();
-    HEAP_CACHE.get_or_init(|| GlobalHeapCache::new())
+//pub static HEAP_CACHE: Lazy<GlobalHeapCache> = Lazy::new(GlobalHeapCache::new);
+pub fn heap() -> &'static GlobalHeapCache {
+    static HEAP: OnceLock<GlobalHeapCache> = OnceLock::new();
+    HEAP.get_or_init(GlobalHeapCache::new)
 }
+
 
 #[wasm_bindgen]
 pub fn init() {
@@ -103,6 +102,8 @@ pub fn game_loop() {
         }
     }
 
+    let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
+
     let heap = game::cpu::get_heap_statistics();
     let used = (heap.total_heap_size() / heap.heap_size_limit()) * 100;
 
@@ -117,6 +118,9 @@ pub fn game_loop() {
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
     info!("       Heap: {:.2}%", used);
+    info!("       Heap Lifetime: {}", heap_lifetime);
+
+    *heap_lifetime += 1;
 }
 
 #[wasm_bindgen(js_name = red_button)]

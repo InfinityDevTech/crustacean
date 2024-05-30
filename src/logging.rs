@@ -7,8 +7,6 @@ use screeps::game;
 use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::console;
 
-pub use log::LevelFilter::*;
-
 struct JsLog;
 struct JsNotify;
 

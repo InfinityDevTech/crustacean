@@ -24,6 +24,11 @@ function console_error() {
   Game.notify(processedArgs);
 }
 
+global.pause_exec = function() {
+  pause_exec = !pause_exec;
+  console.log(`[JS] pause_exec: ${pause_exec}`);
+}
+
 // Set to true to have JS call Game.cpu.halt() on the next tick it processes.
 // This is used so that console output from the end of the erroring tick
 // will still be emitted, since calling halt destroys the environment instantly.
@@ -31,9 +36,15 @@ function console_error() {
 // We lose a tick of processing here, but it should be exceptional that code
 // throws at all.
 let halt_next_tick = false;
+let pause_exec = false;
 
 let wasm_module;
 module.exports.loop = function () {
+  if (pause_exec) {
+    console.log("[JS] Skipping execution on tick: " + Game.time);
+    return;
+  }
+
   try {
     if (halt_next_tick) {
       // We encountered an error, skip execution in this tick and get

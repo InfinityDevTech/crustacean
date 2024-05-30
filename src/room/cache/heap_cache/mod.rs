@@ -8,11 +8,13 @@ pub enum HealthChangeType {
     None,
 }
 
+#[derive(Debug, Clone)]
 pub struct RoomHeapCache {
     pub room: String,
     pub creeps: Vec<HeapCreep>,
 }
 
+#[derive(Debug, Clone)]
 pub struct HeapCreep {
     pub health: u32,
 }

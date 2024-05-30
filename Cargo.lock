@@ -60,7 +60,6 @@ dependencies = [
  "getrandom",
  "js-sys",
  "log",
- "once_cell",
  "qcell",
  "rand",
  "regex",

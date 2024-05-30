@@ -1,8 +1,8 @@
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap};
+use std::collections::HashMap;
 
 use screeps::Room;
 
-use crate::{heap_cache, memory::ScreepsMemory, traits::room::RoomExtensions, HEAP_CACHE};
+use crate::{heap, memory::ScreepsMemory, traits::room::RoomExtensions};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
 
@@ -24,16 +24,15 @@ pub struct RoomCache {
     //pub hauling: RefCell<HaulingCache>,
     pub hauling: HaulingCache,
 
-    pub heap_cache: RefCell<RoomHeapCache>,
+    pub heap_cache: RoomHeapCache,
 }
 
 impl RoomCache {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> RoomCache {
-        let room_heap = heap_cache();
+        let mut room_cache = heap().rooms.lock().unwrap();
 
-        let room_heap = room_heap.rooms.get(&room.name_str()).unwrap_or_else(|| {
-            room_heap.rooms.insert(room.name_str(), RoomHeapCache::new(room));
-            room_heap.rooms.get(&room.name_str()).unwrap()
+        let room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
+            RoomHeapCache::new(room)
         });
 
         RoomCache {
@@ -44,7 +43,7 @@ impl RoomCache {
 
             hauling: HaulingCache::new(),
 
-            heap_cache: RefCell::new(room_heap),
+            heap_cache: room_heap,
             //hauling: RefCell::new(HaulingCache::new()),
         }
     }
@@ -62,5 +61,11 @@ impl RoomCache {
         self.traffic.visited_creeps = HashMap::new();
         self.traffic.cached_ops = HashMap::new();
         self.traffic.move_intents = 0;
+    }
+
+    pub fn write_cache_to_heap(&self, room: &Room) {
+        let mut heap_cache = heap().rooms.lock().unwrap();
+
+        heap_cache.insert(room.name_str(), self.heap_cache.clone());
     }
 }

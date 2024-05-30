@@ -1,11 +1,9 @@
-use std::borrow::{Borrow, BorrowMut};
-
 use log::info;
 use screeps::{game, look::{self, LookResult}, HasPosition, Room, StructureType, Terrain};
 
-use crate::{memory::ScreepsMemory, room::{cache::tick_cache::{traffic::{TrafficCache, TrafficProcs}, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}, HEAP_CACHE};
+use crate::{memory::ScreepsMemory, room::{cache::tick_cache::{traffic::TrafficProcs, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
 
-use super::{cache::heap_cache::RoomHeapCache, planning::creep::miner::formulate_miner};
+use super::planning::creep::miner::formulate_miner;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     let starting_cpu = game::cpu::get_used();
@@ -103,10 +101,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     // Provided by Harabi
     // https://github.com/sy-harabi/Screeps-Traffic-Manager
     let start = game::cpu::get_used();
-
     TrafficProcs::run_movement(&mut room_cache);
-
     info!("  [TRAFFIX] Traffic took: {:.4} with {} intents", game::cpu::get_used() - start, room_cache.traffic.move_intents);
+
+    room_cache.write_cache_to_heap(&room);
 
     let end_cpu = game::cpu::get_used();
     info!("  [GOVERNMENT] Finished government for room: {} in {:.4} cpu", room.name(), end_cpu - starting_cpu);

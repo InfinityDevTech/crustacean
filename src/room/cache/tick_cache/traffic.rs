@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
 use screeps::{
-    game::get_object_by_id_typed, Creep, Direction, HasPosition, MaybeHasId, ObjectId, Position,
-    Room, RoomCoordinate, RoomXY,
+    game::get_object_by_id_typed, Creep, HasPosition, MaybeHasId, ObjectId, Position,
+    RoomCoordinate, RoomXY,
 };
 
 use super::RoomCache;
-use crate::{movement::utils::dir_to_coords, traits::creep::CreepExtensions};
-use rand::prelude::SliceRandom;
+use crate::traits::creep::CreepExtensions;
 
 pub struct TrafficCache {
     pub move_targets: HashMap<ObjectId<Creep>, RoomXY>,

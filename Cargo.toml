@@ -20,6 +20,8 @@ serde = { version = "1.0.183", features = ["derive"] }
 regex = "1.9.4"
 console_error_panic_hook = "0.1.7"
 qcell = "0.5.4"
+rand = "0.8.5"
+getrandom = { version = "0.2.15", features = ["js"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

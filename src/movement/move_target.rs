@@ -47,7 +47,7 @@ impl MoveTarget {
             cur_pos = pos;
         }
         let mut steps_string = "".to_string();
-        let steps = &steps[0..std::cmp::min(steps.len(), 5)];
+        let steps = &steps[0..std::cmp::min(steps.len(), 10)];
         for dirint in steps {
             let int = *dirint as u8;
             let intstring = int.to_string();

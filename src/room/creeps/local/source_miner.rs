@@ -26,7 +26,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
     if creep_memory.needs_energy.unwrap_or(false) {
-        harvest_source(creep, source, creep_memory);
+        harvest_source(creep, source, creep_memory, cache);
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) >= creep.store().get_capacity(Some(ResourceType::Energy)) {
             creep_memory.needs_energy = None;
@@ -46,7 +46,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
-fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache) -> bool {
+fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
     let count = if let Some(creeps) = cache.creeps.creeps_of_role.get(&Role::Hauler) {
         creeps.len()
     } else {
@@ -58,17 +58,17 @@ fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, cache: &Ro
 
         let spawn = cache.structures.spawns.clone().into_iter().next().unwrap().1;
         if creep.transfer(&spawn, ResourceType::Energy, None) == Err(ErrorCode::NotInRange) {
-            creep.better_move_to(creep_memory, spawn.pos(), 1);
+            creep.better_move_to(creep_memory, cache, spawn.pos(), 1);
         }
         return true;
     }
     false
 }
 
-fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory) {
+fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache: &mut RoomCache) {
     if !creep.pos().is_near_to(source.pos()) {
         let _ = creep.say("🚚", false);
-        creep.better_move_to(memory, source.pos(), 1);
+        creep.better_move_to(memory, cache, source.pos(), 1);
     } else {
         let _ = creep.say("⛏️", false);
         let _ = creep.harvest(&source);
@@ -105,7 +105,7 @@ fn drop_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomC
         if creep.pos().is_near_to(container.pos()) {
             let _ = creep.transfer(&container, ResourceType::Energy, None);
         } else {
-            creep.better_move_to(creep_memory, container.pos(), 1);
+            creep.better_move_to(creep_memory, cache, container.pos(), 1);
         }
     } else {
         cache.hauling.create_order(
@@ -131,7 +131,7 @@ fn build_around_source(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
         true
     } else {
         let _ = creep.say("🚚", false);
-        creep.better_move_to(creep_memory, csite.pos(), 1);
+        creep.better_move_to(creep_memory, cache, csite.pos(), 1);
         true
     }
 }
@@ -143,7 +143,7 @@ fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut R
         if (container.hits() as f32) < container.hits_max() as f32 * 0.75 {
         if container.pos().get_range_to(creep.pos()) > 1 {
             let _ = creep.say("🚚", false);
-            creep.better_move_to(creep_memory, container.pos(), 1);
+            creep.better_move_to(creep_memory, cache, container.pos(), 1);
             return true;
         } else {
             let _ = creep.say("🔧", false);

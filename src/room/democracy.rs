@@ -7,6 +7,7 @@ use crate::{memory::ScreepsMemory, room::{cache::RoomCache, creeps::{local::haul
 use super::planning::creep::miner::formulate_miner;
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
+    let starting_cpu = game::cpu::get_used();
     info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
     // Caches various things, like resources
@@ -53,8 +54,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         //viz.structure(x_offset.into(), y_offset.into(), thing.2, 0.5);
         //let _ = room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
 
-        if !memory.rooms.get(&room.name()).unwrap().planned && room.controller().unwrap().level() <=1 {
-            things.retain(|s| { s.2 == StructureType::Container });
+        if !memory.rooms.get(&room.name()).unwrap().planned || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level()) {
+            //things.retain(|s| { s.2 == StructureType::Container });
 
             for thing in &things {
                 let _ = room.create_construction_site(x_offset as u8, y_offset as u8, StructureType::Container, None);
@@ -64,7 +65,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
             let controller = &cache.structures.controller;
             let sources = &cache.structures.sources;
 
-            let cp = controller.as_ref().unwrap().pos();
+            let cp = controller.as_ref().unwrap().controller.pos();
             let controller_looked = room.look_for_at_area(look::TERRAIN, cp.y().u8() - 1, cp.x().u8() - 1, cp.y().u8() + 1, cp.x().u8() + 1);
 
             for pos in controller_looked {
@@ -93,6 +94,18 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
                 }
             }
             memory.rooms.get_mut(&room.name()).unwrap().planned = true;
+            memory.rooms.get_mut(&room.name()).unwrap().rcl = room.controller().unwrap().level();
         }
     }
+
+    // Must be done LAST, traffic managemnet
+        // Provided by Harabi
+        // https://github.com/sy-harabi/Screeps-Traffic-Manager
+        let start = game::cpu::get_used();
+        let mut traffic = cache.movement.clone();
+        traffic.run_room(&cache);
+        info!("  [TRAFFIX] Traffic took: {:.4} with {} intents", game::cpu::get_used() - start, traffic.intents);
+
+    let end_cpu = game::cpu::get_used();
+    info!("  [GOVERNMENT] Finished government for room: {} in {:.4} cpu", room.name(), end_cpu - starting_cpu);
 }

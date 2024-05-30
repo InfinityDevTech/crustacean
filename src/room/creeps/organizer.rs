@@ -10,9 +10,10 @@ use crate::{
 use super::local;
 
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    info!("  [CREEPS] Running creeps in room: {}", room.name());
-
     let creeps = memory.rooms.get(&room.name()).unwrap().creeps.clone();
+    let starting_cpu = game::cpu::get_used();
+
+    info!("  [CREEPS] Running {} creeps", creeps.len());
 
     for creep_name in creeps {
         let creep = game::creeps().get(creep_name.to_string());
@@ -41,4 +42,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             _ => {}
         }
     }
+
+    let end_cpu = game::cpu::get_used();
+    info!("  [CREEPS] Used {:.4} CPU to run creeps", end_cpu - starting_cpu);
 }

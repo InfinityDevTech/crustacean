@@ -1,3 +1,4 @@
+use movement::RoomMovementCache;
 use screeps::Room;
 
 use crate::memory::ScreepsMemory;
@@ -8,10 +9,12 @@ pub mod structures;
 pub mod creeps;
 pub mod hauling;
 pub mod resources;
+pub mod movement;
 
 pub struct RoomCache {
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
+    pub movement: RoomMovementCache,
 
     pub resources: RoomResourceCache,
 
@@ -24,6 +27,7 @@ impl RoomCache {
         RoomCache {
             structures: RoomStructureCache::new_from_room(room, memory),
             creeps: CreepCache::new_from_room(room, memory),
+            movement: RoomMovementCache::new(),
 
             resources: RoomResourceCache::new_from_room(room, memory),
 
@@ -37,6 +41,6 @@ impl RoomCache {
         self.structures.refresh_source_cache(room);
         self.structures.refresh_spawn_cache(room);
 
-        self.creeps.refresh_creep_cache(room, memory);
+        self.creeps.refresh_creep_cache(room);
     }
 }

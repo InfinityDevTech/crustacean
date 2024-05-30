@@ -1,7 +1,14 @@
 use std::{cmp, collections::HashMap};
 
 use log::info;
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, LocalCostMatrix, LocalRoomTerrain, ObjectId, OwnedStructureProperties, Part, Resource, ResourceType, Room, Ruin, Source, Structure, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureTower, Terrain};
+use screeps::{
+    control, find, game,
+    look::{self, LookResult},
+    ConstructionSite, Creep, HasId, HasPosition, LocalCostMatrix, LocalRoomTerrain, ObjectId,
+    OwnedStructureProperties, Part, Resource, ResourceType, Room, Ruin, Source, Structure,
+    StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject,
+    StructureRoad, StructureSpawn, StructureTower, Terrain,
+};
 
 use crate::memory::ScreepsMemory;
 
@@ -19,6 +26,12 @@ pub struct CachedSource {
 }
 
 #[derive(Debug, Clone)]
+pub struct CachedController {
+    pub controller: StructureController,
+    pub container: Option<StructureContainer>,
+}
+
+#[derive(Debug, Clone)]
 pub struct RoomStructureCache {
     pub all_structures: Vec<StructureObject>,
     pub construction_sites: Vec<ConstructionSite>,
@@ -29,7 +42,7 @@ pub struct RoomStructureCache {
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
     pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
 
-    pub controller: Option<StructureController>,
+    pub controller: Option<CachedController>,
 
     pub terrain: LocalRoomTerrain,
     pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
@@ -60,7 +73,23 @@ impl RoomStructureCache {
         };
 
         if let Some(controller) = room.controller() {
-            cache.controller = Some(controller);
+            let containers = controller.pos().find_in_range(find::STRUCTURES, 1);
+            let container = containers
+                .iter()
+                .find(|c| matches!(c, StructureObject::StructureContainer(_)));
+
+            let mut cid = None;
+
+            if let Some(StructureObject::StructureContainer(container)) = container {
+                cid = Some(container);
+            }
+
+            let cached_controller = CachedController {
+                controller,
+                container: cid.cloned(),
+            };
+
+            cache.controller = Some(cached_controller);
         }
 
         cache.refresh_source_cache(room);
@@ -85,9 +114,13 @@ impl RoomStructureCache {
                 hauling.create_order(
                     source.raw_id(),
                     ResourceType::Energy,
-                    source.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(),
+                    source
+                        .store()
+                        .get_free_capacity(Some(ResourceType::Energy))
+                        .try_into()
+                        .unwrap(),
                     HaulingPriority::Energy,
-                    HaulingType::Transfer
+                    HaulingType::Transfer,
                 );
             }
         }
@@ -95,14 +128,22 @@ impl RoomStructureCache {
 
     pub fn check_containers(&mut self, hauling: &mut HaulingCache) {
         for container in self.containers.values() {
-            let used_capacity = container.store().get_used_capacity(Some(ResourceType::Energy));
+            let used_capacity = container
+                .store()
+                .get_used_capacity(Some(ResourceType::Energy));
             let max_capacity = container.store().get_capacity(Some(ResourceType::Energy));
 
             let mut i = 0;
             let mut matching = false;
+            let mut pull = true;
+
             loop {
-                if self.sources.len() <= i { break }
-                if matching { break }
+                if self.sources.len() <= i {
+                    break;
+                }
+                if matching {
+                    break;
+                }
 
                 if let Some(source_container) = self.sources[i].get_container() {
                     if container.id() == source_container.id() {
@@ -113,21 +154,39 @@ impl RoomStructureCache {
                 i += 1;
             }
 
-            hauling.create_order(
-                container.raw_id(),
-                ResourceType::Energy,
-                used_capacity,
-                HaulingPriority::Energy,
-                HaulingType::Offer
-            );
+            if let Some(controller) = &self.controller.as_ref() {
+                if controller.container.is_some() {
+                    let controller_container = controller.container.as_ref().unwrap();
+                    if container.id() == controller_container.id() {
+
+                        pull = false;
+                    }
+                }
+            }
+
+            if pull && used_capacity > 0 {
+                hauling.create_order(
+                    container.raw_id(),
+                    ResourceType::Energy,
+                    container
+                        .store()
+                        .get_used_capacity(Some(ResourceType::Energy)),
+                    HaulingPriority::Energy,
+                    HaulingType::Offer,
+                );
+            }
 
             if !matching && (used_capacity as f32) <= (max_capacity as f32 * 0.5) {
                 hauling.create_order(
                     container.raw_id(),
                     ResourceType::Energy,
-                    container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(),
+                    container
+                        .store()
+                        .get_free_capacity(Some(ResourceType::Energy))
+                        .try_into()
+                        .unwrap(),
                     HaulingPriority::Energy,
-                    HaulingType::Transfer
+                    HaulingType::Transfer,
                 );
             }
         }
@@ -149,20 +208,25 @@ impl RoomStructureCache {
         let structures = room.find(find::STRUCTURES, None).into_iter();
 
         for structure in structures {
-
             self.all_structures.push(structure.clone());
 
             match structure {
                 StructureObject::StructureTower(tower) => {
-                    if !tower.my() {continue;}
+                    if !tower.my() {
+                        continue;
+                    }
                     self.towers.insert(tower.id(), tower);
                 }
                 StructureObject::StructureExtension(extension) => {
-                    if !extension.my() {continue;}
+                    if !extension.my() {
+                        continue;
+                    }
                     self.extensions.insert(extension.id(), extension);
                 }
                 StructureObject::StructureLink(link) => {
-                    if !link.my() {continue;}
+                    if !link.my() {
+                        continue;
+                    }
                     self.links.insert(link.id(), link);
                 }
                 StructureObject::StructureRoad(road) => {
@@ -185,7 +249,7 @@ impl RoomStructureCache {
     pub fn refresh_source_cache(&mut self, room: &Room) {
         let sources = room.find(find::SOURCES, None);
         for source in sources {
-            let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 1);
+            let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 2);
 
             let constructed_source = CachedSource {
                 id: source.id(),
@@ -211,9 +275,7 @@ impl CachedSource {
         let pos = source.pos();
 
         let mut find = pos.find_in_range(find::STRUCTURES, 1);
-        find.retain(|c| {
-            matches!(c, StructureObject::StructureContainer(_))
-        });
+        find.retain(|c| matches!(c, StructureObject::StructureContainer(_)));
 
         if !find.is_empty() {
             let container = find[0].clone();
@@ -254,8 +316,7 @@ impl CachedSource {
                 LookResult::Terrain(Terrain::Plain) => available_spots += 1,
                 LookResult::Terrain(Terrain::Swamp) => available_spots += 1,
                 _ => {}
-
-           }
+            }
         }
 
         available_spots
@@ -268,7 +329,9 @@ impl CachedSource {
 
         for creep in creeps {
             let creep = game::get_object_by_id_typed(creep);
-            if creep.is_none() { continue; }
+            if creep.is_none() {
+                continue;
+            }
 
             let mut body = creep.unwrap().body();
             body.retain(|part| part.part() == Part::Work);

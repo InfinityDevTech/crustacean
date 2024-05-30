@@ -23,23 +23,15 @@ impl CreepCache {
             allied_creeps: Vec::new(),
         };
 
-        cache.refresh_creep_cache(room, memory);
+        cache.refresh_creep_cache(room);
         cache
     }
 
-    pub fn refresh_creep_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
+    pub fn refresh_creep_cache(&mut self, room: &Room) {
         let creeps = room.find(find::CREEPS, None);
 
         for creep in creeps {
             if creep.my() {
-                let creep_memory = memory.creeps.get(&creep.name());
-
-                if creep_memory.is_none() {
-                    continue;
-                }
-
-                let creep_memory = creep_memory.unwrap();
-
                 let role = utils::name_to_role(&creep.name());
                 if role.is_none() { continue; }
 

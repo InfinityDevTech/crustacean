@@ -10,13 +10,24 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         return;
     }
 
-    if (creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (creep.store().get_free_capacity(Some(ResourceType::Energy)) as f32 * 0.5) {
-        cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(), HaulingPriority::Energy, HaulingType::Transfer);
+    if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+        let container = &controller.container;
+        if let Some(container) = container {
+            if creep.pos().get_range_to(container.pos()) > 1 {
+                creep.better_move_to(memory.creeps.get_mut(&creep.name()).unwrap(), cache, container.pos(), 1);
+                return;
+            } else {
+                let _ = creep.withdraw(container, ResourceType::Energy, None);
+            }
+        } else {
+            cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(), HaulingPriority::Energy, HaulingType::Transfer);
+        }
     }
 
-    if controller.pos().get_range_to(creep.pos()) > 2 {
-        creep.better_move_to(memory.creeps.get_mut(&creep.name()).unwrap(), controller.pos(), 2);
+
+    if controller.controller.pos().get_range_to(creep.pos()) > 2 {
+        creep.better_move_to(memory.creeps.get_mut(&creep.name()).unwrap(), cache, controller.controller.pos(), 2);
     } else {
-        let _ = creep.upgrade_controller(controller);
+        let _ = creep.upgrade_controller(&controller.controller);
     }
 }

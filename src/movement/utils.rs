@@ -14,8 +14,8 @@ pub fn visualise_path(path: String, room_name: String, starting_pos: (f32, f32))
         }
         let dir = num_to_dir(step.parse::<u8>().unwrap());
         points.push((cursor.0, cursor.1));
-        let (x, y) = dir_to_coords(dir, cursor.0, cursor.1);
-        cursor = (x, y);
+        let (x, y) = dir_to_coords(dir, cursor.0 as u8, cursor.1 as u8);
+        cursor = (x as f32, y as f32);
     }
     points.push((cursor.0, cursor.1));
     room_vis.poly(
@@ -54,15 +54,15 @@ pub fn num_to_dir(num: u8) -> Direction {
     }
 }
 
-pub fn dir_to_coords(dir: Direction, x: f32, y: f32) -> (f32, f32) {
+pub fn dir_to_coords(dir: Direction, x: u8, y: u8) -> (u8, u8) {
     match dir {
-        Direction::Top => (x, y - 1_f32),
-        Direction::TopRight => (x + 1_f32, y - 1_f32),
-        Direction::Right => (x + 1_f32, y),
-        Direction::BottomRight => (x + 1_f32, y + 1_f32),
-        Direction::Bottom => (x, y + 1_f32),
-        Direction::BottomLeft => (x - 1_f32, y + 1_f32),
-        Direction::Left => (x - 1_f32, y),
-        Direction::TopLeft => (x - 1_f32, y - 1_f32),
+        Direction::Top => (x, y - 1),
+        Direction::TopRight => (x + 1, y - 1),
+        Direction::Right => (x + 1, y),
+        Direction::BottomRight => (x + 1, y + 1),
+        Direction::Bottom => (x, y + 1),
+        Direction::BottomLeft => (x - 1, y + 1),
+        Direction::Left => (x - 1, y),
+        Direction::TopLeft => (x - 1, y - 1),
     }
 }

@@ -23,7 +23,7 @@ pub fn move_to(creep_name: &String, creep_memory: &mut CreepMemory, target: Posi
     }
 }
 
-pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory) {
+pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory, cache: &mut RoomCache) {
     let creep = game::creeps().get(creep_name).unwrap();
 
     if creep.tired() {
@@ -34,7 +34,7 @@ pub fn move_by_path(creep_name: String, path: Movement, memory: &mut CreepMemory
     let serialized_vec = serialized_path.split("").filter(|x| x != &"").map(|x| x.parse::<u8>().unwrap()).collect::<Vec<u8>>();
     let step_dir = num_to_dir(serialized_vec[0]);
 
-    match creep.move_direction(step_dir) {
+    match cache.movement.creep_move(&creep, step_dir) {
         Ok(_) => {},
         Err(e) => info!("Creep move failed, {:?}", e),
     };

@@ -64,6 +64,8 @@ dependencies = [
  "rand",
  "regex",
  "screeps-game-api",
+ "screeps-timing",
+ "screeps-timing-annotate",
  "serde",
  "serde_json",
  "structstruck",
@@ -89,7 +91,7 @@ checksum = "a1ab991c1362ac86c61ab6f556cff143daa22e5a15e4e189df818b2fd19fe65b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
 ]
 
 [[package]]
@@ -101,7 +103,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
 ]
 
 [[package]]
@@ -233,7 +235,7 @@ checksum = "9e6a0fd4f737c707bd9086cc16c925f294943eb62eb71499e9fd4cf71f8b9f4e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
 ]
 
 [[package]]
@@ -390,6 +392,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
 
 [[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
 name = "screeps-game-api"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -406,6 +414,26 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "screeps-timing"
+version = "0.1.0"
+source = "git+https://github.com/Azaril/screeps-timing#acd8616c556f790656f6b657b62eb2604d4f8f26"
+dependencies = [
+ "scopeguard",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "screeps-timing-annotate"
+version = "0.1.0"
+source = "git+https://github.com/Azaril/screeps-timing-annotate#c7816bf04b69f746b1630a8a80f303d4ee8cccd0"
+dependencies = [
+ "quote",
+ "screeps-timing",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -436,7 +464,7 @@ checksum = "6048858004bcff69094cd972ed40a32500f153bd3be9f716b2eed2e8217c4838"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
 ]
 
 [[package]]
@@ -458,7 +486,7 @@ checksum = "8725e1dfadb3a50f7e5ce0b1a540466f6ed3fe7a0fca2ac2b8b831d31316bd00"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
 ]
 
 [[package]]
@@ -486,6 +514,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "venial",
+]
+
+[[package]]
+name = "syn"
+version = "1.0.109"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -528,7 +567,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
 ]
 
 [[package]]
@@ -619,7 +658,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
  "wasm-bindgen-shared",
 ]
 
@@ -653,7 +692,7 @@ checksum = "54681b18a46765f095758388f2d0cf16eb8d4169b639ab575a8f5693af210c7b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.63",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]

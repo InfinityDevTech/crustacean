@@ -17,7 +17,15 @@ pub const MEMORY_VERSION: u8 = 1;
 static INIT_LOGGING: std::sync::Once = std::sync::Once::new();
 
 #[wasm_bindgen(js_name = loop)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn game_loop() {
+    #[cfg(feature = "profile")]
+    {
+        screeps_timing::start_trace(Box::new(|| {
+            (screeps::game::cpu::get_used() * 1000.0) as u64
+        }));
+    }
+
     INIT_LOGGING.call_once(|| {
         // show all output of Info level, adjust as needed
         logging::setup_logging(logging::Info);
@@ -62,6 +70,15 @@ pub fn game_loop() {
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
     memory.write_memory();
+
+    #[cfg(feature = "profile")]
+    {
+        let trace = screeps_timing::stop_trace();
+
+        if let Some(trace_output) = serde_json::to_string(&trace).ok() {
+            info!("{}", trace_output);
+        }
+    }
 
     let heap = game::cpu::get_heap_statistics();
     let used = (heap.total_heap_size() / heap.heap_size_limit()) * 100;

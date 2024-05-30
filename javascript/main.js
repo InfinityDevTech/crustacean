@@ -26,7 +26,7 @@ function console_error() {
 
 global.pause_exec = function() {
   pause_exec = !pause_exec;
-  console.log(`[JS] pause_exec: ${pause_exec}`);
+  return `[JS] pause_exec: ${pause_exec}`;
 }
 
 // Set to true to have JS call Game.cpu.halt() on the next tick it processes.

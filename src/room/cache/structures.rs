@@ -71,7 +71,7 @@ impl RoomStructureCache {
         };
 
         if let Some(controller) = room.controller() {
-            let containers = controller.pos().find_in_range(find::STRUCTURES, 1);
+            let containers = controller.pos().find_in_range(find::STRUCTURES, 2);
             let container = containers
                 .iter()
                 .find(|c| matches!(c, StructureObject::StructureContainer(_)));

@@ -22,7 +22,8 @@ pub fn init() {
 }
 
 #[wasm_bindgen]
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+// , screeps_timing_annotate::timing
+#[cfg(feature = "profile")]
 pub fn game_loop() {
     #[cfg(feature = "profile")]
     {
@@ -75,7 +76,7 @@ pub fn game_loop() {
     {
         let trace = screeps_timing::stop_trace();
 
-        if let Some(trace_output) = serde_json::to_string(&trace).ok() {
+        if let Ok(trace_output) = serde_json::to_string(&trace) {
             info!("{}", trace_output);
         }
     }

@@ -12,6 +12,7 @@ mod utils;
 mod movement;
 mod room;
 mod traits;
+mod combat;
 
 pub const MEMORY_VERSION: u8 = 1;
 

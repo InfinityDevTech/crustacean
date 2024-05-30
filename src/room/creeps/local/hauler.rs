@@ -21,15 +21,26 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if let Some(order) = &memory.creeps.get(&creep.name()).unwrap().hauling_task.clone() {
         execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, order);
     } else {
-        let _ = creep.say("📋", false);
-
         let new_order = if memory.creeps.get(&creep.name()).unwrap().needs_energy.unwrap_or(false) {
+            if creep.store().get_free_capacity(None) == 0 {
+                memory.creeps.get_mut(&creep.name()).unwrap().needs_energy = None;
+            }
+
+            let _ = creep.say("NEED", false);
+
             cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer])
         } else {
+            if creep.store().get_used_capacity(None) == 0 {
+                memory.creeps.get_mut(&creep.name()).unwrap().needs_energy = Some(true);
+            }
+
+            let _ = creep.say("DUMP", false);
+
             cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Transfer])
         };
 
         if let Some(order) = new_order {
+            let _ = creep.say("EXEC", false);
             execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, &order);
         }
     }
@@ -69,10 +80,6 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
                 let _ = creep.pickup(&resource);
                 success = true;
             }
-
-            if creep.store().get_free_capacity(None) >= 0 {
-                creep_memory.needs_energy = None;
-            }
         }
         HaulingType::Withdraw => {
             if creep_full { return; }
@@ -81,10 +88,6 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
                 let amount = std::cmp::min(creep.store().get_free_capacity(Some(ResourceType::Energy)), order.amount as i32);
                 let _ = creep.withdraw(target.unchecked_ref::<StructureStorage>(), order.resource, Some(amount.try_into().unwrap()));
                 success = true;
-            }
-
-            if creep.store().get_free_capacity(None) >= 0 {
-                creep_memory.needs_energy = None;
             }
         }
         HaulingType::Transfer => {
@@ -97,10 +100,6 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
                 );
                 success = true;
             }
-
-            if creep.store().get_used_capacity(None) == 0 {
-                creep_memory.needs_energy = Some(true);
-            }
         }
         HaulingType::Offer => {
             let _ = creep.say("OFFR", false);
@@ -108,10 +107,6 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
                 let amount = std::cmp::min(creep.store().get_free_capacity(Some(order.resource)), order.amount as i32);
                 let _ = creep.withdraw(target.unchecked_ref::<StructureStorage>(), order.resource, Some(amount.try_into().unwrap()));
                 success = true;
-            }
-
-            if creep.store().get_free_capacity(None) >= 0 {
-                creep_memory.needs_energy = None;
             }
         }
     };

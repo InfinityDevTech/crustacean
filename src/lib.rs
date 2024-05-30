@@ -14,9 +14,14 @@ mod room;
 mod traits;
 
 pub const MEMORY_VERSION: u8 = 1;
-static INIT_LOGGING: std::sync::Once = std::sync::Once::new();
 
-#[wasm_bindgen(js_name = loop)]
+#[wasm_bindgen]
+pub fn init() {
+    logging::setup_logging(LevelFilter::Info);
+    info!("Initializing...");
+}
+
+#[wasm_bindgen]
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn game_loop() {
     #[cfg(feature = "profile")]
@@ -25,11 +30,6 @@ pub fn game_loop() {
             (screeps::game::cpu::get_used() * 1000.0) as u64
         }));
     }
-
-    INIT_LOGGING.call_once(|| {
-        // show all output of Info level, adjust as needed
-        logging::setup_logging(logging::Info);
-    });
 
 
     info!("---------------- CURRENT TICK - {} ----------------", game::time());

@@ -2,124 +2,101 @@
 
 // replace this with the name of your module
 const MODULE_NAME = "crustacean";
-let EXECUTION_PAUSED = false;
-let RED_BUTTON = false;
+const BUCKET_TO_COMPILE = 500;
 
-let ERROR = false;
-let js_memory = {};
-
+// This provides the function `console.error` that wasm_bindgen sometimes expects to exist,
+// especially with type checks in debug mode. An alternative is to have this be `function () {}`
+// and let the exception handler log the thrown JS exceptions, but there is some additional
+// information that wasm_bindgen only passes here.
+//
+// There is nothing special about this function and it may also be used by any JS/Rust code as a convenience.
 function console_error() {
   const processedArgs = _.map(arguments, (arg) => {
-      if (arg instanceof Error) {
-          // On this version of Node, the `stack` property of errors contains
-          // the message as well.
-          return arg.stack;
-      } else {
-          return arg;
-      }
-  }).join(' ');
-  console.log("ERROR:", processedArgs);
+    if (arg instanceof Error) {
+      // On this version of Node, the `stack` property of errors contains
+      // the message as well.
+      return arg.stack;
+    } else {
+      return arg;
+    }
+  }).join(" ");
+  console.log("[JS] ERROR:", processedArgs);
   Game.notify(processedArgs);
 }
 
-
-global.big_red_button = function (input) {
-  EXECUTION_PAUSED = true;
-  console.log("The big red button has been pressed. Are you sure you want to do this?");
-  console.log("This will suicide EVERY room, and EVERY creep. Are you still sure?");
-  console.log("If you are sure. Then rerun this command like big_red_button(\"yes\") or big_red_button(\"no\")");
-
-  if (input == undefined) {
-    EXECUTION_PAUSED = true;
-    return "Suicide? [y/n]"
-  } else if (input.toLowerCase() == "n" || input.toLowerCase() == "no") {
-    EXECUTION_PAUSED = false;
-    return "The bot will live to see another day..."
-  } else if (input.toLowerCase() == "y" || input.toLowerCase() == "yes") {
-    RED_BUTTON = true;
-    return "The bot will suicide on the next tick. Look at what you have done..."
-  }
-};
-
-global.wipe_memory = function () {
-  console.log("Wiping memory");
-
-  global.RawMemory._parsed = {};
-  global.Memory = {};
-  global.Memory.rooms = {}
-}
-
-global.toggle_exec = function () {
-    EXECUTION_PAUSED = !EXECUTION_PAUSED
-    return `Successfully toggled execution pause to: ${EXECUTION_PAUSED}`
-}
-
-global.suicide_all = function() {
-  for (let creep in Game.creeps) {
-    let c = Game.creeps[creep];
-    c.suicide()
-  }
-}
-
-global.reset_ivm = function() {
-  console.log("Resetting IVM...");
-  Game.cpu.halt();
-}
-
-function run_loop() {
-  if (ERROR) {
-    // Stops memory leak present in WASM if rust were to error out.
-    // Forces our global JS VM restart, (Basically a global reset)
-    // A 10/10 way to stop memory leaks.
-    Game.cpu.halt();
-  } else {
-    ERROR = true;
-
-    delete global.Memory;
-    global.Memory = js_memory;
-
-    console.error = console_error
-    try {
-      wasm_module.loop();
-      
-      if (RED_BUTTON) {
-        wasm_module.red_button();
-        global.wipe_memory();
-        RED_BUTTON = false;
-        EXECUTION_PAUSED = false;
-      }
-
-      // If the WASM module were to break, execution wouldnt get to this point
-      // Meaning ERROR would still be true, causing the reset.
-      ERROR = false;
-    } catch (e) {
-      console.error("ERROR: Found an error! Resetting VM next tick...", e);
-    }
-  }
-}
+// Set to true to have JS call Game.cpu.halt() on the next tick it processes.
+// This is used so that console output from the end of the erroring tick
+// will still be emitted, since calling halt destroys the environment instantly.
+// The environment will be re-created with a fresh heap next tick automatically.
+// We lose a tick of processing here, but it should be exceptional that code
+// throws at all.
+let halt_next_tick = false;
 
 let wasm_module;
-
 module.exports.loop = function () {
-      if (EXECUTION_PAUSED) {console.log("Execution is paused, not running..."); return;}
-      // Fixes a memory corruption issue.
-      if (!global.Memory) {
-        global.RawMemory._parsed = {}; global.Memory = {}; global.Memory.rooms = {}
-      }
+  try {
+    if (halt_next_tick) {
+      // We encountered an error, skip execution in this tick and get
+      // a new environment next tick.
+      Game.cpu.halt();
+      return;
+    }
 
-      // attempt to load the wasm only if there's enough bucket to do a bunch of work this tick
-      if (Game.cpu.bucket < 500) {
-        console.log("Not enough in the CPU bucket, not going to compile - CPU: " + JSON.stringify(Game.cpu));
+    // need to freshly override the fake console object each tick
+    console.error = console_error;
+
+    // Decouple `Memory` from `RawMemory`, but give it `TempMemory` to persist to so that
+    // `moveTo` can cache. This avoids issues where the game tries to insert data into `Memory`
+    // that is not expected.
+    delete global.Memory;
+    global.TempMemory = global.TempMemory || Object.create(null);
+    global.Memory = global.TempMemory;
+
+    if (wasm_module) {
+      wasm_module.game_loop();
+    } else {
+      console.log("[JS] Module not loaded... loading");
+
+      // Only load the wasm module if there is enough bucket to complete it this tick.
+      let bucket = Game.cpu.bucket;
+      if (bucket < BUCKET_TO_COMPILE) {
+        console.log(
+          `[JS] ${bucket}/${BUCKET_TO_COMPILE} bucket to compile wasm`
+        );
         return;
       }
 
-      if (!wasm_module) {
-        wasm_module = require(MODULE_NAME);
-        wasm_module.initialize_instance();
-      }
+      let cpu_before = Game.cpu.getUsed();
 
-      delete require.cache[MODULE_NAME];
+      console.log("[JS] Compiling...");
+      // load the wasm module
+      wasm_module = require(MODULE_NAME);
+      // load the wasm instance!
+      wasm_module.initialize_instance();
 
-      module.exports.loop = run_loop;
-      console.log("WASM module loaded successfully! Used CPU: " + Game.cpu.getUsed())
+      let cpu_after = Game.cpu.getUsed();
+      console.log(`[JS] ${cpu_after - cpu_before}cpu used to initialize wasm`);
+
+      // run the setup function, which configures logging
+      wasm_module.init();
+      // TODO: consider not running this if there's not enough bucket.
+      // run the loop for its first tick
+      wasm_module.game_loop();
+    }
+  } catch (e) {
+    if (
+      e instanceof WebAssembly.CompileError ||
+      e instanceof WebAssembly.LinkError
+    ) {
+      console.log(`[JS] exception during wasm compilation: ${e}`);
+    } else if (e instanceof WebAssembly.RuntimeError) {
+      console.log(`[JS] wasm aborted`);
+    } else {
+      console.log(`[JS] unexpected exception: ${e.stack}`);
+    }
+    console.log(`[JS] destroying environment...`);
+
+    // reset everything
+    halt_next_tick = true;
+  }
 };

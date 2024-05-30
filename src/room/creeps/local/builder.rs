@@ -1,6 +1,6 @@
 use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::{hauling::HaulingType, RoomCache}, traits::creep::CreepExtensions};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::HaulingType, RoomCache}, traits::creep::CreepExtensions};
 
 use super::hauler::execute_order;
 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{room::cache::hauling::{HaulingPriority, HaulingType}, MEMORY_VERSION};
+use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::{HaulingPriority, HaulingType}};
 
 pub const ALLIES: [&str; 2] = ["MarvinTMB", "Tigga"];
 
@@ -26,6 +26,7 @@ pub enum Role {
     Scout = 10,
 }
 
+// What each creep stores in its memory.
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct CreepMemory{
@@ -72,6 +73,7 @@ pub struct CreepMemory{
 }
 }
 
+// Room Memory
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct RoomMemory{
@@ -87,10 +89,25 @@ pub struct RoomMemory{
 
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
+    pub struct EnemyPlayer {
+        pub username: String,
+        pub hate: f32,
+
+        pub owned_rooms: Vec<RoomName>,
+        pub reserved_rooms: Vec<RoomName>,
+
+        pub last_seen: u32,
+    }
+}
+// Top level memory.
+structstruck::strike! {
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
-        pub creeps: HashMap<String, CreepMemory>
+        pub creeps: HashMap<String, CreepMemory>,
+
+        pub enemy_players: Vec<EnemyPlayer>,
     }
 }
 
@@ -104,6 +121,8 @@ impl ScreepsMemory {
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
+
+                enemy_players: Vec::new(),
             };
 
             memory.write_memory();
@@ -121,6 +140,8 @@ impl ScreepsMemory {
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
                         creeps: HashMap::new(),
+
+                        enemy_players: Vec::new(),
                     }
                 }
             }

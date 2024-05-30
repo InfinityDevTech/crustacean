@@ -13,8 +13,7 @@ mod movement;
 mod room;
 mod traits;
 mod combat;
-
-pub const MEMORY_VERSION: u8 = 1;
+mod config;
 
 #[wasm_bindgen]
 pub fn init() {

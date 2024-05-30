@@ -1,6 +1,6 @@
 use screeps::{find, HasId, ResourceType, Room};
 
-use super::cache::{hauling::HaulingType, RoomCache};
+use super::cache::tick_cache::{hauling::HaulingType, RoomCache};
 
 pub fn run_towers(room: &Room, cache: &mut RoomCache) {
     for tower in cache.structures.towers.values() {

@@ -1,7 +1,7 @@
 use log::info;
 use screeps::{game, look::{self, LookResult}, HasPosition, Room, StructureType, Terrain};
 
-use crate::{memory::ScreepsMemory, room::{cache::{traffic::{TrafficCache, TrafficProcs}, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
+use crate::{memory::ScreepsMemory, room::{cache::tick_cache::{traffic::{TrafficCache, TrafficProcs}, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
 
 use super::planning::creep::miner::formulate_miner;
 

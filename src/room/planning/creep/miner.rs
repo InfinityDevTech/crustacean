@@ -4,7 +4,7 @@ use screeps::{game, HasId, MaybeHasId, Part, ResourceType, Room};
 
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::{
+    room::cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType},
         RoomCache,
     },

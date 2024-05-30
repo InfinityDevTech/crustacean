@@ -1,6 +1,6 @@
 use screeps::{Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
 
-use crate::{memory::ScreepsMemory, room::cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
+use crate::{memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let controller = cache.structures.controller.as_ref().unwrap();

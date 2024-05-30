@@ -8,7 +8,7 @@ use wasm_bindgen::JsCast;
 
 use crate::{
     memory::{CreepHaulTask, CreepMemory, ScreepsMemory},
-    room::cache::{hauling::HaulingType, RoomCache},
+    room::cache::tick_cache::{hauling::HaulingType, RoomCache},
     traits::creep::CreepExtensions,
 };
 

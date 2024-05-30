@@ -2,7 +2,7 @@
 
 use screeps::{Creep, game, Position, RoomCoordinate};
 
-use crate::{memory::CreepMemory, room::cache::RoomCache, traits::creep::CreepExtensions};
+use crate::{memory::CreepMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions};
 
 pub fn scout(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
     let creep_room = creep.room().unwrap();

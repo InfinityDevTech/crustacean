@@ -3,7 +3,7 @@ use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
     memory::{Role, ScreepsMemory},
-    room::cache::RoomCache,
+    room::cache::tick_cache::RoomCache,
     utils,
 };
 

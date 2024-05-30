@@ -1,6 +1,5 @@
 use log::info;
-use screeps::{find, game, look::{self, LookResult}, HasPosition, Room, RoomVisual, StructureType, Terrain};
-use wasm_bindgen::convert::IntoWasmAbi;
+use screeps::{game, look::{self, LookResult}, HasPosition, Room, StructureType, Terrain};
 
 use crate::{memory::ScreepsMemory, room::{cache::RoomCache, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
 
@@ -32,7 +31,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     // TODO: Get a better spawn implementation
     let _ = formulate_miner(&room, memory, &mut cache);
 
-    for creep in cache.hauling.haulers.clone().iter() {
+    for creep in cache.hauling.haulers.clone() {
         let creep = game::creeps().get(creep.to_string()).unwrap();
         hauler::run_creep(&creep, memory, &mut cache);
     }
@@ -45,10 +44,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     }
 
     let coords = cache.structures.spawns.values().next().unwrap().pos();
-    let mut things = get_bunker_plan();
-    let mut viz = RoomVisualExt::new(room.name());
+    let things = get_bunker_plan();
+    let _viz = RoomVisualExt::new(room.name());
 
-    for thing in things.clone().iter() {
+    for thing in things.iter() {
         let x_offset = thing.0 + coords.x().u8() as i8;
         let y_offset = thing.1 + coords.y().u8() as i8;
         //viz.structure(x_offset.into(), y_offset.into(), thing.2, 0.5);
@@ -58,7 +57,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
             //things.retain(|s| { s.2 == StructureType::Container });
 
             for thing in &things {
-                let _ = room.create_construction_site(x_offset as u8, y_offset as u8, StructureType::Container, None);
+                let _ = room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
             }
 
             // Plan container around source and controller
@@ -99,12 +98,14 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     }
 
     // Must be done LAST, traffic managemnet
-        // Provided by Harabi
-        // https://github.com/sy-harabi/Screeps-Traffic-Manager
-        let start = game::cpu::get_used();
-        let mut traffic = cache.movement.clone();
-        traffic.run_room(&cache);
-        info!("  [TRAFFIX] Traffic took: {:.4} with {} intents", game::cpu::get_used() - start, traffic.intents);
+    // Provided by Harabi
+    // https://github.com/sy-harabi/Screeps-Traffic-Manager
+    let start = game::cpu::get_used();
+    // Yes, I have to clone it.
+    // No, I will not change it.
+    let mut traffic = cache.movement.clone();
+    traffic.run_room(&cache);
+    info!("  [TRAFFIX] Traffic took: {:.4} with {} intents", game::cpu::get_used() - start, traffic.intents);
 
     let end_cpu = game::cpu::get_used();
     info!("  [GOVERNMENT] Finished government for room: {} in {:.4} cpu", room.name(), end_cpu - starting_cpu);

@@ -1,14 +1,17 @@
 use std::collections::HashMap;
 
-use log::info;
-use screeps::{game, Creep, Direction, HasPosition, MaybeHasId, ObjectId, Position, Room, RoomCoordinate, RoomXY};
+use screeps::{Creep, Direction, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY};
 
 use crate::{movement::utils::dir_to_coords, traits::creep::CreepExtensions};
 
-use rand::thread_rng;
 use rand::seq::SliceRandom;
 
 use super::RoomCache;
+
+// Harabi's amazing traffic algorithm
+// Ripped directly from his github and hand-translated to Rust
+// Written by: Infinity Dev
+// Original Source: sy-harabi
 
 #[derive(Debug, Clone)]
 pub struct RoomMovementCache {
@@ -155,7 +158,7 @@ impl RoomMovementCache {
 
     pub fn get_possible_moves(&mut self, creep: &Creep, cache: &RoomCache) -> Vec<RoomXY> {
         if let Some(cached) = self.cached_ops.get(&creep.try_id().unwrap()) {
-            return cached.clone();
+            return cached.to_vec();
         }
 
         let mut possible_moves = vec![creep.pos().xy()];

@@ -1,7 +1,6 @@
-use std::{cmp::Ordering, collections::HashMap};
+use std::collections::HashMap;
 
-use log::info;
-use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, Resource, ResourceType, SharedCreepProperties};
+use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};
 
 use crate::memory::{CreepHaulTask, ScreepsMemory};
@@ -73,8 +72,7 @@ impl HaulingCache {
     }
 
     pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Vec<HaulingType>) -> Option<CreepHaulTask> {
-        let unsorted_orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>();
-        let mut orders = unsorted_orders.clone();
+        let mut orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>();
 
         orders.retain(|x| order_type.contains(&x.haul_type));
 

@@ -14,7 +14,7 @@ pub struct CreepCache {
 }
 
 impl CreepCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> CreepCache {
+    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory) -> CreepCache {
         let mut cache = CreepCache {
             creeps: HashMap::new(),
             creeps_of_role: HashMap::new(),

@@ -1,8 +1,7 @@
 use std::vec;
 
-use log::info;
 use screeps::{
-    game, Creep, HasPosition, HasStore, ObjectId, Resource, ResourceType, Ruin, SharedCreepProperties, Structure, StructureContainer, StructureObject, StructureStorage
+    game, Creep, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
 };
 
 use wasm_bindgen::JsCast;
@@ -33,8 +32,6 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         if let Some(order) = new_order {
             execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, &order);
         }
-
-        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     }
 }
 

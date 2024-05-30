@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use log::warn;
 use screeps::{
     pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,

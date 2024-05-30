@@ -2,7 +2,7 @@ use log::info;
 use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
 
-use crate::{memory::{Role, RoomMemory}, room::cache::RoomCache, utils};
+use crate::room::cache::RoomCache;
 
 pub trait RoomExtensions {
     fn name_str(&self) -> String;
@@ -128,7 +128,7 @@ impl RoomExtensions for screeps::Room {
                 }
             }
             this_gen.clear();
-            this_gen = next_gen.clone();
+            this_gen.clone_from(&next_gen);
             depth += 1;
         }
 

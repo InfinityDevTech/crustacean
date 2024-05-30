@@ -1,14 +1,10 @@
-use std::str::FromStr;
-
-use log::info;
-use screeps::{game, Creep, ErrorCode, HasHits, HasId, HasPosition, MaybeHasId, Part, ResourceType, RoomName, SharedCreepProperties, Source};
+use screeps::{game, Creep, ErrorCode, HasHits, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties, Source};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    let room_memory = memory.rooms.get(&RoomName::from_str(&creep_memory.owning_room).unwrap()).unwrap();
 
     if creep_memory.task_id.is_none() {
         let _ = creep.say("kurt kob", true);
@@ -56,8 +52,8 @@ fn needs_haul_manually(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
     if count == 0 {
         let _ = creep.say("🚚", false);
 
-        let spawn = cache.structures.spawns.clone().into_iter().next().unwrap().1;
-        if creep.transfer(&spawn, ResourceType::Energy, None) == Err(ErrorCode::NotInRange) {
+        let spawn = cache.structures.spawns.values().next().unwrap();
+        if creep.transfer(spawn, ResourceType::Energy, None) == Err(ErrorCode::NotInRange) {
             creep.better_move_to(creep_memory, cache, spawn.pos(), 1);
         }
         return true;

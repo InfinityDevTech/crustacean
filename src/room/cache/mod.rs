@@ -36,7 +36,7 @@ impl RoomCache {
         }
     }
 
-    pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
+    pub fn _refresh_cache(&mut self, room: &Room, _memory: &mut ScreepsMemory) {
         self.structures.refresh_structure_cache(room);
         self.structures.refresh_source_cache(room);
         self.structures.refresh_spawn_cache(room);

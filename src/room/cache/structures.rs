@@ -1,12 +1,10 @@
 use std::{cmp, collections::HashMap};
 
-use log::info;
 use screeps::{
-    control, find, game,
+    find, game,
     look::{self, LookResult},
-    ConstructionSite, Creep, HasId, HasPosition, LocalCostMatrix, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, Part, Resource, ResourceType, Room, Ruin, Source, Structure,
-    StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject,
+    ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId,
+    OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject,
     StructureRoad, StructureSpawn, StructureTower, Terrain,
 };
 

@@ -4,4 +4,3 @@ pub mod creeps;
 pub mod tower;
 pub mod planning;
 pub mod cache;
-pub mod traffic;

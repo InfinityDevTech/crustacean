@@ -4,7 +4,7 @@ use screeps::{game, Room, SharedCreepProperties};
 use crate::{
     memory::{Role, ScreepsMemory},
     room::cache::RoomCache,
-    traits::creep::CreepExtensions, utils,
+    utils,
 };
 
 use super::local;

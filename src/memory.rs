@@ -1,12 +1,12 @@
-use std::{cmp, collections::HashMap};
+use std::collections::HashMap;
 
 use log::error;
-use screeps::{game, look::{self, LookResult}, Creep, HasPosition, ObjectId, Part, RawObjectId, ResourceType, Room, RoomName, Source, StructureContainer, StructureLink, Terrain};
+use screeps::{ObjectId, RawObjectId, ResourceType, RoomName, StructureLink};
 use serde::{Deserialize, Serialize};
 
-use js_sys::{JsString, Object};
+use js_sys::JsString;
 
-use crate::{room::{self, cache::hauling::{HaulingPriority, HaulingType}}, MEMORY_VERSION};
+use crate::{room::cache::hauling::{HaulingPriority, HaulingType}, MEMORY_VERSION};
 
 pub const ALLIES: [&str; 2] = ["MarvinTMB", "Tigga"];
 

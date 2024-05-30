@@ -1,8 +1,6 @@
-#![allow(dead_code)]
-use log::info;
-use screeps::{find, Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
+use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::{hauling::HaulingType, RoomCache}, traits::creep::CreepExtensions};
 
 use super::hauler::execute_order;
 
@@ -32,7 +30,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
             creep.better_move_to(creepmem, cache, site.pos(), 1);
         } else {
             let _ = creep.say("🔨", false);
-            let info = creep.build(site);
+            let _ = creep.build(site);
         }
     }
 

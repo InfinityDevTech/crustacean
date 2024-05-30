@@ -1,20 +1,21 @@
-use movement::RoomMovementCache;
+use std::collections::HashMap;
+
 use screeps::Room;
 
 use crate::memory::ScreepsMemory;
 
-use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache};
+use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
 
 pub mod structures;
 pub mod creeps;
 pub mod hauling;
 pub mod resources;
-pub mod movement;
+pub mod traffic;
 
 pub struct RoomCache {
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
-    pub movement: RoomMovementCache,
+    pub traffic: TrafficCache,
 
     pub resources: RoomResourceCache,
 
@@ -27,7 +28,7 @@ impl RoomCache {
         RoomCache {
             structures: RoomStructureCache::new_from_room(room, memory),
             creeps: CreepCache::new_from_room(room, memory),
-            movement: RoomMovementCache::new(),
+            traffic: TrafficCache::new(),
 
             resources: RoomResourceCache::new_from_room(room, memory),
 
@@ -42,5 +43,12 @@ impl RoomCache {
         self.structures.refresh_spawn_cache(room);
 
         self.creeps.refresh_creep_cache(room);
+
+        self.traffic.move_targets = HashMap::new();
+        self.traffic.move_requests = HashMap::new();
+        self.traffic.movement_map = HashMap::new();
+        self.traffic.visited_creeps = HashMap::new();
+        self.traffic.cached_ops = HashMap::new();
+        self.traffic.move_intents = 0;
     }
 }

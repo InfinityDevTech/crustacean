@@ -4,6 +4,7 @@ use super::cache::{hauling::HaulingType, RoomCache};
 
 pub fn run_towers(room: &Room, cache: &mut RoomCache) {
     for tower in cache.structures.towers.values() {
+        // Use cache here
         let enemies = room.find(find::HOSTILE_CREEPS, None);
         if enemies.is_empty() {
             return;

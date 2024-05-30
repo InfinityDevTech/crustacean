@@ -1,19 +1,31 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, sync::Mutex};
 
+use heap_cache::GlobalHeapCache;
 use log::*;
+use once_cell::sync::Lazy;
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
-use crate::{memory::ScreepsMemory, room::planning::{self, room::plan_room}, traits::room::RoomExtensions};
+use crate::{
+    memory::ScreepsMemory,
+    room::planning::{self, room::plan_room},
+    traits::room::RoomExtensions,
+};
 
+use room::cache::heap_cache::RoomHeapCache;
+
+mod combat;
+mod config;
+mod heap_cache;
 mod logging;
 mod memory;
-mod utils;
 mod movement;
 mod room;
 mod traits;
-mod combat;
-mod config;
+mod utils;
+
+pub static HEAP_CACHE: Lazy<Mutex<GlobalHeapCache>> =
+    Lazy::new(|| Mutex::new(GlobalHeapCache::new()));
 
 #[wasm_bindgen]
 pub fn init() {
@@ -32,9 +44,12 @@ pub fn game_loop() {
         }));
     }
 
+    info!(
+        "---------------- CURRENT TICK - {} ----------------",
+        game::time()
+    );
 
-    info!("---------------- CURRENT TICK - {} ----------------", game::time());
-
+    let mut heap_cache = HEAP_CACHE.lock().unwrap();
 
     let mut memory = ScreepsMemory::init_memory();
 
@@ -54,17 +69,31 @@ pub fn game_loop() {
 
             // If the planner says false on the first game tick, it doesnt have enough CPU to plan the room.
             // So we can fill teh bucket and try again next tick.
-            if room.my() && !planning::room::plan_room(&room, &mut memory) { return; }
+            if room.my() && !planning::room::plan_room(&room, &mut memory) {
+                return;
+            }
         }
     }
-    
+
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
         let room_memory = memory.rooms.get(&game_room.name());
 
-        if room_memory.is_none() && game_room.my() { plan_room(&game_room, &mut memory); }
+        if room_memory.is_none() && game_room.my() {
+            plan_room(&game_room, &mut memory);
+        }
 
-        room::democracy::start_government(game::rooms().get(room).unwrap(), &mut memory);
+        if heap_cache.rooms.get(&game_room.name_str()).is_none() {
+            heap_cache
+                .rooms
+                .insert(game_room.name_str(), RoomHeapCache::new(&game_room));
+        }
+
+        room::democracy::start_government(
+            game::rooms().get(room).unwrap(),
+            &mut memory,
+            heap_cache.rooms.get(&game_room.name_str()).unwrap(),
+        );
     }
 
     // Bot is finished, write the stats and local copy of memory.
@@ -85,7 +114,12 @@ pub fn game_loop() {
     let used = (heap.total_heap_size() / heap.heap_size_limit()) * 100;
 
     info!("[STATS] Statistics are as follows: ");
-    info!("  GCL {}. Next: {} / {}", game::gcl::level(), game::gcl::progress(), game::gcl::progress_total());
+    info!(
+        "  GCL {}. Next: {} / {}",
+        game::gcl::level(),
+        game::gcl::progress(),
+        game::gcl::progress_total()
+    );
     info!("  CPU Usage:");
     info!("       Total: {}", game::cpu::get_used());
     info!("       Bucket: {}", game::cpu::bucket());
@@ -115,18 +149,31 @@ pub fn big_red_button() {
 }
 
 pub fn just_reset() -> bool {
-    if game::time() == 0 { return true; }
+    if game::time() == 0 {
+        return true;
+    }
 
-    if game::creeps().entries().count() >= 1 { return false; }
-    if game::rooms().entries().count() > 1 { return false; }
-
-    let room = game::rooms().values().next().unwrap();
-
-    if room.controller().is_none() || !room.controller().unwrap().my() || room.controller().unwrap().level() != 1 || room.controller().unwrap().progress().unwrap() > 0 || room.controller().unwrap().safe_mode().unwrap() > 0 {
+    if game::creeps().entries().count() >= 1 {
+        return false;
+    }
+    if game::rooms().entries().count() > 1 {
         return false;
     }
 
-    if game::spawns().entries().count() != 1 { return false; }
+    let room = game::rooms().values().next().unwrap();
+
+    if room.controller().is_none()
+        || !room.controller().unwrap().my()
+        || room.controller().unwrap().level() != 1
+        || room.controller().unwrap().progress().unwrap() > 0
+        || room.controller().unwrap().safe_mode().unwrap() > 0
+    {
+        return false;
+    }
+
+    if game::spawns().entries().count() != 1 {
+        return false;
+    }
 
     true
 }

@@ -4,7 +4,7 @@ use crate::{
         move_target::MoveTarget,
         utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::RoomCache,
+    room::cache::tick_cache::RoomCache,
 };
 use log::info;
 use rand::prelude::SliceRandom;

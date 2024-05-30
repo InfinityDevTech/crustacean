@@ -16,7 +16,7 @@ pub fn run_towers(room: &Room, cache: &mut RoomCache) {
                 tower.raw_id(),
                 ResourceType::Energy,
                 tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32,
-                super::cache::hauling::HaulingPriority::Combat,
+                super::cache::tick_cache::hauling::HaulingPriority::Combat,
                 HaulingType::Transfer,
             );
         }

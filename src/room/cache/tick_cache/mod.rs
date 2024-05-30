@@ -1,10 +1,12 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 use screeps::Room;
 
 use crate::memory::ScreepsMemory;
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
+
+use super::heap_cache::RoomHeapCache;
 
 pub mod structures;
 pub mod creeps;
@@ -21,18 +23,21 @@ pub struct RoomCache {
 
     //pub hauling: RefCell<HaulingCache>,
     pub hauling: HaulingCache,
+
+    pub heap_cache: RefCell<RoomHeapCache>,
 }
 
 impl RoomCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> RoomCache {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, room_heap: RoomHeapCache) -> RoomCache {
         RoomCache {
             structures: RoomStructureCache::new_from_room(room, memory),
             creeps: CreepCache::new_from_room(room, memory),
             traffic: TrafficCache::new(),
-
             resources: RoomResourceCache::new_from_room(room, memory),
 
             hauling: HaulingCache::new(),
+
+            heap_cache: RefCell::new(room_heap),
             //hauling: RefCell::new(HaulingCache::new()),
         }
     }

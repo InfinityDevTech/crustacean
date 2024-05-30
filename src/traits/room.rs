@@ -2,7 +2,7 @@ use log::info;
 use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
 
-use crate::room::cache::RoomCache;
+use crate::room::cache::tick_cache::RoomCache;
 
 pub trait RoomExtensions {
     fn name_str(&self) -> String;

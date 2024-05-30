@@ -3,15 +3,15 @@ use screeps::{game, look::{self, LookResult}, HasPosition, Room, StructureType, 
 
 use crate::{memory::ScreepsMemory, room::{cache::tick_cache::{traffic::{TrafficCache, TrafficProcs}, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower}};
 
-use super::planning::creep::miner::formulate_miner;
+use super::{cache::heap_cache::RoomHeapCache, planning::creep::miner::formulate_miner};
 
-pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
+pub fn start_government(room: Room, memory: &mut ScreepsMemory, room_heap: RoomHeapCache) {
     let starting_cpu = game::cpu::get_used();
     info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
     // Caches various things, like resources
     // Caches structures and other creep things
-    let mut room_cache = RoomCache::new_from_room(&room, memory);
+    let mut room_cache = RoomCache::new_from_room(&room, memory, room_heap);
 
     room_cache.structures.check_containers(&mut room_cache.hauling);
 

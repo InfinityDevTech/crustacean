@@ -19,6 +19,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
     if let Some(order) = &memory.creeps.get(&creep.name()).unwrap().hauling_task.clone() {
+        let _ = creep.say("EXEC", false);
         execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, order);
     } else {
         let new_order = if memory.creeps.get(&creep.name()).unwrap().needs_energy.unwrap_or(false) {
@@ -65,6 +66,11 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
     let creep_full = creep.store().get_free_capacity(None) == 0;
     // || target.as_ref().unwrap().unchecked_ref::<StructureStorage>().store().get_free_capacity(Some(order.resource)) == 0
     if target.is_none() {
+        creep_memory.hauling_task = None;
+        return;
+    }
+
+    if creep_full && order.haul_type != HaulingType::Transfer {
         creep_memory.hauling_task = None;
         return;
     }

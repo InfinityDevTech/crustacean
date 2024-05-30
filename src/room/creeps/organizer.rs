@@ -15,6 +15,8 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
     info!("  [CREEPS] Running {} creeps", creeps.len());
 
+    let creep_count = creeps.len().clone();
+
     for creep_name in creeps {
         let creep = game::creeps().get(creep_name.to_string());
 
@@ -44,5 +46,5 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     }
 
     let end_cpu = game::cpu::get_used();
-    info!("  [CREEPS] Used {:.4} CPU to run creeps", end_cpu - starting_cpu);
+    info!("  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep", end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64);
 }

@@ -87,6 +87,10 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
     let things = get_bunker_plan();
     let _viz = RoomVisualExt::new(room.name());
 
+    if game::cpu::bucket() < 500 {
+        return;
+    }
+
     if !memory.rooms.get(&room.name()).unwrap().planned
         || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
     {

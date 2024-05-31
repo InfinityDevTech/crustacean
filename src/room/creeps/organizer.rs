@@ -8,7 +8,16 @@ use crate::{
 use super::local;
 
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creeps = memory.rooms.get(&room.name()).unwrap().creeps.clone();
+    // This is done in this manner to stop an "impossible" state
+    // I reached, idk how, idk why, idk who, but it happened
+    // and this is the only way I could think of to fix it
+    let creeps = memory.rooms.get(&room.name());
+    if creeps.is_none() {
+        info!("  [CREEPS] No creeps in room {}", room.name());
+        return;
+    }
+    let creeps = creeps.unwrap().creeps.clone();
+
     let starting_cpu = game::cpu::get_used();
 
     info!("  [CREEPS] Running {} creeps", creeps.len());

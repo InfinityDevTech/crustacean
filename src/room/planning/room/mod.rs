@@ -14,7 +14,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
 
     info!("[PLANNER] Planning order recieved! Planning: {}", room.name_str());
 
-    let mut room_memory = RoomMemory {
+    let room_memory = RoomMemory {
         name: room.name_str(),
         rcl: room.controller().unwrap().level(),
         planned: false,

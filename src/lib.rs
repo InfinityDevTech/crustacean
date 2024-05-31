@@ -38,6 +38,8 @@ pub fn init() {
 // , screeps_timing_annotate::timing
 #[cfg(feature = "profile")]
 pub fn game_loop() {
+    use room::democracy;
+
     #[cfg(feature = "profile")]
     {
         //screeps_timing::start_trace(Box::new(|| {
@@ -49,6 +51,12 @@ pub fn game_loop() {
         "---------------- CURRENT TICK - {} ----------------",
         game::time()
     );
+
+    if game::cpu::bucket() < 100 {
+        info!("Bucket is too low, skipping tick");
+        info!("Bucket: {}/100", game::cpu::bucket());
+        return;
+    }
 
     let mut memory = ScreepsMemory::init_memory();
 
@@ -82,10 +90,17 @@ pub fn game_loop() {
             plan_room(&game_room, &mut memory);
         }
 
-        room::democracy::start_government(
-            game::rooms().get(room).unwrap(),
-            &mut memory,
-        );
+        // This stops an edge case:
+        // If the CPU bucket is below 100, then the planner doesnt run, and room isnt added to memory
+        // But the room is still being executed on, and the room assume it exists in memory.
+        // (You can see the problem in the above statement)
+        let room_memory = memory.rooms.get(&game_room.name());
+        if room_memory.is_none() {
+            continue;
+        }
+
+        democracy::start_government(game_room, &mut memory);
+
     }
 
     // Bot is finished, write the stats and local copy of memory.
@@ -95,11 +110,11 @@ pub fn game_loop() {
 
     #[cfg(feature = "profile")]
     {
-        let trace = screeps_timing::stop_trace();
+        //let trace = screeps_timing::stop_trace();
 
-        if let Ok(trace_output) = serde_json::to_string(&trace) {
-            info!("{}", trace_output);
-        }
+        //if let Ok(trace_output) = serde_json::to_string(&trace) {
+        //    info!("{}", trace_output);
+        //}
     }
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();

@@ -152,7 +152,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
     } else {
         parts.push(Part::Move);
         parts.push(Part::Carry);
-        cost += 100;
+        parts.push(Part::Work);
+        cost += 200;
 
         let energy_capacity = room.energy_available() - cost;
         let max_work_parts_makeable = (energy_capacity as f32 / 100.0).ceil() as u32;

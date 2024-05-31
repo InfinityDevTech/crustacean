@@ -96,7 +96,7 @@ structstruck::strike! {
         pub owned_rooms: Vec<RoomName>,
         pub reserved_rooms: Vec<RoomName>,
 
-        pub last_seen: u32,
+        pub last_attack: u32,
     }
 }
 // Top level memory.
@@ -107,7 +107,7 @@ structstruck::strike! {
         pub rooms: HashMap<RoomName, RoomMemory>,
         pub creeps: HashMap<String, CreepMemory>,
 
-        pub enemy_players: Vec<EnemyPlayer>,
+        pub enemy_players: HashMap<String, EnemyPlayer>,
     }
 }
 
@@ -122,7 +122,7 @@ impl ScreepsMemory {
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
 
-                enemy_players: Vec::new(),
+                enemy_players: HashMap::new(),
             };
 
             memory.write_memory();
@@ -141,7 +141,7 @@ impl ScreepsMemory {
                         rooms: HashMap::new(),
                         creeps: HashMap::new(),
 
-                        enemy_players: Vec::new(),
+                        enemy_players: HashMap::new(),
                     }
                 }
             }
@@ -167,5 +167,39 @@ impl ScreepsMemory {
             *name,
             object
         );
+    }
+
+    pub fn get_or_create_enemy(&mut self, username: String) -> EnemyPlayer {
+        if self.enemy_players.contains_key(&username) {
+            self.enemy_players.get_mut(&username).unwrap().clone()
+        } else {
+            let enemy = EnemyPlayer {
+                username: username.clone(),
+                hate: 0.0,
+                owned_rooms: vec![],
+                reserved_rooms: vec![],
+                last_attack: 0,
+            };
+
+            self.enemy_players.insert(username.clone(), enemy.clone());
+            enemy
+        }
+
+    }
+}
+
+impl EnemyPlayer {
+    pub fn decrement_hate(&mut self, amount: f32) {
+        let current_hate = self.hate;
+
+        if current_hate - amount < 0.0 {
+            self.hate = 0.0;
+        } else {
+            self.hate -= amount;
+        }
+    }
+
+    pub fn increment_hate(&mut self, amount: f32) {
+        self.hate += amount;
     }
 }

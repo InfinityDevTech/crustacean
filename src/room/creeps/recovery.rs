@@ -11,7 +11,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
 
         let mut split_name = creep_name.split('-');
         let role = name_to_role(split_name.next().unwrap());
-        let time = split_name.next().unwrap();
+        let _time = split_name.next().unwrap();
         let room = split_name.next().unwrap();
 
         let creep = game::creeps().get(creep_name.clone()).unwrap();

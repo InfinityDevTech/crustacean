@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use screeps::{Creep, Room};
 
 use crate::traits::room::RoomExtensions;
 
+#[derive(PartialEq)]
 pub enum HealthChangeType {
     Damage,
     Heal,
@@ -11,7 +14,7 @@ pub enum HealthChangeType {
 #[derive(Debug, Clone)]
 pub struct RoomHeapCache {
     pub room: String,
-    pub creeps: Vec<HeapCreep>,
+    pub creeps: HashMap<String, HeapCreep>,
 }
 
 #[derive(Debug, Clone)]
@@ -23,15 +26,15 @@ impl RoomHeapCache {
     pub fn new(room: &Room) -> RoomHeapCache {
         RoomHeapCache {
             room: room.name_str(),
-            creeps: Vec::new(),
+            creeps: HashMap::new(),
         }
     }
 }
 
 impl HeapCreep {
-    pub fn new(health: u32) -> HeapCreep {
+    pub fn new(creep: &Creep) -> HeapCreep {
         HeapCreep {
-            health,
+            health: creep.hits(),
         }
     }
 

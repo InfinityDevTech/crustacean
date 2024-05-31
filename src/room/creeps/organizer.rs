@@ -2,9 +2,7 @@ use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    memory::{Role, ScreepsMemory},
-    room::cache::tick_cache::RoomCache,
-    utils,
+    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, utils
 };
 
 use super::local;
@@ -15,7 +13,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
     info!("  [CREEPS] Running {} creeps", creeps.len());
 
-    let creep_count = creeps.len().clone();
+    let creep_count = creeps.len();
 
     for creep_name in creeps {
         let creep = game::creeps().get(creep_name.to_string());
@@ -27,12 +25,16 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         }
 
         let creep = creep.unwrap();
-
-        if creep.spawning() { return; }
-
         let role = utils::name_to_role(&creep.name());
 
-        if role.is_none() { return; }
+        if creep.spawning() || role.is_none() { return; }
+
+        let heap_creep = cache.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));
+
+        let health_change = heap_creep.get_health_change(&creep);
+        if health_change != HealthChangeType::None {
+            process_health_event(&creep, memory, health_change);
+        }
 
         match role.unwrap() {
             Role::Miner => local::source_miner::run_creep(&creep, memory, cache),

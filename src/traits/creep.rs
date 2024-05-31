@@ -6,9 +6,8 @@ use crate::{
     },
     room::cache::tick_cache::RoomCache,
 };
-use log::info;
 use rand::prelude::SliceRandom;
-use screeps::{Creep, Direction, HasPosition, MaybeHasId, Position, RoomXY};
+use screeps::{Direction, HasPosition, MaybeHasId, Position, RoomXY};
 
 pub trait CreepExtensions {
     // Movement

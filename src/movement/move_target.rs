@@ -66,9 +66,9 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
         for csite in constructions {
             let pos = csite.pos();
             match csite.structure_type() {
-                StructureType::Container => matrix.set(pos.xy(), 1),
-                StructureType::Rampart => matrix.set(pos.xy(), 1),
-                StructureType::Road => matrix.set(pos.xy(), 1),
+                StructureType::Container => matrix.set(pos.xy(), 2),
+                StructureType::Rampart => matrix.set(pos.xy(), 2),
+                StructureType::Road => matrix.set(pos.xy(), 2),
                 StructureType::Wall => matrix.set(pos.xy(), 255),
                 _ => {
                     matrix.set(pos.xy(), 255);
@@ -79,10 +79,10 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
         for structure in structures {
             let pos = structure.pos();
             match structure {
-                StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 1),
+                StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 2),
                 StructureObject::StructureRampart(rampart) => {
                     if rampart.my() {
-                        matrix.set(pos.xy(), 1);
+                        matrix.set(pos.xy(), 2);
                     } else {
                         matrix.set(pos.xy(), 255);
                     }

@@ -40,9 +40,9 @@ pub fn init() {
 pub fn game_loop() {
     #[cfg(feature = "profile")]
     {
-        screeps_timing::start_trace(Box::new(|| {
-            (screeps::game::cpu::get_used() * 1000.0) as u64
-        }));
+        //screeps_timing::start_trace(Box::new(|| {
+        //    (screeps::game::cpu::get_used() * 1000.0) as u64
+        //}));
     }
 
     info!(

@@ -29,6 +29,14 @@ global.pause_exec = function() {
   return `[JS] pause_exec: ${pause_exec}`;
 }
 
+global.wipe_memory = function() {
+  RawMemory._parsed = {};
+  Memory = {};
+  Memory.rooms = {}
+
+  return "[JS] Memory wiped";
+}
+
 // Set to true to have JS call Game.cpu.halt() on the next tick it processes.
 // This is used so that console output from the end of the erroring tick
 // will still be emitted, since calling halt destroys the environment instantly.

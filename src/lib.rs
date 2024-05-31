@@ -134,6 +134,7 @@ pub fn game_loop() {
     info!("       Bucket: {}", game::cpu::bucket());
     info!("       Heap: {:.2}%", used);
     info!("       Heap Lifetime: {}", heap_lifetime);
+    *heap_lifetime += used;
 }
 
 #[wasm_bindgen(js_name = red_button)]

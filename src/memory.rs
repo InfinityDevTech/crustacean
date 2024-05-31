@@ -168,24 +168,6 @@ impl ScreepsMemory {
             object
         );
     }
-
-    pub fn get_or_create_enemy(&mut self, username: String) -> EnemyPlayer {
-        if self.enemy_players.contains_key(&username) {
-            self.enemy_players.get_mut(&username).unwrap().clone()
-        } else {
-            let enemy = EnemyPlayer {
-                username: username.clone(),
-                hate: 0.0,
-                owned_rooms: vec![],
-                reserved_rooms: vec![],
-                last_attack: 0,
-            };
-
-            self.enemy_players.insert(username.clone(), enemy.clone());
-            enemy
-        }
-
-    }
 }
 
 impl EnemyPlayer {

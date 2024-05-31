@@ -30,7 +30,20 @@ pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_ty
     if !offending_creeps.is_empty() {
         let offending_user = offending_creeps.first().unwrap().owner().username();
 
-        let mut offending_user = memory.get_or_create_enemy(offending_user);
+        let offending_user = if memory.enemy_players.contains_key(&offending_user) {
+            memory.enemy_players.get_mut(&offending_user).unwrap()
+        } else {
+            let enemy = EnemyPlayer {
+                username: offending_user.clone(),
+                hate: 0.0,
+                owned_rooms: vec![],
+                reserved_rooms: vec![],
+                last_attack: 0,
+            };
+
+            memory.enemy_players.insert(offending_user.clone(), enemy.clone());
+            memory.enemy_players.get_mut(&offending_user).unwrap()
+        };
 
         if health_type == HealthChangeType::Damage {
             offending_user.increment_hate(config::HATE_CREEP_ATTACK_WEIGHT);

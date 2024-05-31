@@ -62,6 +62,20 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
         let structures = room.find(find::STRUCTURES, None);
         let constructions = room.find(find::CONSTRUCTION_SITES, None);
         let creeps = room.find(find::CREEPS, None);
+
+        for csite in constructions {
+            let pos = csite.pos();
+            match csite.structure_type() {
+                StructureType::Container => matrix.set(pos.xy(), 1),
+                StructureType::Rampart => matrix.set(pos.xy(), 1),
+                StructureType::Road => matrix.set(pos.xy(), 1),
+                StructureType::Wall => matrix.set(pos.xy(), 255),
+                _ => {
+                    matrix.set(pos.xy(), 255);
+                }
+            }
+        }
+
         for structure in structures {
             let pos = structure.pos();
             match structure {
@@ -75,19 +89,6 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
                 }
                 StructureObject::StructureRoad(_) => matrix.set(pos.xy(), 1),
                 StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
-                _ => {
-                    matrix.set(pos.xy(), 255);
-                }
-            }
-        }
-
-        for csite in constructions {
-            let pos = csite.pos();
-            match csite.structure_type() {
-                StructureType::Container => matrix.set(pos.xy(), 1),
-                StructureType::Rampart => matrix.set(pos.xy(), 1),
-                StructureType::Road => matrix.set(pos.xy(), 1),
-                StructureType::Wall => matrix.set(pos.xy(), 255),
                 _ => {
                     matrix.set(pos.xy(), 255);
                 }

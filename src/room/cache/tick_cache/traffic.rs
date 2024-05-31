@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::info;
 use screeps::{
     game::get_object_by_id_typed, Creep, HasPosition, MaybeHasId, ObjectId, Position,
     RoomCoordinate, RoomXY,
@@ -89,8 +90,12 @@ impl TrafficProcs {
                     creep.room().unwrap().name(),
                 ))
                 .unwrap();
-            if creep.move_direction(dir).is_ok() {
+
+            let move_res = creep.move_direction(dir);
+            if move_res.is_ok() {
                 room_cache.traffic.move_intents += 1;
+            } else {
+                info!("Creep move failed, {:?}", move_res.err().unwrap());
             }
         }
     }

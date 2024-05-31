@@ -155,7 +155,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
         cost += 100;
 
         let energy_capacity = room.energy_available() - cost;
-        let max_work_parts_makeable = (energy_capacity as f32 / 100.0).floor() as u32;
+        let max_work_parts_makeable = (energy_capacity as f32 / 100.0).ceil() as u32;
         let max_work_parts_needed = cache.structures.sources[needed.unwrap() as usize].parts_needed();
 
         for _ in 0..cmp::min(max_work_parts_makeable, (max_work_parts_needed + 2).into()) {

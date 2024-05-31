@@ -67,7 +67,7 @@ fn needs_haul_manually(
     };
 
     if count == 0 {
-        let _ = creep.say("🚚", false);
+        let _ = creep.say("🚚 🫙", false);
 
         let spawn = cache.structures.spawns.values().next().unwrap();
         if creep.transfer(spawn, ResourceType::Energy, None) == Err(ErrorCode::NotInRange) {
@@ -80,7 +80,7 @@ fn needs_haul_manually(
 
 fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache: &mut RoomCache) {
     if !creep.pos().is_near_to(source.pos()) {
-        let _ = creep.say("🚚", false);
+        let _ = creep.say("🚚 🔋", false);
         creep.better_move_to(memory, cache, source.pos(), 1);
     } else {
         let _ = creep.say("⛏️", false);

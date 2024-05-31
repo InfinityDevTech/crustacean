@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{Creep, Room};
+use screeps::{Creep, ObjectId, Room, Source};
 
 use crate::traits::room::RoomExtensions;
 
@@ -15,6 +15,8 @@ pub enum HealthChangeType {
 pub struct RoomHeapCache {
     pub room: String,
     pub creeps: HashMap<String, HeapCreep>,
+
+    pub sources: Vec<ObjectId<Source>>,
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +29,8 @@ impl RoomHeapCache {
         RoomHeapCache {
             room: room.name_str(),
             creeps: HashMap::new(),
+
+            sources: Vec::new(),
         }
     }
 }

@@ -1,14 +1,10 @@
 use std::{cmp, collections::HashMap};
 
 use screeps::{
-    find, game,
-    look::{self, LookResult},
-    ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject,
-    StructureRoad, StructureSpawn, StructureTower, Terrain,
+    find, game, look::{self, LookResult}, source, ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureTower, Terrain
 };
 
-use crate::memory::ScreepsMemory;
+use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
 
 use super::hauling::{HaulingCache, HaulingPriority, HaulingType};
 
@@ -50,7 +46,7 @@ pub struct RoomStructureCache {
 }
 
 impl RoomStructureCache {
-    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory) -> RoomStructureCache {
+    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory, heap_cache: &mut RoomHeapCache) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
             all_structures: Vec::new(),
             construction_sites: Vec::new(),
@@ -90,7 +86,7 @@ impl RoomStructureCache {
             cache.controller = Some(cached_controller);
         }
 
-        cache.refresh_source_cache(room);
+        cache.refresh_source_cache(room, heap_cache);
         cache.refresh_structure_cache(room);
         cache.refresh_spawn_cache(room);
         cache.refresh_construction_cache(room);
@@ -244,8 +240,26 @@ impl RoomStructureCache {
         self.construction_sites.append(&mut construction_sites);
     }
 
-    pub fn refresh_source_cache(&mut self, room: &Room) {
-        let sources = room.find(find::SOURCES, None);
+    pub fn refresh_source_cache(&mut self, room: &Room, cache: &mut RoomHeapCache) {
+        // Fetch from heap, if not available, fetch from game.
+        // Then push to heap ofc.
+        let sources = if cache.sources.is_empty() {
+            let sources = room.find(find::SOURCES, None);
+
+            for source in &sources {
+                cache.sources.push(source.id());
+            }
+
+            sources
+        } else {
+            let mut vec = vec![];
+            for sourceid in &cache.sources {
+                vec.push(game::get_object_by_id_typed(sourceid).unwrap());
+            }
+
+            vec
+        };
+
         for source in sources {
             let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 2);
 

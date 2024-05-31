@@ -31,12 +31,12 @@ impl RoomCache {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> RoomCache {
         let mut room_cache = heap().rooms.lock().unwrap();
 
-        let room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
+        let mut room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
             RoomHeapCache::new(room)
         });
 
         RoomCache {
-            structures: RoomStructureCache::new_from_room(room, memory),
+            structures: RoomStructureCache::new_from_room(room, memory, &mut room_heap),
             creeps: CreepCache::new_from_room(room, memory),
             traffic: TrafficCache::new(),
             resources: RoomResourceCache::new_from_room(room, memory),
@@ -50,7 +50,7 @@ impl RoomCache {
 
     pub fn _refresh_cache(&mut self, room: &Room, _memory: &mut ScreepsMemory) {
         self.structures.refresh_structure_cache(room);
-        self.structures.refresh_source_cache(room);
+        self.structures.refresh_source_cache(room, &mut self.heap_cache);
         self.structures.refresh_spawn_cache(room);
 
         self.creeps.refresh_creep_cache(room);

@@ -21,7 +21,7 @@ mod room;
 mod traits;
 mod utils;
 
-//pub static HEAP_CACHE: Lazy<GlobalHeapCache> = Lazy::new(GlobalHeapCache::new);
+// pub static HEAP_CACHE: Lazy<GlobalHeapCache> = Lazy::new(GlobalHeapCache::new);
 pub fn heap() -> &'static GlobalHeapCache {
     static HEAP: OnceLock<GlobalHeapCache> = OnceLock::new();
     HEAP.get_or_init(GlobalHeapCache::new)
@@ -134,7 +134,7 @@ pub fn game_loop() {
     info!("       Bucket: {}", game::cpu::bucket());
     info!("       Heap: {:.2}%", used);
     info!("       Heap Lifetime: {}", heap_lifetime);
-    *heap_lifetime += used;
+    *heap_lifetime += 1;
 }
 
 #[wasm_bindgen(js_name = red_button)]

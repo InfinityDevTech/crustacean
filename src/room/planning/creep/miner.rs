@@ -1,6 +1,6 @@
 use std::cmp;
 
-use screeps::{game, HasId, MaybeHasId, Part, ResourceType, Room};
+use screeps::{game, HasId, Part, ResourceType, Room};
 
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
@@ -154,8 +154,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
         parts.push(Part::Carry);
         cost += 100;
 
-        let energy_capacity = room.energy_capacity_available() - cost;
-        let max_work_parts_makeable = energy_capacity / 100;
+        let energy_capacity = room.energy_available() - cost;
+        let max_work_parts_makeable = (energy_capacity as f32 / 100.0).floor() as u32;
         let max_work_parts_needed = cache.structures.sources[needed.unwrap() as usize].parts_needed();
 
         for _ in 0..cmp::min(max_work_parts_makeable, (max_work_parts_needed + 2).into()) {
@@ -180,11 +180,9 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 };
 
                 memory.create_creep(&room.name_str(), &name, cmemory);
-                let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
-
-                let creep = game::creeps().get(name).unwrap();
             }
         }
     }
     false
+
 }

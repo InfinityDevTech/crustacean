@@ -36,11 +36,11 @@ pub fn init() {
 
 #[wasm_bindgen]
 // , screeps_timing_annotate::timing
-#[cfg(feature = "profile")]
+//#[cfg(feature = "profile")]
 pub fn game_loop() {
     use room::democracy;
 
-    #[cfg(feature = "profile")]
+    //#[cfg(feature = "profile")]
     {
         //screeps_timing::start_trace(Box::new(|| {
         //    (screeps::game::cpu::get_used() * 1000.0) as u64
@@ -108,7 +108,7 @@ pub fn game_loop() {
     // This is done like this because its basically MemHack for you JS people.
     memory.write_memory();
 
-    #[cfg(feature = "profile")]
+    //#[cfg(feature = "profile")]
     {
         //let trace = screeps_timing::stop_trace();
 
@@ -134,8 +134,6 @@ pub fn game_loop() {
     info!("       Bucket: {}", game::cpu::bucket());
     info!("       Heap: {:.2}%", used);
     info!("       Heap Lifetime: {}", heap_lifetime);
-
-    *heap_lifetime += 1;
 }
 
 #[wasm_bindgen(js_name = red_button)]

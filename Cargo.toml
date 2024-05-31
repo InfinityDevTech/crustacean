@@ -22,8 +22,8 @@ console_error_panic_hook = "0.1.7"
 qcell = "0.5.4"
 rand = "0.8.5"
 getrandom = { version = "0.2.15", features = ["js"] }
-screeps-timing = { git = "https://github.com/Azaril/screeps-timing", optional = true }
-screeps-timing-annotate = { git = "https://github.com/Azaril/screeps-timing-annotate", optional = true }
+#screeps-timing = { git = "https://github.com/Azaril/screeps-timing", optional = true }
+#screeps-timing-annotate = { git = "https://github.com/Azaril/screeps-timing-annotate", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
@@ -50,6 +50,7 @@ wasm-opt = ["-O4", "--disable-sign-ext"]
 [features]
 default = ["profile"]
 # "screeps-timing-annotate"
-profile = ["screeps-timing"]
+# "screeps-timing"
+profile = []
 
 sim = ["screeps-game-api/sim"]

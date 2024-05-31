@@ -101,61 +101,58 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
             //let _ = room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
             //things.retain(|s| { s.2 == StructureType::Container });
 
-            for thing in &things {
-                let _ =
-                    room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
-            }
-
-            // Plan container around source and controller
-            let controller = &room_cache.structures.controller;
-            let sources = &room_cache.structures.sources;
-
-            let cp = controller.as_ref().unwrap().controller.pos();
-            let controller_looked = room.look_for_at_area(
-                look::TERRAIN,
-                cp.y().u8() - 1,
-                cp.x().u8() - 1,
-                cp.y().u8() + 1,
-                cp.x().u8() + 1,
-            );
-
-            for pos in controller_looked {
-                if let LookResult::Terrain(terrain) = pos.look_result {
-                    if Terrain::Plain != terrain {
-                        continue;
-                    }
-                    let _ =
-                        room.create_construction_site(pos.x, pos.y, StructureType::Container, None);
-                    break;
-                }
-            }
-
-            for source in sources {
-                let source = game::get_object_by_id_typed(&source.id).unwrap();
-
-                let x = source.pos().x().u8();
-                let y = source.pos().y().u8();
-
-                let looked = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
-                for pos in looked {
-                    if let LookResult::Terrain(terrain) = pos.look_result {
-                        if Terrain::Plain != terrain {
-                            continue;
-                        }
-                        let res = room.create_construction_site(
-                            pos.x,
-                            pos.y,
-                            StructureType::Container,
-                            None,
-                        );
-                        if res.is_ok() {
-                            break;
-                        }
-                    }
-                }
-            }
-            memory.rooms.get_mut(&room.name()).unwrap().planned = true;
-            memory.rooms.get_mut(&room.name()).unwrap().rcl = room.controller().unwrap().level();
+            let _ = room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
         }
+
+         // Plan container around source and controller
+         let controller = &room_cache.structures.controller;
+         let sources = &room_cache.structures.sources;
+
+         let cp = controller.as_ref().unwrap().controller.pos();
+         let controller_looked = room.look_for_at_area(
+             look::TERRAIN,
+             cp.y().u8() - 1,
+             cp.x().u8() - 1,
+             cp.y().u8() + 1,
+             cp.x().u8() + 1,
+         );
+
+         for pos in controller_looked {
+             if let LookResult::Terrain(terrain) = pos.look_result {
+                 if Terrain::Plain != terrain {
+                     continue;
+                 }
+                 let _ =
+                     room.create_construction_site(pos.x, pos.y, StructureType::Container, None);
+                 break;
+             }
+         }
+
+         for source in sources {
+             let source = game::get_object_by_id_typed(&source.id).unwrap();
+
+             let x = source.pos().x().u8();
+             let y = source.pos().y().u8();
+
+             let looked = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
+             for pos in looked {
+                 if let LookResult::Terrain(terrain) = pos.look_result {
+                     if Terrain::Plain != terrain {
+                         continue;
+                     }
+                     let res = room.create_construction_site(
+                         pos.x,
+                         pos.y,
+                         StructureType::Container,
+                         None,
+                     );
+                     if res.is_ok() {
+                         break;
+                     }
+                 }
+             }
+         }
+         memory.rooms.get_mut(&room.name()).unwrap().planned = true;
+         memory.rooms.get_mut(&room.name()).unwrap().rcl = room.controller().unwrap().level();
     }
 }

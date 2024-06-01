@@ -6,8 +6,8 @@ use screeps::{
 };
 
 use crate::{
-    combat::hate_handler::decay_hate, memory::ScreepsMemory, room::{
-        self, cache::tick_cache::{traffic::TrafficProcs, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
+    memory::ScreepsMemory, room::{
+        cache::tick_cache::{traffic, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
     }
 };
 
@@ -61,7 +61,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     // Provided by Harabi
     // https://github.com/sy-harabi/Screeps-Traffic-Manager
     let start = game::cpu::get_used();
-    TrafficProcs::run_movement(&mut room_cache);
+    traffic::run_movement(&mut room_cache);
+
     info!(
         "  [TRAFFIX] Traffic took: {:.4} with {} intents",
         game::cpu::get_used() - start,

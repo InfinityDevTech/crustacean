@@ -72,6 +72,7 @@ module.exports.loop = function () {
     global.Memory = global.TempMemory;
 
     if (wasm_module) {
+      console.log("running");
       wasm_module.game_loop();
     } else {
       console.log("[JS] Module not loaded... loading");
@@ -96,11 +97,14 @@ module.exports.loop = function () {
       let cpu_after = Game.cpu.getUsed();
       console.log(`[JS] ${cpu_after - cpu_before}cpu used to initialize wasm`);
 
+      // If CPU ran out compiling, the init wont run.
+      // Its been moved to the rust loop to ENSURE it runs.
+      
       // run the setup function, which configures logging
-      wasm_module.init();
+      //wasm_module.init();
       // TODO: consider not running this if there's not enough bucket.
       // run the loop for its first tick
-      wasm_module.game_loop();
+      //wasm_module.game_loop();
     }
   } catch (e) {
     if (

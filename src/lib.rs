@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::OnceLock};
+use std::{collections::HashMap, sync::{Once, OnceLock}};
 
 use combat::hate_handler::decay_hate;
 use heap_cache::GlobalHeapCache;
@@ -21,6 +21,8 @@ mod movement;
 mod room;
 mod traits;
 mod utils;
+
+static INITIALIZED: Once = Once::new();
 
 // pub static HEAP_CACHE: Lazy<GlobalHeapCache> = Lazy::new(GlobalHeapCache::new);
 pub fn heap() -> &'static GlobalHeapCache {
@@ -47,6 +49,10 @@ pub fn game_loop() {
         //    (screeps::game::cpu::get_used() * 1000.0) as u64
         //}));
     }
+
+    INITIALIZED.call_once(|| {
+        init();
+    });
 
     info!(
         "---------------- CURRENT TICK - {} ----------------",

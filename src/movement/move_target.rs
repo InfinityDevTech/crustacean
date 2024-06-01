@@ -95,10 +95,10 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
             }
         }
 
-        //for creep in creeps {
-        //    let pos = creep.pos();
-        //    matrix.set(pos.xy(), 255);
-        //}
+        for creep in creeps {
+            let pos = creep.pos();
+            matrix.set(pos.xy(), 255);
+        }
     }
     MultiRoomCostResult::CostMatrix(matrix.into())
 }

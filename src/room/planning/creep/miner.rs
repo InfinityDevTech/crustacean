@@ -50,7 +50,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .unwrap_or(&vec![])
             .len();
 
-        if hauler_count < 12 {
+        if hauler_count < 24 {
             let mut body = Vec::new();
             let cost = 100;
             let max = room.energy_capacity_available();

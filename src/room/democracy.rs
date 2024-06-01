@@ -8,10 +8,7 @@ use screeps::{
 use crate::{
     memory::ScreepsMemory,
     room::{
-        cache::tick_cache::{traffic::TrafficProcs, RoomCache},
-        creeps::{local::hauler, organizer, recovery::recover_creeps},
-        planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt},
-        tower,
+        self, cache::tick_cache::{traffic::TrafficProcs, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
     },
 };
 
@@ -72,6 +69,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         room_cache.traffic.move_intents
     );
 
+    run_full_visuals(&room, memory, &mut room_cache);
     room_cache.write_cache_to_heap(&room);
 
     let end_cpu = game::cpu::get_used();

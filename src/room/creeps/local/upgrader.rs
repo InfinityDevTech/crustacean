@@ -13,12 +13,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let container = &controller.container;
         if let Some(container) = container {
+
             if creep.pos().get_range_to(container.pos()) > 1 {
                 creep.better_move_to(memory.creeps.get_mut(&creep.name()).unwrap(), cache, container.pos(), 1);
                 return;
             } else {
                 let _ = creep.withdraw(container, ResourceType::Energy, None);
             }
+
         } else {
             cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(), HaulingPriority::Energy, HaulingType::Transfer);
         }

@@ -17,12 +17,15 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let _ = creep.say("😴", false);
         return;
     }
+    let creep_name = creep.name();
 
-    if let Some(order) = &memory.creeps.get(&creep.name()).unwrap().hauling_task.clone() {
+    let needs_energy = memory.creeps.get(&creep_name).unwrap().needs_energy.unwrap_or(false);
+
+    if let Some(order) = &memory.creeps.get(&creep_name).unwrap().hauling_task.clone() {
         let _ = creep.say("EXEC", false);
-        execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, order);
+        execute_order(creep, memory.creeps.get_mut(&creep_name).unwrap(), cache, order);
     } else {
-        let new_order = if creep.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+        let new_order = if needs_energy {
             cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer])
         } else {
             cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Transfer])

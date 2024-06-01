@@ -122,6 +122,8 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
+    // Part of harabi's movement code.
+
     fn move_request(&self, target_delta: Direction, room_cache: &mut RoomCache) {
         let current_position = self.pos();
         let x = current_position.x().u8();
@@ -153,11 +155,19 @@ impl CreepExtensions for screeps::Creep {
     fn depth_first_searh(&self, room_cache: &mut RoomCache, score: Option<i32>) -> i32 {
         let id = self.try_id();
 
-        room_cache
-            .traffic
-            .visited_creeps
-            .entry(id.unwrap())
-            .or_insert(true);
+        if room_cache.traffic.visited_creeps.clone().is_some() {
+            let mut visited = &mut room_cache.traffic.visited_creeps;
+            visited.as_mut()
+            .unwrap()
+            .insert(id.unwrap(), true);
+        } else {
+            room_cache.traffic.visited_creeps = Some(std::collections::HashMap::new());
+
+            let mut visited = &mut room_cache.traffic.visited_creeps;
+            visited.as_mut()
+            .unwrap()
+            .insert(id.unwrap(), true);
+        }
 
         for roomxy in self.get_possible_moves(room_cache) {
             let mut score = score.unwrap_or(0);
@@ -176,6 +186,8 @@ impl CreepExtensions for screeps::Creep {
             if !room_cache
                 .traffic
                 .visited_creeps
+                .as_ref()
+                .unwrap()
                 .get(occupying_creep)
                 .unwrap_or(&false)
             {

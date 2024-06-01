@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{find, game, Creep, HasPosition, SharedCreepProperties};
 
 use crate::{
@@ -10,7 +9,7 @@ use crate::{
 pub fn decay_hate(memory: &mut ScreepsMemory) {
     for enemy in memory.enemy_players.values_mut() {
         if enemy.last_attack - game::time() <= config::TICKS_BEFORE_DECAY {
-            enemy.decrement_hate(config::HATE_DECAY_RATE);
+            enemy.decrement_hate(enemy.hate * config::HATE_DECAY_PERCENTEAGE);
         }
     }
 }
@@ -45,8 +44,6 @@ pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_ty
             memory.enemy_players.insert(offending_user.clone(), enemy);
             memory.enemy_players.get_mut(&offending_user).unwrap()
         };
-
-        info!("{} has been attacked by {}", offending_user.username, creep.name());
 
         if health_type == HealthChangeType::Damage {
             offending_user.increment_hate(config::HATE_CREEP_ATTACK_WEIGHT);

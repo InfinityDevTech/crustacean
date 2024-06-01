@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::OnceLock};
 
+use combat::hate_handler::decay_hate;
 use heap_cache::GlobalHeapCache;
 use log::*;
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
@@ -116,6 +117,8 @@ pub fn game_loop() {
         //    info!("{}", trace_output);
         //}
     }
+
+    decay_hate(&mut memory);
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
 

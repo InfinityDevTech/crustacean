@@ -1,19 +1,21 @@
-use std::collections::HashMap;
+
+
+#![allow(non_snake_case)]use std::collections::HashMap;
 
 use log::info;
 use screeps::{
-    game::get_object_by_id_typed, Creep, HasPosition, MaybeHasId, ObjectId, Position,
+    game::{self, get_object_by_id_typed}, Creep, HasPosition, MaybeHasId, ObjectId, Position,
     RoomCoordinate, RoomXY,
 };
 
 use super::RoomCache;
-use crate::traits::creep::CreepExtensions;
+use crate::{room, traits::creep::CreepExtensions};
 
 pub struct TrafficCache {
     pub move_targets: HashMap<ObjectId<Creep>, RoomXY>,
     pub move_requests: HashMap<ObjectId<Creep>, RoomXY>,
     pub movement_map: HashMap<RoomXY, ObjectId<Creep>>,
-    pub visited_creeps: HashMap<ObjectId<Creep>, bool>,
+    pub visited_creeps: Option<HashMap<ObjectId<Creep>, bool>>,
 
     pub cached_ops: HashMap<ObjectId<Creep>, Vec<RoomXY>>,
     pub move_intents: u8,
@@ -25,7 +27,7 @@ impl TrafficCache {
             move_targets: HashMap::new(),
             move_requests: HashMap::new(),
             movement_map: HashMap::new(),
-            visited_creeps: HashMap::new(),
+            visited_creeps: Some(HashMap::new()),
             cached_ops: HashMap::new(),
             move_intents: 0,
         }
@@ -38,10 +40,14 @@ impl TrafficProcs {
     pub fn run_movement(room_cache: &mut RoomCache) {
         let mut creeps_with_movement: Vec<(ObjectId<Creep>, RoomXY)> = Vec::new();
 
-        for creep in room_cache.creeps.creeps.values() {
+        let creep_names: Vec<String> = room_cache.creeps.creeps.keys().cloned().collect();
+        for creep_name in creep_names {
+            let creep = game::creeps().get(creep_name.to_string()).unwrap();
             let Some(id) = creep.try_id() else {
                 continue;
             };
+
+            creep.assign_move_target(room_cache, creep.pos().xy());
 
             if let Some(creep_dest) = room_cache.traffic.move_requests.get(&id) {
                 creeps_with_movement.push((id, *creep_dest));
@@ -54,6 +60,8 @@ impl TrafficProcs {
             {
                 continue;
             }
+
+            //room_cache.traffic.visited_creeps = None;
 
             room_cache.traffic.movement_map.remove(&target);
             room_cache.traffic.move_targets.remove(&id);

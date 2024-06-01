@@ -58,7 +58,7 @@ impl RoomCache {
         self.traffic.move_targets = HashMap::new();
         self.traffic.move_requests = HashMap::new();
         self.traffic.movement_map = HashMap::new();
-        self.traffic.visited_creeps = HashMap::new();
+        self.traffic.visited_creeps = Some(HashMap::new());
         self.traffic.cached_ops = HashMap::new();
         self.traffic.move_intents = 0;
     }

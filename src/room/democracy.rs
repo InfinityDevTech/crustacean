@@ -6,10 +6,9 @@ use screeps::{
 };
 
 use crate::{
-    memory::ScreepsMemory,
-    room::{
+    combat::hate_handler::decay_hate, memory::ScreepsMemory, room::{
         self, cache::tick_cache::{traffic::TrafficProcs, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
-    },
+    }
 };
 
 use super::planning::creep::miner::formulate_miner;

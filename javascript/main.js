@@ -99,7 +99,7 @@ module.exports.loop = function () {
 
       // If CPU ran out compiling, the init wont run.
       // Its been moved to the rust loop to ENSURE it runs.
-      
+
       // run the setup function, which configures logging
       //wasm_module.init();
       // TODO: consider not running this if there's not enough bucket.

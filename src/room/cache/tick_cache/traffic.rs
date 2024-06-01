@@ -53,13 +53,12 @@ pub fn run_movement(room_cache: &mut RoomCache) {
     let mut visited_creeps = Vec::new();
 
     for (id, target) in creeps_with_movement {
+        //visited_creeps.clear();
         if room_cache.traffic.move_targets.get(&id)
             == room_cache.traffic.move_requests.get(&id)
         {
             continue;
         }
-
-        info!("Running movement for creep {:?}", id);
 
         room_cache.traffic.movement_map.remove(&target);
         room_cache.traffic.move_targets.remove(&id);

@@ -1,8 +1,6 @@
 use log::info;
 use screeps::{
-    game,
-    look::{self, LookResult},
-    HasPosition, Room, StructureType, Terrain,
+    game, look::{self, LookResult}, HasPosition, Room, RoomPosition, RoomXY, StructureType, Terrain
 };
 
 use crate::{
@@ -109,10 +107,10 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
          let cp = controller.as_ref().unwrap().controller.pos();
          let controller_looked = room.look_for_at_area(
              look::TERRAIN,
-             cp.y().u8() - 1,
-             cp.x().u8() - 1,
-             cp.y().u8() + 1,
-             cp.x().u8() + 1,
+             cp.y().u8() - 2,
+             cp.x().u8() - 2,
+             cp.y().u8() + 2,
+             cp.x().u8() + 2,
          );
 
          for pos in controller_looked {
@@ -120,8 +118,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                  if Terrain::Plain != terrain {
                      continue;
                  }
+
+                 let pos = RoomPosition::new(pos.x, pos.y, room.name());
+                 if pos.get_range_to_xy(cp.x().u8(), cp.y().u8()) != 2 { continue; }
+
                  let _ =
-                     room.create_construction_site(pos.x, pos.y, StructureType::Container, None);
+                     room.create_construction_site(pos.x(), pos.y(), StructureType::Container, None);
                  break;
              }
          }

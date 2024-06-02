@@ -20,7 +20,14 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
     let spawn = cache.structures.spawns.iter().next().unwrap().1;
 
-    if spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
+    let fastfiller_count = cache
+    .creeps
+    .creeps_of_role
+    .get(&Role::FastFiller)
+    .unwrap_or(&vec![])
+    .len();
+
+    if fastfiller_count == 0 && spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
         cache.hauling.create_order(
             spawn.raw_id(),
             ResourceType::Energy,
@@ -47,12 +54,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .creeps
             .creeps_of_role
             .get(&Role::Builder)
-            .unwrap_or(&vec![])
-            .len();
-        let fastfiller_count = cache
-            .creeps
-            .creeps_of_role
-            .get(&Role::FastFiller)
             .unwrap_or(&vec![])
             .len();
 

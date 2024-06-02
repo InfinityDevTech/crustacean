@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use screeps::{find, Creep, Room, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory, ALLIES}, utils};
+use crate::{config::ALLIES, memory::{Role, ScreepsMemory}, utils};
 
 #[derive(Debug, Clone)]
 pub struct CreepCache {

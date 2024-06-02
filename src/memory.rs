@@ -8,8 +8,6 @@ use js_sys::JsString;
 
 use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::{HaulingPriority, HaulingType}};
 
-pub const ALLIES: [&str; 2] = ["MarvinTMB", "Tigga"];
-
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
 // The roles listed in creep memory
 // The order of this also is the order in which
@@ -24,6 +22,8 @@ pub enum Role {
     // Construction industry
     Upgrader = 3,
     Builder = 4,
+
+    Bulldozer = 5,
 
     Scout = 10,
 }

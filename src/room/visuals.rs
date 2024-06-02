@@ -12,7 +12,7 @@ pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cache: &mut Roo
 pub fn visualise_spawn_progess(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for spawn in cache.structures.spawns.values() {
         if let Some(spawning) = spawn.spawning() {
-            let progress = (spawning.remaining_time() as f32 / spawning.need_time() as f32) * 100.0;
+            let progress = (spawning.remaining_time() as f32 / spawning.need_time() as f32);
 
             room.visual().text(
                 spawn.pos().x().u8() as f32,

@@ -114,7 +114,7 @@ module.exports.loop = function () {
     } else if (e instanceof WebAssembly.RuntimeError) {
       console.log(`[JS] wasm aborted`);
     } else {
-      console.log(`[JS] unexpected exception: ${e.stack}`);
+      console.log(`[JS] unexpected exception: ${e}`);
     }
     console.log(`[JS] destroying environment...`);
 

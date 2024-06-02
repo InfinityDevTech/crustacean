@@ -1,5 +1,7 @@
 pub const MEMORY_VERSION: u8 = 1;
 
+pub const ALLIES: [&str; 2] = ["MarvinTMB", "Shylo132"];
+
 pub const ROOM_SIGNS: [&str; 21] = [
 //"Rust programming is just crab game.",
 //"Web Assembly is overrated",

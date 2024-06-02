@@ -53,6 +53,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Upgrader => local::upgrader::run_creep(&creep, memory, cache),
             Role::Builder => local::builder::run_creep(&creep, memory, cache),
             Role::FastFiller => local::fast_filler::run_creep(&creep, memory, cache),
+            Role::Bulldozer => local::bulldozer::run_creep(&creep, memory, cache),
             _ => {}
         }
     }

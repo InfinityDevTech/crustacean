@@ -56,10 +56,12 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .get(&Role::Builder)
             .unwrap_or(&vec![])
             .len();
-
-        info!("  Hauler count: {}", hauler_count);
-        info!("  Upgrader count: {}", upgrader_count);
-        info!("  Builder count: {}", builder_count);
+        let bulldozer_count = cache
+            .creeps
+            .creeps_of_role
+            .get(&Role::Bulldozer)
+            .unwrap_or(&vec![])
+            .len();
 
         if hauler_count < 12 {
             let mut body = Vec::new();
@@ -166,6 +168,38 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 current += 1;
             }
             let role_name = role_to_name(Role::Builder);
+            let name = format!("{}-{}-{}", role_name, game::time(), room.name());
+
+            let spawn_result = spawn.spawn_creep(&body, &name);
+            if spawn_result.is_ok() {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    fastfiller_container: None,
+                    link_id: None,
+                    hauling_task: None,
+                    owning_room: room.name().to_string(),
+                    path: None,
+                };
+
+                memory.create_creep(&room.name_str(), &name, cmemory);
+
+                return true;
+            }
+        } else if bulldozer_count < 4 {
+            let mut body = Vec::new();
+            let cost = 130;
+            let max = room.energy_capacity_available();
+            let max_multipliable = max / cost;
+            let mut current = 0;
+
+            loop {
+                if current >= max_multipliable { break }
+                body.push(Part::Attack);
+                body.push(Part::Move);
+                current += 1;
+            }
+            let role_name = role_to_name(Role::Bulldozer);
             let name = format!("{}-{}-{}", role_name, game::time(), room.name());
 
             let spawn_result = spawn.spawn_creep(&body, &name);

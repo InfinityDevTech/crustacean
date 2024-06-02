@@ -73,7 +73,7 @@ impl HaulingCache {
     }
 
     pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Vec<HaulingType>) -> Option<CreepHaulTask> {
-        let mut orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>();
+        let mut orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>().clone();
 
         orders.retain(|x| order_type.contains(&x.haul_type));
 
@@ -96,7 +96,15 @@ impl HaulingCache {
                 haul_type: order.haul_type,
             };
 
-            self.new_orders.remove(&id);
+            let creep_carry_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
+            let order_amount = order.amount as i32;
+
+            if order_amount > creep_carry_capacity {
+                order.amount = (order_amount - creep_carry_capacity) as u32;
+            } else {
+                self.new_orders.remove(&id);
+            }
+            
             creep_memory.hauling_task = Some(task);
             return creep_memory.hauling_task.clone();
         }

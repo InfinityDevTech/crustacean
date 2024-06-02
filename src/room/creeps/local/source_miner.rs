@@ -12,15 +12,17 @@ use crate::{
     traits::creep::CreepExtensions,
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+use super::hauler;
 
-    if creep_memory.task_id.is_none() {
+pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let CreepMemory {task_id, needs_energy, .. } = memory.creeps.get(&creep.name()).unwrap();
+
+    if task_id.is_none() {
         let _ = creep.say("kurt kob", true);
         let _ = creep.suicide();
     }
 
-    let pointer_index = creep_memory.task_id.unwrap() as usize;
+    let pointer_index = task_id.unwrap() as usize;
     cache.structures.sources[pointer_index]
         .creeps
         .push(creep.try_id().unwrap());
@@ -32,7 +34,10 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         return;
     }
 
-    if creep_memory.needs_energy.unwrap_or(false) {
+
+    if needs_energy.unwrap_or(false) {
+        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
         harvest_source(creep, source, creep_memory, cache);
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy))
@@ -44,12 +49,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             //}
         }
     } else {
-        if !link_deposit(creep, creep_memory, cache) {
-            deposit_energy(creep, creep_memory, cache);
+        if !link_deposit(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache) {
+            deposit_energy(creep, memory, cache);
         }
 
         if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-            creep_memory.needs_energy = Some(true);
+            memory.creeps.get_mut(&creep.name()).unwrap().needs_energy = Some(true);
             //harvest_source(creep, source, creep_memory);
         }
     }
@@ -57,22 +62,22 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
 fn needs_haul_manually(
     creep: &Creep,
-    creep_memory: &mut CreepMemory,
+    memory: &mut ScreepsMemory,
     cache: &mut RoomCache,
 ) -> bool {
-    let count = if let Some(creeps) = cache.creeps.creeps_of_role.get(&Role::Hauler) {
-        creeps.len()
-    } else {
-        0
-    };
+    let count = cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&vec![]).len();
 
     if count == 0 {
         let _ = creep.say("🚚 🫙", false);
 
-        let spawn = cache.structures.spawns.values().next().unwrap();
-        if creep.transfer(spawn, ResourceType::Energy, None) == Err(ErrorCode::NotInRange) {
-            creep.better_move_to(creep_memory, cache, spawn.pos(), 1);
+        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
+        if let Some(haul_order) = &creep_memory.hauling_task.clone() {
+            hauler::execute_order(creep, creep_memory, cache, haul_order);
+        } else {
+            cache.hauling.find_new_order(creep, memory, Some(ResourceType::Energy), vec![HaulingType::Transfer]);
         }
+
         return true;
     }
     false
@@ -108,10 +113,12 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache
     false
 }
 
-fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) {
-    if needs_haul_manually(creep, creep_memory, cache) {
+fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    if needs_haul_manually(creep, memory, cache) {
         return;
     }
+
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if build_around_source(creep, creep_memory, cache) {
         return;
@@ -156,11 +163,7 @@ fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Roo
     }
 }
 
-fn build_around_source(
-    creep: &Creep,
-    creep_memory: &mut CreepMemory,
-    cache: &mut RoomCache,
-) -> bool {
+fn build_around_source(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
     let csites = &cache.structures.sources[creep_memory.task_id.unwrap() as usize].csites;
     if csites.is_empty() {
         return false;

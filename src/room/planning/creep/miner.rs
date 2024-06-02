@@ -1,5 +1,6 @@
 use std::cmp;
 
+use log::info;
 use screeps::{game, HasId, Part, ResourceType, Room};
 
 use crate::{
@@ -26,7 +27,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
     .get(&Role::FastFiller)
     .unwrap_or(&vec![])
     .len();
-
     if fastfiller_count == 0 && spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
         cache.hauling.create_order(
             spawn.raw_id(),
@@ -56,6 +56,10 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .get(&Role::Builder)
             .unwrap_or(&vec![])
             .len();
+
+        info!("  Hauler count: {}", hauler_count);
+        info!("  Upgrader count: {}", upgrader_count);
+        info!("  Builder count: {}", builder_count);
 
         if hauler_count < 12 {
             let mut body = Vec::new();

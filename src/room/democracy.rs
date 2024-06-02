@@ -115,7 +115,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
 
          for pos in controller_looked {
              if let LookResult::Terrain(terrain) = pos.look_result {
-                 if Terrain::Plain != terrain {
+                 if Terrain::Plain != terrain || Terrain::Swamp != terrain {
                      continue;
                  }
 
@@ -137,7 +137,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
              let looked = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
              for pos in looked {
                  if let LookResult::Terrain(terrain) = pos.look_result {
-                     if Terrain::Plain != terrain {
+                     if Terrain::Plain != terrain || Terrain::Swamp != terrain {
                          continue;
                      }
                      let res = room.create_construction_site(

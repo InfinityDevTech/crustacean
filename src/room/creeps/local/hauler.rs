@@ -1,7 +1,9 @@
 use std::vec;
 
+use log::info;
 use screeps::{
-    game, Creep, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
+    game, Creep, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties,
+    StructureStorage,
 };
 
 use wasm_bindgen::JsCast;
@@ -19,26 +21,73 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
     let creep_name = creep.name();
 
-    let needs_energy = memory.creeps.get(&creep_name).unwrap().needs_energy.unwrap_or(false);
+    let needs_energy = memory
+        .creeps
+        .get(&creep_name)
+        .unwrap()
+        .needs_energy
+        .unwrap_or(false);
 
     if let Some(order) = &memory.creeps.get(&creep_name).unwrap().hauling_task.clone() {
         let _ = creep.say("EXEC", false);
-        execute_order(creep, memory.creeps.get_mut(&creep_name).unwrap(), cache, order);
+        execute_order(
+            creep,
+            memory.creeps.get_mut(&creep_name).unwrap(),
+            cache,
+            order,
+        );
     } else {
         let new_order = if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-            cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer])
+            cache.hauling.find_new_order(
+                creep,
+                memory,
+                None,
+                vec![
+                    HaulingType::Pickup,
+                    HaulingType::Withdraw,
+                    HaulingType::Offer,
+                ],
+            )
         } else {
-            cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Transfer])
+            cache
+                .hauling
+                .find_new_order(creep, memory, None, vec![HaulingType::Transfer])
         };
 
         if let Some(order) = new_order {
             let _ = creep.say("EXEC", false);
-            execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, &order);
+            execute_order(
+                creep,
+                memory.creeps.get_mut(&creep.name()).unwrap(),
+                cache,
+                &order,
+            );
+
+            let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
+
+            // Yes, I know this is primitive, but it works for now
+            // Im forcing it to fetch a new task if its full or empty
+            // TODO: Refactor this, it's ugly
+
+            if creep.store().get_free_capacity(None) == 0 {
+                creep_memory.hauling_task = None;
+                creep_memory.needs_energy = None;
+            }
+
+            if creep.store().get_used_capacity(None) == 0 {
+                creep_memory.hauling_task = None;
+                creep_memory.needs_energy = Some(true);
+            }
         }
     }
 }
 
-pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache, order: &CreepHaulTask) {
+pub fn execute_order(
+    creep: &Creep,
+    creep_memory: &mut CreepMemory,
+    cache: &mut RoomCache,
+    order: &CreepHaulTask,
+) {
     let pickup_target = order.target_id;
     let target = game::get_object_by_id_erased(&pickup_target);
     let position = order.get_target_position();
@@ -60,7 +109,8 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
         HaulingType::Pickup => {
             let _ = creep.say("PKUP", false);
 
-            let resource: Option<Resource> = game::get_object_by_id_typed(&ObjectId::from(pickup_target));
+            let resource: Option<Resource> =
+                game::get_object_by_id_typed(&ObjectId::from(pickup_target));
             if let Some(resource) = resource {
                 let _ = creep.pickup(&resource);
                 success = true;
@@ -70,8 +120,15 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
             let _ = creep.say("WTHD", false);
 
             if let Some(target) = target {
-                let amount = std::cmp::min(creep.store().get_free_capacity(Some(ResourceType::Energy)), order.amount as i32);
-                let _ = creep.withdraw(target.unchecked_ref::<StructureStorage>(), order.resource, Some(amount.try_into().unwrap()));
+                let amount = std::cmp::min(
+                    creep.store().get_free_capacity(Some(ResourceType::Energy)),
+                    order.amount as i32,
+                );
+                let _ = creep.withdraw(
+                    target.unchecked_ref::<StructureStorage>(),
+                    order.resource,
+                    Some(amount.try_into().unwrap()),
+                );
                 success = true;
             }
         }
@@ -91,8 +148,15 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
             let _ = creep.say("OFFR", false);
 
             if let Some(target) = target {
-                let amount = std::cmp::min(creep.store().get_free_capacity(Some(order.resource)), order.amount as i32);
-                let _ = creep.withdraw(target.unchecked_ref::<StructureStorage>(), order.resource, Some(amount.try_into().unwrap()));
+                let amount = std::cmp::min(
+                    creep.store().get_free_capacity(Some(order.resource)),
+                    order.amount as i32,
+                );
+                let _ = creep.withdraw(
+                    target.unchecked_ref::<StructureStorage>(),
+                    order.resource,
+                    Some(amount.try_into().unwrap()),
+                );
                 success = true;
             }
         }
@@ -100,19 +164,5 @@ pub fn execute_order(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut 
 
     if success {
         creep_memory.hauling_task = None;
-    }
-
-    // Yes, I know this is primitive, but it works for now
-    // Im forcing it to fetch a new task if its full or empty
-    // TODO: Refactor this, it's ugly
-
-    if creep.store().get_free_capacity(None) == 0 {
-        creep_memory.hauling_task = None;
-        creep_memory.needs_energy = None;
-    }
-
-    if creep.store().get_used_capacity(None) == 0 {
-        creep_memory.hauling_task = None;
-        creep_memory.needs_energy = Some(true);
     }
 }

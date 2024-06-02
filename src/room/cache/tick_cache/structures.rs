@@ -116,7 +116,7 @@ impl RoomStructureCache {
                         .get_free_capacity(Some(ResourceType::Energy))
                         .try_into()
                         .unwrap(),
-                    HaulingPriority::Energy,
+                    HaulingPriority::Spawning,
                     HaulingType::Transfer,
                 );
             }

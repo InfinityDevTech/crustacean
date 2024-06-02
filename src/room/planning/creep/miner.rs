@@ -25,7 +25,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             spawn.raw_id(),
             ResourceType::Energy,
             300,
-            HaulingPriority::Energy,
+            HaulingPriority::Spawning,
             HaulingType::Transfer,
         );
     }

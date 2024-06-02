@@ -11,9 +11,10 @@ use super::structures::RoomStructureCache;
 pub enum HaulingPriority {
     Combat = 0,
     Emergency = 1,
-    Energy = 2,
-    Minerals = 3,
-    Market = 4
+    Spawning = 2,
+    Energy = 3,
+    Minerals = 4,
+    Market = 5
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]

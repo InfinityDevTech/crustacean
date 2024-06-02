@@ -15,7 +15,11 @@ use crate::{
 use super::hauler;
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let CreepMemory {task_id, needs_energy, .. } = memory.creeps.get(&creep.name()).unwrap();
+    let CreepMemory {
+        task_id,
+        needs_energy,
+        ..
+    } = memory.creeps.get(&creep.name()).unwrap();
 
     if task_id.is_none() {
         let _ = creep.say("kurt kob", true);
@@ -34,21 +38,19 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         return;
     }
 
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if needs_energy.unwrap_or(false) {
-        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-
-        harvest_source(creep, source, creep_memory, cache);
-
-        if creep.store().get_used_capacity(Some(ResourceType::Energy))
-            >= creep.store().get_capacity(Some(ResourceType::Energy))
-        {
-            creep_memory.needs_energy = None;
-            //if !link_deposit(creep, creep_memory, cache) {
-            //    drop_deposit(creep, creep_memory, cache);
-            //}
-        }
-    } else {
+    if creep.store().get_used_capacity(Some(ResourceType::Energy))
+        >= creep.store().get_capacity(Some(ResourceType::Energy))
+    {
+        creep_memory.needs_energy = None;
+        //if !link_deposit(creep, creep_memory, cache) {
+        //    drop_deposit(creep, creep_memory, cache);
+        //}
+    }
+    if creep.store().get_free_capacity(None) as f32
+        <= (creep.store().get_capacity(None) as f32 * 0.5)
+    {
         if !link_deposit(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache) {
             deposit_energy(creep, memory, cache);
         }
@@ -57,15 +59,18 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             memory.creeps.get_mut(&creep.name()).unwrap().needs_energy = Some(true);
             //harvest_source(creep, source, creep_memory);
         }
+    } else {
+        harvest_source(creep, source, creep_memory, cache);
     }
 }
 
-fn needs_haul_manually(
-    creep: &Creep,
-    memory: &mut ScreepsMemory,
-    cache: &mut RoomCache,
-) -> bool {
-    let count = cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&vec![]).len();
+fn needs_haul_manually(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
+    let count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&vec![])
+        .len();
 
     if count == 0 {
         let _ = creep.say("🚚 🫙", false);
@@ -75,7 +80,12 @@ fn needs_haul_manually(
         if let Some(haul_order) = &creep_memory.hauling_task.clone() {
             hauler::execute_order(creep, creep_memory, cache, haul_order);
         } else {
-            cache.hauling.find_new_order(creep, memory, Some(ResourceType::Energy), vec![HaulingType::Transfer]);
+            cache.hauling.find_new_order(
+                creep,
+                memory,
+                Some(ResourceType::Energy),
+                vec![HaulingType::Transfer],
+            );
         }
 
         return true;
@@ -84,6 +94,10 @@ fn needs_haul_manually(
 }
 
 fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache: &mut RoomCache) {
+    if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
+        return;
+    }
+
     if !creep.pos().is_near_to(source.pos()) {
         let _ = creep.say("🚚 🔋", false);
         creep.better_move_to(memory, cache, source.pos(), 1);
@@ -163,7 +177,11 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 }
 
-fn build_around_source(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
+fn build_around_source(
+    creep: &Creep,
+    creep_memory: &mut CreepMemory,
+    cache: &mut RoomCache,
+) -> bool {
     let csites = &cache.structures.sources[creep_memory.task_id.unwrap() as usize].csites;
     if csites.is_empty() {
         return false;

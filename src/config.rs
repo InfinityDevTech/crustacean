@@ -20,7 +20,7 @@ pub const ROOM_SIGNS: [&str; 21] = [
 "Communism, everyones mortal enemy.",
 "Stop the red iceberg!",
 "Cease the Collectivization!",
-"Its not Communism if its under Marvin.",
+"Its not Communism, its Marvinism!",
 "Communism != Collectivization",
 "Why did the creeps cross the road. They were under Marvin's collectivized control.",
 "Real communism requires individual control.",

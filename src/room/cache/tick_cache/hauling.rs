@@ -100,11 +100,15 @@ impl HaulingCache {
             let order_amount = order.amount as i32;
 
             if order_amount > creep_carry_capacity {
-                order.amount = (order_amount - creep_carry_capacity) as u32;
+                if order.haul_type == HaulingType::Offer || order.haul_type == HaulingType::Withdraw || order.haul_type == HaulingType::Pickup {
+                    order.amount = (order_amount - creep_carry_capacity) as u32;
+                } else {
+                    self.new_orders.remove(&id);
+                }
             } else {
                 self.new_orders.remove(&id);
             }
-            
+
             creep_memory.hauling_task = Some(task);
             return creep_memory.hauling_task.clone();
         }

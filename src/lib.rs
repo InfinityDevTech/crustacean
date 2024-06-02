@@ -59,10 +59,12 @@ pub fn game_loop() {
         game::time()
     );
 
-    if game::cpu::bucket() < 100 {
+    if game::cpu::bucket() < 500 {
         info!("Bucket is too low, skipping tick");
-        info!("Bucket: {}/100", game::cpu::bucket());
+        info!("Bucket: {}/500", game::cpu::bucket());
         return;
+    } else {
+        info!("Bucket: {}/500", game::cpu::bucket());
     }
 
     let mut memory = ScreepsMemory::init_memory();

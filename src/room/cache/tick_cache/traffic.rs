@@ -58,6 +58,7 @@ pub fn run_movement(room_cache: &mut RoomCache) {
             continue;
         }
 
+        //visited_creeps.clear();
         room_cache.traffic.movement_map.remove(&target);
         room_cache.traffic.move_targets.remove(&id);
 
@@ -125,6 +126,9 @@ fn depth_first_searh(creep: &Creep, room_cache: &mut RoomCache, visited_creeps: 
         if !visited_creeps.contains(occupying_creep)
         {
             if room_cache
+            .traffic
+            .move_requests
+            .contains_key(occupying_creep) && room_cache
                 .traffic
                 .move_requests
                 .get(occupying_creep)

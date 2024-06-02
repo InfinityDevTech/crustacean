@@ -37,7 +37,13 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             order,
         );
     } else {
-        let new_order = if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+        let new_order = if needs_energy {
+            let _ = creep.say("📋", false);
+
+            if creep.store().get_free_capacity(None) == 0 {
+                memory.creeps.get_mut(&creep_name).unwrap().needs_energy = None;
+            }
+
             cache.hauling.find_new_order(
                 creep,
                 memory,
@@ -49,6 +55,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 ],
             )
         } else {
+            let _ = creep.say("🔋", false);
+
+            if creep.store().get_used_capacity(None) == 0 {
+                memory.creeps.get_mut(&creep_name).unwrap().needs_energy = Some(true);
+            }
+
             cache
                 .hauling
                 .find_new_order(creep, memory, None, vec![HaulingType::Transfer])
@@ -71,12 +83,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
             if creep.store().get_free_capacity(None) == 0 {
                 creep_memory.hauling_task = None;
-                creep_memory.needs_energy = None;
+            //    creep_memory.needs_energy = None;
             }
 
             if creep.store().get_used_capacity(None) == 0 {
                 creep_memory.hauling_task = None;
-                creep_memory.needs_energy = Some(true);
+            //    creep_memory.needs_energy = Some(true);
             }
         }
     }

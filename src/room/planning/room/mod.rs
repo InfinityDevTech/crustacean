@@ -7,7 +7,7 @@ pub mod construction;
 pub mod structure_visuals;
 
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
-    if game::cpu::bucket() < 100 {
+    if game::cpu::bucket() < 500 {
         info!("[PLANNER] CPU bucket is too low to plan room: {}", room.name_str());
         return false;
     }

@@ -48,12 +48,12 @@ impl RoomCache {
         }
     }
 
-    pub fn _refresh_cache(&mut self, room: &Room, _memory: &mut ScreepsMemory) {
+    pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         self.structures.refresh_structure_cache(room);
         self.structures.refresh_source_cache(room, &mut self.heap_cache);
         self.structures.refresh_spawn_cache(room);
 
-        self.creeps.refresh_creep_cache(room);
+        self.creeps.refresh_creep_cache(memory, room);
 
         self.traffic.move_targets = HashMap::new();
         self.traffic.move_requests = HashMap::new();

@@ -1,5 +1,6 @@
 use std::{cmp, collections::HashMap};
 
+use log::info;
 use screeps::{
     find, game,
     look::{self, LookResult},
@@ -174,6 +175,8 @@ impl RoomStructureCache {
                     .pos()
                     .get_range_to(self.spawns.values().next().unwrap().pos())
                     <= 3
+                    &&
+                    container.store().get_used_capacity(Some(ResourceType::Energy)) as f32 > container.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5
                 {
                     hauling.create_order(
                         container.raw_id(),
@@ -185,6 +188,7 @@ impl RoomStructureCache {
                         HaulingType::Offer,
                     );
                 } else {
+                    info!("Found a source container");
                     hauling.create_order(
                         container.raw_id(),
                         ResourceType::Energy,

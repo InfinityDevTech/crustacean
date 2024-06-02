@@ -6,8 +6,11 @@ use crate::{
     },
     room::{cache::tick_cache::RoomCache, planning::creep},
 };
+use log::info;
 use rand::prelude::SliceRandom;
 use screeps::{Direction, HasPosition, MaybeHasId, Position, RoomXY};
+
+use super::room::RoomExtensions;
 
 pub trait CreepExtensions {
     // Movement
@@ -47,7 +50,11 @@ impl CreepExtensions for screeps::Creep {
         }
         let step_dir = num_to_dir(serialized_vec[0]);
 
-        self.move_request(step_dir, cache);
+        if self.room().is_some() && self.room().unwrap().my() {
+            self.move_request(step_dir, cache);
+        } else {
+            self.move_direction(step_dir);
+        }
 
         let serialized_vec = serialized_vec[1..].to_vec();
         let serialized_path = serialized_vec
@@ -139,6 +146,12 @@ impl CreepExtensions for screeps::Creep {
         let y = target_position.1 as u8;
 
         if x == 0 || x == 49 || y == 0 || y == 49 {
+            let res = self.move_direction(target_delta);
+            if res.is_ok() {
+                room_cache.traffic.move_intents += 1;
+            } else {
+                info!("Creep move failed, {:?}", res.err().unwrap());
+            }
             return;
         }
 

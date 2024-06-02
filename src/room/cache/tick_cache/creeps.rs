@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, Creep, Room, SharedCreepProperties};
+use screeps::{find, game, Creep, Room, SharedCreepProperties};
 
 use crate::{config::ALLIES, memory::{Role, ScreepsMemory}, utils};
 
@@ -14,7 +14,7 @@ pub struct CreepCache {
 }
 
 impl CreepCache {
-    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory) -> CreepCache {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> CreepCache {
         let mut cache = CreepCache {
             creeps: HashMap::new(),
             creeps_of_role: HashMap::new(),
@@ -23,14 +23,22 @@ impl CreepCache {
             allied_creeps: Vec::new(),
         };
 
-        cache.refresh_creep_cache(room);
+        cache.refresh_creep_cache(memory, room);
         cache
     }
 
-    pub fn refresh_creep_cache(&mut self, room: &Room) {
-        let creeps = room.find(find::CREEPS, None);
+    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room) {
+        let creeps = &memory.rooms.get(&room.name()).unwrap().creeps.clone();
 
-        for creep in creeps {
+        for creep_name in creeps {
+            let creep = game::creeps().get(creep_name.to_string());
+
+            if creep.is_none() {
+                continue;
+            }
+
+            let creep = creep.unwrap();
+
             if creep.my() {
                 let role = utils::name_to_role(&creep.name());
                 if role.is_none() { continue; }

@@ -100,10 +100,14 @@ module.exports.loop = function () {
       // Its been moved to the rust loop to ENSURE it runs.
 
       // run the setup function, which configures logging
-      //wasm_module.init();
+      //if (Game.cpu.getUsed() < 400) {
+      //  wasm_module.init();
+      //}
       // TODO: consider not running this if there's not enough bucket.
       // run the loop for its first tick
       //wasm_module.game_loop();
+
+      console.log("[JS] Module loaded");
     }
   } catch (e) {
     if (
@@ -116,6 +120,7 @@ module.exports.loop = function () {
     } else {
       console.log(`[JS] unexpected exception: ${e}`);
     }
+    console.log(e.stack)
     console.log(`[JS] destroying environment...`);
 
     // reset everything

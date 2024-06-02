@@ -1,6 +1,10 @@
 use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::HaulingType, RoomCache}, traits::creep::CreepExtensions};
+use crate::{
+    memory::{CreepMemory, ScreepsMemory},
+    room::cache::tick_cache::{hauling::HaulingType, RoomCache},
+    traits::creep::CreepExtensions,
+};
 
 use super::hauler::execute_order;
 
@@ -21,16 +25,21 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 }
 
 pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
-    let sites = &cache.structures.construction_sites;
+    let mut sites = cache.structures.construction_sites.clone();
+
+    sites.retain(|s| s.structure_type() != screeps::StructureType::Road);
 
     if !sites.is_empty() {
-        let site = sites.first().unwrap();
-        if site.pos().get_range_to(creep.pos()) > 1 {
-            let _ = creep.say("🚚", false);
-            creep.better_move_to(creepmem, cache, site.pos(), 1);
-        } else {
-            let _ = creep.say("🔨", false);
-            let _ = creep.build(site);
+        if let Some(site) = sites.first() {
+
+            if site.pos().get_range_to(creep.pos()) > 1 {
+                let _ = creep.say("🚚", false);
+                creep.better_move_to(creepmem, cache, site.pos(), 1);
+            } else {
+                let _ = creep.say("🔨", false);
+                let _ = creep.build(site);
+            }
+
         }
     }
 
@@ -45,16 +54,23 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     let task = &creepmem.hauling_task.clone();
 
     if let Some(task) = task {
-
         let creepmem_mut = memory.creeps.get_mut(&creep.name()).unwrap();
         execute_order(creep, creepmem_mut, cache, task);
-
     } else {
-        let new_order = cache.hauling.find_new_order(creep, memory, Some(ResourceType::Energy), vec![HaulingType::Offer, HaulingType::Pickup]);
+        let new_order = cache.hauling.find_new_order(
+            creep,
+            memory,
+            Some(ResourceType::Energy),
+            vec![HaulingType::Offer, HaulingType::Pickup],
+        );
 
         if let Some(order) = new_order {
-            execute_order(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache, &order);
+            execute_order(
+                creep,
+                memory.creeps.get_mut(&creep.name()).unwrap(),
+                cache,
+                &order,
+            );
         }
-
     }
 }

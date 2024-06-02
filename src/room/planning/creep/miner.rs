@@ -5,10 +5,10 @@ use screeps::{game, HasId, Part, ResourceType, Room};
 
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::tick_cache::{
+    room::{cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType},
         RoomCache,
-    },
+    }, creeps::local::hauler},
     traits::room::RoomExtensions,
     utils::role_to_name,
 };
@@ -27,6 +27,21 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
     .get(&Role::FastFiller)
     .unwrap_or(&vec![])
     .len();
+
+    let miner_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Miner)
+        .unwrap_or(&vec![])
+        .len();
+
+        let hauler_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&vec![])
+        .len();
+
     if fastfiller_count == 0 && spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
         cache.hauling.create_order(
             spawn.raw_id(),
@@ -37,13 +52,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
         );
     }
 
-    if needed.is_none() {
-        let hauler_count = cache
-            .creeps
-            .creeps_of_role
-            .get(&Role::Hauler)
-            .unwrap_or(&vec![])
-            .len();
+    if needed.is_none() || (miner_count >= 1 && hauler_count == 0) {
         let upgrader_count = cache
             .creeps
             .creeps_of_role
@@ -63,10 +72,16 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .unwrap_or(&vec![])
             .len();
 
-        if hauler_count < 12 {
+        if hauler_count < 8 {
             let mut body = Vec::new();
             let cost = 100;
-            let max = room.energy_capacity_available();
+
+            let max = if hauler_count < 3 {
+                room.energy_available()
+            } else {
+                room.energy_capacity_available()
+            };
+
             let max_multipliable = max / cost;
             let mut current = 0;
 
@@ -118,7 +133,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 return true;
             }
-        } else if upgrader_count < 5 {
+        } else if upgrader_count < 4 {
             let mut body = Vec::new();
             let cost = 300;
             let max = room.energy_capacity_available();
@@ -186,7 +201,10 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 return true;
             }
-        } else if bulldozer_count < 4 {
+        } else if bulldozer_count <
+        //1 && game::time() % 1500 == 0
+        10
+        {
             let mut body = Vec::new();
             let cost = 130;
             let max = room.energy_capacity_available();

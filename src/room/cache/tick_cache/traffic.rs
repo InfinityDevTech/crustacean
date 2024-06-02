@@ -4,13 +4,11 @@
 
 use log::info;
 use screeps::{
-    game::{self, get_object_by_id_typed}, Creep, Direction, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
+    game::{self, get_object_by_id_typed}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
 };
 
-use rand::prelude::SliceRandom;
-
 use super::RoomCache;
-use crate::{movement::utils::dir_to_coords, traits::creep::CreepExtensions};
+use crate::traits::creep::CreepExtensions;
 
 pub struct TrafficCache {
     pub move_targets: HashMap<ObjectId<Creep>, RoomXY>,

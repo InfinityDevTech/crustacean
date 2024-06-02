@@ -112,7 +112,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 return true;
             }
-        } else if upgrader_count < 6 {
+        } else if upgrader_count < 5 {
             let mut body = Vec::new();
             let cost = 300;
             let max = room.energy_capacity_available();

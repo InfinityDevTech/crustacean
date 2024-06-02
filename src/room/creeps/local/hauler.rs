@@ -25,7 +25,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let _ = creep.say("EXEC", false);
         execute_order(creep, memory.creeps.get_mut(&creep_name).unwrap(), cache, order);
     } else {
-        let new_order = if needs_energy {
+        let new_order = if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
             cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer])
         } else {
             cache.hauling.find_new_order(creep, memory, None, vec![HaulingType::Transfer])

@@ -1,7 +1,12 @@
 use std::{cmp, collections::HashMap};
 
 use screeps::{
-    find, game, look::{self, LookResult}, source, ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureTower, Terrain
+    find, game,
+    look::{self, LookResult},
+    ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId,
+    OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer,
+    StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad,
+    StructureSpawn, StructureTower, Terrain,
 };
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
@@ -48,7 +53,11 @@ pub struct RoomStructureCache {
 }
 
 impl RoomStructureCache {
-    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory, heap_cache: &mut RoomHeapCache) -> RoomStructureCache {
+    pub fn new_from_room(
+        room: &Room,
+        _memory: &mut ScreepsMemory,
+        heap_cache: &mut RoomHeapCache,
+    ) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
             all_structures: Vec::new(),
             construction_sites: Vec::new(),
@@ -155,36 +164,69 @@ impl RoomStructureCache {
                 if controller.container.is_some() {
                     let controller_container = controller.container.as_ref().unwrap();
                     if container.id() == controller_container.id() {
-
                         pull = false;
                     }
                 }
             }
 
             if pull && used_capacity > 0 {
-                hauling.create_order(
-                    container.raw_id(),
-                    ResourceType::Energy,
-                    container
-                        .store()
-                        .get_used_capacity(Some(ResourceType::Energy)),
-                    HaulingPriority::Energy,
-                    HaulingType::Offer,
-                );
+                if container
+                    .pos()
+                    .get_range_to(self.spawns.values().next().unwrap().pos())
+                    <= 3
+                {
+                    hauling.create_order(
+                        container.raw_id(),
+                        ResourceType::Energy,
+                        container
+                            .store()
+                            .get_used_capacity(Some(ResourceType::Energy)),
+                        HaulingPriority::Minerals,
+                        HaulingType::Offer,
+                    );
+                } else {
+                    hauling.create_order(
+                        container.raw_id(),
+                        ResourceType::Energy,
+                        container
+                            .store()
+                            .get_used_capacity(Some(ResourceType::Energy)),
+                        HaulingPriority::Energy,
+                        HaulingType::Offer,
+                    );
+                }
             }
 
             if !matching && (used_capacity as f32) <= (max_capacity as f32 * 0.5) {
-                hauling.create_order(
-                    container.raw_id(),
-                    ResourceType::Energy,
-                    container
-                        .store()
-                        .get_free_capacity(Some(ResourceType::Energy))
-                        .try_into()
-                        .unwrap(),
-                    HaulingPriority::Energy,
-                    HaulingType::Transfer,
-                );
+                if container
+                    .pos()
+                    .get_range_to(self.spawns.values().next().unwrap().pos())
+                    <= 3
+                {
+                    hauling.create_order(
+                        container.raw_id(),
+                        ResourceType::Energy,
+                        container
+                            .store()
+                            .get_free_capacity(Some(ResourceType::Energy))
+                            .try_into()
+                            .unwrap(),
+                        HaulingPriority::Spawning,
+                        HaulingType::Transfer,
+                    );
+                } else {
+                    hauling.create_order(
+                        container.raw_id(),
+                        ResourceType::Energy,
+                        container
+                            .store()
+                            .get_free_capacity(Some(ResourceType::Energy))
+                            .try_into()
+                            .unwrap(),
+                        HaulingPriority::Energy,
+                        HaulingType::Transfer,
+                    );
+                }
             }
         }
     }

@@ -36,6 +36,8 @@ pub struct RoomStructureCache {
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
     pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
 
+    pub fast_filler_containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
+
     pub controller: Option<CachedController>,
 
     pub terrain: LocalRoomTerrain,
@@ -56,6 +58,7 @@ impl RoomStructureCache {
             towers: HashMap::new(),
             spawns: HashMap::new(),
             containers: HashMap::new(),
+            fast_filler_containers: HashMap::new(),
 
             controller: None,
 

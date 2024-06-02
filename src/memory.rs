@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use log::error;
-use screeps::{ObjectId, RawObjectId, ResourceType, RoomName, StructureLink};
+use screeps::{ObjectId, RawObjectId, ResourceType, RoomName, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -19,9 +19,11 @@ pub enum Role {
     Miner = 0,
     Hauler = 1,
 
+    FastFiller = 2,
+
     // Construction industry
-    Upgrader = 2,
-    Builder = 3,
+    Upgrader = 3,
+    Builder = 4,
 
     Scout = 10,
 }
@@ -50,14 +52,18 @@ pub struct CreepMemory{
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "4")]
     pub link_id: Option<ObjectId<StructureLink>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "5")]
+    pub fastfiller_container: Option<ObjectId<StructureContainer>>,
     // This is a pointer that changes based on the role of the creep
     // Miner - A reference to the source in the vec of sources
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "5")]
+    #[serde(rename = "6")]
     pub task_id: Option<u128>,
     // The hauling task if a creep is a hauler.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "6")]
+    #[serde(rename = "7")]
     pub hauling_task: Option<pub struct CreepHaulTask {
         #[serde(rename = "0")]
         pub target_id: RawObjectId,

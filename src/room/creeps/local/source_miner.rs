@@ -184,7 +184,7 @@ fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut R
         cache.structures.sources[creep_memory.task_id.unwrap() as usize].get_container();
 
     if let Some(container) = container {
-        if (container.hits() as f32) < container.hits_max() as f32 * 0.75 {
+        if container.hits() < container.hits_max() {
             if container.pos().get_range_to(creep.pos()) > 1 {
                 let _ = creep.say("🚚", false);
                 creep.better_move_to(creep_memory, cache, container.pos(), 1);

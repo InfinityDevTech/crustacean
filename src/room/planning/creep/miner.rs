@@ -49,6 +49,12 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .get(&Role::Builder)
             .unwrap_or(&vec![])
             .len();
+        let fastfiller_count = cache
+            .creeps
+            .creeps_of_role
+            .get(&Role::FastFiller)
+            .unwrap_or(&vec![])
+            .len();
 
         if hauler_count < 12 {
             let mut body = Vec::new();
@@ -74,6 +80,29 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     task_id: None,
                     link_id: None,
                     hauling_task: None,
+                    fastfiller_container: None,
+                    owning_room: room.name().to_string(),
+                    path: None,
+                };
+
+                memory.create_creep(&room.name_str(), &name, cmemory);
+
+                return true;
+            }
+        } else if fastfiller_count < 2 {
+            let body = vec![Part::Move, Part::Carry];
+
+            let role_name = role_to_name(Role::FastFiller);
+            let name = format!("{}-{}-{}", role_name, game::time(), room.name());
+
+            let spawn_result = spawn.spawn_creep(&body, &name);
+            if spawn_result.is_ok() {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    link_id: None,
+                    hauling_task: None,
+                    fastfiller_container: None,
                     owning_room: room.name().to_string(),
                     path: None,
                 };
@@ -105,6 +134,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 let cmemory = CreepMemory {
                     needs_energy: None,
                     task_id: None,
+                    fastfiller_container: None,
                     link_id: None,
                     hauling_task: None,
                     owning_room: room.name().to_string(),
@@ -138,6 +168,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 let cmemory = CreepMemory {
                     needs_energy: None,
                     task_id: None,
+                    fastfiller_container: None,
                     link_id: None,
                     hauling_task: None,
                     owning_room: room.name().to_string(),
@@ -174,6 +205,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 let cmemory = CreepMemory {
                     needs_energy: Some(true),
                     task_id: Some(needed.unwrap().into()),
+                    fastfiller_container: None,
                     hauling_task: None,
                     link_id: None,
                     owning_room: room.name().to_string(),

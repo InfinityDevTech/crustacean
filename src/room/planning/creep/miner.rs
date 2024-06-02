@@ -120,12 +120,12 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             let mut current = 0;
 
             loop {
-                if current >=max_multipliable { break }
+                if current >= max_multipliable { break }
                 body.push(Part::Work);
                 body.push(Part::Work);
                 body.push(Part::Carry);
                 body.push(Part::Move);
-                current += cost;
+                current += 1;
             }
             let role_name = role_to_name(Role::Upgrader);
             let name = format!("{}-{}-{}", role_name, game::time(), room.name());
@@ -154,12 +154,12 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             let mut current = 0;
 
             loop {
-                if current >=max_multipliable { break }
+                if current >= max_multipliable { break }
                 body.push(Part::Work);
                 body.push(Part::Carry);
                 body.push(Part::Move);
                 body.push(Part::Move);
-                current += cost;
+                current += 1;
             }
             let role_name = role_to_name(Role::Builder);
             let name = format!("{}-{}-{}", role_name, game::time(), room.name());

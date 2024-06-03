@@ -57,6 +57,7 @@ module.exports.loop = function () {
     if (halt_next_tick) {
       // We encountered an error, skip execution in this tick and get
       // a new environment next tick.
+      console.log("[JS] Resetting IVM...")
       Game.cpu.halt();
       return;
     }
@@ -72,7 +73,9 @@ module.exports.loop = function () {
     global.Memory = global.TempMemory;
 
     if (wasm_module) {
+      console.log("pre")
       wasm_module.game_loop();
+      console.log("post")
     } else {
       console.log("[JS] Module not loaded... loading");
 

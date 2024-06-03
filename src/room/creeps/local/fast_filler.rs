@@ -49,7 +49,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 creep.try_raw_id().unwrap(),
                 ResourceType::Energy,
                 creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32,
-                HaulingPriority::Spawning,
+                HaulingPriority::Emergency,
                 HaulingType::Transfer,
             );
         } else {

@@ -72,7 +72,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .unwrap_or(&vec![])
             .len();
 
-        if hauler_count < 8 {
+        if hauler_count < 8 && fastfiller_count >= 2 {
             let mut body = Vec::new();
             let cost = 100;
 

@@ -126,6 +126,8 @@ pub fn execute_order(
             if let Some(resource) = resource {
                 let _ = creep.pickup(&resource);
                 success = true;
+            } else {
+                creep_memory.hauling_task = None;
             }
         }
         HaulingType::Withdraw => {

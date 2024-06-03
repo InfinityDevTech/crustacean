@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use rand::prelude::SliceRandom;
 
 use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};
@@ -83,9 +84,12 @@ impl HaulingCache {
 
         orders.sort_by(|a, b| a.priority.cmp(&b.priority));
 
-        if let Some(order) = orders.into_iter().next() {
+        if let Some(order) = orders.clone().into_iter().next() {
             let id = order.id;
-            let order = self.new_orders.get_mut(&id).unwrap();
+            let order = orders.retain(|o| o.priority == order.priority);
+            orders.shuffle(&mut rand::thread_rng());
+
+            let order = orders.into_iter().next().unwrap();
 
             let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
             let task = CreepHaulTask {

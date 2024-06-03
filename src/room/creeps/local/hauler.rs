@@ -1,9 +1,6 @@
-use std::vec;
-
 use log::info;
 use screeps::{
-    game, Creep, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties,
-    StructureStorage,
+    game, Creep, ErrorCode, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
 };
 
 use wasm_bindgen::JsCast;
@@ -106,28 +103,34 @@ pub fn execute_order(
 
     if position.is_none() || target.is_none() {
         creep_memory.hauling_task = None;
-        return;
-    }
-
-    if position.unwrap().get_range_to(creep.pos()) > 1 {
-        let _ = creep.say("🚚", false);
-        creep.better_move_to(creep_memory, cache, position.unwrap(), 1);
+        let _ = creep.say("INVLD", false);
         return;
     }
 
     let mut success = false;
 
-    match order.haul_type {
+    if !creep.pos().is_near_to(position.unwrap()) {
+        creep.better_move_to(creep_memory, cache, position.unwrap(), 1);
+        let _ = match order.haul_type {
+            HaulingType::Offer => creep.say("MV-OFFR", false),
+            HaulingType::Withdraw => creep.say("MV-WTHD", false),
+            HaulingType::Pickup => creep.say("MV-PKUP", false),
+            HaulingType::Transfer => creep.say("MV-TFER", false),
+        };
+        return;
+    }
+
+    let result: Result<(), ErrorCode> = match order.haul_type {
         HaulingType::Pickup => {
             let _ = creep.say("PKUP", false);
 
-            let resource: Option<Resource> =
-                game::get_object_by_id_typed(&ObjectId::from(pickup_target));
+            let resource: Option<Resource> = game::get_object_by_id_typed(&ObjectId::from(pickup_target));
             if let Some(resource) = resource {
-                let _ = creep.pickup(&resource);
-                success = true;
+                let result = creep.pickup(&resource);
+
+                result
             } else {
-                creep_memory.hauling_task = None;
+                Err(ErrorCode::NotFound)
             }
         }
         HaulingType::Withdraw => {
@@ -138,24 +141,30 @@ pub fn execute_order(
                     creep.store().get_free_capacity(Some(ResourceType::Energy)),
                     order.amount as i32,
                 );
-                let _ = creep.withdraw(
+                let result = creep.withdraw(
                     target.unchecked_ref::<StructureStorage>(),
                     order.resource,
                     Some(amount.try_into().unwrap()),
                 );
-                success = true;
+
+                result
+            } else {
+                Err(ErrorCode::NotFound)
             }
         }
         HaulingType::Transfer => {
             let _ = creep.say("TFER", false);
 
             if let Some(target) = target {
-                let _ = creep.transfer(
+                let result = creep.transfer(
                     target.unchecked_ref::<StructureStorage>(),
                     ResourceType::Energy,
                     None,
                 );
-                success = true;
+
+                result
+            } else {
+                Err(ErrorCode::NotFound)
             }
         }
         HaulingType::Offer => {
@@ -166,17 +175,39 @@ pub fn execute_order(
                     creep.store().get_free_capacity(Some(order.resource)),
                     order.amount as i32,
                 );
-                let _ = creep.withdraw(
+                let result = creep.withdraw(
                     target.unchecked_ref::<StructureStorage>(),
                     order.resource,
                     Some(amount.try_into().unwrap()),
                 );
-                success = true;
+
+                result
+            } else {
+                Err(ErrorCode::NotFound)
             }
         }
     };
 
-    if success {
+    if result.is_ok() {
         creep_memory.hauling_task = None;
+        creep_memory.path = None;
+    } else if result.is_err() {
+        match result.err().unwrap() {
+            ErrorCode::InvalidTarget => {
+                let _ = creep.say("INVLD-TGT", false);
+                creep_memory.hauling_task = None;
+                creep_memory.path = None;
+            },
+            ErrorCode::Full => {
+                let _ = creep.say("FULL", false);
+                creep_memory.hauling_task = None;
+                creep_memory.path = None;
+            },
+            ErrorCode::NoBodypart => {
+                let _ = creep.say("NO-BP", false);
+                creep.suicide();
+            },
+            _ => {}
+        }
     }
 }

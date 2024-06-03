@@ -72,7 +72,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .unwrap_or(&vec![])
             .len();
 
-        if hauler_count < 8 && fastfiller_count >= 2 {
+        if hauler_count < 8 && fastfiller_count >= 1 {
             let mut body = Vec::new();
             let cost = 100;
 
@@ -201,9 +201,9 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 return true;
             }
-        } else if bulldozer_count <
+        } /*else if bulldozer_count <
         //1 && game::time() % 1500 == 0
-        10
+        0
         {
             let mut body = Vec::new();
             let cost = 130;
@@ -237,6 +237,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 return true;
             }
         }
+        */
     } else {
         parts.push(Part::Move);
         parts.push(Part::Carry);

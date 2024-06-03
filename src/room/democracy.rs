@@ -10,14 +10,14 @@ use crate::{
     room::{
         cache::tick_cache::{traffic, RoomCache},
         creeps::{local::hauler, organizer, recovery::recover_creeps},
-        planning::room::{construction::get_bunker_plan, structure_visuals::RoomVisualExt},
+        planning::room::{structure_visuals::RoomVisualExt},
         tower,
         visuals::run_full_visuals,
     },
     traits::room::RoomExtensions,
 };
 
-use super::planning::creep::miner::formulate_miner;
+use super::{cache, planning::{creep::miner::formulate_miner, room::construction::{get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts}}};
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     let starting_cpu = game::cpu::get_used();
@@ -62,7 +62,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
             recover_creeps(memory);
         }
 
-        //run_crap_planner_code(&room, memory, &room_cache);
+        run_crap_planner_code(&room, memory, &room_cache);
 
         // Must be done LAST, traffic managemnet
         // Provided by Harabi
@@ -92,7 +92,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
 
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &RoomCache) {
     let coords = room_cache.structures.spawns.values().next().unwrap().pos();
-    let things = get_bunker_plan();
     let _viz = RoomVisualExt::new(room.name());
 
     if game::cpu::bucket() < 500 {
@@ -102,14 +101,24 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
     if !memory.rooms.get(&room.name()).unwrap().planned
         || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
     {
-        for thing in things.iter() {
-            let x_offset = thing.0 + coords.x().u8() as i8;
-            let y_offset = thing.1 + coords.y().u8() as i8;
-            //viz.structure(x_offset.into(), y_offset.into(), thing.2, 0.5);
-            //let _ = room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
-            //things.retain(|s| { s.2 == StructureType::Container });
 
-            let _ = room.create_construction_site(x_offset as u8, y_offset as u8, thing.2, None);
+        let structures = match room.controller().unwrap().level() {
+            2 => get_rcl_2_plan(),
+            3 => get_rcl_3_plan(),
+            4 => get_rcl_4_plan(),
+            5 => get_rcl_5_plan(),
+            6 => get_rcl_6_plan(),
+            7 => get_rcl_7_plan(),
+            8 => get_rcl_8_plan(),
+            _ => get_roads_and_ramparts(),
+        };
+
+        for structure in structures {
+            let offset_x = room_cache.structures.spawns.values().next().unwrap().pos().x();
+            let offset_y = room_cache.structures.spawns.values().next().unwrap().pos().y();
+
+            let pos = RoomPosition::new(structure.0 as u8 + offset_x.u8(), structure.1 as u8 + offset_y.u8(), room.name());
+            let _ = room.create_construction_site(pos.x(), pos.y(), structure.2, None);
         }
 
         // Plan container around source and controller

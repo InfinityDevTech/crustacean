@@ -73,9 +73,7 @@ module.exports.loop = function () {
     global.Memory = global.TempMemory;
 
     if (wasm_module) {
-      console.log("pre")
       wasm_module.game_loop();
-      console.log("post")
     } else {
       console.log("[JS] Module not loaded... loading");
 

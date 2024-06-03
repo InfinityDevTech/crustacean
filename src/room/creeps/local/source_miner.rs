@@ -134,9 +134,10 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if build_around_source(creep, creep_memory, cache) {
-        return;
-    }
+    //if build_around_source(creep, creep_memory, cache) {
+    //    return;
+    //}
+    
     if repair_container(creep, creep_memory, cache) {
         return;
     }

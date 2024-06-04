@@ -203,7 +203,7 @@ impl RoomStructureCache {
                         HaulingType::Offer,
                     );
 
-                } else if !is_controller_container {
+                } else {
                     // Caused an issue where a hauler would grab from the container
                     // Container would go lower than 50 percent, than the hauler
                     // Would stick it back in said container :)

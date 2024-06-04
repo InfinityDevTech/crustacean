@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use screeps::{find, HasId, Resource, ResourceType, Room};
 
-use crate::memory::ScreepsMemory;
+use crate::{memory::ScreepsMemory, utils::scale_haul_priority};
 
 use super::hauling::{HaulingCache, HaulingPriority, HaulingType};
 
@@ -27,7 +27,8 @@ impl RoomResourceCache {
 
     pub fn haul_dropped_resources(&self, hauling: &mut HaulingCache) {
         for resource in &self.dropped_energy {
-            hauling.create_order(resource.id().into(), Some(resource.resource_type()), Some(resource.amount()), HaulingPriority::Energy, HaulingType::Pickup);
+            let priority = scale_haul_priority(resource.amount(), resource.amount(), HaulingPriority::Energy, false);
+            hauling.create_order(resource.id().into(), Some(resource.resource_type()), Some(resource.amount()), priority, HaulingType::Pickup);
         }
     }
 

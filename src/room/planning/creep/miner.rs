@@ -10,7 +10,7 @@ use crate::{
         RoomCache,
     }, creeps::local::hauler},
     traits::room::RoomExtensions,
-    utils::role_to_name,
+    utils::{role_to_name, scale_haul_priority},
 };
 
 pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
@@ -43,11 +43,18 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
         .len();
 
     if fastfiller_count == 0 && spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
+        let priority = scale_haul_priority(
+            spawn.store().get_capacity(None),
+            spawn.store().get_free_capacity(None) as u32,
+            HaulingPriority::Spawning,
+            true
+        );
+
         cache.hauling.create_order(
             spawn.raw_id(),
             Some(ResourceType::Energy),
                 Some(spawn.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()),
-            HaulingPriority::Spawning,
+            priority,
             HaulingType::Transfer,
         );
     }

@@ -4,19 +4,20 @@ use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};
 
-use crate::memory::{CreepHaulTask, ScreepsMemory};
+use crate::{memory::{CreepHaulTask, ScreepsMemory}, utils::scale_haul_priority};
 
 use super::structures::RoomStructureCache;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum HaulingPriority {
-    Combat = 0,
-    Emergency = 1,
-    Spawning = 2,
+    Combat = 7,
+    Emergency = 6,
+    Spawning = 5,
+    Ruins = 4,
     Energy = 3,
-    Minerals = 4,
-    Market = 5,
-    Storage = 6
+    Minerals = 2,
+    Market = 1,
+    Storage = 0,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
@@ -33,7 +34,7 @@ pub struct RoomHaulingOrder {
     pub target: RawObjectId,
     pub resource: Option<ResourceType>,
     pub amount: Option<u32>,
-    pub priority: HaulingPriority,
+    pub priority: u32,
     pub haul_type: HaulingType,
 }
 
@@ -59,7 +60,7 @@ impl HaulingCache {
         self.current_id_index
     }
 
-    pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: HaulingPriority, haul_type: HaulingType) {
+    pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: u32, haul_type: HaulingType) {
         let id = self.get_unique_id();
 
         let order = RoomHaulingOrder {
@@ -129,7 +130,7 @@ impl HaulingCache {
                     storage.raw_id(),
                     Some(ResourceType::Energy),
                     Some(storage.store().get_used_capacity(Some(ResourceType::Energy))),
-                    HaulingPriority::Storage,
+                    0,
                     HaulingType::Offer
                 )
             }
@@ -140,12 +141,14 @@ impl HaulingCache {
         let ruins = &structures.ruins;
 
         for ruin in ruins.values() {
-            if ruin.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+            let energy_amount = ruin.store().get_used_capacity(Some(ResourceType::Energy));
+
+            if energy_amount > 0 {
                 self.create_order(
                     ruin.raw_id(),
                     Some(ResourceType::Energy),
                     Some(ruin.store().get_used_capacity(Some(ResourceType::Energy))),
-                    HaulingPriority::Energy,
+                    scale_haul_priority(ruin.store().get_capacity(None), energy_amount, HaulingPriority::Ruins, false),
                     HaulingType::Offer
                 );
                 return;

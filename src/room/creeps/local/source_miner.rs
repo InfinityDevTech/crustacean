@@ -9,7 +9,7 @@ use crate::{
         hauling::{HaulingPriority, HaulingType},
         RoomCache,
     },
-    traits::creep::CreepExtensions,
+    traits::creep::CreepExtensions, utils::scale_haul_priority,
 };
 
 use super::hauler;
@@ -137,7 +137,7 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     //if build_around_source(creep, creep_memory, cache) {
     //    return;
     //}
-    
+
     if repair_container(creep, creep_memory, cache) {
         return;
     }
@@ -154,11 +154,19 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
 
             let _ = creep.drop(ResourceType::Energy, Some(amount));
+
+            let priority = scale_haul_priority(
+                container.store().get_capacity(Some(ResourceType::Energy)) as u32,
+                amount,
+                HaulingPriority::Energy,
+                false
+            );
+
             cache.hauling.create_order(
                 creep.try_raw_id().unwrap(),
                 Some(ResourceType::Energy),
                 Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
-                HaulingPriority::Energy,
+                priority,
                 HaulingType::Pickup,
             );
         } else if creep.pos().is_near_to(container.pos()) {
@@ -167,13 +175,6 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             creep.better_move_to(creep_memory, cache, container.pos(), 1);
         }
     } else {
-        cache.hauling.create_order(
-            creep.try_raw_id().unwrap(),
-            Some(ResourceType::Energy),
-            Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
-            HaulingPriority::Energy,
-            HaulingType::Pickup,
-        );
         let _ = creep.drop(ResourceType::Energy, None);
     }
 }

@@ -12,7 +12,7 @@ use crate::{
         hauling::{HaulingPriority, HaulingType},
         RoomCache,
     },
-    traits::creep::CreepExtensions,
+    traits::creep::CreepExtensions, utils::scale_haul_priority,
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -45,11 +45,17 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let _ = creep.say("WTHD", false);
         let container_id = creep_memory.fastfiller_container;
         if container_id.is_none() {
+            let priority = scale_haul_priority(
+                creep.store().get_capacity(None),
+                creep.store().get_free_capacity(None) as u32,
+                HaulingPriority::Emergency,
+                true
+            );
             cache.hauling.create_order(
                 creep.try_raw_id().unwrap(),
                 Some(ResourceType::Energy),
                 Some(creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
-                HaulingPriority::Emergency,
+                priority,
                 HaulingType::Transfer,
             );
         } else {

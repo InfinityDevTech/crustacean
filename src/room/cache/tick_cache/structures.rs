@@ -5,7 +5,7 @@ use screeps::{
     find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Terrain
 };
 
-use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
+use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
 
 use super::hauling::{HaulingCache, HaulingPriority, HaulingType};
 
@@ -115,6 +115,15 @@ impl RoomStructureCache {
     pub fn temp(&mut self, hauling: &mut HaulingCache) {
         for source in self.extensions.values() {
             if source.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+                let priority = scale_haul_priority(
+                    source.store().get_capacity(Some(ResourceType::Energy)),
+                    source.store().get_used_capacity(Some(ResourceType::Energy)),
+                    HaulingPriority::Spawning,
+                    true
+                );
+
+                info!("Creating order for extension {}", priority);
+
                 hauling.create_order(
                     source.raw_id(),
                     Some(ResourceType::Energy),
@@ -123,7 +132,7 @@ impl RoomStructureCache {
                         .get_free_capacity(Some(ResourceType::Energy))
                         .try_into()
                         .unwrap()),
-                    HaulingPriority::Spawning,
+                    priority,
                     HaulingType::Transfer,
                 );
             }
@@ -175,23 +184,35 @@ impl RoomStructureCache {
                     &&
                     container.store().get_used_capacity(Some(ResourceType::Energy)) as f32 > container.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5
                 {
+                    let priority = scale_haul_priority(
+                        container.store().get_capacity(Some(ResourceType::Energy)),
+                        container.store().get_used_capacity(Some(ResourceType::Energy)),
+                        HaulingPriority::Minerals,
+                        true
+                    );
                     hauling.create_order(
                         container.raw_id(),
                         Some(ResourceType::Energy),
                         Some(container
                             .store()
                             .get_used_capacity(Some(ResourceType::Energy))),
-                        HaulingPriority::Minerals,
+                        priority,
                         HaulingType::Offer,
                     );
                 } else {
+                    let priority = scale_haul_priority(
+                        container.store().get_capacity(Some(ResourceType::Energy)),
+                        container.store().get_used_capacity(Some(ResourceType::Energy)),
+                        HaulingPriority::Energy,
+                        true
+                    );
                     hauling.create_order(
                         container.raw_id(),
                         Some(ResourceType::Energy),
                         Some(container
                             .store()
                             .get_used_capacity(Some(ResourceType::Energy))),
-                        HaulingPriority::Energy,
+                        priority,
                         HaulingType::Offer,
                     );
                 }
@@ -203,16 +224,30 @@ impl RoomStructureCache {
                     .get_range_to(self.spawns.values().next().unwrap().pos())
                     <= 3
                 {
+                    let priority = scale_haul_priority(
+                        container.store().get_capacity(Some(ResourceType::Energy)),
+                        container.store().get_used_capacity(Some(ResourceType::Energy)),
+                        HaulingPriority::Spawning,
+                        true
+                    );
+
                     hauling.create_order(
                         container.raw_id(),
                         Some(ResourceType::Energy),
                         Some(container
                             .store()
                             .get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()),
-                        HaulingPriority::Spawning,
+                        priority,
                         HaulingType::Transfer,
                     );
                 } else {
+                    let priority = scale_haul_priority(
+                        container.store().get_capacity(Some(ResourceType::Energy)),
+                        container.store().get_used_capacity(Some(ResourceType::Energy)),
+                        HaulingPriority::Energy,
+                        true
+                    );
+
                     hauling.create_order(
                         container.raw_id(),
                         Some(ResourceType::Energy),
@@ -221,7 +256,7 @@ impl RoomStructureCache {
                             .get_free_capacity(Some(ResourceType::Energy))
                             .try_into()
                             .unwrap()),
-                        HaulingPriority::Energy,
+                        priority,
                         HaulingType::Transfer,
                     );
                 }

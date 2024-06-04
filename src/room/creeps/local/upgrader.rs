@@ -1,7 +1,7 @@
 use rand::{rngs::StdRng, seq::IteratorRandom, Rng, SeedableRng};
 use screeps::{game, Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
 
-use crate::{config, memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions};
+use crate::{config, memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions, utils::scale_haul_priority};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
@@ -27,7 +27,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             }
 
         } else {
-            cache.hauling.create_order(creep.try_raw_id().unwrap(), Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), HaulingPriority::Energy, HaulingType::Transfer);
+            let priority = scale_haul_priority(
+                creep.store().get_free_capacity(None) as u32,
+                creep.store().get_used_capacity(None) as u32,
+                HaulingPriority::Energy,
+                true
+            );
+
+            cache.hauling.create_order(creep.try_raw_id().unwrap(), Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
         }
     }
 

@@ -41,6 +41,14 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
             }
 
         }
+    } else if let Some(repairable) = cache.structures.needs_repair.first() {
+        if repairable.pos().get_range_to(creep.pos()) > 1 {
+            let _ = creep.say("🚚", false);
+            creep.better_move_to(creepmem, cache, repairable.pos(), 1);
+        } else {
+            let _ = creep.say("🔨", false);
+            let _ = creep.repair(repairable.as_repairable().unwrap());
+        }
     }
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {

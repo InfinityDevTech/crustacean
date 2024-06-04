@@ -256,8 +256,13 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
         let max_work_parts_needed = cache.structures.sources[needed.unwrap() as usize].parts_needed();
 
         for _ in 0..cmp::min(max_work_parts_makeable, (max_work_parts_needed + 2).into()) {
-            parts.push(Part::Work);
-            cost += 100;
+            if parts.len() % 4 == 0 {
+                parts.push(Part::Move);
+                cost += 50;
+            } else {
+                parts.push(Part::Work);
+                cost += 100;
+            }
         }
 
         let name_prefix = role_to_name(Role::Miner);

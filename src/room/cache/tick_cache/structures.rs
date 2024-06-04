@@ -31,6 +31,8 @@ pub struct RoomStructureCache {
     pub all_structures: Vec<StructureObject>,
     pub construction_sites: Vec<ConstructionSite>,
 
+    pub needs_repair: Vec<StructureObject>,
+
     pub sources: Vec<CachedSource>,
     pub ruins: HashMap<ObjectId<Ruin>, Ruin>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
@@ -58,6 +60,7 @@ impl RoomStructureCache {
         let mut cache = RoomStructureCache {
             all_structures: Vec::new(),
             construction_sites: Vec::new(),
+            needs_repair: Vec::new(),
 
             sources: Vec::new(),
             ruins: HashMap::new(),
@@ -147,20 +150,20 @@ impl RoomStructureCache {
             let max_capacity = container.store().get_capacity(Some(ResourceType::Energy));
 
             let mut i = 0;
-            let mut matching = false;
-            let mut pull = true;
+            let mut is_source_container = false;
+            let mut is_controller_container = true;
 
             loop {
                 if self.sources.len() <= i {
                     break;
                 }
-                if matching {
+                if is_source_container {
                     break;
                 }
 
                 if let Some(source_container) = self.sources[i].get_container() {
                     if container.id() == source_container.id() {
-                        matching = true;
+                        is_source_container = true;
                     }
                 }
 
@@ -171,12 +174,12 @@ impl RoomStructureCache {
                 if controller.container.is_some() {
                     let controller_container = controller.container.as_ref().unwrap();
                     if container.id() == controller_container.id() {
-                        pull = false;
+                        is_controller_container = false;
                     }
                 }
             }
 
-            if pull && used_capacity > 0 {
+            if is_controller_container && used_capacity > 0 {
                 if container
                     .pos()
                     .get_range_to(self.spawns.values().next().unwrap().pos())
@@ -199,7 +202,11 @@ impl RoomStructureCache {
                         priority,
                         HaulingType::Offer,
                     );
-                } else {
+
+                } else if !is_controller_container {
+                    // Caused an issue where a hauler would grab from the container
+                    // Container would go lower than 50 percent, than the hauler
+                    // Would stick it back in said container :)
                     let priority = scale_haul_priority(
                         container.store().get_capacity(Some(ResourceType::Energy)),
                         container.store().get_used_capacity(Some(ResourceType::Energy)),
@@ -219,7 +226,7 @@ impl RoomStructureCache {
                 }
             }
 
-            if !matching && (used_capacity as f32) <= (max_capacity as f32 * 0.5) {
+            if !is_source_container && (used_capacity as f32) <= (max_capacity as f32 * 0.5) {
                 if container
                     .pos()
                     .get_range_to(self.spawns.values().next().unwrap().pos())
@@ -282,6 +289,12 @@ impl RoomStructureCache {
 
         for structure in structures {
             self.all_structures.push(structure.clone());
+
+            if let Some(repairable) = structure.as_repairable() {
+                if repairable.hits() < repairable.hits_max() {
+                    self.needs_repair.push(structure.clone());
+                }
+            }
 
             match structure {
                 StructureObject::StructureTower(tower) => {

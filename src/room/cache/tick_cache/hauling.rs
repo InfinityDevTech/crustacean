@@ -44,6 +44,8 @@ pub struct HaulingCache {
     pub current_id_index: u32,
 
     pub haulers: Vec<String>,
+
+    iterator_salt: u32,
 }
 
 impl HaulingCache {
@@ -52,6 +54,8 @@ impl HaulingCache {
             new_orders: HashMap::new(),
             current_id_index: game::time(),
             haulers: Vec::new(),
+
+            iterator_salt: 0,
         }
     }
 
@@ -86,7 +90,8 @@ impl HaulingCache {
 
         orders.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
 
-        let mut seedable = StdRng::seed_from_u64(game::time().into());
+        let mut seedable = StdRng::seed_from_u64((game::time() + self.iterator_salt).into());
+        self.iterator_salt += 1;
 
         if let Some(order) = orders.clone().into_iter().next() {
             let id = order.id;

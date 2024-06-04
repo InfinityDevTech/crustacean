@@ -29,7 +29,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         } else {
             let priority = scale_haul_priority(
                 creep.store().get_free_capacity(None) as u32,
-                creep.store().get_used_capacity(None) as u32,
+                creep.store().get_used_capacity(None),
                 HaulingPriority::Energy,
                 true
             );

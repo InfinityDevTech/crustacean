@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{
     find, game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
     Room, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,
@@ -47,10 +48,11 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         if container_id.is_none() {
             let priority = scale_haul_priority(
                 creep.store().get_capacity(None),
-                creep.store().get_free_capacity(None) as u32,
+                creep.store().get_used_capacity(None),
                 HaulingPriority::Emergency,
                 true
             );
+
             cache.hauling.create_order(
                 creep.try_raw_id().unwrap(),
                 Some(ResourceType::Energy),

@@ -28,17 +28,9 @@ impl CreepCache {
     }
 
     pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room) {
-        let creeps = &memory.rooms.get(&room.name()).unwrap().creeps.clone();
+        let creeps = room.find(find::CREEPS, None);
 
-        for creep_name in creeps {
-            let creep = game::creeps().get(creep_name.to_string());
-
-            if creep.is_none() {
-                continue;
-            }
-
-            let creep = creep.unwrap();
-
+        for creep in creeps {
             if creep.my() {
                 let role = utils::name_to_role(&creep.name());
                 if role.is_none() { continue; }

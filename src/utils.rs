@@ -5,18 +5,20 @@ use crate::{memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 /// Amount: The amount of resources in the target
 /// Priority: The priority of the task
 /// Reverse: Get priority based off of how empty the container is
-pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority, reverse: bool) -> u32 {
-    let priority = priority as u32;
+pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority, reverse: bool) -> f32 {
+    let priority = (priority as u32) as f32;
+    let capacity = capacity as f32;
+    let amount = amount as f32;
 
-    if capacity == 0 {
-        return 0;
+    if capacity == 0.0 {
+        return 0.0;
     }
 
     if reverse {
-        return (1 - amount / capacity) * priority;
+        return (1.0 - amount / capacity) * priority
     }
 
-    (amount / capacity) * priority
+    (amount / capacity) * 100.0 * priority
 }
 
 /// Convert a role to its respective string

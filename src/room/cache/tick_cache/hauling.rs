@@ -10,13 +10,13 @@ use super::structures::RoomStructureCache;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum HaulingPriority {
-    Combat = 7,
-    Emergency = 6,
-    Spawning = 5,
-    Ruins = 4,
-    Energy = 3,
-    Minerals = 2,
-    Market = 1,
+    Combat = 70,
+    Emergency = 60,
+    Spawning = 50,
+    Ruins = 40,
+    Energy = 30,
+    Minerals = 20,
+    Market = 10,
     Storage = 0,
 }
 
@@ -34,7 +34,7 @@ pub struct RoomHaulingOrder {
     pub target: RawObjectId,
     pub resource: Option<ResourceType>,
     pub amount: Option<u32>,
-    pub priority: u32,
+    pub priority: f32,
     pub haul_type: HaulingType,
 }
 
@@ -60,7 +60,7 @@ impl HaulingCache {
         self.current_id_index
     }
 
-    pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: u32, haul_type: HaulingType) {
+    pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: f32, haul_type: HaulingType) {
         let id = self.get_unique_id();
 
         let order = RoomHaulingOrder {
@@ -84,7 +84,7 @@ impl HaulingCache {
             orders.retain(|rsc| rsc.resource == Some(resource_type));
         }
 
-        orders.sort_by(|a, b| a.priority.cmp(&b.priority));
+        orders.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
 
         let mut seedable = StdRng::seed_from_u64(game::time().into());
 
@@ -130,8 +130,18 @@ impl HaulingCache {
                     storage.raw_id(),
                     Some(ResourceType::Energy),
                     Some(storage.store().get_used_capacity(Some(ResourceType::Energy))),
-                    0,
+                    0.0,
                     HaulingType::Offer
+                )
+            }
+
+            if storage.store().get_free_capacity(None) > 0 {
+                self.create_order(
+                    storage.raw_id(),
+                    None,
+                    Some(storage.store().get_free_capacity(None).try_into().unwrap()),
+                    0.0,
+                    HaulingType::Transfer
                 )
             }
         }

@@ -69,6 +69,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if creep.store().get_free_capacity(None) == 0 {
         let mem = memory.creeps.get_mut(&creep_name).unwrap();
         mem.needs_energy = None;
+        mem.path = None;
 
         if mem.hauling_task.is_some() {
             mem.hauling_task = None;
@@ -78,6 +79,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if creep.store().get_used_capacity(None) == 0 {
         let mem = memory.creeps.get_mut(&creep_name).unwrap();
         mem.needs_energy = Some(true);
+        mem.path = None;
 
         if mem.hauling_task.is_some() {
             mem.hauling_task = None;

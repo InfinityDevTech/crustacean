@@ -122,7 +122,7 @@ impl RoomStructureCache {
                     true
                 );
 
-                info!("Creating order for extension {}", priority);
+                info!("Making offer for non-spawn container {}", priority);
 
                 hauling.create_order(
                     source.raw_id(),
@@ -206,6 +206,7 @@ impl RoomStructureCache {
                         HaulingPriority::Energy,
                         true
                     );
+
                     hauling.create_order(
                         container.raw_id(),
                         Some(ResourceType::Energy),

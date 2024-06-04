@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{find, HasId, ResourceType, Room};
+use screeps::{find, HasId, Resource, ResourceType, Room};
 
 use crate::utils::scale_haul_priority;
 
@@ -9,13 +9,11 @@ pub fn run_towers(room: &Room, cache: &mut RoomCache) {
     for tower in cache.structures.towers.values() {
         if tower.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
             let priority = scale_haul_priority(
-                tower.store().get_capacity(None),
-                tower.store().get_free_capacity(None) as u32,
+                tower.store().get_capacity(Some(ResourceType::Energy)),
+                tower.store().get_used_capacity(Some(ResourceType::Energy)),
                 HaulingPriority::Combat,
                 true,
             );
-
-            info!("Tower {} is hauling energy", priority);
 
             cache.hauling.create_order(
                 tower.raw_id(),

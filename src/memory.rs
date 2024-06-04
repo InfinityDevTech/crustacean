@@ -70,7 +70,7 @@ pub struct CreepMemory{
         #[serde(rename = "1")]
         pub haul_type: HaulingType,
         #[serde(rename = "2")]
-        pub priority: u32,
+        pub priority: f32,
         #[serde(rename = "3")]
         pub resource: ResourceType,
         #[serde(skip_serializing_if = "Option::is_none")]

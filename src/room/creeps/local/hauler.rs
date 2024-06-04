@@ -194,11 +194,16 @@ pub fn execute_order(
                         creep.store().get_free_capacity(Some(order.resource)),
                         amount as i32,
                     );
-                    let result = creep.withdraw(
-                        target.unchecked_ref::<StructureStorage>(),
-                        order.resource,
-                        Some(amount.try_into().unwrap()),
-                    );
+
+                    let result = if target.unchecked_ref::<StructureStorage>().store().get_used_capacity(Some(order.resource)) < amount as u32 {
+                        Err(ErrorCode::InvalidTarget)
+                    } else {
+                        creep.withdraw(
+                            target.unchecked_ref::<StructureStorage>(),
+                            order.resource,
+                            Some(amount.try_into().unwrap()),
+                        )
+                    };
 
                     result
                 } else {

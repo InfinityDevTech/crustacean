@@ -47,8 +47,8 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         if container_id.is_none() {
             cache.hauling.create_order(
                 creep.try_raw_id().unwrap(),
-                ResourceType::Energy,
-                creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32,
+                Some(ResourceType::Energy),
+                Some(creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
                 HaulingPriority::Emergency,
                 HaulingType::Transfer,
             );

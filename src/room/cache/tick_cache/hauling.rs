@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use rand::prelude::SliceRandom;
+use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
 
 use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,8 @@ pub enum HaulingPriority {
     Spawning = 2,
     Energy = 3,
     Minerals = 4,
-    Market = 5
+    Market = 5,
+    Storage = 6
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
@@ -30,8 +31,8 @@ pub enum HaulingType {
 pub struct RoomHaulingOrder {
     pub id: u32,
     pub target: RawObjectId,
-    pub resource: ResourceType,
-    pub amount: u32,
+    pub resource: Option<ResourceType>,
+    pub amount: Option<u32>,
     pub priority: HaulingPriority,
     pub haul_type: HaulingType,
 }
@@ -58,7 +59,7 @@ impl HaulingCache {
         self.current_id_index
     }
 
-    pub fn create_order(&mut self, target: RawObjectId, resource: ResourceType, amount: u32, priority: HaulingPriority, haul_type: HaulingType) {
+    pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: HaulingPriority, haul_type: HaulingType) {
         let id = self.get_unique_id();
 
         let order = RoomHaulingOrder {
@@ -79,44 +80,60 @@ impl HaulingCache {
         orders.retain(|x| order_type.contains(&x.haul_type));
 
         if let Some(resource_type) = resource {
-            orders.retain(|rsc| rsc.resource == resource_type);
+            orders.retain(|rsc| rsc.resource == Some(resource_type));
         }
 
         orders.sort_by(|a, b| a.priority.cmp(&b.priority));
 
+        let mut seedable = StdRng::seed_from_u64(game::time().into());
+
         if let Some(order) = orders.clone().into_iter().next() {
             let id = order.id;
-            let order = orders.retain(|o| o.priority == order.priority);
-            orders.shuffle(&mut rand::thread_rng());
+            orders.retain(|o| o.priority == order.priority);
 
-            let order = orders.into_iter().next().unwrap();
+            let order_int = &mut seedable.gen_range(0..orders.len());
+            let order = orders.get(*order_int).unwrap();
 
             let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
             let task = CreepHaulTask {
                 target_id: order.target,
-                resource: order.resource,
+                resource: order.resource.unwrap_or(ResourceType::Energy),
                 amount: order.amount,
                 priority: order.priority,
                 haul_type: order.haul_type,
             };
 
-            let creep_carry_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
-            let order_amount = order.amount as i32;
 
-            if order_amount > creep_carry_capacity {
-                if order.haul_type == HaulingType::Offer || order.haul_type == HaulingType::Withdraw || order.haul_type == HaulingType::Pickup {
-                    order.amount = (order_amount - creep_carry_capacity) as u32;
-                } else {
+            if let Some(order_amount) = order.amount {
+                let creep_carry_capacity = creep.store().get_free_capacity(Some(task.resource));
+
+                if order_amount as i32 - creep_carry_capacity < 0 {
                     self.new_orders.remove(&id);
+                } else {
+                    self.new_orders.get_mut(&id).unwrap().amount = Some((order_amount as i32 - creep_carry_capacity) as u32);
                 }
-            } else {
-                self.new_orders.remove(&id);
             }
 
             creep_memory.hauling_task = Some(task);
             return creep_memory.hauling_task.clone();
         }
         None
+    }
+
+    pub fn haul_storage(&mut self, structures: &RoomStructureCache) {
+        let storage = &structures.storage;
+
+        if let Some(storage) = storage {
+            if storage.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+                self.create_order(
+                    storage.raw_id(),
+                    Some(ResourceType::Energy),
+                    Some(storage.store().get_used_capacity(Some(ResourceType::Energy))),
+                    HaulingPriority::Storage,
+                    HaulingType::Offer
+                )
+            }
+        }
     }
 
     pub fn haul_ruins(&mut self, structures: &RoomStructureCache) {
@@ -126,8 +143,8 @@ impl HaulingCache {
             if ruin.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
                 self.create_order(
                     ruin.raw_id(),
-                    ResourceType::Energy,
-                    ruin.store().get_used_capacity(Some(ResourceType::Energy)),
+                    Some(ResourceType::Energy),
+                    Some(ruin.store().get_used_capacity(Some(ResourceType::Energy))),
                     HaulingPriority::Energy,
                     HaulingType::Offer
                 );

@@ -14,8 +14,8 @@ pub fn run_towers(room: &Room, cache: &mut RoomCache) {
         {
             cache.hauling.create_order(
                 tower.raw_id(),
-                ResourceType::Energy,
-                tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32,
+                Some(ResourceType::Energy),
+                    Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
                 super::cache::tick_cache::hauling::HaulingPriority::Combat,
                 HaulingType::Transfer,
             );

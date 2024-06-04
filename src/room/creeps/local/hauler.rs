@@ -37,10 +37,6 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let new_order = if needs_energy {
             let _ = creep.say("📋", false);
 
-            if creep.store().get_free_capacity(None) == 0 {
-                memory.creeps.get_mut(&creep_name).unwrap().needs_energy = None;
-            }
-
             cache.hauling.find_new_order(
                 creep,
                 memory,
@@ -53,10 +49,6 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             )
         } else {
             let _ = creep.say("🔋", false);
-
-            if creep.store().get_used_capacity(None) == 0 {
-                memory.creeps.get_mut(&creep_name).unwrap().needs_energy = Some(true);
-            }
 
             cache
                 .hauling
@@ -71,23 +63,19 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 cache,
                 &order,
             );
-
-            let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
-
-            // Yes, I know this is primitive, but it works for now
-            // Im forcing it to fetch a new task if its full or empty
-            // TODO: Refactor this, it's ugly
-
-            if creep.store().get_free_capacity(None) == 0 {
-                creep_memory.hauling_task = None;
-            //    creep_memory.needs_energy = None;
-            }
-
-            if creep.store().get_used_capacity(None) == 0 {
-                creep_memory.hauling_task = None;
-            //    creep_memory.needs_energy = Some(true);
-            }
         }
+    }
+
+    if creep.store().get_free_capacity(None) == 0 {
+        let mem = memory.creeps.get_mut(&creep_name).unwrap();
+        mem.needs_energy = None;
+        mem.hauling_task = None;
+    }
+
+    if creep.store().get_used_capacity(None) == 0 {
+        let mem = memory.creeps.get_mut(&creep_name).unwrap();
+        mem.needs_energy = Some(true);
+        mem.hauling_task = None;
     }
 }
 
@@ -107,8 +95,6 @@ pub fn execute_order(
         return;
     }
 
-    let mut success = false;
-
     if !creep.pos().is_near_to(position.unwrap()) {
         creep.better_move_to(creep_memory, cache, position.unwrap(), 1);
         let _ = match order.haul_type {
@@ -126,9 +112,7 @@ pub fn execute_order(
 
             let resource: Option<Resource> = game::get_object_by_id_typed(&ObjectId::from(pickup_target));
             if let Some(resource) = resource {
-                let result = creep.pickup(&resource);
-
-                result
+                creep.pickup(&resource)
             } else {
                 Err(ErrorCode::NotFound)
             }
@@ -137,17 +121,27 @@ pub fn execute_order(
             let _ = creep.say("WTHD", false);
 
             if let Some(target) = target {
-                let amount = std::cmp::min(
-                    creep.store().get_free_capacity(Some(ResourceType::Energy)),
-                    order.amount as i32,
-                );
-                let result = creep.withdraw(
-                    target.unchecked_ref::<StructureStorage>(),
-                    order.resource,
-                    Some(amount.try_into().unwrap()),
-                );
+                if let Some(amount) = order.amount {
+                    let amount = std::cmp::min(
+                        creep.store().get_free_capacity(Some(order.resource)),
+                        amount as i32,
+                    );
+                    let result = creep.withdraw(
+                        target.unchecked_ref::<StructureStorage>(),
+                        order.resource,
+                        Some(amount.try_into().unwrap()),
+                    );
 
-                result
+                    result
+                } else {
+                    let result = creep.withdraw(
+                        target.unchecked_ref::<StructureStorage>(),
+                        order.resource,
+                        None,
+                    );
+
+                    result
+                }
             } else {
                 Err(ErrorCode::NotFound)
             }
@@ -156,13 +150,27 @@ pub fn execute_order(
             let _ = creep.say("TFER", false);
 
             if let Some(target) = target {
-                let result = creep.transfer(
-                    target.unchecked_ref::<StructureStorage>(),
-                    ResourceType::Energy,
-                    None,
-                );
+                if let Some(amount) = order.amount {
+                    let amount = std::cmp::min(
+                        creep.store().get_used_capacity(Some(order.resource)),
+                        amount,
+                    );
+                    let result = creep.transfer(
+                        target.unchecked_ref::<StructureStorage>(),
+                        order.resource,
+                        Some(amount),
+                    );
 
-                result
+                    result
+                } else {
+                    let result = creep.transfer(
+                        target.unchecked_ref::<StructureStorage>(),
+                        order.resource,
+                        None,
+                    );
+
+                    result
+                }
             } else {
                 Err(ErrorCode::NotFound)
             }
@@ -171,17 +179,27 @@ pub fn execute_order(
             let _ = creep.say("OFFR", false);
 
             if let Some(target) = target {
-                let amount = std::cmp::min(
-                    creep.store().get_free_capacity(Some(order.resource)),
-                    order.amount as i32,
-                );
-                let result = creep.withdraw(
-                    target.unchecked_ref::<StructureStorage>(),
-                    order.resource,
-                    Some(amount.try_into().unwrap()),
-                );
+                if let Some(amount) = order.amount {
+                    let amount = std::cmp::min(
+                        creep.store().get_free_capacity(Some(order.resource)),
+                        amount as i32,
+                    );
+                    let result = creep.withdraw(
+                        target.unchecked_ref::<StructureStorage>(),
+                        order.resource,
+                        Some(amount.try_into().unwrap()),
+                    );
 
-                result
+                    result
+                } else {
+                    let result = creep.withdraw(
+                        target.unchecked_ref::<StructureStorage>(),
+                        order.resource,
+                        None,
+                    );
+
+                    result
+                }
             } else {
                 Err(ErrorCode::NotFound)
             }
@@ -205,7 +223,7 @@ pub fn execute_order(
             },
             ErrorCode::NoBodypart => {
                 let _ = creep.say("NO-BP", false);
-                creep.suicide();
+                let _ = creep.suicide();
             },
             _ => {}
         }

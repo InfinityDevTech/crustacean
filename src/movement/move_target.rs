@@ -1,7 +1,6 @@
 use log::warn;
 use screeps::{
-    pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, OwnedStructureProperties, Position,
-    RoomName, StructureObject, find, StructureType
+    find, game::{self, map::get_room_terrain}, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Position, RoomName, RoomXY, StructureObject, StructureType
 };
 
 pub struct MoveTarget {
@@ -12,8 +11,6 @@ pub struct MoveTarget {
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position) -> String {
         let opts = SearchOptions::new(path_call)
-            .plain_cost(2)
-            .swamp_cost(5)
             .max_rooms(4)
             .max_ops(100000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));
@@ -58,10 +55,25 @@ impl MoveTarget {
 
 pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
+
     if let Some(room) = screeps::game::rooms().get(room_name) {
         let structures = room.find(find::STRUCTURES, None);
         let constructions = room.find(find::CONSTRUCTION_SITES, None);
         let creeps = room.find(find::CREEPS, None);
+        let terrain = LocalRoomTerrain::from(room.get_terrain());
+
+        for x in 0..50 {
+            for y in 0..50 {
+                let pos = unsafe { RoomXY::unchecked_new(x, y) };
+                let tile = terrain.get_xy(pos);
+
+                match tile {
+                    screeps::Terrain::Plain => matrix.set(pos, 1),
+                    screeps::Terrain::Wall => matrix.set(pos, 255),
+                    screeps::Terrain::Swamp => matrix.set(pos, 5),
+                }
+            }
+        }
 
         for csite in constructions {
             let pos = csite.pos();

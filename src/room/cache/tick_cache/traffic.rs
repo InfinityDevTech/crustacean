@@ -4,15 +4,16 @@
 
 use log::info;
 use screeps::{
-    game::{self, get_object_by_id_typed}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
+    game::{self, get_object_by_id_typed}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY, SharedCreepProperties
 };
 
 use super::RoomCache;
-use crate::traits::creep::CreepExtensions;
+use crate::{room::planning::creep, traits::creep::CreepExtensions};
 
 pub struct TrafficCache {
-    pub move_targets: HashMap<ObjectId<Creep>, RoomXY>,
-    pub move_requests: HashMap<ObjectId<Creep>, RoomXY>,
+    pub matched_coord: HashMap<ObjectId<Creep>, RoomXY>,
+    pub intended_move: HashMap<ObjectId<Creep>, RoomXY>,
+
     pub movement_map: HashMap<RoomXY, ObjectId<Creep>>,
 
     pub cached_ops: HashMap<ObjectId<Creep>, Vec<RoomXY>>,
@@ -22,8 +23,8 @@ pub struct TrafficCache {
 impl TrafficCache {
     pub fn new() -> Self {
         Self {
-            move_targets: HashMap::new(),
-            move_requests: HashMap::new(),
+            matched_coord: HashMap::new(),
+            intended_move: HashMap::new(),
             movement_map: HashMap::new(),
             cached_ops: HashMap::new(),
             move_intents: 0,
@@ -32,116 +33,106 @@ impl TrafficCache {
 }
 
 pub fn run_movement(room_cache: &mut RoomCache) {
-    let mut creeps_with_movement: Vec<(ObjectId<Creep>, RoomXY)> = Vec::new();
+    room_cache.traffic.movement_map.clear();
+    let mut creeps_with_movement_intent = Vec::new();
 
     let creep_names: Vec<String> = room_cache.creeps.creeps.keys().cloned().collect();
-    for creep_name in creep_names {
+    for creep_name in &creep_names {
         let creep = game::creeps().get(creep_name.to_string()).unwrap();
-        let Some(id) = creep.try_id() else {
-            continue;
-        };
 
-        assign_move_target(&creep, room_cache, creep.pos().xy());
+        assign_creep_to_coordinate(&creep, room_cache, creep.pos().into());
 
-        if let Some(creep_dest) = room_cache.traffic.move_requests.get(&id) {
-            creeps_with_movement.push((id, *creep_dest));
+        if room_cache.traffic.intended_move.contains_key(&creep.try_id().unwrap()) {
+            creeps_with_movement_intent.push(creep.try_id().unwrap());
         }
     }
 
     let mut visited_creeps = Vec::new();
 
-    for (id, target) in creeps_with_movement {
-        //visited_creeps.clear();
-        if room_cache.traffic.move_targets.get(&id)
-            == room_cache.traffic.move_requests.get(&id)
-        {
+    for creep_id in creeps_with_movement_intent {
+        let creep = game::get_object_by_id_typed(&creep_id).unwrap();
+        if room_cache.traffic.matched_coord.get(&creep_id) == room_cache.traffic.intended_move.get(&creep_id) {
             continue;
         }
 
-        //visited_creeps.clear();
-        room_cache.traffic.movement_map.remove(&target);
-        room_cache.traffic.move_targets.remove(&id);
+        if room_cache.traffic.matched_coord.contains_key(&creep_id) {
+            room_cache.traffic.movement_map.remove(&room_cache.traffic.matched_coord[&creep_id]);
+        }
+        room_cache.traffic.matched_coord.remove(&creep_id);
 
-        let creep = get_object_by_id_typed(&id).unwrap();
-
-        if depth_first_searh(&creep, room_cache, &mut visited_creeps, None) > 0 {
+        if depth_first_searh(&creep, room_cache, &mut visited_creeps, Some(0)) > 0 {
             continue;
         }
 
-        assign_move_target(&creep, room_cache, target);
+        assign_creep_to_coordinate(&creep, room_cache, creep.pos().xy());
     }
 
-    for creep in room_cache.creeps.creeps.values() {
-        let matched_move = room_cache
-            .traffic
-            .move_targets
-            .get(&creep.try_id().unwrap());
-        if matched_move.is_none() {
+    for creep_name in creep_names {
+        let creep = game::creeps().get(creep_name).unwrap();
+        let matched_coord = room_cache.traffic.matched_coord.get(&creep.try_id().unwrap());
+
+        if matched_coord.is_none() || *matched_coord.unwrap() == creep.pos().xy() {
             continue;
         }
 
-        if &creep.pos().xy() == matched_move.unwrap() {
-            continue;
-        }
+        let position = Position::new(RoomCoordinate::new(matched_coord.unwrap().x.u8()).unwrap(), RoomCoordinate::new(matched_coord.unwrap().y.u8()).unwrap(), creep.room().unwrap().name());
 
-        let mat = matched_move.unwrap();
+        let direction = creep.pos().get_direction_to(position).unwrap();
+        let res = creep.move_direction(direction);
 
-        let dir = creep
-            .pos()
-            .get_direction_to(Position::new(
-                RoomCoordinate::new(mat.x.u8()).unwrap(),
-                RoomCoordinate::new(mat.y.u8()).unwrap(),
-                creep.room().unwrap().name(),
-            ))
-            .unwrap();
-
-        let move_res = creep.move_direction(dir);
-        if move_res.is_ok() {
-            room_cache.traffic.move_intents += 1;
+        if res.is_err() {
+            let err = res.unwrap_err();
         } else {
-            info!("Creep move failed, {:?}", move_res.err().unwrap());
+            room_cache.traffic.move_intents += 1;
         }
     }
 }
 
 fn depth_first_searh(creep: &Creep, room_cache: &mut RoomCache, visited_creeps: &mut Vec<ObjectId<Creep>>, score: Option<i32>) -> i32 {
-    let id = creep.try_id();
+    let mut score = score.unwrap_or(0);
+    visited_creeps.push(creep.try_id().unwrap());
 
-    visited_creeps.push(id.unwrap());
+    let possible_moves = creep.get_possible_moves(room_cache);
 
-    for roomxy in creep.get_possible_moves(room_cache) {
-        let mut score = score.unwrap_or(0);
+    let mut empty_tiles = Vec::new();
+    let mut occupied_tiles = Vec::new();
 
-        if room_cache.traffic.move_requests.get(&id.unwrap()) == Some(&roomxy) {
+    for coord in possible_moves {
+        if room_cache.traffic.movement_map.contains_key(&coord) {
+            occupied_tiles.push(coord);
+        } else {
+            empty_tiles.push(coord);
+        }
+    }
+
+    let mut combined = empty_tiles.clone();
+    combined.extend(occupied_tiles.clone());
+
+    let len = combined.len();
+
+    for coord in combined {
+        if room_cache.traffic.intended_move.contains_key(&creep.try_id().unwrap()) && *room_cache.traffic.intended_move.get(&creep.try_id().unwrap()).unwrap() == coord {
             score += 1;
         }
 
-        let Some(occupying_creep) = room_cache.traffic.movement_map.get(&roomxy) else {
+        let occupying = room_cache.traffic.movement_map.get(&coord);
+
+        if occupying.is_none() {
             if score > 0 {
-                assign_move_target(creep, room_cache, roomxy);
+                assign_creep_to_coordinate(creep, room_cache, coord)
             }
             return score;
-        };
+        }
 
-        if !visited_creeps.contains(occupying_creep)
-        {
-            if room_cache
-            .traffic
-            .move_requests
-            .contains_key(occupying_creep) && room_cache
-                .traffic
-                .move_requests
-                .get(occupying_creep)
-                .unwrap()
-                == &roomxy
-            {
+        if !visited_creeps.contains(occupying.unwrap()) {
+            if room_cache.traffic.intended_move.contains_key(occupying.unwrap()) && *room_cache.traffic.intended_move.get(occupying.unwrap()).unwrap() == coord {
                 score -= 1;
             }
 
-            let result = depth_first_searh(creep, room_cache, visited_creeps, Some(score));
+            let result = depth_first_searh(&game::get_object_by_id_typed(occupying.unwrap()).unwrap(), room_cache, visited_creeps, Some(score));
 
             if result > 0 {
-                assign_move_target(creep, room_cache, roomxy);
+                assign_creep_to_coordinate(creep, room_cache, coord);
                 return result;
             }
         }
@@ -150,12 +141,9 @@ fn depth_first_searh(creep: &Creep, room_cache: &mut RoomCache, visited_creeps: 
     i32::MIN
 }
 
-fn assign_move_target(creep: &Creep, room_cache: &mut RoomCache, coord: RoomXY) {
-    let id = creep.try_id();
-    if id.is_none() {
-        return;
-    }
+fn assign_creep_to_coordinate(creep: &Creep, room_cache: &mut RoomCache, coord: RoomXY) {
+    let packed_coord = coord;
 
-    room_cache.traffic.move_targets.insert(id.unwrap(), coord);
-    room_cache.traffic.movement_map.insert(coord, id.unwrap());
+    room_cache.traffic.matched_coord.insert(creep.try_id().unwrap(), packed_coord);
+    room_cache.traffic.movement_map.insert(packed_coord, creep.try_id().unwrap());
 }

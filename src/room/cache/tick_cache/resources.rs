@@ -27,7 +27,7 @@ impl RoomResourceCache {
 
     pub fn haul_dropped_resources(&self, hauling: &mut HaulingCache) {
         for resource in &self.dropped_energy {
-            hauling.create_order(resource.id().into(), resource.resource_type(), resource.amount(), HaulingPriority::Energy, HaulingType::Pickup);
+            hauling.create_order(resource.id().into(), Some(resource.resource_type()), Some(resource.amount()), HaulingPriority::Energy, HaulingType::Pickup);
         }
     }
 

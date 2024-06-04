@@ -27,7 +27,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             }
 
         } else {
-            cache.hauling.create_order(creep.try_raw_id().unwrap(), ResourceType::Energy, creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap(), HaulingPriority::Energy, HaulingType::Transfer);
+            cache.hauling.create_order(creep.try_raw_id().unwrap(), Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), HaulingPriority::Energy, HaulingType::Transfer);
         }
     }
 

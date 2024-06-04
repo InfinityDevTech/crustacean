@@ -38,6 +38,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
             .resources
             .haul_dropped_resources(&mut room_cache.hauling);
         room_cache.hauling.haul_ruins(&room_cache.structures);
+        room_cache.hauling.haul_storage(&room_cache.structures);
         room_cache.structures.temp(&mut room_cache.hauling);
 
         // Run creeps and other structures

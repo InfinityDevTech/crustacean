@@ -156,8 +156,8 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             let _ = creep.drop(ResourceType::Energy, Some(amount));
             cache.hauling.create_order(
                 creep.try_raw_id().unwrap(),
-                ResourceType::Energy,
-                creep.store().get_used_capacity(Some(ResourceType::Energy)),
+                Some(ResourceType::Energy),
+                Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
                 HaulingPriority::Energy,
                 HaulingType::Pickup,
             );
@@ -169,8 +169,8 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     } else {
         cache.hauling.create_order(
             creep.try_raw_id().unwrap(),
-            ResourceType::Energy,
-            creep.store().get_used_capacity(Some(ResourceType::Energy)),
+            Some(ResourceType::Energy),
+            Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
             HaulingPriority::Energy,
             HaulingType::Pickup,
         );

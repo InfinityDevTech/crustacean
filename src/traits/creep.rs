@@ -7,8 +7,8 @@ use crate::{
     room::{cache::tick_cache::RoomCache, planning::creep},
 };
 use log::info;
-use rand::prelude::SliceRandom;
-use screeps::{Direction, HasPosition, MaybeHasId, Position, RoomXY};
+use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
+use screeps::{game, look::TERRAIN, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomTerrain, RoomXY, SharedCreepProperties, Terrain};
 
 use super::room::RoomExtensions;
 
@@ -146,45 +146,45 @@ impl CreepExtensions for screeps::Creep {
         let y = target_position.1 as u8;
 
         if x == 0 || x == 49 || y == 0 || y == 49 {
-            let res = self.move_direction(target_delta);
-            if res.is_ok() {
-                room_cache.traffic.move_intents += 1;
-            } else {
-                info!("Creep move failed, {:?}", res.err().unwrap());
-            }
+            let _ = self.move_direction(target_delta);
             return;
         }
 
         let target_position = unsafe { RoomXY::unchecked_new(x, y) };
 
+        if target_position == self.pos().xy() {
+            return;
+        }
+
         if let std::collections::hash_map::Entry::Vacant(e) =
-            room_cache.traffic.move_requests.entry(id)
+            room_cache.traffic.intended_move.entry(id)
         {
             e.insert(target_position);
         } else {
-            let pos = room_cache.traffic.move_requests.get_mut(&id).unwrap();
+            let pos = room_cache.traffic.intended_move.get_mut(&id).unwrap();
             *pos = target_position;
         }
     }
 
     fn get_possible_moves(&self, room_cache: &mut RoomCache) -> Vec<RoomXY> {
-        if let Some(cached) = room_cache.traffic.cached_ops.get(&self.try_id().unwrap()) {
-            return cached.to_vec();
+        if room_cache.traffic.cached_ops.contains_key(&self.try_id().unwrap()) {
+            return room_cache.traffic.cached_ops[&self.try_id().unwrap()].clone();
         }
-    
-        let mut possible_moves = vec![self.pos().xy()];
+
+        let mut possible_moves = vec![];
 
         if self.tired() {
             return possible_moves;
         }
-    
-        if let Some(possible) = room_cache.traffic.move_requests.get(&self.try_id().unwrap()) {
-            possible_moves.push(*possible);
+
+        if room_cache.traffic.intended_move.contains_key(&self.try_id().unwrap()) {
+            possible_moves.insert(0, *room_cache.traffic.intended_move.get(&self.try_id().unwrap()).unwrap());
             return possible_moves;
         }
-    
-        let mut positions = vec![];
-    
+
+        let vis = self.room().unwrap().visual();
+
+        let mut adjacent_coords = vec![];
         let directions = vec![
             Direction::Top,
             Direction::TopRight,
@@ -197,23 +197,39 @@ impl CreepExtensions for screeps::Creep {
         ];
         for dir in directions {
             let pos = dir_to_coords(dir, self.pos().x().u8(), self.pos().y().u8());
-            positions.push(pos);
+            let room_xy = unsafe { RoomXY::unchecked_new(pos.0, pos.1) };
+
+            let style = if room_xy == self.pos().xy() {
+                CircleStyle::default().fill("#00ff00").opacity(0.5)
+            } else {
+                CircleStyle::default().fill("#ff0000").opacity(0.5)
+            };
+            vis.circle(pos.0 as f32, pos.1 as f32, Some(style));
+            adjacent_coords.push(pos);
         }
-    
-        let room_terrain = &room_cache.structures.terrain;
-    
-        for pos in positions {
-            let roomxy = unsafe { RoomXY::unchecked_new(pos.0, pos.1) };
-    
-            let terrain = room_terrain.get_xy(roomxy);
-            if terrain == screeps::Terrain::Wall {
+
+        let room_terrain = room_cache.structures.terrain.clone();
+
+        let mut seedable = StdRng::seed_from_u64(game::time().into());
+        adjacent_coords.shuffle(&mut seedable);
+
+        for coord in adjacent_coords {
+            let xy = unsafe { RoomXY::unchecked_new(coord.0, coord.1) };
+            let x = xy.x.u8();
+            let y = xy.y.u8();
+
+            if room_terrain.get_xy(xy) == Terrain::Wall {
                 continue;
             }
-    
-            possible_moves.push(roomxy);
+
+            if x == 0 || x == 49 || y == 0 || y == 49 {
+                continue;
+            }
+
+            possible_moves.push(xy);
         }
-    
-        possible_moves.shuffle(&mut rand::thread_rng());
+
+        possible_moves.shuffle(&mut seedable);
         possible_moves
     }
 

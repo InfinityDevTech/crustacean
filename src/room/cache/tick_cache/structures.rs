@@ -2,12 +2,7 @@ use std::{cmp, collections::HashMap};
 
 use log::info;
 use screeps::{
-    find, game,
-    look::{self, LookResult},
-    ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer,
-    StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad,
-    StructureSpawn, StructureTower, Terrain,
+    find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, Part, ResourceType, Room, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Terrain
 };
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
@@ -45,6 +40,7 @@ pub struct RoomStructureCache {
     pub fast_filler_containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
 
     pub controller: Option<CachedController>,
+    pub storage: Option<StructureStorage>,
 
     pub terrain: LocalRoomTerrain,
     pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
@@ -71,6 +67,7 @@ impl RoomStructureCache {
             fast_filler_containers: HashMap::new(),
 
             controller: None,
+            storage: None,
 
             terrain: LocalRoomTerrain::from(room.get_terrain()),
             roads: HashMap::new(),
@@ -120,12 +117,12 @@ impl RoomStructureCache {
             if source.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
                 hauling.create_order(
                     source.raw_id(),
-                    ResourceType::Energy,
-                    source
+                    Some(ResourceType::Energy),
+                    Some(source
                         .store()
                         .get_free_capacity(Some(ResourceType::Energy))
                         .try_into()
-                        .unwrap(),
+                        .unwrap()),
                     HaulingPriority::Spawning,
                     HaulingType::Transfer,
                 );
@@ -180,21 +177,20 @@ impl RoomStructureCache {
                 {
                     hauling.create_order(
                         container.raw_id(),
-                        ResourceType::Energy,
-                        container
+                        Some(ResourceType::Energy),
+                        Some(container
                             .store()
-                            .get_used_capacity(Some(ResourceType::Energy)),
+                            .get_used_capacity(Some(ResourceType::Energy))),
                         HaulingPriority::Minerals,
                         HaulingType::Offer,
                     );
                 } else {
-                    info!("Found a source container");
                     hauling.create_order(
                         container.raw_id(),
-                        ResourceType::Energy,
-                        container
+                        Some(ResourceType::Energy),
+                        Some(container
                             .store()
-                            .get_used_capacity(Some(ResourceType::Energy)),
+                            .get_used_capacity(Some(ResourceType::Energy))),
                         HaulingPriority::Energy,
                         HaulingType::Offer,
                     );
@@ -209,24 +205,22 @@ impl RoomStructureCache {
                 {
                     hauling.create_order(
                         container.raw_id(),
-                        ResourceType::Energy,
-                        container
+                        Some(ResourceType::Energy),
+                        Some(container
                             .store()
-                            .get_free_capacity(Some(ResourceType::Energy))
-                            .try_into()
-                            .unwrap(),
+                            .get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()),
                         HaulingPriority::Spawning,
                         HaulingType::Transfer,
                     );
                 } else {
                     hauling.create_order(
                         container.raw_id(),
-                        ResourceType::Energy,
-                        container
+                        Some(ResourceType::Energy),
+                        Some(container
                             .store()
                             .get_free_capacity(Some(ResourceType::Energy))
                             .try_into()
-                            .unwrap(),
+                            .unwrap()),
                         HaulingPriority::Energy,
                         HaulingType::Transfer,
                     );
@@ -277,6 +271,9 @@ impl RoomStructureCache {
                 }
                 StructureObject::StructureContainer(container) => {
                     self.containers.insert(container.id(), container);
+                }
+                StructureObject::StructureStorage(storage) => {
+                    self.storage = Some(storage);
                 }
                 _ => {}
             }

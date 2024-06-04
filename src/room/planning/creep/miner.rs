@@ -45,8 +45,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
     if fastfiller_count == 0 && spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
         cache.hauling.create_order(
             spawn.raw_id(),
-            ResourceType::Energy,
-            300,
+            Some(ResourceType::Energy),
+                Some(spawn.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()),
             HaulingPriority::Spawning,
             HaulingType::Transfer,
         );

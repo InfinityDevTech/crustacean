@@ -55,8 +55,8 @@ impl RoomCache {
 
         self.creeps.refresh_creep_cache(memory, room);
 
-        self.traffic.move_targets = HashMap::new();
-        self.traffic.move_requests = HashMap::new();
+        self.traffic.matched_coord = HashMap::new();
+        self.traffic.intended_move = HashMap::new();
         self.traffic.movement_map = HashMap::new();
         self.traffic.cached_ops = HashMap::new();
         self.traffic.move_intents = 0;

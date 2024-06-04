@@ -182,8 +182,6 @@ impl CreepExtensions for screeps::Creep {
             return possible_moves;
         }
 
-        let vis = self.room().unwrap().visual();
-
         let mut adjacent_coords = vec![];
         let directions = vec![
             Direction::Top,
@@ -199,12 +197,6 @@ impl CreepExtensions for screeps::Creep {
             let pos = dir_to_coords(dir, self.pos().x().u8(), self.pos().y().u8());
             let room_xy = unsafe { RoomXY::unchecked_new(pos.0, pos.1) };
 
-            let style = if room_xy == self.pos().xy() {
-                CircleStyle::default().fill("#00ff00").opacity(0.5)
-            } else {
-                CircleStyle::default().fill("#ff0000").opacity(0.5)
-            };
-            vis.circle(pos.0 as f32, pos.1 as f32, Some(style));
             adjacent_coords.push(pos);
         }
 

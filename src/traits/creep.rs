@@ -50,11 +50,11 @@ impl CreepExtensions for screeps::Creep {
         }
         let step_dir = num_to_dir(serialized_vec[0]);
 
-        if self.room().is_some() && self.room().unwrap().my() {
+        //if self.room().is_some() && self.room().unwrap().my() {
             self.move_request(step_dir, cache);
-        } else {
-            self.move_direction(step_dir);
-        }
+        //} else {
+        //    self.move_direction(step_dir);
+        //}
 
         let serialized_vec = serialized_vec[1..].to_vec();
         let serialized_path = serialized_vec

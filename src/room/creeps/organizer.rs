@@ -2,7 +2,7 @@ use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, utils
+    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::global}, utils
 };
 
 use super::local;
@@ -54,6 +54,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Builder => local::builder::run_creep(&creep, memory, cache),
             Role::FastFiller => local::fast_filler::run_creep(&creep, memory, cache),
             Role::Bulldozer => local::bulldozer::run_creep(&creep, memory, cache),
+            Role::Scout => global::scout::run_creep(&creep, memory, cache),
             _ => {}
         }
     }

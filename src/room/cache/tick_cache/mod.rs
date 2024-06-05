@@ -15,6 +15,7 @@ pub mod resources;
 pub mod traffic;
 
 pub struct RoomCache {
+    pub my_room: bool,
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
     pub traffic: TrafficCache,
@@ -28,7 +29,7 @@ pub struct RoomCache {
 }
 
 impl RoomCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> RoomCache {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, my: bool) -> RoomCache {
         let mut room_cache = heap().rooms.lock().unwrap();
 
         let mut room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
@@ -36,10 +37,11 @@ impl RoomCache {
         });
 
         RoomCache {
+            my_room: my,
             structures: RoomStructureCache::new_from_room(room, memory, &mut room_heap),
             creeps: CreepCache::new_from_room(room, memory),
             traffic: TrafficCache::new(),
-            resources: RoomResourceCache::new_from_room(room, memory),
+            resources: RoomResourceCache::new_from_room(room, memory, &mut room_heap),
 
             hauling: HaulingCache::new(),
 
@@ -50,12 +52,12 @@ impl RoomCache {
 
     pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         self.structures.refresh_structure_cache(room);
-        self.structures.refresh_source_cache(room, &mut self.heap_cache);
         self.structures.refresh_spawn_cache(room);
+
+        self.resources.refresh_source_cache(room, &mut self.heap_cache);
 
         self.creeps.refresh_creep_cache(memory, room);
 
-        self.traffic.matched_coord = HashMap::new();
         self.traffic.intended_move = HashMap::new();
         self.traffic.movement_map = HashMap::new();
         self.traffic.cached_ops = HashMap::new();

@@ -1,8 +1,6 @@
 use log::info;
 use screeps::{
-    find, game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
-    Room, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,
-    StructureObject, StructureProperties, StructureType,
+    find, game, look, CircleStyle, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, Room, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension, StructureObject, StructureProperties, StructureType
 };
 
 use wasm_bindgen::JsCast;
@@ -26,6 +24,10 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if creep.spawning() || creep.tired() {
         let _ = creep.say("😴", false);
         return;
+    }
+
+    if check_current_position(creep, memory, cache) {
+        return
     }
 
     self_renew(creep, cache);
@@ -137,13 +139,7 @@ pub fn find_possible_targets(creep: &Creep, cache: &RoomCache) -> Vec<RawObjectI
     possible_targets
 }
 
-pub fn find_container(
-    creep: &Creep,
-    memory: &mut ScreepsMemory,
-    cache: &mut RoomCache,
-) -> Option<ObjectId<StructureContainer>> {
-    let possible_containers = creep.pos().find_in_range(find::STRUCTURES, 1);
-
+pub fn check_current_position(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     let current_pos = creep.pos().xy();
     let spawn_pos = cache.structures.spawns.values().next().unwrap().pos().xy();
 
@@ -159,8 +155,9 @@ pub fn find_container(
     );
 
     if current_pos != unsafe { RoomXY::unchecked_new(position_1.x(), position_1.y()) }
-        || current_pos != unsafe { RoomXY::unchecked_new(position_2.x(), position_2.y()) }
+        && current_pos != unsafe { RoomXY::unchecked_new(position_2.x(), position_2.y()) }
     {
+        let _ = creep.say("MV-FFPOS", false);
         let pos_1_creep =
             creep
                 .room()
@@ -179,6 +176,7 @@ pub fn find_container(
                 position_1.into(),
                 0,
             );
+            return true;
         } else if pos_2_creep.is_empty() {
             creep.better_move_to(
                 memory.creeps.get_mut(&creep.name()).unwrap(),
@@ -186,8 +184,21 @@ pub fn find_container(
                 position_2.into(),
                 0,
             );
+            return true;
         }
+
+        return false;
     }
+
+    false
+}
+
+pub fn find_container(
+    creep: &Creep,
+    memory: &mut ScreepsMemory,
+    cache: &mut RoomCache,
+) -> Option<ObjectId<StructureContainer>> {
+    let possible_containers = creep.pos().find_in_range(find::STRUCTURES, 1);
 
     for container in possible_containers {
         if let StructureObject::StructureContainer(container) = container {

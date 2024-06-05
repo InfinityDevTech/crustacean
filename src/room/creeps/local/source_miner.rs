@@ -27,10 +27,10 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
     let pointer_index = task_id.unwrap() as usize;
-    cache.structures.sources[pointer_index]
+    cache.resources.sources[pointer_index]
         .creeps
         .push(creep.try_id().unwrap());
-    let scouted_source = &cache.structures.sources[pointer_index];
+    let scouted_source = &cache.resources.sources[pointer_index];
     let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
     if creep.spawning() || creep.tired() {
@@ -73,22 +73,9 @@ fn needs_haul_manually(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Ro
         .len();
 
     if count == 0 {
-        let _ = creep.say("🚚 🫙", false);
+        let _ = creep.drop(ResourceType::Energy, None);
 
-        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-
-        if let Some(haul_order) = &creep_memory.hauling_task.clone() {
-            hauler::execute_order(creep, creep_memory, cache, haul_order);
-        } else {
-            cache.hauling.find_new_order(
-                creep,
-                memory,
-                Some(ResourceType::Energy),
-                vec![HaulingType::Transfer],
-            );
-        }
-
-        return true;
+        return false;
     }
     false
 }
@@ -144,7 +131,7 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     let _ = creep.say("📦", false);
 
     if let Some(container) =
-        cache.structures.sources[creep_memory.task_id.unwrap() as usize].get_container()
+        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container()
     {
         if container
             .store()
@@ -184,7 +171,7 @@ fn build_around_source(
     creep_memory: &mut CreepMemory,
     cache: &mut RoomCache,
 ) -> bool {
-    let csites = &cache.structures.sources[creep_memory.task_id.unwrap() as usize].csites;
+    let csites = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].csites;
     if csites.is_empty() {
         return false;
     }
@@ -204,7 +191,7 @@ fn build_around_source(
 
 fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
     let container =
-        cache.structures.sources[creep_memory.task_id.unwrap() as usize].get_container();
+        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container();
 
     if let Some(container) = container {
         if container.hits() < container.hits_max() {

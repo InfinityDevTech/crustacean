@@ -29,6 +29,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     link_id: None,
                     fastfiller_container: None,
                     hauling_task: None,
+                    scout_target: None,
                     owning_room: room.to_string(),
                     path: None,
                 };
@@ -40,6 +41,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
+                    scout_target: None,
                     fastfiller_container: None,
                     hauling_task: None,
                     owning_room: room.to_string(),
@@ -53,6 +55,21 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
+                    scout_target: None,
+                    fastfiller_container: None,
+                    hauling_task: None,
+                    owning_room: room.to_string(),
+                    path: None,
+                };
+
+                memory.create_creep(room, &creep.name(), cmemory);
+            }
+            Role::Scout => {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    link_id: None,
+                    scout_target: None,
                     fastfiller_container: None,
                     hauling_task: None,
                     owning_room: room.to_string(),

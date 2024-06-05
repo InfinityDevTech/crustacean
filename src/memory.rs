@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use log::error;
-use screeps::{ObjectId, RawObjectId, ResourceType, RoomName, StructureContainer, StructureLink};
+use screeps::{Mineral, ObjectId, RawObjectId, ResourceType, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -61,6 +61,10 @@ pub struct CreepMemory{
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "6")]
     pub task_id: Option<u128>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "6")]
+    pub scout_target: Option<RoomXY>,
     // The hauling task if a creep is a hauler.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "7")]
@@ -106,6 +110,24 @@ structstruck::strike! {
         pub last_attack: u32,
     }
 }
+
+// Scouted Room Data
+structstruck::strike! {
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
+    pub struct ScoutedRoom {
+        pub name: RoomName,
+        pub rcl: u8,
+        pub owner: Option<String>,
+        pub reserved: Option<String>,
+
+        pub defense_capability: u8,
+
+        pub sources: u8,
+        pub mineral: Option<ObjectId<Mineral>>,
+        pub last_scouted: u32,
+    }
+}
+
 // Top level memory.
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
@@ -115,6 +137,7 @@ structstruck::strike! {
         pub creeps: HashMap<String, CreepMemory>,
 
         pub enemy_players: HashMap<String, EnemyPlayer>,
+        pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
     }
 }
 
@@ -130,6 +153,7 @@ impl ScreepsMemory {
                 creeps: HashMap::new(),
 
                 enemy_players: HashMap::new(),
+                scouted_rooms: HashMap::new(),
             };
 
             memory.write_memory();
@@ -149,6 +173,7 @@ impl ScreepsMemory {
                         creeps: HashMap::new(),
 
                         enemy_players: HashMap::new(),
+                        scouted_rooms: HashMap::new(),
                     }
                 }
             }
@@ -172,6 +197,13 @@ impl ScreepsMemory {
     pub fn create_room(&mut self, name: &RoomName, object: RoomMemory) {
         self.rooms.insert(
             *name,
+            object
+        );
+    }
+
+    pub fn create_scouted_room(&mut self, name: RoomName, object: ScoutedRoom) {
+        self.scouted_rooms.insert(
+            name,
             object
         );
     }

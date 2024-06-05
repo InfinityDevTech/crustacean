@@ -78,8 +78,14 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .get(&Role::Bulldozer)
             .unwrap_or(&vec![])
             .len();
+        let scout_count = cache
+            .creeps
+            .creeps_of_role
+            .get(&Role::Scout)
+            .unwrap_or(&vec![])
+            .len();
 
-        if hauler_count < 10 && fastfiller_count >= 1 {
+        if hauler_count < 10 && (fastfiller_count >= 1 || hauler_count == 0) {
             let mut body = Vec::new();
             let cost = 100;
 
@@ -109,6 +115,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     task_id: None,
                     link_id: None,
                     hauling_task: None,
+                    scout_target: None,
                     fastfiller_container: None,
                     owning_room: room.name().to_string(),
                     path: None,
@@ -132,6 +139,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     link_id: None,
                     hauling_task: None,
                     fastfiller_container: None,
+                    scout_target: None,
                     owning_room: room.name().to_string(),
                     path: None,
                 };
@@ -165,6 +173,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     task_id: None,
                     fastfiller_container: None,
                     link_id: None,
+                    scout_target: None,
                     hauling_task: None,
                     owning_room: room.name().to_string(),
                     path: None,
@@ -200,6 +209,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     fastfiller_container: None,
                     link_id: None,
                     hauling_task: None,
+                    scout_target: None,
                     owning_room: room.name().to_string(),
                     path: None,
                 };
@@ -208,10 +218,31 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 return true;
             }
-        } /*else if bulldozer_count <
-        //1 && game::time() % 1500 == 0
-        0
-        {
+        } else if scout_count < 2 {
+            let body = vec![Part::Move];
+            let role_name = role_to_name(Role::Scout);
+
+            let name = format!("{}-{}-{}", role_name, game::time(), room.name());
+            let spawn_result = spawn.spawn_creep(&body, &name);
+            if spawn_result.is_ok() {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    fastfiller_container: None,
+                    link_id: None,
+                    hauling_task: None,
+                    scout_target: None,
+                    owning_room: room.name().to_string(),
+                    path: None,
+                };
+
+                memory.create_creep(&room.name_str(), &name, cmemory);
+
+                return true;
+            }
+
+        } else if bulldozer_count < 5 && game::flags().get("bulldozeRoom".to_string()).is_some() {
+
             let mut body = Vec::new();
             let cost = 130;
             let max = room.energy_capacity_available();
@@ -224,6 +255,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 body.push(Part::Move);
                 current += 1;
             }
+
             let role_name = role_to_name(Role::Bulldozer);
             let name = format!("{}-{}-{}", role_name, game::time(), room.name());
 
@@ -234,6 +266,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     task_id: None,
                     fastfiller_container: None,
                     link_id: None,
+                    scout_target: None,
                     hauling_task: None,
                     owning_room: room.name().to_string(),
                     path: None,
@@ -244,7 +277,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                 return true;
             }
         }
-        */
     } else {
         parts.push(Part::Move);
         parts.push(Part::Carry);
@@ -253,7 +285,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         let energy_capacity = room.energy_available() - cost;
         let max_work_parts_makeable = (energy_capacity as f32 / 100.0).floor() as u32;
-        let max_work_parts_needed = cache.structures.sources[needed.unwrap() as usize].parts_needed();
+        let max_work_parts_needed = cache.resources.sources[needed.unwrap() as usize].parts_needed();
 
         for _ in 0..cmp::min(max_work_parts_makeable, (max_work_parts_needed + 2).into()) {
             if parts.len() % 4 == 0 {
@@ -278,6 +310,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     fastfiller_container: None,
                     hauling_task: None,
                     link_id: None,
+                    scout_target: None,
                     owning_room: room.name().to_string(),
                     path: None,
                 };

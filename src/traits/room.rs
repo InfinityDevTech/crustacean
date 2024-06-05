@@ -41,7 +41,7 @@ impl RoomExtensions for screeps::Room {
     }
 
     fn get_target_for_miner(&self, room: &Room, cache: &mut RoomCache) -> Option<u8> {
-        let sources = &cache.structures.sources;
+        let sources = &cache.resources.sources;
 
         for (i, source) in sources.iter().enumerate() {
             if source.calculate_work_parts() < source.parts_needed() && source.creeps.len() < source.calculate_mining_spots(room).into() {

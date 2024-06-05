@@ -19,12 +19,14 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     let creeps = creeps.unwrap().creeps.clone();
 
     let starting_cpu = game::cpu::get_used();
-
     info!("  [CREEPS] Running {} creeps", creeps.len());
-
     let creep_count = creeps.len();
 
+    let mut highest_user: String = "".to_string();
+    let mut highest_usage: f64 = 0.0;
+
     for creep_name in creeps {
+        let start_time = game::cpu::get_used();
         let creep = game::creeps().get(creep_name.to_string());
 
         if creep.is_none() {
@@ -57,8 +59,17 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
             _ => {}
         }
+
+        let end_time = game::cpu::get_used();
+        let cpu_used = end_time - start_time;
+
+        if cpu_used > highest_usage {
+            highest_usage = cpu_used;
+            highest_user = creep.name();
+        }
     }
 
     let end_cpu = game::cpu::get_used();
     info!("  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep", end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64);
+    info!("  [CREEPS] Highest CPU usage: {:.4} by {}", highest_usage, highest_user);
 }

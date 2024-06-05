@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{
     game, Creep, ErrorCode, HasHits, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties,
     Source,
@@ -12,25 +13,18 @@ use crate::{
     traits::creep::CreepExtensions, utils::scale_haul_priority,
 };
 
-use super::hauler;
-
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let CreepMemory {
-        task_id,
-        needs_energy,
-        ..
-    } = memory.creeps.get(&creep.name()).unwrap();
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if task_id.is_none() {
+    if creep_memory.task_id.is_none() {
         let _ = creep.say("kurt kob", true);
         let _ = creep.suicide();
     }
 
-    let pointer_index = task_id.unwrap() as usize;
-    cache.resources.sources[pointer_index]
-        .creeps
-        .push(creep.try_id().unwrap());
-    let scouted_source = &cache.resources.sources[pointer_index];
+    let pointer_index = creep_memory.task_id.unwrap() as usize;
+    let scouted_source = &mut cache.resources.sources[pointer_index];
+    scouted_source.creeps.push(creep.try_id().unwrap());
+
     let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
     if creep.spawning() || creep.tired() {
@@ -38,16 +32,13 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         return;
     }
 
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy))
         >= creep.store().get_capacity(Some(ResourceType::Energy))
     {
         creep_memory.needs_energy = None;
-        //if !link_deposit(creep, creep_memory, cache) {
-        //    drop_deposit(creep, creep_memory, cache);
-        //}
     }
+
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
@@ -121,17 +112,13 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    //if build_around_source(creep, creep_memory, cache) {
-    //    return;
-    //}
-
     if repair_container(creep, creep_memory, cache) {
         return;
     }
     let _ = creep.say("📦", false);
 
     if let Some(container) =
-        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container()
+        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&cache.structures)
     {
         if container
             .store()
@@ -143,7 +130,7 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             let _ = creep.drop(ResourceType::Energy, Some(amount));
 
             let priority = scale_haul_priority(
-                container.store().get_capacity(Some(ResourceType::Energy)) as u32,
+                container.store().get_capacity(Some(ResourceType::Energy)),
                 amount,
                 HaulingPriority::Energy,
                 false
@@ -166,32 +153,9 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 }
 
-fn build_around_source(
-    creep: &Creep,
-    creep_memory: &mut CreepMemory,
-    cache: &mut RoomCache,
-) -> bool {
-    let csites = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].csites;
-    if csites.is_empty() {
-        return false;
-    }
-
-    let csite = csites.first().unwrap();
-
-    if creep.pos().is_near_to(csite.pos()) {
-        let _ = creep.say("🔨", false);
-        let _ = creep.build(csite);
-        true
-    } else {
-        let _ = creep.say("🚚", false);
-        creep.better_move_to(creep_memory, cache, csite.pos(), 1);
-        true
-    }
-}
-
 fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
     let container =
-        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container();
+        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&cache.structures);
 
     if let Some(container) = container {
         if container.hits() < container.hits_max() {

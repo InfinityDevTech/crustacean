@@ -10,7 +10,7 @@ use crate::{
     room::{
         cache::tick_cache::{resources, traffic, RoomCache},
         creeps::{local::hauler, organizer, recovery::recover_creeps},
-        planning::room::structure_visuals::RoomVisualExt,
+        planning::room::{plan_room, structure_visuals::RoomVisualExt},
         tower,
         visuals::run_full_visuals,
     },
@@ -20,14 +20,19 @@ use crate::{
 use super::{cache, planning::{creep::miner::formulate_miner, room::construction::{get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts}}};
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
-    let starting_cpu = game::cpu::get_used();
-    info!("[GOVERNMENT] Starting government for room: {}", room.name());
-
     // Caches various things, like resources
     // Caches structures and other creep things
     let mut room_cache = RoomCache::new_from_room(&room, memory, room.my());
 
     if room.my() {
+        info!("[GOVERNMENT] Starting government for room: {}", room.name());
+
+        if !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory) {
+            return;
+
+        }
+
+
         resources::haul_containers(&mut room_cache);
 
         // Check for dropped resources, making requests for each
@@ -62,10 +67,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         }
 
         run_crap_planner_code(&room, memory, &room_cache);
-
-        // Must be done LAST, traffic managemnet
-        // Provided by Harabi
-        // https://github.com/sy-harabi/Screeps-Traffic-Manager
+        run_full_visuals(&room, memory, &mut room_cache);
     } else {
         organizer::run_creeps(&room, memory, &mut room_cache);
     }
@@ -77,16 +79,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         game::cpu::get_used() - start,
         room_cache.traffic.move_intents
     );
-
-    run_full_visuals(&room, memory, &mut room_cache);
     room_cache.write_cache_to_heap(&room);
-
-    let end_cpu = game::cpu::get_used();
-    info!(
-        "  [GOVERNMENT] Finished government for room: {} in {:.4} cpu",
-        room.name(),
-        end_cpu - starting_cpu
-    );
 }
 
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &RoomCache) {

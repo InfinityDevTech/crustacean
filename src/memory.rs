@@ -63,11 +63,11 @@ pub struct CreepMemory{
     pub task_id: Option<u128>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "6")]
-    pub scout_target: Option<RoomXY>,
+    #[serde(rename = "7")]
+    pub scout_target: Option<RoomName>,
     // The hauling task if a creep is a hauler.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "7")]
+    #[serde(rename = "8")]
     pub hauling_task: Option<pub struct CreepHaulTask {
         #[serde(rename = "0")]
         pub target_id: RawObjectId,
@@ -117,12 +117,15 @@ structstruck::strike! {
     pub struct ScoutedRoom {
         pub name: RoomName,
         pub rcl: u8,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub owner: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub reserved: Option<String>,
 
         pub defense_capability: u8,
 
         pub sources: u8,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub mineral: Option<ObjectId<Mineral>>,
         pub last_scouted: u32,
     }
@@ -166,6 +169,7 @@ impl ScreepsMemory {
                 Err(e) => {
                     error!("Error parsing memory: {}", e);
                     error!("This is a critical error, memory MUST be reset to default state.");
+                    error!("Memory: {}", memory_string);
 
                     ScreepsMemory {
                         mem_version: MEMORY_VERSION,

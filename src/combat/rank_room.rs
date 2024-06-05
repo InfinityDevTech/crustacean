@@ -6,6 +6,10 @@ use crate::{
 };
 
 pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    if memory.rooms.contains_key(&room.name()) {
+        return;
+    }
+
     if let Some(controller) = room.controller() {
         let room_name = room.name();
         let room_rcl = controller.level();

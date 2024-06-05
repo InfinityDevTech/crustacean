@@ -4,6 +4,7 @@ use log::info;
 use screeps::{
     game::{self, get_object_by_id_typed}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY, SharedCreepProperties
 };
+use web_sys::console::info;
 
 use super::RoomCache;
 use crate::{room::planning::creep, traits::creep::CreepExtensions};
@@ -34,7 +35,7 @@ pub fn run_movement(room_cache: &mut RoomCache) {
     room_cache.traffic.movement_map.clear();
     let mut creeps_with_movement_intent = Vec::new();
 
-    let creep_names: Vec<String> = room_cache.creeps.creeps.keys().cloned().collect();
+    let creep_names: Vec<String> = room_cache.creeps.creeps_in_room.keys().cloned().collect();
     for creep_name in &creep_names {
         let creep = game::creeps().get(creep_name.to_string()).unwrap();
 
@@ -46,6 +47,8 @@ pub fn run_movement(room_cache: &mut RoomCache) {
     }
 
     let mut visited_creeps = Vec::new();
+
+    info!("Running movement for creeps: {:?}", creeps_with_movement_intent);
 
     for creep_id in creeps_with_movement_intent {
         let creep = game::get_object_by_id_typed(&creep_id).unwrap();

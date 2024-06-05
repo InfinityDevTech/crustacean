@@ -91,21 +91,6 @@ pub fn game_loop() {
 
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
-        let room_memory = memory.rooms.get(&game_room.name());
-
-        if room_memory.is_none() && game_room.my() {
-            plan_room(&game_room, &mut memory);
-        }
-
-        // This stops an edge case:
-        // If the CPU bucket is below 100, then the planner doesnt run, and room isnt added to memory
-        // But the room is still being executed on, and the room assume it exists in memory.
-        // (You can see the problem in the above statement)
-        let room_memory = memory.rooms.get(&game_room.name());
-        if room_memory.is_none() {
-            continue;
-        }
-
         democracy::start_government(game_room, &mut memory);
 
     }

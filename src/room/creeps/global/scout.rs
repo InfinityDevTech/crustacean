@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use screeps::{find, game, Creep, HasPosition, Position, SharedCreepProperties};
+use screeps::{find, game, Creep, HasPosition, Position, RoomPosition, SharedCreepProperties};
 
 use crate::combat::rank_room;
 use crate::{
@@ -24,33 +26,36 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     if let Some(scout_target) = creep_memory.scout_target {
-        let scout_target =
-            Position::new(scout_target.x, scout_target.y, creep.room().unwrap().name());
+        let scout_target = RoomPosition::new(25, 25, scout_target);
 
-        if creep.pos().get_range_to(scout_target) == 0 {
+        if creep.room().unwrap().name() == scout_target.room_name() {
             creep_memory.scout_target = None;
         } else {
             creep.better_move_to(
                 memory.creeps.get_mut(&creep.name()).unwrap(),
                 cache,
-                scout_target,
-                1,
+                scout_target.pos(),
+                24,
             );
         }
     } else {
-        let mut exits = creep.room().unwrap().find(find::EXIT, None);
+        let exits = game::map::describe_exits(creep.room().unwrap().name());
+        let mut exits = exits.values().collect::<Vec<_>>();
 
         let _ = creep.say("🚪", false);
         let mut seedable = StdRng::seed_from_u64(game::time().into());
         exits.shuffle(&mut seedable);
 
         let exit = exits.first().unwrap();
+
+        let pos = RoomPosition::new(25, 25, *exit);
+
         creep.better_move_to(
             memory.creeps.get_mut(&creep.name()).unwrap(),
             cache,
-            exit.pos(),
-            1,
+            pos.pos(),
+            24,
         );
-        memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(exit.pos().xy());
+        memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(*exit);
     }
 }

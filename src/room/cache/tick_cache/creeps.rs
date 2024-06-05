@@ -2,11 +2,16 @@ use std::collections::HashMap;
 
 use screeps::{find, game, Creep, Room, SharedCreepProperties};
 
-use crate::{config::ALLIES, memory::{Role, ScreepsMemory}, utils};
+use crate::{
+    config::ALLIES,
+    memory::{Role, ScreepsMemory},
+    utils::{self, name_to_role},
+};
 
 #[derive(Debug, Clone)]
 pub struct CreepCache {
-    pub creeps: HashMap<String, Creep>,
+    pub creeps_in_room: HashMap<String, Creep>,
+    pub owned_creeps: HashMap<String, Creep>,
     pub creeps_of_role: HashMap<Role, Vec<String>>,
 
     pub enemy_creeps: Vec<Creep>,
@@ -16,7 +21,8 @@ pub struct CreepCache {
 impl CreepCache {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> CreepCache {
         let mut cache = CreepCache {
-            creeps: HashMap::new(),
+            creeps_in_room: HashMap::new(),
+            owned_creeps: HashMap::new(),
             creeps_of_role: HashMap::new(),
 
             enemy_creeps: Vec::new(),
@@ -32,20 +38,38 @@ impl CreepCache {
 
         for creep in creeps {
             if creep.my() {
-                let role = utils::name_to_role(&creep.name());
-                if role.is_none() { continue; }
-
-                if let Some(role_vec) = self.creeps_of_role.get_mut(&role.unwrap()) {
-                    role_vec.push(creep.name());
-                } else {
-                    self.creeps_of_role.insert(role.unwrap(), vec![creep.name()]);
-                }
-
-                self.creeps.insert(creep.name(), creep);
+                self.creeps_in_room.insert(creep.name(), creep);
             } else if ALLIES.contains(&creep.owner().username().as_str()) {
                 self.allied_creeps.push(creep);
             } else {
                 self.enemy_creeps.push(creep);
+            }
+        }
+
+        if let Some(room_memory) = memory.rooms.get(&room.name()) {
+            for creep_name in &room_memory.creeps {
+                let creep = game::creeps().get(creep_name.to_string());
+                if let Some(creep) = creep {
+                    let role = name_to_role(creep_name);
+                    if role.is_none() {
+                        log::error!("Creep {} has no role", creep_name);
+                        let _ = creep.suicide();
+                        continue;
+                    }
+
+                    self.owned_creeps.insert(creep_name.to_string(), creep);
+
+                    if let std::collections::hash_map::Entry::Vacant(e) =
+                        self.creeps_of_role.entry(role.unwrap())
+                    {
+                        e.insert(vec![creep_name.to_string()]);
+                    } else {
+                        self.creeps_of_role
+                            .get_mut(&role.unwrap())
+                            .unwrap()
+                            .push(creep_name.to_string());
+                    }
+                }
             }
         }
     }

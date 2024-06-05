@@ -1,7 +1,7 @@
 use rand::{rngs::StdRng, seq::IteratorRandom, Rng, SeedableRng};
 use screeps::{game, Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
 
-use crate::{config, memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::creep::CreepExtensions, utils::scale_haul_priority};
+use crate::{config, memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
@@ -49,28 +49,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     let controller = cache.structures.controller.as_ref().unwrap();
 
-    let mut seedable = StdRng::seed_from_u64(game::time().into());
-
-    let signs = config::ROOM_SIGNS;
-    let random = &mut seedable.gen_range(0..signs.len());
-    let random = signs.get(*random).unwrap();
-
-    if controller.controller.sign().is_none() {
+    if !creep.room().unwrap().is_my_sign() {
         if creep.pos().is_near_to(controller.controller.pos()) {
-            let _ = creep.sign_controller(&controller.controller, random);
+            let _ = creep.sign_controller(&controller.controller, &get_room_sign());
         } else {
             creep.better_move_to(memory.creeps.get_mut(&creep.name()).unwrap(), cache, controller.controller.pos(), 1);
         }
-        return true;
-    }
-
-    if !config::ROOM_SIGNS.contains(&controller.controller.sign().unwrap().text().as_str()) {
-        if creep.pos().is_near_to(controller.controller.pos()) {
-            let _ = creep.sign_controller(&controller.controller, random);
-        } else {
-            creep.better_move_to(memory.creeps.get_mut(&creep.name()).unwrap(), cache, controller.controller.pos(), 1);
-        }
-
         return true;
     }
 

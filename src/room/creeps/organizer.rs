@@ -38,7 +38,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         let creep = creep.unwrap();
         let role = utils::name_to_role(&creep.name());
 
-        if creep.spawning() || role.is_none() { return; }
+        if creep.spawning() || role.is_none() { continue; }
 
         let heap_creep = cache.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));
 

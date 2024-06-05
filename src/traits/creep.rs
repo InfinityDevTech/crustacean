@@ -1,14 +1,18 @@
 use crate::{
-    memory::CreepMemory,
+    memory::{CreepMemory, Role},
     movement::{
         move_target::MoveTarget,
         utils::{dir_to_coords, num_to_dir},
     },
     room::{cache::tick_cache::RoomCache, planning::creep},
+    utils::{name_to_role, role_to_name},
 };
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
-use screeps::{game, look::TERRAIN, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomTerrain, RoomXY, SharedCreepProperties, Terrain};
+use screeps::{
+    game, look::TERRAIN, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomTerrain,
+    RoomXY, SharedCreepProperties, Terrain,
+};
 
 use super::room::RoomExtensions;
 
@@ -34,7 +38,7 @@ pub trait CreepExtensions {
 
 impl CreepExtensions for screeps::Creep {
     // Movement
-    fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut RoomCache) {
+    fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut RoomCache) {
         let serialized_path = path;
         let serialized_vec = serialized_path
             .split("")
@@ -51,7 +55,7 @@ impl CreepExtensions for screeps::Creep {
         let step_dir = num_to_dir(serialized_vec[0]);
 
         //if self.room().is_some() && self.room().unwrap().my() {
-            self.move_request(step_dir, cache);
+        self.move_request(step_dir, cache);
         //} else {
         //    self.move_direction(step_dir);
         //}
@@ -88,6 +92,22 @@ impl CreepExtensions for screeps::Creep {
     ) {
         if self.tired() {
             return;
+        }
+
+        let creep_role = name_to_role(&self.name());
+        if creep_role.unwrap() == Role::Scout {
+
+            let target_delta = self.pos().get_direction_to(target).unwrap();
+            let target_position =
+                dir_to_coords(target_delta, self.pos().x().u8(), self.pos().y().u8());
+
+            let x = target_position.0 as u8;
+            let y = target_position.1 as u8;
+
+            if x == 0 || x == 49 || y == 0 || y == 49 {
+                let _ = self.move_direction(target_delta);
+                return;
+            }
         }
 
         match &creep_memory.path {
@@ -135,26 +155,26 @@ impl CreepExtensions for screeps::Creep {
         let y = current_position.y().u8();
 
         let to = dir_to_coords(target_delta, self.pos().x().u8(), self.pos().y().u8());
-        self.room().unwrap().visual().line((self.pos().x().u8() as f32, self.pos().y().u8() as f32), (to.0 as f32, to.1 as f32), None);
-        self.room().unwrap().visual().circle(to.0 as f32, to.1 as f32, None);
+        self.room().unwrap().visual().line(
+            (self.pos().x().u8() as f32, self.pos().y().u8() as f32),
+            (to.0 as f32, to.1 as f32),
+            None,
+        );
+        self.room()
+            .unwrap()
+            .visual()
+            .circle(to.0 as f32, to.1 as f32, None);
 
         let Some(id) = self.try_id() else { return };
 
         let target_position = dir_to_coords(target_delta, x, y);
-
-        let x = target_position.0 as u8;
-        let y = target_position.1 as u8;
-
-        if x == 0 || x == 49 || y == 0 || y == 49 {
-            let _ = self.move_direction(target_delta);
-            return;
-        }
-
-        let target_position = unsafe { RoomXY::unchecked_new(x, y) };
+        let target_position = unsafe { RoomXY::unchecked_new(target_position.0, target_position.1) };
 
         if target_position == self.pos().xy() {
             return;
         }
+
+        info!("Moving creep {} to {:?}", self.name(), target_position);
 
         if let std::collections::hash_map::Entry::Vacant(e) =
             room_cache.traffic.intended_move.entry(id)
@@ -167,7 +187,11 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn get_possible_moves(&self, room_cache: &mut RoomCache) -> Vec<RoomXY> {
-        if room_cache.traffic.cached_ops.contains_key(&self.try_id().unwrap()) {
+        if room_cache
+            .traffic
+            .cached_ops
+            .contains_key(&self.try_id().unwrap())
+        {
             return room_cache.traffic.cached_ops[&self.try_id().unwrap()].clone();
         }
 
@@ -177,8 +201,19 @@ impl CreepExtensions for screeps::Creep {
             return possible_moves;
         }
 
-        if room_cache.traffic.intended_move.contains_key(&self.try_id().unwrap()) {
-            possible_moves.insert(0, *room_cache.traffic.intended_move.get(&self.try_id().unwrap()).unwrap());
+        if room_cache
+            .traffic
+            .intended_move
+            .contains_key(&self.try_id().unwrap())
+        {
+            possible_moves.insert(
+                0,
+                *room_cache
+                    .traffic
+                    .intended_move
+                    .get(&self.try_id().unwrap())
+                    .unwrap(),
+            );
             return possible_moves;
         }
 
@@ -224,5 +259,4 @@ impl CreepExtensions for screeps::Creep {
         possible_moves.shuffle(&mut seedable);
         possible_moves
     }
-
 }

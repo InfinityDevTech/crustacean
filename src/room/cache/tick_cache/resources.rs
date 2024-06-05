@@ -4,7 +4,7 @@ use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, Has
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
 
-use super::{hauling::{HaulingCache, HaulingPriority, HaulingType}, RoomCache};
+use super::{hauling::{HaulingCache, HaulingPriority, HaulingType}, structures::RoomStructureCache, RoomCache};
 
 #[derive(Debug, Clone)]
 pub struct CachedSource {
@@ -109,7 +109,7 @@ impl RoomResourceCache {
 }
 
 impl CachedSource {
-    pub fn get_container(&mut self) -> Option<StructureContainer> {
+    pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
         if let Some(container_id) = self.container {
             return Some(game::get_object_by_id_typed(&container_id).unwrap());
         }
@@ -117,16 +117,19 @@ impl CachedSource {
         let source = game::get_object_by_id_typed(&self.id).unwrap();
         let pos = source.pos();
 
-        let mut find = pos.find_in_range(find::STRUCTURES, 1);
-        find.retain(|c| matches!(c, StructureObject::StructureContainer(_)));
-
-        if !find.is_empty() {
-            let container = find[0].clone();
-            if let StructureObject::StructureContainer(container) = container {
+        let mut found_container = None;
+        for container in structures.containers.values() {
+            if container.pos().is_near_to(pos) {
                 self.container = Some(container.id());
-                return Some(container);
+                found_container = Some(container);
+
+                break;
             }
-            return None;
+        }
+
+        if found_container.is_some() {
+            self.container = Some(found_container.unwrap().id());
+            return Some(found_container.unwrap().clone());
         }
 
         None
@@ -205,7 +208,7 @@ pub fn haul_containers(cache: &mut RoomCache) {
                 break;
             }
 
-            if let Some(source_container) = cache.resources.sources[i].get_container() {
+            if let Some(source_container) = cache.resources.sources[i].get_container(&cache.structures) {
                 if container.id() == source_container.id() {
                     is_source_container = true;
                 }

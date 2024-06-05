@@ -1,8 +1,16 @@
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
+use screeps::{CostMatrix, OwnedStructureProperties, Room, Sign, Terrain};
 
-use crate::room::cache::tick_cache::RoomCache;
+use crate::{config, room::cache::tick_cache::RoomCache};
+
+pub enum RoomType {
+    Normal,
+    Highway,
+    Intersection,
+    SourceKeeper,
+    Unknown,
+}
 
 pub trait RoomExtensions {
     fn name_str(&self) -> String;
@@ -11,6 +19,9 @@ pub trait RoomExtensions {
 
     fn get_target_for_miner(&self, room_memory: &Room, cache: &mut RoomCache) -> Option<u8>;
 
+    fn is_my_sign(&self) -> bool;
+
+    fn get_room_type(&self) -> RoomType;
     fn is_highway(&self) -> bool;
     fn is_intersection(&self) -> bool;
     fn is_source_keeper(&self) -> bool;
@@ -52,6 +63,34 @@ impl RoomExtensions for screeps::Room {
         None
     }
 
+    fn is_my_sign(&self) -> bool {
+        if self.controller().is_none() {
+            return true;
+        }
+
+        let sign = self.controller().unwrap().sign();
+        if sign.is_none() {
+            return true;
+        }
+
+        let sign_text = self.controller().unwrap().sign().unwrap().text();
+        let tag_without_alliance_marker = &sign_text.trim_start_matches(config::ALLIANCE_TAG);
+
+        config::ROOM_SIGNS.contains(tag_without_alliance_marker)
+    }
+
+    fn get_room_type(&self) -> RoomType {
+        if self.is_highway() {
+            return RoomType::Highway;
+        }
+        if self.is_intersection() {
+            return RoomType::Intersection;
+        }
+        if self.is_source_keeper() {
+            return RoomType::SourceKeeper;
+        }
+        RoomType::Normal
+    }
     fn is_highway(&self) -> bool {
         let split_name = self.split_name();
         let east_west_distance = split_name.1;

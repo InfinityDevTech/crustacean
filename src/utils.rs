@@ -1,4 +1,20 @@
-use crate::{memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use screeps::game;
+
+use crate::{config, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+
+pub fn get_room_sign() -> String {
+    let alliance_tag = config::ALLIANCE_TAG;
+
+    let mut seedable = StdRng::seed_from_u64(game::time().into());
+    let sign = config::ROOM_SIGNS[seedable.gen_range(0..config::ROOM_SIGNS.len())];
+
+    if !alliance_tag.is_empty() {
+        return format!("{} {}", alliance_tag, sign);
+    }
+
+    sign.to_string()
+}
 
 /// Scale the hauling priority based on the amount of resources in the target.
 /// Capacity: The total capacity of the target

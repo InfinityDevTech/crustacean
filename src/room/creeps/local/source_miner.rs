@@ -35,29 +35,19 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
 
-    if creep.store().get_used_capacity(Some(ResourceType::Energy))
-        >= creep.store().get_capacity(Some(ResourceType::Energy))
-    {
-        creep_memory.needs_energy = None;
-    }
-
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
-        if !link_deposit(creep, memory.creeps.get_mut(&creep.name()).unwrap(), cache) {
-            deposit_energy(creep, memory, cache);
+        if !link_deposit(creep, creep_memory, cache) {
+            deposit_energy(creep, creep_memory, cache);
         }
-
-        if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-            memory.creeps.get_mut(&creep.name()).unwrap().needs_energy = Some(true);
-            //harvest_source(creep, source, creep_memory);
-        }
+        harvest_source(creep, source, creep_memory, cache);
     } else {
         harvest_source(creep, source, creep_memory, cache);
     }
 }
 
-fn needs_haul_manually(creep: &Creep, _memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
+fn needs_haul_manually(creep: &Creep, cache: &mut RoomCache) -> bool {
     let count = cache
         .creeps
         .creeps_of_role
@@ -107,12 +97,10 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache
     false
 }
 
-fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    if needs_haul_manually(creep, memory, cache) {
+fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) {
+    if needs_haul_manually(creep, cache) {
         return;
     }
-
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if repair_container(creep, creep_memory, cache) {
         return;

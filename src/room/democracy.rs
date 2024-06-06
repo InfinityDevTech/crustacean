@@ -6,15 +6,13 @@ use screeps::{
 };
 
 use crate::{
-    memory::ScreepsMemory,
-    room::{
+    combat::{hate_handler::process_tombstone, rank_room}, memory::ScreepsMemory, room::{
         cache::tick_cache::{resources, traffic, RoomCache},
         creeps::{local::hauler, organizer, recovery::recover_creeps},
         planning::room::{plan_room, structure_visuals::RoomVisualExt},
         tower,
         visuals::run_full_visuals,
-    },
-    traits::room::RoomExtensions,
+    }, traits::room::RoomExtensions
 };
 
 use super::planning::{creep::miner::formulate_miner, room::construction::{get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts}};
@@ -69,8 +67,18 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         run_crap_planner_code(&room, memory, &room_cache);
         run_full_visuals(&room, memory, &mut room_cache);
     } else {
+        rank_room::rank_room(&room, memory, &mut room_cache);
+
+        for tombstone in room_cache.structures.tombstones.clone().values() {
+            process_tombstone(tombstone, memory, &mut room_cache);
+        }
+        // Room is NOT mine, therefore we should run creeps
+        // Traffic is run on every room, so no need to put it here
         organizer::run_creeps(&room, memory, &mut room_cache);
     }
+
+
+
     let start = game::cpu::get_used();
     traffic::run_movement(&mut room_cache);
 

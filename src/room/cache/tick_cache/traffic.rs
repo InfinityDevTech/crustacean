@@ -34,6 +34,10 @@ pub fn run_movement(room_cache: &mut RoomCache) {
     let mut creeps_with_movement_intent = Vec::new();
 
     let creep_names: Vec<String> = room_cache.creeps.creeps_in_room.keys().cloned().collect();
+
+    // Just save some CPU, not much, but CPU is CPU
+    if creep_names.is_empty() { return; }
+
     for creep_name in &creep_names {
         let creep = game::creeps().get(creep_name.to_string()).unwrap();
 

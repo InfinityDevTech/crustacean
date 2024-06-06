@@ -27,7 +27,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
     let mut sites = cache.structures.construction_sites.clone();
 
-    sites.retain(|s| s.structure_type() != screeps::StructureType::Road);
+    let mut site_clone = sites.clone();
+    site_clone.retain(|s| s.structure_type() != screeps::StructureType::Road);
+
+    let sites = if site_clone.is_empty() {
+        sites
+    } else {
+        site_clone
+    };
 
     if !sites.is_empty() {
         if let Some(site) = sites.first() {

@@ -221,7 +221,7 @@ pub fn haul_containers(cache: &mut RoomCache) {
             if controller.container.is_some() {
                 let controller_container = controller.container.as_ref().unwrap();
                 if container.id() == controller_container.id() {
-                    is_controller_container = false;
+                    is_controller_container = true;
                 }
             }
         }
@@ -232,7 +232,7 @@ pub fn haul_containers(cache: &mut RoomCache) {
                 .get_range_to(cache.structures.spawns.values().next().unwrap().pos())
                 <= 3
                 &&
-                container.store().get_used_capacity(Some(ResourceType::Energy)) as f32 > container.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5
+                (container.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (container.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5)
             {
                 let priority = scale_haul_priority(
                     container.store().get_capacity(Some(ResourceType::Energy)),

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureStorage, StructureTower
+    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Tombstone
 };
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
@@ -22,6 +22,7 @@ pub struct RoomStructureCache {
     pub needs_repair: Vec<StructureObject>,
 
     pub ruins: HashMap<ObjectId<Ruin>, Ruin>,
+    pub tombstones: HashMap<ObjectId<Tombstone>, Tombstone>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
     pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
@@ -50,6 +51,7 @@ impl RoomStructureCache {
             needs_repair: Vec::new(),
 
             ruins: HashMap::new(),
+            tombstones: HashMap::new(),
             towers: HashMap::new(),
             spawns: HashMap::new(),
             containers: HashMap::new(),
@@ -178,6 +180,14 @@ impl RoomStructureCache {
                     self.storage = Some(storage);
                 }
                 _ => {}
+            }
+        }
+
+        if game::time() % 2 == 0 {
+            let tombstones = room.find(find::TOMBSTONES, None).into_iter();
+
+            for tombstone in tombstones {
+                self.tombstones.insert(tombstone.id(), tombstone);
             }
         }
     }

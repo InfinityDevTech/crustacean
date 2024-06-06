@@ -14,9 +14,7 @@ pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCach
     let creeps = cache.creeps.creeps_in_room.clone();
     let creeps = creeps.keys();
 
-    if creeps.len() == 0 {
-        return;
-    }
+    if creeps.len() == 0 { return; }
 
     let starting_cpu = game::cpu::get_used();
 
@@ -27,17 +25,9 @@ pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCach
     let mut highest_usage: f64 = 0.0;
 
     for creep_name in creeps {
-        let creep = game::creeps().get(creep_name.clone());
+        let creep = game::creeps().get(creep_name.clone()).unwrap();
         let start_time = game::cpu::get_used();
 
-        if creep.is_none() {
-            let creep_memory = memory.creeps.get(creep_name).unwrap().clone();
-            let _ = memory.creeps.remove(creep_name);
-            memory.rooms.get_mut(&RoomName::new(&creep_memory.owning_room).unwrap()).unwrap().creeps.retain(|x| x != creep_name);
-            continue;
-        }
-
-        let creep = creep.unwrap();
         let role = utils::name_to_role(&creep.name());
 
         if creep.spawning() || role.is_none() { continue; }

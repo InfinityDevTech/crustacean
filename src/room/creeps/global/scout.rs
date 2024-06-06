@@ -15,13 +15,8 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     let _ = creep.notify_when_attacked(false);
 
-    if !memory
-        .scouted_rooms
-        .contains_key(&creep.room().unwrap().name())
-    {
-        let _ = creep.say("🔍", true);
-        rank_room::rank_room(&creep.room().unwrap(), memory, cache);
-    }
+    let _ = creep.say("🔍 😛", true);
+
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     if let Some(scout_target) = creep_memory.scout_target {
@@ -31,7 +26,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             creep_memory.scout_target = None;
             run_creep(creep, memory, cache);
         } else {
-            let _ = creep.say("🚚", false);
+            let _ = creep.say("🔍 😛", true);
             creep.better_move_to(
                 memory.creeps.get_mut(&creep.name()).unwrap(),
                 cache,

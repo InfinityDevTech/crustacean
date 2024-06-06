@@ -46,9 +46,12 @@ impl CreepCache {
             }
         }
 
-        if let Some(room_memory) = memory.rooms.get(&room.name()) {
-            for creep_name in &room_memory.creeps {
+        //let mut non_existant_creeps = Vec::new();
+
+        if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+            for creep_name in &room_memory.creeps.clone() {
                 let creep = game::creeps().get(creep_name.to_string());
+
                 if let Some(creep) = creep {
                     let role = name_to_role(creep_name);
                     if role.is_none() {
@@ -69,6 +72,12 @@ impl CreepCache {
                             .unwrap()
                             .push(creep_name.to_string());
                     }
+                } else {
+                    let _ = memory.creeps.remove(creep_name);
+                    room_memory
+                        .creeps
+                        .retain(|x| x != creep_name);
+                    continue;
                 }
             }
         }

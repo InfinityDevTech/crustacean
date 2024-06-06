@@ -34,6 +34,7 @@ pub const ROOM_SIGNS: [&str; 21] = [
 
 // Hate weights, determins how much weight is adder per event.
 pub const HATE_CREEP_ATTACK_WEIGHT: f32 = 1.0;
+pub const HATE_CREEP_KILLED_WEIGHT: f32 = 2.0;
 pub const HATE_CREEP_HEAL_WEIGHT: f32 = -0.5;
 
 // Hate decay rate, how much hate is lost per tick.

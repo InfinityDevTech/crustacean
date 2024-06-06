@@ -14,12 +14,15 @@ use crate::{
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let creep_memory = memory.creeps.get_mut(&creep.name());
 
-    if creep_memory.task_id.is_none() {
+    if creep_memory.is_none() || creep_memory.as_ref().unwrap().task_id.is_none() {
         let _ = creep.say("kurt kob", true);
         let _ = creep.suicide();
+        return;
     }
+
+    let creep_memory = creep_memory.unwrap();
 
     let pointer_index = creep_memory.task_id.unwrap() as usize;
     let scouted_source = &mut cache.resources.sources[pointer_index];

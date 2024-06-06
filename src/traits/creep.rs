@@ -2,7 +2,7 @@ use crate::{
     memory::{CreepMemory, Role},
     movement::{
         move_target::MoveTarget,
-        utils::{dir_to_coords, num_to_dir},
+        utils::{dir_to_coords, num_to_dir, visualise_path},
     },
     room::{cache::tick_cache::RoomCache, planning::creep},
     utils::{name_to_role, role_to_name},
@@ -59,24 +59,11 @@ impl CreepExtensions for screeps::Creep {
         let x = target_position.0 as u8;
         let y = target_position.1 as u8;
 
-        if self.room().is_some() && self.room().unwrap().my() {
-            info!("Creep is in room");
-            self.move_request(step_dir, cache);
-        } else {
-            info!("Creep is NOT in room - {}", step_dir);
-            let vis = self.room().unwrap().visual();
-            for i in 0..serialized_vec.len() {
-                let dir = num_to_dir(serialized_vec[i]);
-                let (x, y) = dir_to_coords(dir, x, y);
-                vis.circle(x as f32, y as f32, Some(CircleStyle::default().stroke("red")));
-            }
+        if x == 0 || x == 49 || y == 0 || y == 49 {
             let _ = self.move_direction(step_dir);
+        } else {
+            self.move_request(step_dir, cache);
         }
-
-        //if x == 0 || x == 49 || y == 0 || y == 49 {
-        //    info!("Creep on exit.");
-        //    let _ = self.move_direction(step_dir);
-        //}
 
         let serialized_vec = serialized_vec[1..].to_vec();
         let serialized_path = serialized_vec
@@ -88,7 +75,7 @@ impl CreepExtensions for screeps::Creep {
             memory.path = None;
             return;
         } else {
-            memory.path = Some(serialized_path);
+            memory.path = Some(serialized_path.clone());
         }
 
         let mut points = vec![];
@@ -99,6 +86,8 @@ impl CreepExtensions for screeps::Creep {
             points.push((x, y));
             cursor = (x as f32, y as f32);
         }
+
+        visualise_path(serialized_path, self.room().unwrap().name_str(), (self.pos().x().u8() as f32, self.pos().y().u8() as f32));
     }
 
     fn better_move_to(

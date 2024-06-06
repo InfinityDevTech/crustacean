@@ -76,9 +76,10 @@ impl RoomExtensions for screeps::Room {
         }
 
         let sign_text = self.controller().unwrap().sign().unwrap().text();
-        let tag_without_alliance_marker = &sign_text.trim_start_matches(config::ALLIANCE_TAG);
+        let alliance_marker = format!("{} ", config::ALLIANCE_TAG);
+        let tag_without_alliance_marker = &sign_text.replace(&alliance_marker, "");
 
-        config::ROOM_SIGNS.contains(tag_without_alliance_marker)
+        config::ROOM_SIGNS.contains(&tag_without_alliance_marker.to_string().as_str())
     }
 
     fn get_room_type(&self) -> RoomType {

@@ -73,10 +73,18 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
     }
 
     if reserved.is_some() {
-        if memory
-            .enemy_players
-            .contains_key(&reserved.clone().unwrap().to_string())
-        {
+        if let std::collections::hash_map::Entry::Vacant(e) = memory
+            .enemy_players.entry(reserved.clone().unwrap().to_string()) {
+            let enemy = EnemyPlayer {
+                username: reserved.clone().unwrap().to_string(),
+                hate: 0.0,
+                owned_rooms: vec![],
+                reserved_rooms: vec![room_name],
+                last_attack: 0,
+            };
+
+            e.insert(enemy);
+        } else {
             let enemy_player = memory
                 .enemy_players
                 .get_mut(&owner.clone().unwrap().to_string())
@@ -85,18 +93,6 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
             if !enemy_player.reserved_rooms.contains(&room_name) {
                 enemy_player.reserved_rooms.push(room_name);
             }
-        } else {
-            let enemy = EnemyPlayer {
-                username: owner.clone().unwrap().to_string(),
-                hate: 0.0,
-                owned_rooms: vec![],
-                reserved_rooms: vec![room_name],
-                last_attack: 0,
-            };
-
-            memory
-                .enemy_players
-                .insert(owner.clone().unwrap().to_string(), enemy);
         }
     }
 

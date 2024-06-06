@@ -48,8 +48,6 @@ pub fn run_movement(room_cache: &mut RoomCache) {
 
     let mut visited_creeps = Vec::new();
 
-    info!("  {:?} - Running movement for creeps: {:?}", room_cache.room_name, creeps_with_movement_intent);
-
     for creep_id in creeps_with_movement_intent {
         let creep = game::get_object_by_id_typed(&creep_id).unwrap();
         if room_cache.traffic.matched_coord.get(&creep_id) == room_cache.traffic.intended_move.get(&creep_id) {

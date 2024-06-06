@@ -31,6 +31,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         if creep.room().unwrap().name() == scout_target.room_name() {
             creep_memory.scout_target = None;
+            run_creep(creep, memory, cache);
         } else {
             let _ = creep.say("🚚", false);
             creep.better_move_to(
@@ -54,19 +55,24 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             }
         }
 
-        let exit = if !exits.is_empty() {
+        let exit = if exit_clone.is_empty() {
+            let mut rng = StdRng::seed_from_u64(game::time() as u64);
+            exits.shuffle(&mut rng);
             exits.first().unwrap()
         } else {
-            exit_clone.choose(&mut StdRng::from_entropy()).unwrap()
+            let mut rng = StdRng::seed_from_u64(game::time() as u64);
+            exit_clone.choose(&mut rng).unwrap()
         };
 
         let pos = RoomPosition::new(25, 25, *exit);
+
+        let _ = creep.say(&format!("👁️ {}", pos.room_name()), true);
 
         creep.better_move_to(
             memory.creeps.get_mut(&creep.name()).unwrap(),
             cache,
             pos.pos(),
-            24,
+            23,
         );
         memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(*exit);
     }

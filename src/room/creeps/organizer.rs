@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Room, SharedCreepProperties};
+use screeps::{game, Room, RoomName, SharedCreepProperties};
 
 use crate::{
     combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::global}, utils
@@ -11,14 +11,15 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     // This is done in this manner to stop an "impossible" state
     // I reached, idk how, idk why, idk who, but it happened
     // and this is the only way I could think of to fix it
-    let creeps = memory.rooms.get(&room.name());
-    if creeps.is_none() {
-        info!("  [CREEPS] No creeps in room {}", room.name());
+    let creeps = cache.creeps.creeps_in_room.clone();
+    let creeps = creeps.keys();
+
+    if creeps.len() == 0 {
         return;
     }
-    let creeps = creeps.unwrap().creeps.clone();
 
     let starting_cpu = game::cpu::get_used();
+
     info!("  [CREEPS] Running {} creeps", creeps.len());
     let creep_count = creeps.len();
 
@@ -26,12 +27,13 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     let mut highest_usage: f64 = 0.0;
 
     for creep_name in creeps {
+        let creep = game::creeps().get(creep_name.clone());
         let start_time = game::cpu::get_used();
-        let creep = game::creeps().get(creep_name.to_string());
 
         if creep.is_none() {
-            let _ = memory.creeps.remove(&creep_name);
-            memory.rooms.get_mut(&room.name()).unwrap().creeps.retain(|x| x != &creep_name);
+            let creep_memory = memory.creeps.get(creep_name).unwrap().clone();
+            let _ = memory.creeps.remove(creep_name);
+            memory.rooms.get_mut(&RoomName::new(&creep_memory.owning_room).unwrap()).unwrap().creeps.retain(|x| x != creep_name);
             continue;
         }
 

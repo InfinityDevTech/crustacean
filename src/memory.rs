@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::{HaulingPriority, HaulingType}};
+use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::{HaulingPriority, HaulingType}, traits::room::RoomType};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
 // The roles listed in creep memory
@@ -116,7 +116,9 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScoutedRoom {
         pub name: RoomName,
-        pub rcl: u8,
+        pub room_type: RoomType,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub rcl: Option<u8>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub owner: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -141,6 +143,8 @@ structstruck::strike! {
 
         pub enemy_players: HashMap<String, EnemyPlayer>,
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
+
+        pub allies: Vec<String>,
     }
 }
 
@@ -157,6 +161,8 @@ impl ScreepsMemory {
 
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
+
+                allies: Vec::new(),
             };
 
             memory.write_memory();
@@ -178,6 +184,8 @@ impl ScreepsMemory {
 
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),
+
+                        allies: Vec::new(),
                     }
                 }
             }

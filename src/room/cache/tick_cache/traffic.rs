@@ -48,7 +48,7 @@ pub fn run_movement(room_cache: &mut RoomCache) {
 
     let mut visited_creeps = Vec::new();
 
-    info!("Running movement for creeps: {:?}", creeps_with_movement_intent);
+    info!("  {:?} - Running movement for creeps: {:?}", room_cache.room_name, creeps_with_movement_intent);
 
     for creep_id in creeps_with_movement_intent {
         let creep = game::get_object_by_id_typed(&creep_id).unwrap();
@@ -75,8 +75,14 @@ pub fn run_movement(room_cache: &mut RoomCache) {
         if matched_coord.is_none() || *matched_coord.unwrap() == creep.pos().xy() {
             continue;
         }
+        let x = RoomCoordinate::new(matched_coord.unwrap().x.u8());
+        let y = RoomCoordinate::new(matched_coord.unwrap().y.u8());
 
-        let position = Position::new(RoomCoordinate::new(matched_coord.unwrap().x.u8()).unwrap(), RoomCoordinate::new(matched_coord.unwrap().y.u8()).unwrap(), creep.room().unwrap().name());
+        if x.is_err() || y.is_err() {
+            continue;
+        }
+
+        let position = Position::new(x.unwrap(), y.unwrap(), creep.room().unwrap().name());
 
         let direction = creep.pos().get_direction_to(position).unwrap();
         let res = creep.move_direction(direction);

@@ -21,6 +21,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         .scouted_rooms
         .contains_key(&creep.room().unwrap().name())
     {
+        let _ = creep.say("🔍", true);
         rank_room::rank_room(&creep.room().unwrap(), memory, cache);
     }
 
@@ -31,22 +32,33 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         if creep.room().unwrap().name() == scout_target.room_name() {
             creep_memory.scout_target = None;
         } else {
+            let _ = creep.say("🚚", false);
             creep.better_move_to(
                 memory.creeps.get_mut(&creep.name()).unwrap(),
                 cache,
                 scout_target.pos(),
-                24,
+                23,
             );
         }
     } else {
         let exits = game::map::describe_exits(creep.room().unwrap().name());
         let mut exits = exits.values().collect::<Vec<_>>();
 
-        let _ = creep.say("🚪", false);
-        let mut seedable = StdRng::seed_from_u64(game::time().into());
-        exits.shuffle(&mut seedable);
+        let mut exit_clone = exits.clone();
 
-        let exit = exits.first().unwrap();
+        let _ = creep.say("🚚", false);
+
+        for exit in exits.clone() {
+            if memory.scouted_rooms.contains_key(&exit) || memory.rooms.contains_key(&exit) {
+                exit_clone.retain(|x| *x != exit);
+            }
+        }
+
+        let exit = if !exits.is_empty() {
+            exits.first().unwrap()
+        } else {
+            exit_clone.choose(&mut StdRng::from_entropy()).unwrap()
+        };
 
         let pos = RoomPosition::new(25, 25, *exit);
 

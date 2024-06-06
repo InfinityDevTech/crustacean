@@ -54,10 +54,28 @@ impl CreepExtensions for screeps::Creep {
         }
         let step_dir = num_to_dir(serialized_vec[0]);
 
-        //if self.room().is_some() && self.room().unwrap().my() {
-        self.move_request(step_dir, cache);
-        //} else {
-        //    self.move_direction(step_dir);
+        let target_position = dir_to_coords(step_dir, self.pos().x().u8(), self.pos().y().u8());
+
+        let x = target_position.0 as u8;
+        let y = target_position.1 as u8;
+
+        if self.room().is_some() && self.room().unwrap().my() {
+            info!("Creep is in room");
+            self.move_request(step_dir, cache);
+        } else {
+            info!("Creep is NOT in room - {}", step_dir);
+            let vis = self.room().unwrap().visual();
+            for i in 0..serialized_vec.len() {
+                let dir = num_to_dir(serialized_vec[i]);
+                let (x, y) = dir_to_coords(dir, x, y);
+                vis.circle(x as f32, y as f32, Some(CircleStyle::default().stroke("red")));
+            }
+            let _ = self.move_direction(step_dir);
+        }
+
+        //if x == 0 || x == 49 || y == 0 || y == 49 {
+        //    info!("Creep on exit.");
+        //    let _ = self.move_direction(step_dir);
         //}
 
         let serialized_vec = serialized_vec[1..].to_vec();
@@ -92,22 +110,6 @@ impl CreepExtensions for screeps::Creep {
     ) {
         if self.tired() {
             return;
-        }
-
-        let creep_role = name_to_role(&self.name());
-        if creep_role.unwrap() == Role::Scout {
-
-            let target_delta = self.pos().get_direction_to(target).unwrap();
-            let target_position =
-                dir_to_coords(target_delta, self.pos().x().u8(), self.pos().y().u8());
-
-            let x = target_position.0 as u8;
-            let y = target_position.1 as u8;
-
-            if x == 0 || x == 49 || y == 0 || y == 49 {
-                let _ = self.move_direction(target_delta);
-                return;
-            }
         }
 
         match &creep_memory.path {
@@ -173,8 +175,6 @@ impl CreepExtensions for screeps::Creep {
         if target_position == self.pos().xy() {
             return;
         }
-
-        info!("Moving creep {} to {:?}", self.name(), target_position);
 
         if let std::collections::hash_map::Entry::Vacant(e) =
             room_cache.traffic.intended_move.entry(id)

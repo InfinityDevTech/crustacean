@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::Room;
+use screeps::{Room, RoomName};
 
 use crate::{heap, memory::ScreepsMemory, traits::room::RoomExtensions};
 
@@ -16,6 +16,8 @@ pub mod traffic;
 
 pub struct RoomCache {
     pub my_room: bool,
+    pub room_name: RoomName,
+
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
     pub traffic: TrafficCache,
@@ -38,6 +40,8 @@ impl RoomCache {
 
         RoomCache {
             my_room: my,
+            room_name: room.name(),
+
             structures: RoomStructureCache::new_from_room(room, memory, &mut room_heap),
             creeps: CreepCache::new_from_room(room, memory),
             traffic: TrafficCache::new(),

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::{Once, OnceLock}};
 
-use combat::hate_handler::decay_hate;
+use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
@@ -66,6 +66,8 @@ pub fn game_loop() {
     }
 
     let mut memory = ScreepsMemory::init_memory();
+    let mut allies = Allies::new(&mut memory);
+    allies.sync(&mut memory);
 
     if game::time() % 10 == 0 {
         for room in game::rooms().values() {

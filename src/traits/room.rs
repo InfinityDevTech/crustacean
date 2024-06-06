@@ -1,9 +1,11 @@
 use log::info;
 use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Room, Sign, Terrain};
+use serde::{Deserialize, Serialize};
 
 use crate::{config, room::cache::tick_cache::RoomCache};
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum RoomType {
     Normal,
     Highway,

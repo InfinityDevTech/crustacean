@@ -1,4 +1,6 @@
-use screeps::{find, game, Creep, HasPosition, OwnedStructureProperties, SharedCreepProperties, Tombstone};
+use std::str::FromStr;
+
+use screeps::{find, game, Creep, HasPosition, ObjectId, Room, SharedCreepProperties};
 
 use crate::{
     config,
@@ -6,62 +8,28 @@ use crate::{
     room::cache::{heap_cache::HealthChangeType, tick_cache::RoomCache}, utils::name_to_role,
 };
 
+pub fn increment_hate(memory: &mut ScreepsMemory, hate: f32, player_name: String) {
+    if let Some(enemy) = memory.enemy_players.get_mut(&player_name) {
+        enemy.increment_hate(hate);
+        enemy.last_attack = game::time();
+    } else {
+        memory.enemy_players.insert(
+            player_name.clone(),
+            EnemyPlayer {
+                username: player_name,
+                owned_rooms: vec![],
+                reserved_rooms: vec![],
+                hate,
+                last_attack: game::time(),
+            },
+        );
+    }
+}
+
 pub fn decay_hate(memory: &mut ScreepsMemory) {
     for enemy in memory.enemy_players.values_mut() {
         if enemy.last_attack - game::time() <= config::TICKS_BEFORE_DECAY {
             enemy.decrement_hate(enemy.hate * config::HATE_DECAY_PERCENTEAGE);
-        }
-    }
-}
-
-pub fn process_tombstone(tombstone: &Tombstone, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let room = tombstone.room().unwrap();
-
-    for creep in &cache.creeps.enemy_creeps {
-        if creep.pos().get_range_to(tombstone.pos()) <= 3 {
-            let offending_user = creep.owner().username();
-
-            if memory.enemy_players.contains_key(&offending_user) {
-                let enemy = memory.enemy_players.get_mut(&offending_user).unwrap();
-
-                enemy.hate += config::HATE_CREEP_KILLED_WEIGHT;
-
-                if let Some(controller) = room.controller() {
-                    if let Some(reservation) = controller.reservation() {
-                        if reservation.username() == offending_user {
-                            enemy.reserved_rooms.push(room.name());
-                        }
-                    }
-                    if let Some(owner) = controller.owner() {
-                        if owner.username() == offending_user {
-                            enemy.owned_rooms.push(room.name());
-                        }
-                    }
-                }
-            } else {
-                let mut enemy = EnemyPlayer {
-                    username: offending_user.clone(),
-                    hate: config::HATE_CREEP_KILLED_WEIGHT,
-                    owned_rooms: vec![],
-                    reserved_rooms: vec![],
-                    last_attack: 0,
-                };
-
-                if let Some(controller) = room.controller() {
-                    if let Some(reservation) = controller.reservation() {
-                        if reservation.username() == offending_user {
-                            enemy.reserved_rooms.push(room.name());
-                        }
-                    }
-                    if let Some(owner) = controller.owner() {
-                        if owner.username() == offending_user {
-                            enemy.owned_rooms.push(room.name());
-                        }
-                    }
-                }
-
-                memory.enemy_players.insert(offending_user.clone(), enemy);
-            }
         }
     }
 }
@@ -82,27 +50,35 @@ pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_ty
     if !offending_creeps.is_empty() {
         let offending_user = offending_creeps.first().unwrap().owner().username();
 
-        let offending_user = if memory.enemy_players.contains_key(&offending_user) {
-            memory.enemy_players.get_mut(&offending_user).unwrap()
+        let weight = if health_type == HealthChangeType::Heal {
+            config::HATE_CREEP_HEAL_WEIGHT
         } else {
-            let enemy = EnemyPlayer {
-                username: offending_user.clone(),
-                hate: 0.0,
-                owned_rooms: vec![],
-                reserved_rooms: vec![],
-                last_attack: 0,
-            };
-
-            memory.enemy_players.insert(offending_user.clone(), enemy);
-            memory.enemy_players.get_mut(&offending_user).unwrap()
+            config::HATE_CREEP_ATTACK_WEIGHT
         };
 
-        if health_type == HealthChangeType::Damage {
-            offending_user.increment_hate(config::HATE_CREEP_ATTACK_WEIGHT);
-        } else if health_type == HealthChangeType::Heal {
-            offending_user.decrement_hate(config::HATE_CREEP_HEAL_WEIGHT)
-        }
+        increment_hate(memory, weight, offending_user.to_string());
+    }
+}
 
-        offending_user.last_attack = game::time();
+pub fn process_room_event_log(room: &Room, memory: &mut ScreepsMemory, _cache: &mut RoomCache) {
+    let event_log = room.get_event_log();
+    for event in event_log {
+        match event.event {
+            screeps::EventType::Attack(attack_event) => {
+                let attacker = event.object_id;
+                let attackee = attack_event.target_id;
+
+                if game::get_object_by_id_typed::<Creep>(&ObjectId::from_str(&attackee).unwrap()).is_none() {
+                    let attacker: Option<Creep> = game::get_object_by_id_typed(&ObjectId::from_str(&attacker).unwrap());
+                    if let Some(attacker) = attacker  {
+                        let owner = attacker.owner().username();
+
+                        increment_hate(memory, config::HATE_CREEP_KILLED_WEIGHT, owner.to_string());
+                    }
+                }
+            },
+            screeps::EventType::AttackController => todo!(),
+            _ => {}
+        }
     }
 }

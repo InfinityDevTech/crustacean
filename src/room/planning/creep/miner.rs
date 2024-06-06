@@ -1,5 +1,6 @@
 use std::cmp;
 
+use log::info;
 use screeps::{game, HasId, Part, ResourceType, Room};
 
 use crate::{
@@ -241,6 +242,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             }
 
         } else if bulldozer_count < 5 && game::flags().get("bulldozeRoom".to_string()).is_some() {
+
+            info!("Bulldozing room");
 
             let mut body = Vec::new();
             let cost = 130;

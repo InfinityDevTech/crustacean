@@ -6,7 +6,7 @@ use screeps::{
 };
 
 use crate::{
-    combat::{hate_handler::process_tombstone, rank_room}, memory::ScreepsMemory, room::{
+    combat::{hate_handler, rank_room}, memory::ScreepsMemory, room::{
         cache::tick_cache::{resources, traffic, RoomCache},
         creeps::{local::hauler, organizer, recovery::recover_creeps},
         planning::room::{plan_room, structure_visuals::RoomVisualExt},
@@ -68,16 +68,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
         run_full_visuals(&room, memory, &mut room_cache);
     } else {
         rank_room::rank_room(&room, memory, &mut room_cache);
-
-        for tombstone in room_cache.structures.tombstones.clone().values() {
-            process_tombstone(tombstone, memory, &mut room_cache);
-        }
         // Room is NOT mine, therefore we should run creeps
         // Traffic is run on every room, so no need to put it here
         organizer::run_creeps(&room, memory, &mut room_cache);
     }
 
-
+    hate_handler::process_room_event_log(&room, memory, &mut room_cache);
 
     let start = game::cpu::get_used();
     traffic::run_movement(&mut room_cache);

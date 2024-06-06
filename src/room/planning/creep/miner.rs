@@ -85,6 +85,9 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .unwrap_or(&vec![])
             .len();
 
+        info!("{} - {}", game::flags().get("bulldozeRoom".to_string()).is_some(), bulldozer_count);
+        info!("{} {} {} {} {}", hauler_count, fastfiller_count, upgrader_count, builder_count, scout_count);
+
         if hauler_count < 10 && (fastfiller_count >= 1 || hauler_count == 0) {
             let mut body = Vec::new();
             let cost = 100;

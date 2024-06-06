@@ -1,3 +1,6 @@
+// If I set alliance tag to null, I dont want to to be added lol
+#![allow(clippy::comparison_to_empty)]
+
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::game;
 
@@ -9,7 +12,7 @@ pub fn get_room_sign() -> String {
     let mut seedable = StdRng::seed_from_u64(game::time().into());
     let sign = config::ROOM_SIGNS[seedable.gen_range(0..config::ROOM_SIGNS.len())];
 
-    if !alliance_tag.is_empty() {
+    if alliance_tag != "" {
         return format!("{} {}", alliance_tag, sign);
     }
 

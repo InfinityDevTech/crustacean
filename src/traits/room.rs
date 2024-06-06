@@ -1,6 +1,6 @@
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, OwnedStructureProperties, Room, Sign, Terrain};
+use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
 use serde::{Deserialize, Serialize};
 
 use crate::{config, room::cache::tick_cache::RoomCache};

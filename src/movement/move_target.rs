@@ -1,6 +1,6 @@
 use log::warn;
 use screeps::{
-    find, game::{self, map::get_room_terrain}, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Position, RoomName, RoomXY, StructureObject, StructureType
+    find, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Position, RoomName, RoomXY, StructureObject, StructureType
 };
 
 pub struct MoveTarget {

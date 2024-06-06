@@ -5,7 +5,7 @@ use screeps::{find, game, Creep, Room, SharedCreepProperties};
 use crate::{
     config::ALLIES,
     memory::{Role, ScreepsMemory},
-    utils::{self, name_to_role},
+    utils::name_to_role,
 };
 
 #[derive(Debug, Clone)]
@@ -39,7 +39,7 @@ impl CreepCache {
         for creep in creeps {
             if creep.my() {
                 self.creeps_in_room.insert(creep.name(), creep);
-            } else if ALLIES.contains(&creep.owner().username().as_str()) {
+            } else if memory.allies.contains(&creep.owner().username()) {
                 self.allied_creeps.push(creep);
             } else {
                 self.enemy_creeps.push(creep);

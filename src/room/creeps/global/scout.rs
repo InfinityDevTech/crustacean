@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use screeps::{find, game, Creep, HasPosition, Position, RoomPosition, SharedCreepProperties};
+use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
 use crate::combat::rank_room;
 use crate::{

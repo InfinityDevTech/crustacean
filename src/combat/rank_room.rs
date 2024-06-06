@@ -1,8 +1,8 @@
-use screeps::{control, game, HasId, OwnedStructureProperties, Room};
+use screeps::{game, HasId, OwnedStructureProperties, Room};
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
-    room::{self, cache::tick_cache::RoomCache}, traits::room::RoomExtensions,
+    room::cache::tick_cache::RoomCache, traits::room::RoomExtensions,
 };
 
 pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {

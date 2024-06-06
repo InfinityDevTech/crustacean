@@ -7,7 +7,7 @@ use crate::{
 
 use super::local;
 
-pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     // This is done in this manner to stop an "impossible" state
     // I reached, idk how, idk why, idk who, but it happened
     // and this is the only way I could think of to fix it
@@ -59,7 +59,6 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::FastFiller => local::fast_filler::run_creep(&creep, memory, cache),
             Role::Bulldozer => local::bulldozer::run_creep(&creep, memory, cache),
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
-            _ => {}
         }
 
         let end_time = game::cpu::get_used();

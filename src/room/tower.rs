@@ -1,11 +1,10 @@
-use log::info;
-use screeps::{find, HasId, Resource, ResourceType, Room};
+use screeps::{HasId, ResourceType, Room};
 
 use crate::utils::scale_haul_priority;
 
 use super::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache};
 
-pub fn run_towers(room: &Room, cache: &mut RoomCache) {
+pub fn run_towers(_room: &Room, cache: &mut RoomCache) {
     for tower in cache.structures.towers.values() {
         if tower.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
             let priority = scale_haul_priority(

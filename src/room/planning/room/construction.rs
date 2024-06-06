@@ -1,4 +1,4 @@
-use screeps::{Structure, StructureType};
+use screeps::StructureType;
 
 pub fn get_rcl_2_plan() -> Vec<(i8, i8, StructureType)> {
     vec![

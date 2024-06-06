@@ -1,14 +1,13 @@
 use std::cmp;
 
-use log::info;
 use screeps::{game, HasId, Part, ResourceType, Room};
 
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
-    room::{cache::tick_cache::{
+    room::cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType},
         RoomCache,
-    }, creeps::local::hauler},
+    },
     traits::room::RoomExtensions,
     utils::{role_to_name, scale_haul_priority},
 };

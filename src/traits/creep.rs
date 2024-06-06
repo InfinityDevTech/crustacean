@@ -1,20 +1,16 @@
 use crate::{
-    memory::{CreepMemory, Role},
+    memory::CreepMemory,
     movement::{
         move_target::MoveTarget,
-        utils::{dir_to_coords, num_to_dir, visualise_path},
+        utils::{dir_to_coords, num_to_dir},
     },
-    room::{cache::tick_cache::RoomCache, planning::creep},
-    utils::{name_to_role, role_to_name},
-};
-use log::info;
-use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
-use screeps::{
-    game, look::TERRAIN, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomTerrain,
-    RoomXY, SharedCreepProperties, Terrain,
+    room::cache::tick_cache::RoomCache,
 };
 
-use super::room::RoomExtensions;
+use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
+use screeps::{
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, Terrain,
+};
 
 pub trait CreepExtensions {
     // Movement
@@ -217,7 +213,6 @@ impl CreepExtensions for screeps::Creep {
         ];
         for dir in directions {
             let pos = dir_to_coords(dir, self.pos().x().u8(), self.pos().y().u8());
-            let room_xy = unsafe { RoomXY::unchecked_new(pos.0, pos.1) };
 
             adjacent_coords.push(pos);
         }

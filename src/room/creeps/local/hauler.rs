@@ -1,6 +1,5 @@
-use log::info;
 use screeps::{
-    game, Creep, ErrorCode, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
+    game, Creep, ErrorCode, HasPosition, ObjectId, Resource, SharedCreepProperties, StructureStorage
 };
 
 use wasm_bindgen::JsCast;

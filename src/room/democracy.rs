@@ -2,7 +2,7 @@ use log::info;
 use screeps::{
     game,
     look::{self, LookResult},
-    HasPosition, Room, RoomPosition, RoomXY, StructureType, Terrain,
+    HasPosition, Room, RoomPosition, StructureType, Terrain,
 };
 
 use crate::{
@@ -17,7 +17,7 @@ use crate::{
     traits::room::RoomExtensions,
 };
 
-use super::{cache, planning::{creep::miner::formulate_miner, room::construction::{get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts}}};
+use super::planning::{creep::miner::formulate_miner, room::construction::{get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts}};
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
     // Caches various things, like resources
@@ -83,7 +83,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory) {
 }
 
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &RoomCache) {
-    let coords = room_cache.structures.spawns.values().next().unwrap().pos();
+    let _coords = room_cache.structures.spawns.values().next().unwrap().pos();
     let _viz = RoomVisualExt::new(room.name());
 
     if game::cpu::bucket() < 500 {

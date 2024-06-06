@@ -1,5 +1,4 @@
-use log::info;
-use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, RoomCoordinate, TextStyle};
+use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, RoomCoordinate};
 
 use crate::memory::ScreepsMemory;
 
@@ -10,7 +9,7 @@ pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cache: &mut Roo
     visualise_controller_progress(room, memory, cache);
 }
 
-pub fn visualise_spawn_progess(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for spawn in cache.structures.spawns.values() {
         if let Some(spawning) = spawn.spawning() {
             let progress = (spawning.remaining_time() as f32 / spawning.need_time() as f32) * 100.0;
@@ -36,10 +35,19 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
         let circle_position = Position::new(circle_x, circle_y, room.name);
         let text_position = Position::new(text_x, text_y, room.name);
 
-        let circle_style = CircleStyle::default()
-            .fill("#00FF00")
-            .stroke_width(1.0)
-            .radius(2.0);
+        let potential_owner = room.owner.clone().unwrap_or_else(|| room.reserved.clone().unwrap_or("None".to_string()));
+
+        let circle_style = if memory.allies.contains(&potential_owner) {
+            CircleStyle::default()
+                .fill("#00FF00")
+                .stroke_width(1.0)
+                .radius(2.0)
+        } else {
+            CircleStyle::default()
+                .fill("#FF0000")
+                .stroke_width(1.0)
+                .radius(2.0)
+        };
 
         let text_style = MapTextStyle::default()
             .font_size(6.0)
@@ -55,7 +63,7 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     }
 }
 
-pub fn visualise_controller_progress(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn visualise_controller_progress(room: &Room, _memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let controller = &cache.structures.controller.as_ref().unwrap().controller;
     let progress = (controller.progress().unwrap() as f32 / controller.progress_total().unwrap() as f32) * 100.0;
 

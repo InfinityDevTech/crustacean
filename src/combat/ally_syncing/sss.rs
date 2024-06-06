@@ -5,7 +5,7 @@ use log::info;
 use screeps::game;
 use serde::{Deserialize, Serialize};
 
-use crate::memory::ScreepsMemory;
+use crate::{config::ALLIES, memory::ScreepsMemory};
 
 const SYNC_SEGMENT: u8 = 99;
 const SYNC_INTERVAL: u8 = 100;
@@ -54,6 +54,12 @@ impl SSSAllySync {
         ];
 
         for ally in &allies {
+            if !memory.allies.contains(&ally.to_string()) {
+                memory.allies.push(ally.to_string());
+            }
+        }
+
+        for ally in ALLIES {
             if !memory.allies.contains(&ally.to_string()) {
                 memory.allies.push(ally.to_string());
             }

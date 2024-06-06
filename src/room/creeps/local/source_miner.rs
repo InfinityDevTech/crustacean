@@ -1,6 +1,5 @@
-use log::info;
 use screeps::{
-    game, Creep, ErrorCode, HasHits, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties,
+    game, Creep, HasHits, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties,
     Source,
 };
 
@@ -58,7 +57,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
-fn needs_haul_manually(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
+fn needs_haul_manually(creep: &Creep, _memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     let count = cache
         .creeps
         .creeps_of_role

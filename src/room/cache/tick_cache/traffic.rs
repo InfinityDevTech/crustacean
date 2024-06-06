@@ -1,13 +1,11 @@
 #![allow(non_snake_case)]use std::collections::HashMap;
 
-use log::info;
 use screeps::{
-    game::{self, get_object_by_id_typed}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY, SharedCreepProperties
+    game::{self}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
 };
-use web_sys::console::info;
 
 use super::RoomCache;
-use crate::{room::planning::creep, traits::creep::CreepExtensions};
+use crate::traits::creep::CreepExtensions;
 
 pub struct TrafficCache {
     pub matched_coord: HashMap<ObjectId<Creep>, RoomXY>,
@@ -86,7 +84,7 @@ pub fn run_movement(room_cache: &mut RoomCache) {
         let res = creep.move_direction(direction);
 
         if res.is_err() {
-            let err = res.unwrap_err();
+            let _err = res.unwrap_err();
         } else {
             room_cache.traffic.move_intents += 1;
         }
@@ -112,8 +110,6 @@ fn depth_first_searh(creep: &Creep, room_cache: &mut RoomCache, visited_creeps: 
 
     let mut combined = empty_tiles.clone();
     combined.extend(occupied_tiles.clone());
-
-    let len = combined.len();
 
     for coord in combined {
         if room_cache.traffic.intended_move.contains_key(&creep.try_id().unwrap()) && *room_cache.traffic.intended_move.get(&creep.try_id().unwrap()).unwrap() == coord {

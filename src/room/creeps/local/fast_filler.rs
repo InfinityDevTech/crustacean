@@ -1,6 +1,5 @@
-use log::info;
 use screeps::{
-    find, game, look, CircleStyle, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, Room, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension, StructureObject, StructureProperties, StructureType
+    find, game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension, StructureObject
 };
 
 use wasm_bindgen::JsCast;
@@ -110,7 +109,7 @@ pub fn self_renew(creep: &Creep, cache: &mut RoomCache) {
     }
 }
 
-pub fn find_possible_targets(creep: &Creep, cache: &RoomCache) -> Vec<RawObjectId> {
+pub fn find_possible_targets(creep: &Creep, _cache: &RoomCache) -> Vec<RawObjectId> {
     let find_call = creep.pos().find_in_range(find::STRUCTURES, 1);
 
     let mut possible_targets = Vec::new();
@@ -195,8 +194,8 @@ pub fn check_current_position(creep: &Creep, memory: &mut ScreepsMemory, cache: 
 
 pub fn find_container(
     creep: &Creep,
-    memory: &mut ScreepsMemory,
-    cache: &mut RoomCache,
+    _memory: &mut ScreepsMemory,
+    _cache: &mut RoomCache,
 ) -> Option<ObjectId<StructureContainer>> {
     let possible_containers = creep.pos().find_in_range(find::STRUCTURES, 1);
 

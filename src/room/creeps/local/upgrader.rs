@@ -1,7 +1,6 @@
-use rand::{rngs::StdRng, seq::IteratorRandom, Rng, SeedableRng};
-use screeps::{game, Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
+use screeps::{Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
 
-use crate::{config, memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
+use crate::{memory::ScreepsMemory, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {

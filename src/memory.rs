@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use log::error;
-use screeps::{Mineral, ObjectId, RawObjectId, ResourceType, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureContainer, StructureLink};
+use screeps::{Mineral, ObjectId, RawObjectId, ResourceType, RoomName, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::{HaulingPriority, HaulingType}, traits::room::RoomType};
+use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
 // The roles listed in creep memory

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use rand::{prelude::SliceRandom, rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,6 @@
 use std::{cmp, collections::HashMap};
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, Source, StructureContainer, StructureLink, StructureObject, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, Source, StructureContainer, StructureLink, Terrain};
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
 

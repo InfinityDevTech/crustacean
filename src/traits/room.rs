@@ -1,3 +1,5 @@
+#![allow(clippy::comparison_to_empty)]
+
 use log::info;
 use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
@@ -76,10 +78,19 @@ impl RoomExtensions for screeps::Room {
         }
 
         let sign_text = self.controller().unwrap().sign().unwrap().text();
-        let alliance_marker = format!("{} ", config::ALLIANCE_TAG);
-        let tag_without_alliance_marker = &sign_text.replace(&alliance_marker, "");
 
-        config::ROOM_SIGNS.contains(&tag_without_alliance_marker.to_string().as_str())
+        if config::ALLIANCE_TAG != "" && !sign_text.contains(config::ALLIANCE_TAG) {
+            return false;
+        }
+
+        let tag_without_alliance_marker = if config::ALLIANCE_TAG != "" && sign_text.contains(config::ALLIANCE_TAG) {
+            let alliance_marker = format!("{} ", config::ALLIANCE_TAG);
+            sign_text.replace(&alliance_marker, "")
+        } else {
+            sign_text.to_string()
+        };
+
+        config::ROOM_SIGNS.contains(&tag_without_alliance_marker.as_str())
     }
 
     fn get_room_type(&self) -> RoomType {

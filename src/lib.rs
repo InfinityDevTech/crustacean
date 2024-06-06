@@ -3,6 +3,7 @@ use std::{collections::HashMap, sync::{Once, OnceLock}};
 use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
+use room::visuals::visualise_scouted_rooms;
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
@@ -112,6 +113,7 @@ pub fn game_loop() {
     }
 
     decay_hate(&mut memory);
+    visualise_scouted_rooms(&mut memory);
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
 

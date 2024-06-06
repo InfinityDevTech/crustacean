@@ -86,8 +86,6 @@ impl CreepExtensions for screeps::Creep {
             points.push((x, y));
             cursor = (x as f32, y as f32);
         }
-
-        visualise_path(serialized_path, self.room().unwrap().name_str(), (self.pos().x().u8() as f32, self.pos().y().u8() as f32));
     }
 
     fn better_move_to(

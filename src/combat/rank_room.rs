@@ -87,7 +87,7 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         } else {
             let enemy_player = memory
                 .enemy_players
-                .get_mut(&owner.clone().unwrap().to_string())
+                .get_mut(&reserved.clone().unwrap().to_string())
                 .unwrap();
 
             if !enemy_player.reserved_rooms.contains(&room_name) {

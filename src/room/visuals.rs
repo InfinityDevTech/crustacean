@@ -1,4 +1,5 @@
-use screeps::{HasPosition, Room, TextStyle};
+use log::info;
+use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, RoomCoordinate, TextStyle};
 
 use crate::memory::ScreepsMemory;
 
@@ -21,6 +22,36 @@ pub fn visualise_spawn_progess(room: &Room, memory: &mut ScreepsMemory, cache: &
                 Default::default(),
             );
         }
+    }
+}
+
+pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
+    for room in memory.scouted_rooms.values() {
+        let circle_x = RoomCoordinate::new(46).unwrap();
+        let circle_y = RoomCoordinate::new(3).unwrap();
+
+        let text_x = RoomCoordinate::new(3).unwrap();
+        let text_y = RoomCoordinate::new(3).unwrap();
+
+        let circle_position = Position::new(circle_x, circle_y, room.name);
+        let text_position = Position::new(text_x, text_y, room.name);
+
+        let circle_style = CircleStyle::default()
+            .fill("#00FF00")
+            .stroke_width(1.0)
+            .radius(2.0);
+
+        let text_style = MapTextStyle::default()
+            .font_size(6.0)
+            .align(screeps::TextAlign::Left)
+            .color("#00FF00")
+            .stroke_width(0.5);
+
+        screeps::visual::MapVisual::circle(circle_position, circle_style);
+
+        let text = game::time() - room.last_scouted;
+
+        screeps::visual::MapVisual::text(text_position, text.to_string(), text_style);
     }
 }
 

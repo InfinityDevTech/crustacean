@@ -2,7 +2,7 @@
 
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, OwnedStructureProperties, Room, Terrain};
+use screeps::{CostMatrix, OwnedStructureProperties, Room, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
 use crate::{config, room::cache::tick_cache::RoomCache};
@@ -24,6 +24,8 @@ pub trait RoomExtensions {
     fn get_target_for_miner(&self, room_memory: &Room, cache: &mut RoomCache) -> Option<u8>;
 
     fn is_my_sign(&self) -> bool;
+
+    fn get_adjacent(&self) -> Vec<RoomName>;
 
     fn get_room_type(&self) -> RoomType;
     fn is_highway(&self) -> bool;
@@ -53,6 +55,30 @@ impl RoomExtensions for screeps::Room {
     fn my(&self) -> bool {
         self.controller()
             .map_or(false, |controller| controller.my())
+    }
+
+    fn get_adjacent(&self) -> Vec<RoomName> {
+        let split_name = self.split_name();
+        let adjacent_rooms = vec![
+            // Cardinal Directions
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1, split_name.2, split_name.3 + 1)),
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1, split_name.2, split_name.3 - 1)),
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 + 1, split_name.2, split_name.3)),
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 - 1, split_name.2, split_name.3)),
+
+            // Diagonals
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 + 1, split_name.2, split_name.3 + 1)),
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 + 1, split_name.2, split_name.3 - 1)),
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 - 1, split_name.2, split_name.3 + 1)),
+            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 - 1, split_name.2, split_name.3 - 1)),
+        ];
+
+        let mut adjacent_checked = Vec::new();
+        for room in adjacent_rooms.into_iter().flatten() {
+            adjacent_checked.push(room);
+        }
+
+        adjacent_checked
     }
 
     fn get_target_for_miner(&self, room: &Room, cache: &mut RoomCache) -> Option<u8> {

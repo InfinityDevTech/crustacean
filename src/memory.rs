@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use log::error;
-use screeps::{Mineral, ObjectId, RawObjectId, ResourceType, RoomName, StructureContainer, StructureLink};
+use screeps::{Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -26,6 +26,8 @@ pub enum Role {
     Bulldozer = 5,
 
     Scout = 10,
+
+    GiftBasket = 100,
 }
 
 // What each creep stores in its memory.
@@ -95,6 +97,7 @@ pub struct RoomMemory{
     pub planned: bool,
     // Creeps by role
     pub creeps: Vec<String>,
+    pub remotes: Vec<RoomName>,
 }
 }
 
@@ -126,7 +129,8 @@ structstruck::strike! {
 
         pub defense_capability: u8,
 
-        pub sources: u8,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub sources: Option<Vec<RoomXY>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mineral: Option<ObjectId<Mineral>>,
         pub last_scouted: u32,

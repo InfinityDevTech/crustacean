@@ -19,6 +19,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
     if let Some(scout_target) = creep_memory.scout_target {
         let scout_target = RoomPosition::new(25, 25, scout_target);
 
@@ -49,7 +50,20 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         }
 
         let exit = if exit_clone.is_empty() {
-            exits.sort_by(|a, b| memory.scouted_rooms.get(a).unwrap().last_scouted.cmp(&memory.scouted_rooms.get(b).unwrap().last_scouted));
+
+            exits.sort_by(|a, b| {
+                let a = memory.scouted_rooms.get(a);
+                let b = memory.scouted_rooms.get(b);
+
+                if a.is_none() || b.is_none() {
+                    std::cmp::Ordering::Equal
+                } else {
+                    let a = a.unwrap();
+                    let b = b.unwrap();
+
+                    a.last_scouted.cmp(&b.last_scouted)
+                }
+            });
             exits.first().unwrap()
         } else {
             let mut rng = StdRng::seed_from_u64(game::time() as u64);

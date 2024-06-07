@@ -58,6 +58,7 @@ module.exports.loop = function () {
       // We encountered an error, skip execution in this tick and get
       // a new environment next tick.
       console.log("[JS] Resetting IVM...")
+
       Game.cpu.halt();
       return;
     }

@@ -2,7 +2,7 @@
 #![allow(clippy::comparison_to_empty)]
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::game;
+use screeps::{game, RoomName};
 
 use crate::{config, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 
@@ -52,6 +52,7 @@ pub fn role_to_name(role: Role) -> String {
         Role::Scout => "fg",
         Role::FastFiller => "ff",
         Role::Bulldozer => "sa",
+        Role::GiftBasket => "gb",
     };
     data.to_string()
 }
@@ -68,6 +69,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "fg" => { Some(Role::Scout) },
         "ff" => { Some(Role::FastFiller) }
         "sa" => { Some(Role::Bulldozer) },
+        "gb" => { Some(Role::GiftBasket) },
         _ => { None },
     }
 }

@@ -1,4 +1,4 @@
-use screeps::{game, HasId, OwnedStructureProperties, Room};
+use screeps::{game, HasId, HasPosition, ObjectId, OwnedStructureProperties, Room, RoomXY, Source};
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
@@ -34,6 +34,13 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         None
     };
 
+    let sources: Vec<RoomXY> = cache.resources.sources.iter().map(|x| game::get_object_by_id_typed(&x.id).unwrap().pos().xy()).collect();
+    let sources = if sources.is_empty() {
+        None
+    } else {
+        Some(sources)
+    };
+
     let scouted_room = ScoutedRoom {
         name: room_name,
         room_type: room.get_room_type(),
@@ -41,7 +48,7 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         owner: owner.clone(),
         reserved: reserved.clone(),
         defense_capability: 0,
-        sources: cache.resources.sources.len() as u8,
+        sources: sources.clone(),
         mineral: mineral_id,
         last_scouted: game::time(),
     };
@@ -104,7 +111,7 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         scouted.owner.clone_from(&owner);
         scouted.reserved = reserved;
         scouted.defense_capability = 0;
-        scouted.sources = cache.resources.sources.len() as u8;
+        scouted.sources = sources;
         scouted.mineral = mineral_id;
         scouted.last_scouted = game::time();
     }

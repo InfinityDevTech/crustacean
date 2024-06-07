@@ -1,15 +1,43 @@
-use screeps::{find, game, Creep, HasPosition, SharedCreepProperties, StructureProperties, StructureType};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureProperties, StructureType};
 
 use crate::{
-    memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
+    config, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let creep_memory = memory.creeps.get_mut(&creep.name());
+    if creep_memory.is_none() {
+        return;
+    }
+    let creep_memory = creep_memory.unwrap();
 
     if let Some(flag) = game::flags().get("bulldozeRoom".to_string()) {
         if creep.room().unwrap().name() == flag.pos().room_name() {
-            let _ = creep.say("🚜✊", false);
+
+            if flag.color() == Color::Blue {
+                if creep.pos().is_near_to(flag.pos()) {
+                    let _ = creep.say("👁️", true);
+                } else {
+                    creep.better_move_to(creep_memory, cache, flag.pos(), 1);
+                }
+                return;
+            }
+
+            if flag.color() == Color::Green {
+                if creep.pos().is_near_to(flag.pos()) {
+                    let _ = creep.say("JK - <3 U", true);
+                } else {
+                    let _ = creep.say("DIE DIE DIE", true);
+                    creep.better_move_to(creep_memory, cache, flag.pos(), 1);
+                }
+                return;
+            }
+
+            let mut rng = StdRng::seed_from_u64(game::time() as u64);
+            let to_say = config::ATTACK_SIGNS[rng.gen_range(0..config::ATTACK_SIGNS.len())];
+            let _ = creep.say(to_say, true);
+
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
                 if creep.attack(&enemy) == Err(screeps::ErrorCode::NotInRange) {

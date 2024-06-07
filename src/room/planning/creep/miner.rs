@@ -42,6 +42,13 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
         .unwrap_or(&vec![])
         .len();
 
+        let giftdrop_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::GiftBasket)
+        .unwrap_or(&vec![])
+        .len();
+
     if fastfiller_count == 0 && spawn.store().get_used_capacity(Some(ResourceType::Energy)) < 300 {
         let priority = scale_haul_priority(
             spawn.store().get_capacity(None),
@@ -84,9 +91,6 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             .get(&Role::Scout)
             .unwrap_or(&vec![])
             .len();
-
-        info!("{} - {}", game::flags().get("bulldozeRoom".to_string()).is_some(), bulldozer_count);
-        info!("{} {} {} {} {}", hauler_count, fastfiller_count, upgrader_count, builder_count, scout_count);
 
         if hauler_count < 10 && (fastfiller_count >= 1 || hauler_count == 0) {
             let mut body = Vec::new();
@@ -264,6 +268,28 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
             let role_name = role_to_name(Role::Bulldozer);
             let name = format!("{}-{}-{}", role_name, game::time(), room.name());
 
+            let spawn_result = spawn.spawn_creep(&body, &name);
+            if spawn_result.is_ok() {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    fastfiller_container: None,
+                    link_id: None,
+                    scout_target: None,
+                    hauling_task: None,
+                    owning_room: room.name().to_string(),
+                    path: None,
+                };
+
+                memory.create_creep(&room.name_str(), &name, cmemory);
+
+                return true;
+            }
+        } else if giftdrop_count < 3 && game::flags().get("bulldozeRoom".to_string()).is_some() {
+            let body = vec![Part::Move, Part::Carry];
+
+            let role_name = role_to_name(Role::GiftBasket);
+            let name = format!("{}-{}-{}", role_name, game::time(), room.name());
             let spawn_result = spawn.spawn_creep(&body, &name);
             if spawn_result.is_ok() {
                 let cmemory = CreepMemory {

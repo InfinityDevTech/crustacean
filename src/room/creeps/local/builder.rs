@@ -25,7 +25,23 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 }
 
 pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
-    let mut sites = cache.structures.construction_sites.clone();
+    for repairable in cache.structures.needs_repair.clone() {
+        if repairable.as_repairable().unwrap().hits() as f32 > (repairable.as_repairable().unwrap().hits_max() as f32 * 0.10) {
+            continue;
+        }
+
+        if repairable.pos().get_range_to(creep.pos()) > 1 {
+            let _ = creep.say("🚚", false);
+            creep.better_move_to(creepmem, cache, repairable.pos(), 1);
+        } else {
+            let _ = creep.say("🔨", false);
+            let _ = creep.repair(repairable.as_repairable().unwrap());
+        }
+        return;
+    }
+
+
+    let sites = cache.structures.construction_sites.clone();
 
     let mut site_clone = sites.clone();
     site_clone.retain(|s| s.structure_type() != screeps::StructureType::Road);
@@ -48,7 +64,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
             }
 
         }
-    } else if let Some(repairable) = cache.structures.needs_repair.first() {
+    } if let Some(repairable) = cache.structures.needs_repair.first() {
         if repairable.pos().get_range_to(creep.pos()) > 1 {
             let _ = creep.say("🚚", false);
             creep.better_move_to(creepmem, cache, repairable.pos(), 1);

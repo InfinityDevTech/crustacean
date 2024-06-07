@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Room, RoomName, SharedCreepProperties};
+use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
     combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::global}, utils
@@ -26,6 +26,11 @@ pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     for creep_name in creeps {
         let creep = game::creeps().get(creep_name.clone()).unwrap();
+
+        if !memory.creeps.contains_key(creep_name.as_str()) {
+            continue;
+        }
+
         let start_time = game::cpu::get_used();
 
         let role = utils::name_to_role(&creep.name());
@@ -47,8 +52,9 @@ pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCach
             Role::Upgrader => local::upgrader::run_creep(&creep, memory, cache),
             Role::Builder => local::builder::run_creep(&creep, memory, cache),
             Role::FastFiller => local::fast_filler::run_creep(&creep, memory, cache),
-            Role::Bulldozer => local::bulldozer::run_creep(&creep, memory, cache),
+            Role::Bulldozer => global::bulldozer::run_creep(&creep, memory, cache),
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
+            Role::GiftBasket => global::gift_drop::run_creep(&creep, memory, cache),
         }
 
         let end_time = game::cpu::get_used();

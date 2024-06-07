@@ -12,7 +12,7 @@ impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position) -> String {
         let opts = SearchOptions::new(path_call)
             .max_rooms(4)
-            .max_ops(100000);
+            .max_ops(2000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));
 
         if search.incomplete() {

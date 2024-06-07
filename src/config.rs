@@ -32,6 +32,13 @@ pub const ROOM_SIGNS: [&str; 21] = [
 "We already eat from the trashcan all the time. The name of this trash is collectivization - Infinity Dev"
 ];
 
+// Max 10 characters
+pub const ATTACK_SIGNS: [&str; 3] = [
+    "I <3 U",
+    "♾️",
+    "🦀",
+];
+
 // Hate weights, determins how much weight is adder per event.
 pub const HATE_CREEP_ATTACK_WEIGHT: f32 = 1.0;
 pub const HATE_CREEP_KILLED_WEIGHT: f32 = 2.0;

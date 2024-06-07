@@ -285,7 +285,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 return true;
             }
-        } else if giftdrop_count < 3 && game::flags().get("bulldozeRoom".to_string()).is_some() {
+        } else if giftdrop_count < 3 && game::flags().get("giftbasket".to_string()).is_some() {
             let body = vec![Part::Move, Part::Carry];
 
             let role_name = role_to_name(Role::GiftBasket);

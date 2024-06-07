@@ -33,11 +33,12 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
         if repairable.pos().get_range_to(creep.pos()) > 1 {
             let _ = creep.say("🚚", false);
             creep.better_move_to(creepmem, cache, repairable.pos(), 1);
+            return;
         } else {
             let _ = creep.say("🔨", false);
             let _ = creep.repair(repairable.as_repairable().unwrap());
+            return;
         }
-        return;
     }
 
 
@@ -63,14 +64,6 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
                 let _ = creep.build(site);
             }
 
-        }
-    } if let Some(repairable) = cache.structures.needs_repair.first() {
-        if repairable.pos().get_range_to(creep.pos()) > 1 {
-            let _ = creep.say("🚚", false);
-            creep.better_move_to(creepmem, cache, repairable.pos(), 1);
-        } else {
-            let _ = creep.say("🔨", false);
-            let _ = creep.repair(repairable.as_repairable().unwrap());
         }
     }
 

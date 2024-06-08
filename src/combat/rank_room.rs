@@ -2,10 +2,10 @@ use screeps::{game, HasId, HasPosition, ObjectId, OwnedStructureProperties, Room
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
-    room::cache::tick_cache::RoomCache, traits::room::RoomExtensions,
+    room::cache::tick_cache::{CachedRoom, RoomCache}, traits::room::RoomExtensions,
 };
 
-pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
     if memory.rooms.contains_key(&room.name()) {
         return;
     }
@@ -28,13 +28,13 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         }
     }
 
-    let mineral_id = if cache.resources.mineral.is_some() {
-        Some(cache.resources.mineral.as_ref().unwrap().id())
+    let mineral_id = if cached_room.resources.mineral.is_some() {
+        Some(cached_room.resources.mineral.as_ref().unwrap().id())
     } else {
         None
     };
 
-    let sources: Vec<RoomXY> = cache.resources.sources.iter().map(|x| game::get_object_by_id_typed(&x.id).unwrap().pos().xy()).collect();
+    let sources: Vec<RoomXY> = cached_room.resources.sources.iter().map(|x| game::get_object_by_id_typed(&x.id).unwrap().pos().xy()).collect();
     let sources = if sources.is_empty() {
         None
     } else {

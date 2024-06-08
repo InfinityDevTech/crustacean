@@ -37,7 +37,7 @@ pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority
         return (1.0 - amount / capacity) * priority
     }
 
-    (amount / capacity) * 100.0 * priority
+    (amount / capacity) * priority
 }
 
 /// Convert a role to its respective string

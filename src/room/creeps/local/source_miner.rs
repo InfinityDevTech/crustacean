@@ -6,25 +6,24 @@ use screeps::{
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
     room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType},
-        RoomCache,
+        hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
     },
     traits::creep::CreepExtensions, utils::scale_haul_priority,
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creep_memory = memory.creeps.get_mut(&creep.name());
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if creep_memory.is_none() || creep_memory.as_ref().unwrap().task_id.is_none() {
+    if creep_memory.task_id.is_none() {
         let _ = creep.say("kurt kob", true);
         let _ = creep.suicide();
         return;
     }
 
-    let creep_memory = creep_memory.unwrap();
+    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
     let pointer_index = creep_memory.task_id.unwrap() as usize;
-    let scouted_source = &mut cache.resources.sources[pointer_index];
+    let scouted_source = &mut cached_room.resources.sources[pointer_index];
     scouted_source.creeps.push(creep.try_id().unwrap());
 
     let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
@@ -38,32 +37,16 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
-        if !link_deposit(creep, creep_memory, cache) {
-            deposit_energy(creep, creep_memory, cache);
+        if !link_deposit(creep, creep_memory, &cached_room) {
+            deposit_energy(creep, creep_memory, cached_room);
         }
-        harvest_source(creep, source, creep_memory, cache);
+        harvest_source(creep, source, creep_memory, cached_room);
     } else {
-        harvest_source(creep, source, creep_memory, cache);
+        harvest_source(creep, source, creep_memory, cached_room);
     }
 }
 
-fn needs_haul_manually(creep: &Creep, cache: &mut RoomCache) -> bool {
-    let count = cache
-        .creeps
-        .creeps_of_role
-        .get(&Role::Hauler)
-        .unwrap_or(&vec![])
-        .len();
-
-    if count == 0 {
-        let _ = creep.drop(ResourceType::Energy, None);
-
-        return false;
-    }
-    false
-}
-
-fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache: &mut RoomCache) {
+fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache: &mut CachedRoom) {
     if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
         return;
     }
@@ -77,7 +60,7 @@ fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache
     }
 }
 
-fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache) -> bool {
+fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &CachedRoom) -> bool {
     let link_id = creep_memory.link_id;
 
     if let Some(linkid) = link_id {
@@ -97,11 +80,7 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &RoomCache
     false
 }
 
-fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) {
-    if needs_haul_manually(creep, cache) {
-        return;
-    }
-
+fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
     if repair_container(creep, creep_memory, cache) {
         return;
     }
@@ -143,7 +122,7 @@ fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Roo
     }
 }
 
-fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) -> bool {
+fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
     let container =
         cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&cache.structures);
 

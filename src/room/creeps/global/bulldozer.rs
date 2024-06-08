@@ -6,6 +6,9 @@ use crate::{
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+
+    let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+
     let creep_memory = memory.creeps.get_mut(&creep.name());
     if creep_memory.is_none() {
         return;
@@ -19,7 +22,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 if creep.pos().is_near_to(flag.pos()) {
                     let _ = creep.say("👁️", true);
                 } else {
-                    creep.better_move_to(creep_memory, cache, flag.pos(), 1);
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1);
                 }
                 return;
             }
@@ -29,7 +32,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                     let _ = creep.say("JK - <3 U", true);
                 } else {
                     let _ = creep.say("DIE DIE DIE", true);
-                    creep.better_move_to(creep_memory, cache, flag.pos(), 1);
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1);
                 }
                 return;
             }
@@ -41,7 +44,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
                 if creep.attack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
-                    creep.better_move_to(creep_memory, cache, enemy.pos(), 1);
+                    creep.better_move_to(creep_memory, room_cache, enemy.pos(), 1);
                 }
             } else {
                 let mut structure = creep.room().unwrap().find(find::HOSTILE_STRUCTURES, None);
@@ -54,16 +57,16 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                             let _ = creep.attack(attackabke);
                         }
                     } else {
-                        creep.better_move_to(creep_memory, cache, structure.pos(), 1);
+                        creep.better_move_to(creep_memory, room_cache, structure.pos(), 1);
                     }
                 } else {
                     let _ = creep.say("🚚", false);
-                    creep.better_move_to(creep_memory, cache, flag.pos(), 3);
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 3);
                 }
             }
         } else {
             let _ = creep.say("🚚", false);
-            creep.better_move_to(creep_memory, cache, flag.pos(), 2);
+            creep.better_move_to(creep_memory, room_cache, flag.pos(), 2);
         }
     } else {
         let _ = creep.say("❓", false);

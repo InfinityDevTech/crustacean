@@ -6,7 +6,7 @@ use wasm_bindgen::JsCast;
 
 use crate::{
     memory::{CreepHaulTask, CreepMemory, ScreepsMemory},
-    room::cache::tick_cache::{hauling::HaulingType, RoomCache},
+    room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache},
     traits::creep::CreepExtensions,
 };
 
@@ -17,26 +17,22 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
     let creep_name = creep.name();
 
-    let needs_energy = memory
-        .creeps
-        .get(&creep_name)
-        .unwrap()
-        .needs_energy
-        .unwrap_or(false);
+    let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
+    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
-    if let Some(order) = &memory.creeps.get(&creep_name).unwrap().hauling_task.clone() {
+    if let Some(order) = &creep_memory.hauling_task.clone() {
         let _ = creep.say("EXEC", false);
         execute_order(
             creep,
             memory.creeps.get_mut(&creep_name).unwrap(),
-            cache,
+            cached_room,
             order,
         );
     } else {
-        let new_order = if needs_energy {
+        let new_order = if creep_memory.needs_energy.unwrap_or(false) {
             let _ = creep.say("📋", false);
 
-            cache.hauling.find_new_order(
+            cached_room.hauling.find_new_order(
                 creep,
                 memory,
                 None,
@@ -49,7 +45,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         } else {
             let _ = creep.say("🔋", false);
 
-            cache
+            cached_room
                 .hauling
                 .find_new_order(creep, memory, None, vec![HaulingType::Transfer])
         };
@@ -59,7 +55,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             execute_order(
                 creep,
                 memory.creeps.get_mut(&creep.name()).unwrap(),
-                cache,
+                cached_room,
                 &order,
             );
         }
@@ -91,7 +87,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 pub fn execute_order(
     creep: &Creep,
     creep_memory: &mut CreepMemory,
-    cache: &mut RoomCache,
+    cache: &mut CachedRoom,
     order: &CreepHaulTask,
 ) {
     let pickup_target = order.target_id;

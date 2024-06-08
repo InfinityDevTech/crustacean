@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::{Once, OnceLock}};
 use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
-use room::visuals::visualise_scouted_rooms;
+use room::{cache::tick_cache::RoomCache, visuals::visualise_scouted_rooms};
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
@@ -67,34 +67,17 @@ pub fn game_loop() {
     }
 
     let mut memory = ScreepsMemory::init_memory();
+    let mut cache = RoomCache::new();
     let mut allies = Allies::new(&mut memory);
     allies.sync(&mut memory);
 
-    if game::time() % 10 == 0 {
-        for room in game::rooms().values() {
-            if let Some(controller) = room.controller() {
-                if controller.my() && !memory.rooms.contains_key(&room.name()) {
-                    plan_room(&room, &mut memory);
-                }
-            }
-        }
-    }
-
-    if just_reset() {
-        for room in game::rooms().keys() {
-            let room = game::rooms().get(room).unwrap();
-
-            // If the planner says false on the first game tick, it doesnt have enough CPU to plan the room.
-            // So we can fill teh bucket and try again next tick.
-            if room.my() && !planning::room::plan_room(&room, &mut memory) {
-                return;
-            }
-        }
-    }
+    //if just_reset() {
+    //
+    //}
 
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
-        democracy::start_government(game_room, &mut memory);
+        democracy::start_government(game_room, &mut memory, &mut cache);
 
     }
 

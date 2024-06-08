@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]use std::collections::HashMap;
 
 use screeps::{
-    game::{self}, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
+    game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomName, RoomXY
 };
 
-use super::RoomCache;
+use super::{CachedRoom, RoomCache};
 use crate::traits::creep::CreepExtensions;
 
+#[derive(Debug, Clone)]
 pub struct TrafficCache {
     pub matched_coord: HashMap<ObjectId<Creep>, RoomXY>,
     pub intended_move: HashMap<ObjectId<Creep>, RoomXY>,
@@ -29,7 +30,7 @@ impl TrafficCache {
     }
 }
 
-pub fn run_movement(room_cache: &mut RoomCache) {
+pub fn run_movement(room_cache: &mut CachedRoom) {
     room_cache.traffic.movement_map.clear();
     let mut creeps_with_movement_intent = Vec::new();
 
@@ -95,7 +96,7 @@ pub fn run_movement(room_cache: &mut RoomCache) {
     }
 }
 
-fn depth_first_searh(creep: &Creep, room_cache: &mut RoomCache, visited_creeps: &mut Vec<ObjectId<Creep>>, score: Option<i32>) -> i32 {
+fn depth_first_searh(creep: &Creep, room_cache: &mut CachedRoom, visited_creeps: &mut Vec<ObjectId<Creep>>, score: Option<i32>) -> i32 {
     let mut score = score.unwrap_or(0);
     visited_creeps.push(creep.try_id().unwrap());
 
@@ -146,7 +147,7 @@ fn depth_first_searh(creep: &Creep, room_cache: &mut RoomCache, visited_creeps: 
     i32::MIN
 }
 
-fn assign_creep_to_coordinate(creep: &Creep, room_cache: &mut RoomCache, coord: RoomXY) {
+fn assign_creep_to_coordinate(creep: &Creep, room_cache: &mut CachedRoom, coord: RoomXY) {
     let packed_coord = coord;
 
     room_cache.traffic.matched_coord.insert(creep.try_id().unwrap(), packed_coord);

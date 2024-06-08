@@ -5,7 +5,7 @@ use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Room, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
-use crate::{config, room::cache::tick_cache::RoomCache};
+use crate::{config, room::cache::tick_cache::{CachedRoom, RoomCache}};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum RoomType {
@@ -21,7 +21,7 @@ pub trait RoomExtensions {
     fn split_name(&self) -> (String, u32, String, u32);
     fn my(&self) -> bool;
 
-    fn get_target_for_miner(&self, room_memory: &Room, cache: &mut RoomCache) -> Option<u8>;
+    fn get_target_for_miner(&self, room_memory: &Room, cache: &mut CachedRoom) -> Option<u8>;
 
     fn is_my_sign(&self) -> bool;
 
@@ -81,8 +81,8 @@ impl RoomExtensions for screeps::Room {
         adjacent_checked
     }
 
-    fn get_target_for_miner(&self, room: &Room, cache: &mut RoomCache) -> Option<u8> {
-        let sources = &cache.resources.sources;
+    fn get_target_for_miner(&self, room: &Room, room_cache: &mut CachedRoom) -> Option<u8> {
+        let sources = &room_cache.resources.sources;
 
         for (i, source) in sources.iter().enumerate() {
             if source.calculate_work_parts() < source.parts_needed() && source.creeps.len() < source.calculate_mining_spots(room).into() {
@@ -100,7 +100,7 @@ impl RoomExtensions for screeps::Room {
 
         let sign = self.controller().unwrap().sign();
         if sign.is_none() {
-            return true;
+            return false;
         }
 
         let sign_text = self.controller().unwrap().sign().unwrap().text();

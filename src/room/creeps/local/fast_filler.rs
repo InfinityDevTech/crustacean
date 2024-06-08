@@ -5,43 +5,35 @@ use screeps::{
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::ScreepsMemory,
+    memory::{CreepMemory, ScreepsMemory},
     room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType},
-        RoomCache,
+        hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
     },
     traits::creep::CreepExtensions, utils::scale_haul_priority,
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let fastfiller_container = memory
-        .creeps
-        .get_mut(&creep.name())
-        .unwrap()
-        .fastfiller_container;
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
+
+    let fastfiller_container = creep_memory.fastfiller_container;
 
     if creep.spawning() || creep.tired() {
         let _ = creep.say("😴", false);
         return;
     }
 
-    if check_current_position(creep, memory, cache) {
+    if check_current_position(creep, creep_memory, cached_room) {
         return
     }
 
-    self_renew(creep, cache);
+    self_renew(creep, cached_room);
 
     if fastfiller_container.is_none() {
-        if let Some(container_id) = find_container(creep, memory, cache) {
-            memory
-                .creeps
-                .get_mut(&creep.name())
-                .unwrap()
-                .fastfiller_container = Some(container_id);
+        if let Some(container_id) = find_container(creep, cached_room) {
+            creep_memory.fastfiller_container = Some(container_id);
         }
     }
-
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let _ = creep.say("WTHD", false);
@@ -54,7 +46,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 true
             );
 
-            cache.hauling.create_order(
+            cached_room.hauling.create_order(
                 creep.try_raw_id().unwrap(),
                 Some(ResourceType::Energy),
                 Some(creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
@@ -75,14 +67,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             if creep.pos().is_near_to(container.pos()) {
                 let _ = creep.withdraw(&container, ResourceType::Energy, None);
             } else {
-                creep.better_move_to(creep_memory, cache, container.pos(), 1);
+                creep.better_move_to(creep_memory, cached_room, container.pos(), 1);
             }
 
             return;
         }
     }
 
-    let possible_targets = find_possible_targets(creep, cache);
+    let possible_targets = find_possible_targets(creep, cached_room);
     if possible_targets.is_empty() {
         return;
     }
@@ -97,11 +89,11 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             None,
         );
     } else {
-        creep.better_move_to(creep_memory, cache, target.pos(), 1);
+        creep.better_move_to(creep_memory, cached_room, target.pos(), 1);
     }
 }
 
-pub fn self_renew(creep: &Creep, cache: &mut RoomCache) {
+pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
     let spawn = cache.structures.spawns.values().next().unwrap();
 
     if creep.ticks_to_live() < Some(100) && creep.pos().is_near_to(spawn.pos()) {
@@ -109,7 +101,7 @@ pub fn self_renew(creep: &Creep, cache: &mut RoomCache) {
     }
 }
 
-pub fn find_possible_targets(creep: &Creep, _cache: &RoomCache) -> Vec<RawObjectId> {
+pub fn find_possible_targets(creep: &Creep, _cache: &CachedRoom) -> Vec<RawObjectId> {
     let find_call = creep.pos().find_in_range(find::STRUCTURES, 1);
 
     let mut possible_targets = Vec::new();
@@ -138,7 +130,7 @@ pub fn find_possible_targets(creep: &Creep, _cache: &RoomCache) -> Vec<RawObject
     possible_targets
 }
 
-pub fn check_current_position(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
+pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
     let current_pos = creep.pos().xy();
     let spawn_pos = cache.structures.spawns.values().next().unwrap().pos().xy();
 
@@ -170,7 +162,7 @@ pub fn check_current_position(creep: &Creep, memory: &mut ScreepsMemory, cache: 
 
         if pos_1_creep.is_empty() {
             creep.better_move_to(
-                memory.creeps.get_mut(&creep.name()).unwrap(),
+                creep_memory,
                 cache,
                 position_1.into(),
                 0,
@@ -178,7 +170,7 @@ pub fn check_current_position(creep: &Creep, memory: &mut ScreepsMemory, cache: 
             return true;
         } else if pos_2_creep.is_empty() {
             creep.better_move_to(
-                memory.creeps.get_mut(&creep.name()).unwrap(),
+                creep_memory,
                 cache,
                 position_2.into(),
                 0,
@@ -194,13 +186,12 @@ pub fn check_current_position(creep: &Creep, memory: &mut ScreepsMemory, cache: 
 
 pub fn find_container(
     creep: &Creep,
-    _memory: &mut ScreepsMemory,
-    _cache: &mut RoomCache,
+    cache: &mut CachedRoom,
 ) -> Option<ObjectId<StructureContainer>> {
-    let possible_containers = creep.pos().find_in_range(find::STRUCTURES, 1);
+    let possible_containers = cache.structures.containers.values().collect::<Vec<_>>();
 
     for container in possible_containers {
-        if let StructureObject::StructureContainer(container) = container {
+        if container.pos().get_range_to(creep.pos()) <= 1 {
             return Some(container.id());
         }
     }

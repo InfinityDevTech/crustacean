@@ -5,14 +5,14 @@ use screeps::{
 
 use crate::{
     memory::ScreepsMemory,
-    room::{cache::tick_cache::RoomCache, democracy::remote_path_call},
+    room::{cache::tick_cache::{CachedRoom, RoomCache}, democracy::remote_path_call},
     traits::room::RoomExtensions,
 };
 
 pub fn fetch_possible_remotes(
     room: &Room,
     memory: &mut ScreepsMemory,
-    room_cache: &mut RoomCache,
+    room_cache: &mut CachedRoom,
 ) -> Vec<RoomName> {
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         if !room_memory.remotes.is_empty() {
@@ -50,7 +50,7 @@ pub fn fetch_possible_remotes(
 
 pub fn rank_remote_room(
     memory: &mut ScreepsMemory,
-    room_cache: &RoomCache,
+    room_cache: &CachedRoom,
     remote_room: &RoomName,
 ) -> f32 {
     // If our room doesnt have a spawn placed yet.

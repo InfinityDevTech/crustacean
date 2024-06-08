@@ -2,7 +2,7 @@ use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::{CreepMemory, ScreepsMemory},
-    room::cache::tick_cache::{hauling::HaulingType, RoomCache},
+    room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache},
     traits::creep::CreepExtensions,
 };
 
@@ -10,6 +10,7 @@ use super::hauler::execute_order;
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
     let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
     if creep.spawning() {
@@ -18,13 +19,13 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let _ = creep.say("📋", false);
-        find_energy(creep, memory, cache);
+        find_energy(creep, memory, cached_room);
     } else {
-        build(creep, creep_memory, cache)
+        build(creep, creep_memory, cached_room)
     }
 }
 
-pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
+pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) {
     for repairable in cache.structures.needs_repair.clone() {
         if repairable.as_repairable().unwrap().hits() as f32 > (repairable.as_repairable().unwrap().hits_max() as f32 * 0.10) {
             continue;
@@ -72,7 +73,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
     }
 }
 
-pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     let creepmem = memory.creeps.get(&creep.name()).unwrap();
 
     let task = &creepmem.hauling_task.clone();

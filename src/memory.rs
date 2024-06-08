@@ -36,7 +36,7 @@ structstruck::strike! {
 pub struct CreepMemory{
     // Owning room
     #[serde(rename = "0")]
-    pub owning_room: String,
+    pub owning_room: RoomName,
     // Path
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "1")]

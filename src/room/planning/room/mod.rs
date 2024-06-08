@@ -7,16 +7,16 @@ pub mod construction;
 pub mod structure_visuals;
 pub mod remotes;
 
-pub fn plan_room(room: &Room, memory: &mut ScreepsMemory) -> bool {
+pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     if game::cpu::bucket() < 500 {
         info!("[PLANNER] CPU bucket is too low to plan room: {}", room.name_str());
         return false;
     }
 
     info!("[PLANNER] Planning order recieved! Planning: {}", room.name_str());
-    let cache = &mut RoomCache::new_from_room(room, memory, true);
+    cache.create_if_not_exists(room, memory);
 
-    let remotes = remotes::fetch_possible_remotes(room, memory, cache);
+    let remotes = remotes::fetch_possible_remotes(room, memory, cache.rooms.get_mut(&room.name()).unwrap());
 
     let room_memory = RoomMemory {
         name: room.name_str(),

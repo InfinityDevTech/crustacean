@@ -14,7 +14,29 @@ pub mod hauling;
 pub mod resources;
 pub mod traffic;
 
+#[derive(Debug, Clone)]
 pub struct RoomCache {
+    pub rooms: HashMap<RoomName, CachedRoom>,
+}
+
+impl RoomCache {
+    pub fn new() -> RoomCache {
+        RoomCache {
+            rooms: HashMap::new()
+        }
+    }
+
+    pub fn create_if_not_exists(&mut self, room: &Room, memory: &mut ScreepsMemory) {
+        if !self.rooms.contains_key(&room.name()) {
+            let cached_room = CachedRoom::new_from_room(room, memory, room.my());
+
+            self.rooms.insert(room.name(), cached_room);
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CachedRoom {
     pub my_room: bool,
     pub room_name: RoomName,
 
@@ -30,15 +52,15 @@ pub struct RoomCache {
     pub heap_cache: RoomHeapCache,
 }
 
-impl RoomCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, my: bool) -> RoomCache {
+impl CachedRoom {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, my: bool) -> CachedRoom {
         let mut room_cache = heap().rooms.lock().unwrap();
 
         let mut room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
             RoomHeapCache::new(room)
         });
 
-        RoomCache {
+        CachedRoom {
             my_room: my,
             room_name: room.name(),
 

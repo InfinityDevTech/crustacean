@@ -102,31 +102,6 @@ impl RoomStructureCache {
         }
     }
 
-    pub fn temp(&mut self, hauling: &mut HaulingCache) {
-        for source in self.extensions.values() {
-            if source.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
-                let priority = scale_haul_priority(
-                    source.store().get_capacity(Some(ResourceType::Energy)),
-                    source.store().get_used_capacity(Some(ResourceType::Energy)),
-                    HaulingPriority::Spawning,
-                    true
-                );
-
-                hauling.create_order(
-                    source.raw_id(),
-                    Some(ResourceType::Energy),
-                    Some(source
-                        .store()
-                        .get_free_capacity(Some(ResourceType::Energy))
-                        .try_into()
-                        .unwrap()),
-                    priority,
-                    HaulingType::Transfer,
-                );
-            }
-        }
-    }
-
     pub fn refresh_ruin_cache(&mut self, room: &Room) {
         //if game::time() % 100 != 0 {
         //    return;

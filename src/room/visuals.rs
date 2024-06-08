@@ -2,14 +2,14 @@ use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, Room
 
 use crate::memory::ScreepsMemory;
 
-use super::cache::tick_cache::RoomCache;
+use super::cache::tick_cache::{CachedRoom, RoomCache};
 
-pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    visualise_spawn_progess(room, memory, cache);
-    visualise_controller_progress(room, memory, cache);
+pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
+    visualise_spawn_progess(room, memory, cached_room);
+    visualise_controller_progress(room, memory, cached_room);
 }
 
-pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     for spawn in cache.structures.spawns.values() {
         if let Some(spawning) = spawn.spawning() {
             let progress = (spawning.remaining_time() as f32 / spawning.need_time() as f32) * 100.0;
@@ -63,7 +63,7 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     }
 }
 
-pub fn visualise_controller_progress(room: &Room, _memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn visualise_controller_progress(room: &Room, _memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     let controller = &cache.structures.controller.as_ref().unwrap().controller;
     let progress = (controller.progress().unwrap() as f32 / controller.progress_total().unwrap() as f32) * 100.0;
 

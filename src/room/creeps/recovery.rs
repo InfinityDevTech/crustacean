@@ -1,4 +1,6 @@
-use screeps::{game, SharedCreepProperties};
+use std::str::FromStr;
+
+use screeps::{game, RoomName, SharedCreepProperties};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, utils::name_to_role};
 
@@ -13,6 +15,8 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
         let role = name_to_role(split_name.next().unwrap());
         let _time = split_name.next().unwrap();
         let room = split_name.next().unwrap();
+
+        let room_name = RoomName::from_str(room).unwrap();
 
         let creep = game::creeps().get(creep_name.clone()).unwrap();
 
@@ -30,7 +34,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     fastfiller_container: None,
                     hauling_task: None,
                     scout_target: None,
-                    owning_room: room.to_string(),
+                    owning_room: room_name,
                     path: None,
                 };
 
@@ -44,7 +48,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     scout_target: None,
                     fastfiller_container: None,
                     hauling_task: None,
-                    owning_room: room.to_string(),
+                    owning_room: room_name,
                     path: None,
                 };
 
@@ -58,7 +62,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     scout_target: None,
                     fastfiller_container: None,
                     hauling_task: None,
-                    owning_room: room.to_string(),
+                    owning_room: room_name,
                     path: None,
                 };
 
@@ -72,7 +76,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     scout_target: None,
                     fastfiller_container: None,
                     hauling_task: None,
-                    owning_room: room.to_string(),
+                    owning_room: room_name,
                     path: None,
                 };
 
@@ -86,7 +90,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                     scout_target: None,
                     fastfiller_container: None,
                     hauling_task: None,
-                    owning_room: room.to_string(),
+                    owning_room: room_name,
                     path: None,
                 };
 

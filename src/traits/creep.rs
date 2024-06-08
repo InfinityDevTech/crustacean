@@ -4,7 +4,7 @@ use crate::{
         move_target::MoveTarget,
         utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::tick_cache::RoomCache,
+    room::cache::tick_cache::{CachedRoom, RoomCache},
 };
 
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
@@ -14,11 +14,11 @@ use screeps::{
 
 pub trait CreepExtensions {
     // Movement
-    fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut RoomCache);
+    fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom);
     fn better_move_to(
         &self,
         creep_memory: &mut CreepMemory,
-        cache: &mut RoomCache,
+        cache: &mut CachedRoom,
         target: Position,
         range: u16,
     );
@@ -28,13 +28,13 @@ pub trait CreepExtensions {
     fn tired(&self) -> bool;
     fn near_age_death(&self) -> bool;
 
-    fn move_request(&self, target_delta: Direction, room_cache: &mut RoomCache);
-    fn get_possible_moves(&self, room_cache: &mut RoomCache) -> Vec<RoomXY>;
+    fn move_request(&self, target_delta: Direction, room_cache: &mut CachedRoom);
+    fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
 }
 
 impl CreepExtensions for screeps::Creep {
     // Movement
-    fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut RoomCache) {
+    fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
         let serialized_path = path;
         let serialized_vec = serialized_path
             .split("")
@@ -87,7 +87,7 @@ impl CreepExtensions for screeps::Creep {
     fn better_move_to(
         &self,
         creep_memory: &mut CreepMemory,
-        cache: &mut RoomCache,
+        cache: &mut CachedRoom,
         target: Position,
         range: u16,
     ) {
@@ -134,7 +134,7 @@ impl CreepExtensions for screeps::Creep {
 
     // Part of harabi's movement code.
 
-    fn move_request(&self, target_delta: Direction, room_cache: &mut RoomCache) {
+    fn move_request(&self, target_delta: Direction, room_cache: &mut CachedRoom) {
         let current_position = self.pos();
         let x = current_position.x().u8();
         let y = current_position.y().u8();
@@ -169,7 +169,7 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
-    fn get_possible_moves(&self, room_cache: &mut RoomCache) -> Vec<RoomXY> {
+    fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY> {
         if room_cache
             .traffic
             .cached_ops

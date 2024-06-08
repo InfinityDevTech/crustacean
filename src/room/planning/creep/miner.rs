@@ -6,14 +6,13 @@ use screeps::{game, HasId, Part, ResourceType, Room};
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
     room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType},
-        RoomCache,
+        hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
     },
     traits::room::RoomExtensions,
     utils::{role_to_name, scale_haul_priority},
 };
 
-pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
+pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut CachedRoom) -> bool {
     let mut cost = 0;
     let mut parts = Vec::new();
 
@@ -124,7 +123,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     hauling_task: None,
                     scout_target: None,
                     fastfiller_container: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -147,7 +146,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     hauling_task: None,
                     fastfiller_container: None,
                     scout_target: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -182,7 +181,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     link_id: None,
                     scout_target: None,
                     hauling_task: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -217,7 +216,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     link_id: None,
                     hauling_task: None,
                     scout_target: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -239,7 +238,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     link_id: None,
                     hauling_task: None,
                     scout_target: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -277,7 +276,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     link_id: None,
                     scout_target: None,
                     hauling_task: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -299,7 +298,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     link_id: None,
                     scout_target: None,
                     hauling_task: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 
@@ -342,7 +341,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Room
                     hauling_task: None,
                     link_id: None,
                     scout_target: None,
-                    owning_room: room.name().to_string(),
+                    owning_room: room.name(),
                     path: None,
                 };
 

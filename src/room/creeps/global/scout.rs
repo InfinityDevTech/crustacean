@@ -2,7 +2,6 @@ use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
 use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
-use crate::combat::rank_room;
 use crate::{
     memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
 };
@@ -14,10 +13,9 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
     let _ = creep.notify_when_attacked(false);
-
     let _ = creep.say("🔍 😛", true);
 
-
+    let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if let Some(scout_target) = creep_memory.scout_target {
@@ -30,7 +28,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             let _ = creep.say("🔍 😛", true);
             creep.better_move_to(
                 memory.creeps.get_mut(&creep.name()).unwrap(),
-                cache,
+                cached_room,
                 scout_target.pos(),
                 23,
             );
@@ -76,7 +74,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         creep.better_move_to(
             memory.creeps.get_mut(&creep.name()).unwrap(),
-            cache,
+            cached_room,
             pos.pos(),
             23,
         );

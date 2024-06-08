@@ -7,11 +7,14 @@ use crate::{
 
 use super::local;
 
-pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     // This is done in this manner to stop an "impossible" state
     // I reached, idk how, idk why, idk who, but it happened
     // and this is the only way I could think of to fix it
-    let creeps = cache.creeps.creeps_in_room.clone();
+    let mut temp = cache.rooms.clone();
+    let cached_room = temp.get_mut(&room.name()).unwrap();
+    let creeps = &cached_room.creeps.creeps_in_room;
+
     let creeps = creeps.keys();
 
     if creeps.len() == 0 { return; }
@@ -34,20 +37,12 @@ pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let start_time = game::cpu::get_used();
 
         let role = utils::name_to_role(&creep.name());
-
         if creep.spawning() || role.is_none() { continue; }
-
-        let heap_creep = cache.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));
-
-        let health_change = heap_creep.get_health_change(&creep);
-        if health_change != HealthChangeType::None {
-            process_health_event(&creep, memory, health_change);
-        }
 
         match role.unwrap() {
             Role::Miner => local::source_miner::run_creep(&creep, memory, cache),
             Role::Hauler => {
-                cache.hauling.haulers.push(creep.name());
+                cache.rooms.get_mut(&room.name()).unwrap().hauling.haulers.push(creep.name());
             }
             Role::Upgrader => local::upgrader::run_creep(&creep, memory, cache),
             Role::Builder => local::builder::run_creep(&creep, memory, cache),
@@ -55,6 +50,13 @@ pub fn run_creeps(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCach
             Role::Bulldozer => global::bulldozer::run_creep(&creep, memory, cache),
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
             Role::GiftBasket => global::gift_drop::run_creep(&creep, memory, cache),
+        }
+
+        let heap_creep = cached_room.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));
+
+        let health_change = heap_creep.get_health_change(&creep);
+        if health_change != HealthChangeType::None {
+            process_health_event(&creep, memory, health_change);
         }
 
         let end_time = game::cpu::get_used();

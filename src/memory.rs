@@ -140,6 +140,52 @@ structstruck::strike! {
     }
 }
 
+structstruck::strike! {
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
+    pub struct StatsData {
+        pub gcl_level: u32,
+        pub gcl_progress: f64,
+        pub gcl_progress_total: f64,
+
+        pub gpl: u8,
+        pub credits: f64,
+        pub tick: u32,
+        pub age: u32,
+
+        pub cpu: pub struct CPUStats {
+            pub bucket: i32,
+            pub used: f64,
+        },
+
+        pub rooms: HashMap<RoomName, pub struct RoomStats {
+            pub cpu_used: f64,
+
+            pub rcl: u8,
+            pub rcl_progress: Option<u32>,
+            pub rcl_progress_total: Option<u32>,
+
+            pub creep_count: u32,
+            pub cpu_usage_by_role: HashMap<Role, f64>,
+            pub creeps_by_role: HashMap<Role, u32>,
+
+            pub energy: pub struct EnergyStats {
+                pub capacity: u32,
+                pub available: u32,
+                pub stored: u32,
+
+                pub income_mining: u32,
+                pub income_trading: u32,
+                pub income_other: u32,
+
+                pub spending_spawning: u32,
+                pub spending_upgrading: u32,
+                pub spending_construction: u32,
+                pub spending_repair: u32,
+            },
+        }>
+    }
+}
+
 // Top level memory.
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
@@ -152,6 +198,8 @@ structstruck::strike! {
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
 
         pub allies: Vec<String>,
+
+        pub stats: StatsData,
     }
 }
 
@@ -168,8 +216,9 @@ impl ScreepsMemory {
 
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
-
                 allies: Vec::new(),
+
+                stats: StatsData::default(),
             };
 
             memory.write_memory();
@@ -191,8 +240,9 @@ impl ScreepsMemory {
 
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),
-
                         allies: Vec::new(),
+
+                        stats: StatsData::default(),
                     }
                 }
             }
@@ -257,5 +307,28 @@ impl EnemyPlayer {
 
     pub fn increment_hate(&mut self, amount: f32) {
         self.hate += amount;
+    }
+}
+
+impl Default for StatsData {
+    fn default() -> Self {
+        let cpu = CPUStats {
+            bucket: 0,
+            used: 0.0,
+        };
+
+        StatsData {
+            gcl_level: 0,
+            gcl_progress: 0.0,
+            gcl_progress_total: 0.0,
+            gpl: 0,
+            credits: 0.0,
+            tick: 0,
+            age: 0,
+
+            cpu,
+
+            rooms: HashMap::new(),
+        }
     }
 }

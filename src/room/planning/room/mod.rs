@@ -14,7 +14,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
     }
 
     info!("[PLANNER] Planning order recieved! Planning: {}", room.name_str());
-    cache.create_if_not_exists(room, memory);
+    cache.create_if_not_exists(room, memory, None);
 
     let remotes = remotes::fetch_possible_remotes(room, memory, cache.rooms.get_mut(&room.name()).unwrap());
 

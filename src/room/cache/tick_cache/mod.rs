@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{Room, RoomName};
+use stats::StatsCache;
 
 use crate::{heap, memory::ScreepsMemory, traits::room::RoomExtensions};
 
@@ -13,6 +14,7 @@ pub mod creeps;
 pub mod hauling;
 pub mod resources;
 pub mod traffic;
+pub mod stats;
 
 #[derive(Debug, Clone)]
 pub struct RoomCache {
@@ -26,19 +28,19 @@ impl RoomCache {
         }
     }
 
-    pub fn create_if_not_exists(&mut self, room: &Room, memory: &mut ScreepsMemory) {
-        if !self.rooms.contains_key(&room.name()) {
-            let cached_room = CachedRoom::new_from_room(room, memory, room.my());
+    pub fn create_if_not_exists(&mut self, room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) {
+        self.rooms.entry(room.name()).or_insert_with(|| {
+            let cached_room = CachedRoom::new_from_room(room, memory, remote_manager);
 
-            self.rooms.insert(room.name(), cached_room);
-        }
+            cached_room
+        });
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct CachedRoom {
-    pub my_room: bool,
     pub room_name: RoomName,
+    pub manager: Option<RoomName>,
 
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
@@ -50,10 +52,12 @@ pub struct CachedRoom {
     pub hauling: HaulingCache,
 
     pub heap_cache: RoomHeapCache,
+
+    pub stats: StatsCache
 }
 
 impl CachedRoom {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, my: bool) -> CachedRoom {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) -> CachedRoom {
         let mut room_cache = heap().rooms.lock().unwrap();
 
         let mut room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
@@ -64,8 +68,8 @@ impl CachedRoom {
         let structures = RoomStructureCache::new_from_room(room, &resources, memory, &mut room_heap);
 
         CachedRoom {
-            my_room: my,
             room_name: room.name(),
+            manager: remote_manager,
 
             structures,
             creeps: CreepCache::new_from_room(room, memory),
@@ -75,6 +79,7 @@ impl CachedRoom {
             hauling: HaulingCache::new(),
 
             heap_cache: room_heap,
+            stats: StatsCache::default(),
             //hauling: RefCell::new(HaulingCache::new()),
         }
     }

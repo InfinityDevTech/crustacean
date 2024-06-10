@@ -1,6 +1,5 @@
 use screeps::{
-    game, Creep, HasHits, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties,
-    Source,
+    game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties, Source
 };
 
 use crate::{
@@ -57,6 +56,9 @@ pub fn harvest_source(creep: &Creep, source: Source, creep_memory: &mut CreepMem
     } else {
         let _ = creep.say("⛏️", false);
         let _ = creep.harvest(&source);
+
+        let amount_harvsted = get_aproximate_energy_mined(creep, &source);
+        cache.stats.energy.income_mining += amount_harvsted;
     }
 }
 
@@ -145,4 +147,13 @@ pub fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &m
         }
     }
     false
+}
+
+pub fn get_aproximate_energy_mined(creep: &Creep, source: &Source) -> u32 {
+    let work_parts = creep.body().iter().filter(|x| x.part() == Part::Work && x.hits() > 0).count() as u32;
+
+    let max_mineable = work_parts * 2;
+    let source_remaining = source.energy();
+
+    std::cmp::min(max_mineable, source_remaining)
 }

@@ -1,4 +1,4 @@
-use screeps::{Creep, HasPosition, MaybeHasId, ResourceType, SharedCreepProperties};
+use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
 
 use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
 
@@ -45,6 +45,8 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         creep.better_move_to(creep_memory, cached_room, controller.controller.pos(), 2);
     } else {
         let _ = creep.upgrade_controller(&controller.controller);
+
+        cached_room.stats.energy.spending_upgrading += energy_spent_upgrading(creep);
     }
 }
 
@@ -61,4 +63,10 @@ pub fn sign_controller(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
     }
 
     false
+}
+
+pub fn energy_spent_upgrading(creep: &Creep) -> u32 {
+    let parts = creep.body().iter().filter(|x| x.part() == Part::Work && x.hits() > 0).count() as u32;
+
+    parts * 2
 }

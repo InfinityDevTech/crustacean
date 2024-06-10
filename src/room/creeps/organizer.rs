@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
@@ -8,6 +10,9 @@ use crate::{
 use super::local;
 
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let mut cpu_usage_by_role = HashMap::new();
+    let mut creeps_by_role = HashMap::new();
+
     // This is done in this manner to stop an "impossible" state
     // I reached, idk how, idk why, idk who, but it happened
     // and this is the only way I could think of to fix it
@@ -28,13 +33,13 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     let mut highest_usage: f64 = 0.0;
 
     for creep_name in creeps {
+        let start_time = game::cpu::get_used();
+
         let creep = game::creeps().get(creep_name.clone()).unwrap();
 
         if !memory.creeps.contains_key(creep_name.as_str()) {
             continue;
         }
-
-        let start_time = game::cpu::get_used();
 
         let role = utils::name_to_role(&creep.name());
         if creep.spawning() || role.is_none() { continue; }
@@ -67,7 +72,26 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             highest_usage = cpu_used;
             highest_user = creep.name();
         }
+        let end_time = game::cpu::get_used();
+
+        if let Some(role) = cpu_usage_by_role.get_mut(&role.unwrap()) {
+            *role += end_time - start_time;
+        } else {
+            cpu_usage_by_role.insert(role.unwrap(), end_time - start_time);
+        }
+
+        if let Some(role) = creeps_by_role.get_mut(&role.unwrap()) {
+            *role += 1;
+        } else {
+            creeps_by_role.insert(role.unwrap(), 1);
+        }
     }
+
+    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+        room_cache.stats.creep_count = creep_count as u32;
+        info!("Setting 2 electric boogaloo {:?}", cpu_usage_by_role);
+        room_cache.stats.cpu_usage_by_role = cpu_usage_by_role;
+        room_cache.stats.creeps_by_role = creeps_by_role;
 
     let end_cpu = game::cpu::get_used();
     info!("  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep", end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64);

@@ -81,6 +81,21 @@ pub fn game_loop() {
 
     }
 
+    // --- Start stats
+    memory.stats.cpu.bucket = game::cpu::bucket();
+    memory.stats.cpu.used = game::cpu::get_used();
+
+    memory.stats.gcl_level = game::gcl::level();
+    memory.stats.gcl_progress = game::gcl::progress();
+    memory.stats.gcl_progress_total = game::gcl::progress_total();
+
+    memory.stats.tick = game::time();
+    memory.stats.credits = game::market::credits();
+
+    memory.stats.age += 1;
+
+    // --- End stats
+
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.

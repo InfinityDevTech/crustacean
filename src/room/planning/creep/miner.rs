@@ -134,6 +134,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     path: None,
                 };
 
+                cache.stats.energy.spending_spawning += cost;
+
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
                 return true;
@@ -157,6 +159,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     owning_room: room.name(),
                     path: None,
                 };
+
+                cache.stats.energy.spending_spawning += cost;
 
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
@@ -194,6 +198,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     path: None,
                 };
 
+                cache.stats.energy.spending_spawning += cost;
+
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
                 return true;
@@ -229,6 +235,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     owning_room: room.name(),
                     path: None,
                 };
+
+                cache.stats.energy.spending_spawning += cost;
 
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
@@ -266,6 +274,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     path: None,
                 };
 
+                cache.stats.energy.spending_spawning += cost;
+
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
                 return true;
@@ -288,6 +298,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     owning_room: room.name(),
                     path: None,
                 };
+
+                cache.stats.energy.spending_spawning += cost;
 
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
@@ -329,6 +341,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     path: None,
                 };
 
+                cache.stats.energy.spending_spawning += cost;
+
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
                 return true;
@@ -351,6 +365,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     owning_remote: None,
                     path: None,
                 };
+
+                cache.stats.energy.spending_spawning += cost;
 
                 memory.create_creep(&room.name_str(), &name, cmemory);
 
@@ -395,6 +411,8 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     owning_room: room.name(),
                     path: None,
                 };
+
+                cache.stats.energy.spending_spawning += cost;
 
                 memory.create_creep(&room.name_str(), &name, cmemory);
             }

@@ -34,9 +34,8 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         } else {
             let room = game::rooms().get(remote_room).unwrap();
 
-            cache.create_if_not_exists(&room, memory);
-            let room_cache = cache.rooms.get_mut(&remote_room).unwrap();
             let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+            let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
             if creep_memory.task_id.is_none() {
                 let task = room.get_target_for_miner(room_cache);

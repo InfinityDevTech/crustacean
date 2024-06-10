@@ -31,9 +31,11 @@ use super::{
 };
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let starting_cpu = game::cpu::get_used();
+
     // Caches various things, like resources
     // Caches structures and other creep things
-    cache.create_if_not_exists(&room, memory);
+    cache.create_if_not_exists(&room, memory, None);
 
     if room.my() {
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
@@ -61,8 +63,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         organizer::run_creeps(&room, memory, cache);
 
         // Run spawns
-            // TODO: Get a better spawn implementation
-            let _ = formulate_miner(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+        // TODO: Get a better spawn implementation
+        let _ = formulate_miner(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
 
         // Run haulers
         // Haulers are done last as they need to know what to haul
@@ -118,6 +120,18 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         room_cache.traffic.move_intents
     );
     room_cache.write_cache_to_heap(&room);
+
+    if room.my() {
+        let end_cpu = game::cpu::get_used();
+        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+
+        let controller = room.controller().unwrap();
+        room_cache.stats.rcl = controller.level();
+        room_cache.stats.rcl_progress = controller.progress();
+        room_cache.stats.rcl_progress_total = controller.progress_total();
+
+        room_cache.stats.write_to_memory(memory, room.name(), end_cpu - starting_cpu);
+    }
 }
 
 pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {

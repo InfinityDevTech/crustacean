@@ -1,4 +1,4 @@
-use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties};
+use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties, StructureObject};
 
 use crate::{
     memory::{CreepMemory, ScreepsMemory},
@@ -38,6 +38,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
         } else {
             let _ = creep.say("🔨", false);
             let _ = creep.repair(repairable.as_repairable().unwrap());
+            cache.stats.energy.spending_repair += energy_spent_repairing(creep, &repairable);
             return;
         }
     }
@@ -63,6 +64,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
             } else {
                 let _ = creep.say("🔨", false);
                 let _ = creep.build(site);
+                cache.stats.energy.spending_construction += energy_spent_building(creep, site);
             }
 
         }
@@ -98,4 +100,21 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cached
             );
         }
     }
+}
+
+pub fn energy_spent_building(creep: &Creep, csite: &ConstructionSite) -> u32 {
+    let work_parts = creep.body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32;
+    let work = creep.store().get_used_capacity(Some(ResourceType::Energy)).min(work_parts * 5);
+
+    
+    work.min(csite.progress_total() - csite.progress())
+}
+
+pub fn energy_spent_repairing(creep: &Creep, repairable: &StructureObject) -> u32 {
+    let work_parts = creep.body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32;
+    let work = creep.store().get_used_capacity(Some(ResourceType::Energy)).min(work_parts * 5);
+
+    let repairable = repairable.as_repairable().unwrap();
+
+    work.min(repairable.hits_max() - repairable.hits())
 }

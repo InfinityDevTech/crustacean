@@ -25,8 +25,36 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
         // Use cache here
         let enemies = &cached_room.creeps.enemy_creeps;
         if enemies.is_empty() {
-            return;
+            let friendlies = &cached_room.creeps.owned_creeps;
+            let allies = &cached_room.creeps.allied_creeps;
+
+            if !friendlies.is_empty() {
+                let damaged = friendlies
+                    .iter()
+                    .filter(|c| c.1.hits() < c.1.hits_max())
+                    .collect::<Vec<_>>();
+
+                if !damaged.is_empty() {
+                    let target = damaged.first().unwrap();
+                    let _ = tower.heal(target.1);
+                    continue;
+                }
+            }
+
+            if !allies.is_empty() {
+                let damaged = allies
+                    .iter()
+                    .filter(|c| c.hits() < c.hits_max())
+                    .collect::<Vec<_>>();
+
+                if !damaged.is_empty() {
+                    let target = damaged.first().unwrap();
+                    let _ = tower.heal(*target);
+                    continue;
+                }
+            }
+        } else {
+            let _ = tower.attack(enemies.first().unwrap());
         }
-        let _ = tower.attack(enemies.first().unwrap());
     }
 }

@@ -16,7 +16,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
     let mut cost = 0;
     let mut parts = Vec::new();
 
-    let needed = room.get_target_for_miner(room, cache);
+    let needed = room.get_target_for_miner(cache);
 
     let spawn = cache.structures.spawns.iter().next().unwrap().1;
 
@@ -90,6 +90,12 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
             .get(&Role::Scout)
             .unwrap_or(&vec![])
             .len();
+        let remote_miner_count = cache
+                .creeps
+                .creeps_of_role
+                .get(&Role::RemoteMiner)
+                .unwrap_or(&vec![])
+                .len();
 
         if hauler_count < 10 && (fastfiller_count >= 1 || hauler_count == 0) {
             let mut body = Vec::new();
@@ -121,6 +127,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     task_id: None,
                     link_id: None,
                     hauling_task: None,
+                    owning_remote: None,
                     scout_target: None,
                     fastfiller_container: None,
                     owning_room: room.name(),
@@ -143,6 +150,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     needs_energy: None,
                     task_id: None,
                     link_id: None,
+                    owning_remote: None,
                     hauling_task: None,
                     fastfiller_container: None,
                     scout_target: None,
@@ -154,7 +162,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
 
                 return true;
             }
-        } else if upgrader_count < 4 {
+        } else if remote_miner_count < 4 {
             let mut body = Vec::new();
             let cost = 300;
             let max = room.energy_capacity_available();
@@ -181,6 +189,43 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     link_id: None,
                     scout_target: None,
                     hauling_task: None,
+                    owning_remote: None,
+                    owning_room: room.name(),
+                    path: None,
+                };
+
+                memory.create_creep(&room.name_str(), &name, cmemory);
+
+                return true;
+            }
+        } else if upgrader_count < 4 {
+            let mut body = Vec::new();
+            let cost = 250;
+            let max = room.energy_capacity_available();
+            let max_multipliable = max / cost;
+            let mut current = 0;
+
+            loop {
+                if current >= max_multipliable { break }
+                body.push(Part::Work);
+                body.push(Part::Carry);
+                body.push(Part::Move);
+                body.push(Part::Move);
+                current += 1;
+            }
+            let role_name = role_to_name(Role::RemoteMiner);
+            let name = format!("{}-{}-{}", role_name, game::time(), room.name());
+
+            let spawn_result = spawn.spawn_creep(&body, &name);
+            if spawn_result.is_ok() {
+                let cmemory = CreepMemory {
+                    needs_energy: None,
+                    task_id: None,
+                    fastfiller_container: None,
+                    link_id: None,
+                    scout_target: None,
+                    hauling_task: None,
+                    owning_remote: None,
                     owning_room: room.name(),
                     path: None,
                 };
@@ -214,6 +259,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     task_id: None,
                     fastfiller_container: None,
                     link_id: None,
+                    owning_remote: None,
                     hauling_task: None,
                     scout_target: None,
                     owning_room: room.name(),
@@ -236,6 +282,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     task_id: None,
                     fastfiller_container: None,
                     link_id: None,
+                    owning_remote: None,
                     hauling_task: None,
                     scout_target: None,
                     owning_room: room.name(),
@@ -252,7 +299,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
             info!("Bulldozing room");
 
             let mut body = Vec::new();
-            let cost = 130;
+            let cost = 380;
             let max = room.energy_capacity_available();
             let max_multipliable = max / cost;
             let mut current = 0;
@@ -260,6 +307,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
             loop {
                 if current >= max_multipliable { break }
                 body.push(Part::Attack);
+                body.push(Part::Heal);
                 body.push(Part::Move);
                 current += 1;
             }
@@ -277,6 +325,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     scout_target: None,
                     hauling_task: None,
                     owning_room: room.name(),
+                    owning_remote: None,
                     path: None,
                 };
 
@@ -299,6 +348,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                     scout_target: None,
                     hauling_task: None,
                     owning_room: room.name(),
+                    owning_remote: None,
                     path: None,
                 };
 
@@ -337,6 +387,7 @@ pub fn formulate_miner(room: &Room, memory: &mut ScreepsMemory, cache: &mut Cach
                 let cmemory = CreepMemory {
                     needs_energy: Some(true),
                     task_id: Some(needed.unwrap().into()),
+                    owning_remote: None,
                     fastfiller_container: None,
                     hauling_task: None,
                     link_id: None,

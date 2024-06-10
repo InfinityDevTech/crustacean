@@ -1,5 +1,6 @@
 use std::{cmp, collections::HashMap};
 
+use log::info;
 use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, RoomName, Source, StructureContainer, StructureLink, Terrain};
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
@@ -111,12 +112,13 @@ impl CachedSource {
         let pos = source.pos();
 
         let mut found_container = None;
-        for container in structures.containers.values() {
-            if container.pos().is_near_to(pos) {
-                self.container = Some(container.id());
-                found_container = Some(container);
 
-                break;
+        if let Some(containers) = &structures.containers.source_container {
+            for container in containers {
+                if container.pos().is_near_to(pos) {
+                    found_container = Some(container);
+                    break;
+                }
             }
         }
 
@@ -180,135 +182,56 @@ impl CachedSource {
 
         work_parts
     }
+    
 }
 
 pub fn haul_containers(cached_room: &mut CachedRoom) {
+    if let Some(controller_container) = &cached_room.structures.containers.controller {
+        if controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) {
+            let priority = scale_haul_priority(
+                controller_container.store().get_free_capacity(None) as u32,
+                controller_container.store().get_used_capacity(None),
+                HaulingPriority::Energy,
+                true
+            );
 
-    for container in cached_room.structures.containers.values() {
-        let used_capacity = container
-            .store()
-            .get_used_capacity(Some(ResourceType::Energy));
-        let max_capacity = container.store().get_capacity(Some(ResourceType::Energy));
-
-        let mut i = 0;
-        let mut is_source_container = false;
-        let mut is_controller_container = true;
-
-        loop {
-            if cached_room.resources.sources.len() <= i {
-                break;
-            }
-            if is_source_container {
-                break;
-            }
-
-            if let Some(source_container) = cached_room.resources.sources[i].get_container(&cached_room.structures) {
-                if container.id() == source_container.id() {
-                    is_source_container = true;
-                }
-            }
-
-            i += 1;
+            cached_room.hauling.create_order(controller_container.id().into(), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
         }
+    }
 
-        if let Some(controller) = &cached_room.structures.controller.as_ref() {
-            if controller.container.is_some() {
-                let controller_container = controller.container.as_ref().unwrap();
-                if container.id() == controller_container.id() {
-                    is_controller_container = true;
-                }
+    if let Some(fastfiller_containers) = &cached_room.structures.containers.fast_filler {
+        for fastfiller_container in fastfiller_containers {
+            if fastfiller_container.store().get_used_capacity(None) < (fastfiller_container.store().get_capacity(None) / 2) {
+                let priority = scale_haul_priority(
+                    fastfiller_container.store().get_free_capacity(None) as u32,
+                    fastfiller_container.store().get_used_capacity(None),
+                    HaulingPriority::FastFillerContainer,
+                    true
+                );
+
+                cached_room.hauling.create_order(fastfiller_container.id().into(), Some(ResourceType::Energy), Some(fastfiller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
             }
         }
+    }
 
-        if is_controller_container && used_capacity > 0 {
-            if container
-                .pos()
-                .get_range_to(cached_room.structures.spawns.values().next().unwrap().pos())
-                <= 3
-                &&
-                (container.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (container.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5)
-            {
-                let priority = scale_haul_priority(
-                    container.store().get_capacity(Some(ResourceType::Energy)),
-                    container.store().get_used_capacity(Some(ResourceType::Energy)),
-                    HaulingPriority::Minerals,
-                    true
-                );
-                cached_room.hauling.create_order(
-                    container.raw_id(),
-                    Some(ResourceType::Energy),
-                    Some(container
-                        .store()
-                        .get_used_capacity(Some(ResourceType::Energy))),
-                    priority,
-                    HaulingType::Offer,
-                );
+    for source in &mut cached_room.resources.sources {
+        let container = source.get_container(&cached_room.structures);
 
-            } else {
-                // Caused an issue where a hauler would grab from the container
-                // Container would go lower than 50 percent, than the hauler
-                // Would stick it back in said container :)
-                let priority = scale_haul_priority(
-                    container.store().get_capacity(Some(ResourceType::Energy)),
-                    container.store().get_used_capacity(Some(ResourceType::Energy)),
-                    HaulingPriority::Energy,
-                    true
-                );
-
-                cached_room.hauling.create_order(
-                    container.raw_id(),
-                    Some(ResourceType::Energy),
-                    Some(container
-                        .store()
-                        .get_used_capacity(Some(ResourceType::Energy))),
-                    priority,
-                    HaulingType::Offer,
-                );
-            }
+        if container.is_none() {
+            continue;
         }
 
-        if !is_source_container && (used_capacity as f32) <= (max_capacity as f32 * 0.5) {
-            if container
-                .pos()
-                .get_range_to(cached_room.structures.spawns.values().next().unwrap().pos())
-                <= 3
-            {
-                let priority = scale_haul_priority(
-                    container.store().get_capacity(Some(ResourceType::Energy)),
-                    container.store().get_used_capacity(Some(ResourceType::Energy)),
-                    HaulingPriority::Spawning,
-                    true
-                );
+        let container = container.unwrap();
 
-                cached_room.hauling.create_order(
-                    container.raw_id(),
-                    Some(ResourceType::Energy),
-                    Some(container
-                        .store()
-                        .get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()),
-                    priority,
-                    HaulingType::Transfer,
-                );
-            } else {
-                let priority = scale_haul_priority(
-                    container.store().get_capacity(Some(ResourceType::Energy)),
-                    container.store().get_used_capacity(Some(ResourceType::Energy)),
-                    HaulingPriority::Energy,
-                    true
-                );
+        if container.store().get_used_capacity(None) > 0 {
+            let priority = scale_haul_priority(
+                container.store().get_free_capacity(None) as u32,
+                container.store().get_used_capacity(None),
+                HaulingPriority::Energy,
+                true
+            );
 
-                cached_room.hauling.create_order(
-                    container.raw_id(),
-                    Some(ResourceType::Energy),
-                    Some(container
-                        .store()
-                        .get_free_capacity(Some(ResourceType::Energy))
-                        .try_into()
-                        .unwrap()),
-                    priority,
-                    HaulingType::Transfer,
-                );
-            }
+            cached_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Offer);
         }
     }
 }

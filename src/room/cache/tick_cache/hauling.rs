@@ -120,7 +120,7 @@ impl HaulingCache {
 
             if score >= current_score { continue; }
 
-            info!("Current_score {}", score);
+            //info!("Current_score {}", score);
 
             current_score = score;
             top_scorer = Some(order.clone());

@@ -15,6 +15,10 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
     let creep_memory = creep_memory.unwrap();
 
+    if creep.hits() < creep.hits_max() {
+        let _ = creep.heal(creep);
+    }
+
     if let Some(flag) = game::flags().get("bulldozeRoom".to_string()) {
         if creep.room().unwrap().name() == flag.pos().room_name() {
 

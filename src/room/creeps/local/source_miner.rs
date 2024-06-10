@@ -37,7 +37,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
-        if !link_deposit(creep, creep_memory, &cached_room) {
+        if !link_deposit(creep, creep_memory, cached_room) {
             deposit_energy(creep, creep_memory, cached_room);
         }
         harvest_source(creep, source, creep_memory, cached_room);
@@ -46,14 +46,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
-fn harvest_source(creep: &Creep, source: Source, memory: &mut CreepMemory, cache: &mut CachedRoom) {
+pub fn harvest_source(creep: &Creep, source: Source, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
     if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
         return;
     }
 
     if !creep.pos().is_near_to(source.pos()) {
         let _ = creep.say("🚚 🔋", false);
-        creep.better_move_to(memory, cache, source.pos(), 1);
+        creep.better_move_to(creep_memory, cache, source.pos(), 1);
     } else {
         let _ = creep.say("⛏️", false);
         let _ = creep.harvest(&source);
@@ -80,7 +80,7 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &CachedRoo
     false
 }
 
-fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
+pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
     if repair_container(creep, creep_memory, cache) {
         return;
     }
@@ -122,7 +122,12 @@ fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Cac
     }
 }
 
-fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
+pub fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
+
+    if creep.store().get_used_capacity(None) == 0 {
+        return false;
+    }
+
     let container =
         cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&cache.structures);
 

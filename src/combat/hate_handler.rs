@@ -50,6 +50,10 @@ pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_ty
     if !offending_creeps.is_empty() {
         let offending_user = offending_creeps.first().unwrap().owner().username();
 
+        if offending_user == config::USERNAME {
+            return;
+        }
+
         let weight = if health_type == HealthChangeType::Heal {
             config::HATE_CREEP_HEAL_WEIGHT
         } else {
@@ -73,7 +77,22 @@ pub fn process_room_event_log(room: &Room, memory: &mut ScreepsMemory, _cache: &
                     if let Some(attacker) = attacker  {
                         let owner = attacker.owner().username();
 
+                        if owner == config::USERNAME {
+                            continue;
+                        }
+
                         increment_hate(memory, config::HATE_CREEP_KILLED_WEIGHT, owner.to_string());
+                    }
+                } else {
+                    let attacker: Option<Creep> = game::get_object_by_id_typed(&ObjectId::from_str(&attacker).unwrap());
+                    if let Some(attacker) = attacker  {
+                        let owner = attacker.owner().username();
+
+                        if owner == config::USERNAME {
+                            continue;
+                        }
+
+                        increment_hate(memory, config::HATE_CREEP_ATTACK_WEIGHT, owner.to_string());
                     }
                 }
             },

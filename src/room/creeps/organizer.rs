@@ -2,7 +2,7 @@ use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::global}, utils
+    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, utils
 };
 
 use super::local;
@@ -50,6 +50,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Bulldozer => global::bulldozer::run_creep(&creep, memory, cache),
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
             Role::GiftBasket => global::gift_drop::run_creep(&creep, memory, cache),
+            Role::RemoteMiner => remote::remote_harvester::run_creep(&creep, memory, cache),
         }
 
         let heap_creep = cached_room.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));

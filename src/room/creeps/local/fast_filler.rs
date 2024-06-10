@@ -188,11 +188,11 @@ pub fn find_container(
     creep: &Creep,
     cache: &mut CachedRoom,
 ) -> Option<ObjectId<StructureContainer>> {
-    let possible_containers = cache.structures.containers.values().collect::<Vec<_>>();
-
-    for container in possible_containers {
-        if container.pos().get_range_to(creep.pos()) <= 1 {
-            return Some(container.id());
+    if let Some(fastfiller_containers) = &cache.structures.containers.fast_filler {
+        for container in fastfiller_containers {
+            if container.pos().get_range_to(creep.pos()) <= 1 {
+                return Some(container.id());
+            }
         }
     }
 

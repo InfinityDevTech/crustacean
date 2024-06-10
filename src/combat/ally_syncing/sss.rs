@@ -53,18 +53,6 @@ impl SSSAllySync {
             "ThomasCui"
         ];
 
-        for ally in &allies {
-            if !memory.allies.contains(&ally.to_string()) {
-                memory.allies.push(ally.to_string());
-            }
-        }
-
-        for ally in ALLIES {
-            if !memory.allies.contains(&ally.to_string()) {
-                memory.allies.push(ally.to_string());
-            }
-        }
-
         SSSAllySync {
             allies: allies.iter().map(|x| x.to_string()).collect(),
             enemies: enemies.iter().map(|x| x.to_string()).collect(),
@@ -101,10 +89,6 @@ impl SSSAllySync {
                         if !self.allies.contains(&ally.0) {
                             self.allies.push(ally.0.clone());
                         }
-
-                        if !memory.allies.contains(&ally.0) {
-                            memory.allies.push(ally.0);
-                        }
                     } else if !self.enemies.contains(&ally.0) {
                         self.enemies.push(ally.0);
                     }
@@ -117,13 +101,5 @@ impl SSSAllySync {
                 // Womp womp
             },
         }
-    }
-
-    pub fn is_ally(&self, username: &str) -> bool {
-        self.allies.contains(&username.to_string())
-    }
-
-    pub fn is_enemy(&self, username: &str) -> bool {
-        self.enemies.contains(&username.to_string())
     }
 }

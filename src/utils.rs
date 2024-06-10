@@ -53,6 +53,7 @@ pub fn role_to_name(role: Role) -> String {
         Role::FastFiller => "ff",
         Role::Bulldozer => "sa",
         Role::GiftBasket => "gb",
+        Role::RemoteMiner => "rm",
     };
     data.to_string()
 }
@@ -70,6 +71,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "ff" => { Some(Role::FastFiller) }
         "sa" => { Some(Role::Bulldozer) },
         "gb" => { Some(Role::GiftBasket) },
+        "rm" => { Some(Role::RemoteMiner) },
         _ => { None },
     }
 }

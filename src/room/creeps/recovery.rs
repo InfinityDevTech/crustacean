@@ -27,72 +27,27 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
 
         match role {
             Role::Hauler => {
-                let cmemory = CreepMemory {
-                    needs_energy: None,
-                    task_id: None,
-                    link_id: None,
-                    fastfiller_container: None,
-                    hauling_task: None,
-                    scout_target: None,
-                    owning_room: room_name,
-                    path: None,
-                };
+                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
 
                 memory.create_creep(room, &creep.name(), cmemory);
             }
             Role::Builder => {
-                let cmemory = CreepMemory {
-                    needs_energy: None,
-                    task_id: None,
-                    link_id: None,
-                    scout_target: None,
-                    fastfiller_container: None,
-                    hauling_task: None,
-                    owning_room: room_name,
-                    path: None,
-                };
+                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
 
                 memory.create_creep(room, &creep.name(), cmemory);
             }
             Role::Upgrader => {
-                let cmemory = CreepMemory {
-                    needs_energy: None,
-                    task_id: None,
-                    link_id: None,
-                    scout_target: None,
-                    fastfiller_container: None,
-                    hauling_task: None,
-                    owning_room: room_name,
-                    path: None,
-                };
+                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
 
                 memory.create_creep(room, &creep.name(), cmemory);
             }
             Role::Scout => {
-                let cmemory = CreepMemory {
-                    needs_energy: None,
-                    task_id: None,
-                    link_id: None,
-                    scout_target: None,
-                    fastfiller_container: None,
-                    hauling_task: None,
-                    owning_room: room_name,
-                    path: None,
-                };
+                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
 
                 memory.create_creep(room, &creep.name(), cmemory);
             }
             Role::Bulldozer => {
-                let cmemory = CreepMemory {
-                    needs_energy: None,
-                    task_id: None,
-                    link_id: None,
-                    scout_target: None,
-                    fastfiller_container: None,
-                    hauling_task: None,
-                    owning_room: room_name,
-                    path: None,
-                };
+                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
 
                 memory.create_creep(room, &creep.name(), cmemory);
             }

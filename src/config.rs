@@ -1,11 +1,12 @@
 pub const MEMORY_VERSION: u8 = 1;
 
+pub const USERNAME: &str = "InfDev";
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "";
 
 pub const ALLIES: [&str; 3] = ["MarvinTMB", "Shylo132", "kbharlem"];
 
-pub const ROOM_SIGNS: [&str; 21] = [
+pub const ROOM_SIGNS: [&str; 24] = [
 //"Rust programming is just crab game.",
 //"Web Assembly is overrated",
 //"Warning: This room is under the control of an idiot.",
@@ -13,6 +14,9 @@ pub const ROOM_SIGNS: [&str; 21] = [
 "Marvin lies!",
 //"Kick me.",
 "Marx would be dissapointed",
+"If your name end with 'in', time to get out.",
+"How many dictators does it take to turn an empire into a union of ruinous states?",
+"Did somebody say, 'Communism'?",
 "Made a mess and the war got cold.",
 "Bourgeoisie member.",
 "The international will be defeated.",

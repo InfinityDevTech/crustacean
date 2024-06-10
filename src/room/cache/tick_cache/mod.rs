@@ -60,14 +60,17 @@ impl CachedRoom {
             RoomHeapCache::new(room)
         });
 
+        let resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
+        let structures = RoomStructureCache::new_from_room(room, &resources, memory, &mut room_heap);
+
         CachedRoom {
             my_room: my,
             room_name: room.name(),
 
-            structures: RoomStructureCache::new_from_room(room, memory, &mut room_heap),
+            structures,
             creeps: CreepCache::new_from_room(room, memory),
             traffic: TrafficCache::new(),
-            resources: RoomResourceCache::new_from_room(room, memory, &mut room_heap),
+            resources,
 
             hauling: HaulingCache::new(),
 
@@ -77,10 +80,8 @@ impl CachedRoom {
     }
 
     pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
-        self.structures.refresh_structure_cache(room);
-        self.structures.refresh_spawn_cache(room);
-
         self.resources.refresh_source_cache(room, &mut self.heap_cache);
+        self.structures.refresh_structure_cache(&self.resources, room);
 
         self.creeps.refresh_creep_cache(memory, room);
 

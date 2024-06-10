@@ -93,6 +93,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             if memory.rooms.get(&room.name()).unwrap().remotes.len() < 2 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
+
+                info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
             }
         }
     } else {

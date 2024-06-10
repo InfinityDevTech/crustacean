@@ -4,14 +4,31 @@ use screeps::{
     find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Tombstone
 };
 
-use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
+use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
 
-use super::hauling::{HaulingCache, HaulingPriority, HaulingType};
+use super::resources::RoomResourceCache;
 
 #[derive(Debug, Clone)]
 pub struct CachedController {
     pub controller: StructureController,
     pub container: Option<StructureContainer>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CachedRoomContainers {
+    pub controller: Option<StructureContainer>,
+    pub fast_filler: Option<Vec<StructureContainer>>,
+    pub source_container: Option<Vec<StructureContainer>>
+}
+
+impl CachedRoomContainers {
+    pub fn new() -> Self {
+        CachedRoomContainers {
+            controller: None,
+            fast_filler: None,
+            source_container: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -25,9 +42,7 @@ pub struct RoomStructureCache {
     pub tombstones: HashMap<ObjectId<Tombstone>, Tombstone>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
-    pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
-
-    pub fast_filler_containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
+    pub containers: CachedRoomContainers,
 
     pub controller: Option<CachedController>,
     pub storage: Option<StructureStorage>,
@@ -42,6 +57,7 @@ pub struct RoomStructureCache {
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,
+        resource_cache: &RoomResourceCache,
         _memory: &mut ScreepsMemory,
         heap_cache: &mut RoomHeapCache,
     ) -> RoomStructureCache {
@@ -54,8 +70,7 @@ impl RoomStructureCache {
             tombstones: HashMap::new(),
             towers: HashMap::new(),
             spawns: HashMap::new(),
-            containers: HashMap::new(),
-            fast_filler_containers: HashMap::new(),
+            containers: CachedRoomContainers::new(),
 
             controller: None,
             storage: None,
@@ -87,19 +102,10 @@ impl RoomStructureCache {
             cache.controller = Some(cached_controller);
         }
 
-        cache.refresh_structure_cache(room);
-        cache.refresh_spawn_cache(room);
         cache.refresh_construction_cache(room);
         cache.refresh_ruin_cache(room);
+        cache.refresh_structure_cache(resource_cache, room);
         cache
-    }
-
-    pub fn refresh_spawn_cache(&mut self, room: &Room) {
-        let spawns = room.find(find::MY_SPAWNS, None);
-
-        for spawn in spawns {
-            self.spawns.insert(spawn.id(), spawn);
-        }
     }
 
     pub fn refresh_ruin_cache(&mut self, room: &Room) {
@@ -114,8 +120,10 @@ impl RoomStructureCache {
         }
     }
 
-    pub fn refresh_structure_cache(&mut self, room: &Room) {
+    pub fn refresh_structure_cache(&mut self, resource_cache: &RoomResourceCache, room: &Room) {
         let structures = room.find(find::STRUCTURES, None).into_iter();
+
+        let mut my_containers = Vec::new();
 
         for structure in structures {
             self.all_structures.push(structure.clone());
@@ -149,13 +157,46 @@ impl RoomStructureCache {
                     self.roads.insert(road.id(), road);
                 }
                 StructureObject::StructureContainer(container) => {
-                    self.containers.insert(container.id(), container);
+                    my_containers.push(container);
                 }
                 StructureObject::StructureStorage(storage) => {
                     self.storage = Some(storage);
                 }
+                StructureObject::StructureSpawn(spawn) => {
+                    if spawn.my() {
+                        self.spawns.insert(spawn.id(), spawn);
+                    }
+                }
                 _ => {}
             }
+        }
+
+        for container in my_containers {
+            if let Some(controller) = &self.controller {
+                if container.pos().get_range_to(controller.controller.pos()) <= 2 {
+                    self.containers.controller = Some(container);
+                    continue;
+                }
+            }
+
+            if let Some(spawn) = self.spawns.values().next() {
+                if container.pos().get_range_to(spawn.pos()) <= 3 {
+                    let fast_filler = self.containers.fast_filler.get_or_insert_with(Vec::new);
+                    fast_filler.push(container);
+                    continue;
+                }
+            }
+
+            let found_source_containers = resource_cache.sources.iter().filter_map(|source| {
+                if container.pos().get_range_to(game::get_object_by_id_typed(&source.id).unwrap().pos()) <= 2 {
+                    Some(container.clone())
+                } else {
+                    None
+                }
+            });
+
+            let source_containers = self.containers.source_container.get_or_insert_with(|| Vec::new());
+            source_containers.extend(found_source_containers);
         }
 
         if game::time() % 2 == 0 {

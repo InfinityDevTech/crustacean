@@ -21,11 +21,11 @@ pub trait RoomExtensions {
     fn split_name(&self) -> (String, u32, String, u32);
     fn my(&self) -> bool;
 
-    fn get_target_for_miner(&self, room_memory: &Room, cache: &mut CachedRoom) -> Option<u8>;
+    fn get_target_for_miner(&self, cache: &mut CachedRoom) -> Option<u8>;
 
     fn is_my_sign(&self) -> bool;
 
-    fn get_adjacent(&self) -> Vec<RoomName>;
+    fn get_adjacent(&self, radius: u32) -> Vec<RoomName>;
 
     fn get_room_type(&self) -> RoomType;
     fn is_highway(&self) -> bool;
@@ -57,21 +57,24 @@ impl RoomExtensions for screeps::Room {
             .map_or(false, |controller| controller.my())
     }
 
-    fn get_adjacent(&self) -> Vec<RoomName> {
+    fn get_adjacent(&self, radius: u32) -> Vec<RoomName> {
         let split_name = self.split_name();
-        let adjacent_rooms = vec![
-            // Cardinal Directions
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1, split_name.2, split_name.3 + 1)),
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1, split_name.2, split_name.3 - 1)),
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 + 1, split_name.2, split_name.3)),
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 - 1, split_name.2, split_name.3)),
 
-            // Diagonals
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 + 1, split_name.2, split_name.3 + 1)),
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 + 1, split_name.2, split_name.3 - 1)),
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 - 1, split_name.2, split_name.3 + 1)),
-            RoomName::new(&format!("{}{}{}{}", split_name.0, split_name.1 - 1, split_name.2, split_name.3 - 1)),
-        ];
+        let start_x = split_name.1;
+        let start_y = split_name.3;
+
+        let mut adjacent_rooms = vec![];
+
+        for x in start_x - radius..=start_x + radius {
+            for y in start_y - radius..=start_y + radius {
+                if x == start_x && y == start_y {
+                    continue;
+                }
+
+                let room_name = format!("{}{}{}{}", split_name.0, x, split_name.2, y);
+                adjacent_rooms.push(RoomName::new(&room_name));
+            }
+        }
 
         let mut adjacent_checked = Vec::new();
         for room in adjacent_rooms.into_iter().flatten() {
@@ -81,11 +84,11 @@ impl RoomExtensions for screeps::Room {
         adjacent_checked
     }
 
-    fn get_target_for_miner(&self, room: &Room, room_cache: &mut CachedRoom) -> Option<u8> {
+    fn get_target_for_miner(&self, room_cache: &mut CachedRoom) -> Option<u8> {
         let sources = &room_cache.resources.sources;
 
         for (i, source) in sources.iter().enumerate() {
-            if source.calculate_work_parts() < source.parts_needed() && source.creeps.len() < source.calculate_mining_spots(room).into() {
+            if source.calculate_work_parts() < source.parts_needed() && source.creeps.len() < source.calculate_mining_spots(self).into() {
                 return Some(i as u8);
             }
         }

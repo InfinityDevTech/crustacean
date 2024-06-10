@@ -27,6 +27,8 @@ pub enum Role {
 
     Scout = 10,
 
+    RemoteMiner = 11,
+
     GiftBasket = 100,
 }
 
@@ -37,13 +39,14 @@ pub struct CreepMemory{
     // Owning room
     #[serde(rename = "0")]
     pub owning_room: RoomName,
-    // Path
+
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "1")]
+    pub owning_remote: Option<RoomName>,
+    // Path
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "2")]
     pub path: Option<String>,
-    // Career
-    //#[serde(rename = "2")]
-    //pub role: Role,
     // Needs Energy?
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "3")]
@@ -222,6 +225,22 @@ impl ScreepsMemory {
             name,
             object
         );
+    }
+}
+
+impl Default for CreepMemory {
+    fn default() -> Self {
+        CreepMemory {
+            owning_room: RoomName::new("W0N0").unwrap(),
+            owning_remote: None,
+            path: None,
+            needs_energy: None,
+            link_id: None,
+            fastfiller_container: None,
+            task_id: None,
+            scout_target: None,
+            hauling_task: None,
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{Room, RoomName};
+use screeps::{game, Room, RoomName};
 use stats::StatsCache;
 
 use crate::{heap, memory::ScreepsMemory, traits::room::RoomExtensions};
@@ -58,16 +58,20 @@ pub struct CachedRoom {
 
 impl CachedRoom {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) -> CachedRoom {
+        let pre_cache_cpu = game::cpu::get_used();
+
         let mut room_cache = heap().rooms.lock().unwrap();
 
         let mut room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
             RoomHeapCache::new(room)
         });
 
-        let resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
-        let structures = RoomStructureCache::new_from_room(room, &resources, memory, &mut room_heap);
+        let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
+        let structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let mut stats =  StatsCache::default();
+        stats.energy.spending_spawning = 0;
 
-        CachedRoom {
+        let mut cached = CachedRoom {
             room_name: room.name(),
             manager: remote_manager,
 
@@ -79,14 +83,18 @@ impl CachedRoom {
             hauling: HaulingCache::new(),
 
             heap_cache: room_heap,
-            stats: StatsCache::default(),
+            stats,
             //hauling: RefCell::new(HaulingCache::new()),
-        }
+        };
+
+        cached.stats.cpu_cache += game::cpu::get_used() - pre_cache_cpu;
+
+        cached
     }
 
     pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         self.resources.refresh_source_cache(room, &mut self.heap_cache);
-        self.structures.refresh_structure_cache(&self.resources, room);
+        self.structures.refresh_structure_cache(&mut self.resources, room);
 
         self.creeps.refresh_creep_cache(memory, room);
 

@@ -10,6 +10,7 @@ use crate::{
 use super::local;
 
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let pre_creeps_cpu = game::cpu::get_used();
     let mut cpu_usage_by_role = HashMap::new();
     let mut creeps_by_role = HashMap::new();
 
@@ -89,11 +90,14 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
         room_cache.stats.creep_count = creep_count as u32;
-        info!("Setting 2 electric boogaloo {:?}", cpu_usage_by_role);
         room_cache.stats.cpu_usage_by_role = cpu_usage_by_role;
         room_cache.stats.creeps_by_role = creeps_by_role;
 
     let end_cpu = game::cpu::get_used();
     info!("  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep", end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64);
     info!("  [CREEPS] Highest CPU usage: {:.4} by {}", highest_usage, highest_user);
+
+    if let Some(room) = cache.rooms.get_mut(&room.name()) {
+        room.stats.cpu_creeps += game::cpu::get_used() - pre_creeps_cpu;
+    }
 }

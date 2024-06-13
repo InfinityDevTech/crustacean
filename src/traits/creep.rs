@@ -91,6 +91,8 @@ impl CreepExtensions for screeps::Creep {
         target: Position,
         range: u16,
     ) {
+        let pre_move_cpu = game::cpu::get_used();
+
         if self.tired() {
             return;
         }
@@ -111,6 +113,8 @@ impl CreepExtensions for screeps::Creep {
                 self.better_move_by_path(target, creep_memory, cache);
             }
         }
+
+        cache.stats.global_pathfinding += game::cpu::get_used() - pre_move_cpu;
     }
 
     fn parts_of_type(&self, part: screeps::Part) -> u32 {

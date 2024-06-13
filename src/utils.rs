@@ -2,9 +2,9 @@
 #![allow(clippy::comparison_to_empty)]
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{game, RoomName};
+use screeps::{game, Part, RoomName};
 
-use crate::{config, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+use crate::{config, constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 
 pub fn get_room_sign() -> String {
     let alliance_tag = config::ALLIANCE_TAG;
@@ -74,4 +74,14 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "rm" => { Some(Role::RemoteMiner) },
         _ => { None },
     }
+}
+
+pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
+    let mut cost = 0;
+
+    for part in parts {
+        cost += part.cost();
+    }
+
+    cost.into()
 }

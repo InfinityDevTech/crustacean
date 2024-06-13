@@ -1,10 +1,10 @@
-use std::{collections::HashMap, sync::{Once, OnceLock}};
+use std::{borrow::Borrow, collections::HashMap, sync::{Once, OnceLock}};
 
 use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use room::{cache::tick_cache::RoomCache, visuals::visualise_scouted_rooms};
-use screeps::{find, game, OwnedStructureProperties, StructureProperties};
+use screeps::{find, game, IntershardResourceType, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -21,6 +21,7 @@ mod memory;
 mod movement;
 mod room;
 mod traits;
+mod constants;
 mod utils;
 
 static INITIALIZED: Once = Once::new();
@@ -29,6 +30,11 @@ static INITIALIZED: Once = Once::new();
 pub fn heap() -> &'static GlobalHeapCache {
     static HEAP: OnceLock<GlobalHeapCache> = OnceLock::new();
     HEAP.get_or_init(GlobalHeapCache::new)
+}
+
+pub fn last_reset() -> &'static u32 {
+    static LAST_RESET: OnceLock<u32> = OnceLock::new();
+    LAST_RESET.get_or_init(game::time)
 }
 
 
@@ -71,30 +77,20 @@ pub fn game_loop() {
     let mut allies = Allies::new(&mut memory);
     allies.sync(&mut memory);
 
+    memory.stats.cpu.pathfinding = 0.0;
+
     //if just_reset() {
     //
     //}
 
+    let pre_room_cpu = game::cpu::get_used();
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
         democracy::start_government(game_room, &mut memory, &mut cache);
-
     }
+    memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu;
 
-    // --- Start stats
-    memory.stats.cpu.bucket = game::cpu::bucket();
-    memory.stats.cpu.used = game::cpu::get_used();
-
-    memory.stats.gcl_level = game::gcl::level();
-    memory.stats.gcl_progress = game::gcl::progress();
-    memory.stats.gcl_progress_total = game::gcl::progress_total();
-
-    memory.stats.tick = game::time();
-    memory.stats.credits = game::market::credits();
-
-    memory.stats.age += 1;
-
-    // --- End stats
+    set_stats(&mut memory);
 
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
@@ -131,6 +127,42 @@ pub fn game_loop() {
     info!("       Heap: {:.2}%", used);
     info!("       Heap Lifetime: {}", heap_lifetime);
     *heap_lifetime += 1;
+}
+
+pub fn get_memory_usage_bytes() -> u32 {
+    let memory = screeps::raw_memory::get().as_string().unwrap();
+    let character_arr = memory.chars().collect::<Vec<char>>();
+
+    character_arr.len() as u32
+}
+
+pub fn set_stats(memory: &mut ScreepsMemory) {
+    let stats = &mut memory.stats;
+
+    let market_resources = game::resources();
+    let heap = game::cpu::get_heap_statistics();
+
+    stats.tick = game::time();
+    stats.last_reset = *last_reset();
+    stats.age += 1;
+    stats.gpl = game::gpl::level();
+
+    stats.gcl.level = game::gcl::level();
+    stats.gcl.progress = game::gcl::progress();
+    stats.gcl.progress_total = game::gcl::progress_total();
+
+    stats.market.credits = game::market::credits();
+    //stats.market.cpu_unlocks = market_resources.get(IntershardResourceType::CpuUnlock);
+
+    stats.memory_usage.total = 2 * 1000000;
+    stats.memory_usage.used = get_memory_usage_bytes();
+
+    stats.heap_usage.total = heap.heap_size_limit();
+    stats.heap_usage.used = heap.total_heap_size() + heap.externally_allocated_size();
+
+    stats.cpu.used = game::cpu::get_used();
+    stats.cpu.bucket = game::cpu::bucket();
+    stats.cpu.limit = game::cpu::limit();
 }
 
 #[wasm_bindgen(js_name = red_button)]

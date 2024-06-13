@@ -1,11 +1,16 @@
 use std::collections::HashMap;
 
-use screeps::RoomName;
+use screeps::{game, Part, RoomName};
 
 use crate::memory::{self, Role, RoomStats, ScreepsMemory};
 
+use super::structures::RoomStructureCache;
+
 #[derive(Debug, Clone, Default)]
 pub struct StatsCache {
+    pub global_pathfinding: f64,
+
+
     pub rcl: u8,
     pub rcl_progress: Option<u32>,
     pub rcl_progress_total: Option<u32>,
@@ -13,6 +18,11 @@ pub struct StatsCache {
     pub creep_count: u32,
     pub cpu_usage_by_role: HashMap<Role, f64>,
     pub creeps_by_role: HashMap<Role, u32>,
+
+    pub cpu_creeps: f64,
+    pub cpu_traffic: f64,
+    pub cpu_cache: f64,
+    pub cpu_hauling_orders: f64,
 
     pub energy: EnergyStats,
 }
@@ -34,10 +44,25 @@ pub struct EnergyStats {
 }
 
 impl StatsCache {
+    pub fn spawning_stats(&mut self, structures: &mut RoomStructureCache) {
+        for spawn in structures.spawns.values() {
+            if spawn.spawning().is_none() { continue; }
+
+            let creep_name = spawn.spawning().unwrap().name();
+            let time = spawn.spawning().unwrap().need_time();
+
+            let parts = game::creeps().get(creep_name.as_string().unwrap()).unwrap().body().iter().map(|part| part.part()).collect::<Vec<Part>>();
+            let body_cost = parts.iter().map(|part| part.cost()).sum::<u32>();
+
+            self.energy.spending_spawning = body_cost / time;
+        }
+    }
     pub fn write_to_memory(&self, memory: &mut ScreepsMemory, room_name: RoomName, cpu_used: f64) {
         let room_stats = memory.stats.rooms.get_mut(&room_name);
 
         if let Some(room_stats) = room_stats {
+            memory.stats.cpu.pathfinding += self.global_pathfinding;
+
             room_stats.rcl = self.rcl;
             room_stats.rcl_progress = self.rcl_progress;
             room_stats.rcl_progress_total = self.rcl_progress_total;
@@ -58,6 +83,11 @@ impl StatsCache {
             room_stats.energy.spending_repair = self.energy.spending_repair;
 
             room_stats.cpu_used = cpu_used;
+            room_stats.cpu_traffic = self.cpu_traffic;
+            room_stats.cpu_creeps = self.cpu_creeps;
+            room_stats.cpu_hauling_orders = self.cpu_hauling_orders;
+            room_stats.cpu_cache = self.cpu_cache;
+
             room_stats.cpu_usage_by_role.clone_from(&self.cpu_usage_by_role);
             room_stats.creeps_by_role.clone_from(&self.creeps_by_role);
         } else {
@@ -80,6 +110,11 @@ impl StatsCache {
                 rcl: self.rcl,
                 rcl_progress: self.rcl_progress,
                 rcl_progress_total: self.rcl_progress_total,
+
+                cpu_creeps: self.cpu_creeps,
+                cpu_traffic: self.cpu_traffic,
+                cpu_cache: self.cpu_cache,
+                cpu_hauling_orders: self.cpu_hauling_orders,
 
                 cpu_used,
                 energy,

@@ -57,7 +57,7 @@ pub struct RoomStructureCache {
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,
-        resource_cache: &RoomResourceCache,
+        resource_cache: &mut RoomResourceCache,
         _memory: &mut ScreepsMemory,
         heap_cache: &mut RoomHeapCache,
     ) -> RoomStructureCache {
@@ -120,7 +120,7 @@ impl RoomStructureCache {
         }
     }
 
-    pub fn refresh_structure_cache(&mut self, resource_cache: &RoomResourceCache, room: &Room) {
+    pub fn refresh_structure_cache(&mut self, resource_cache: &mut RoomResourceCache, room: &Room) {
         let structures = room.find(find::STRUCTURES, None).into_iter();
 
         let mut my_containers = Vec::new();
@@ -151,15 +151,21 @@ impl RoomStructureCache {
                     if !link.my() {
                         continue;
                     }
+                    resource_cache.energy_in_storing_structures += link.store().get_used_capacity(Some(ResourceType::Energy));
+
                     self.links.insert(link.id(), link);
                 }
                 StructureObject::StructureRoad(road) => {
                     self.roads.insert(road.id(), road);
                 }
                 StructureObject::StructureContainer(container) => {
+                    resource_cache.energy_in_storing_structures += container.store().get_used_capacity(Some(ResourceType::Energy));
+
                     my_containers.push(container);
                 }
                 StructureObject::StructureStorage(storage) => {
+                    resource_cache.energy_in_storing_structures += storage.store().get_used_capacity(Some(ResourceType::Energy));
+
                     self.storage = Some(storage);
                 }
                 StructureObject::StructureSpawn(spawn) => {

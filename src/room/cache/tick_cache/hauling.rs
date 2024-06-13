@@ -1,14 +1,13 @@
 use std::{collections::HashMap, ops::Div};
-use log::info;
-use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use rust_decimal::{prelude::FromPrimitive, Decimal};
-use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, RoomName, SharedCreepProperties};
+use log::info;
+use rust_decimal::Decimal;
+use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
 use serde::{Deserialize, Serialize};
 
-use crate::{memory::{CreepHaulTask, ScreepsMemory}, room::cache, utils::scale_haul_priority};
+use crate::{memory::{CreepHaulTask, Role, ScreepsMemory}, utils::scale_haul_priority};
 
-use super::{structures::RoomStructureCache, CachedRoom, RoomCache};
+use super::CachedRoom;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum HaulingPriority {
@@ -86,6 +85,7 @@ impl HaulingCache {
     }
 
     pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Vec<HaulingType>) -> Option<CreepHaulTask> {
+        //let pre_find_cpu = game::cpu::get_used();
         let mut orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>().clone();
 
         orders.retain(|x| order_type.contains(&x.haul_type));
@@ -142,7 +142,9 @@ impl HaulingCache {
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
         creep_memory.hauling_task = Some(task);
-        creep_memory.hauling_task.clone()
+        let to_ret = creep_memory.hauling_task.clone();
+
+        to_ret
     }
 
     /*
@@ -191,6 +193,30 @@ impl CreepHaulTask {
         target.as_ref()?;
 
         Some(target.unwrap().pos())
+    }
+}
+
+pub fn haul_spawn(room_cache: &mut CachedRoom) {
+    let has_ff = !room_cache.creeps.creeps_of_role.get(&Role::FastFiller).unwrap_or(&Vec::new()).is_empty();
+
+    for spawn in room_cache.structures.spawns.values() {
+        info!("Spawn: {:?} - {}", spawn.id(), spawn.store().get_free_capacity(None) == 0 || has_ff);
+        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || has_ff { continue }
+
+        let priority = scale_haul_priority(
+            spawn.store().get_capacity(Some(ResourceType::Energy)),
+            spawn.store().get_free_capacity(Some(ResourceType::Energy)) as u32,
+            HaulingPriority::Spawning,
+            true
+        );
+
+        room_cache.hauling.create_order(
+            spawn.raw_id(),
+            Some(ResourceType::Energy),
+            Some(spawn.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
+            priority,
+            HaulingType::Transfer
+        );
     }
 }
 

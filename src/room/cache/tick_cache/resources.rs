@@ -25,6 +25,9 @@ pub struct RoomResourceCache {
 
     pub dropped_energy: Vec<Resource>,
     pub dropped_resources: HashMap<ResourceType, Vec<Resource>>,
+
+    pub total_energy: u32,
+    pub energy_in_storing_structures: u32,
 }
 
 impl RoomResourceCache {
@@ -32,6 +35,9 @@ impl RoomResourceCache {
         let mut cache = RoomResourceCache {
             sources: Vec::new(),
             mineral: None,
+
+            total_energy: 0,
+            energy_in_storing_structures: 0,
 
             dropped_energy: Vec::new(),
             dropped_resources: HashMap::new(),
@@ -56,6 +62,8 @@ impl RoomResourceCache {
 
         for resource in dropped_resources {
             if resource.resource_type() == screeps::ResourceType::Energy {
+                self.total_energy += resource.amount();
+                
                 self.dropped_energy.push(resource);
             } else if let Some(resource_vec) = self.dropped_resources.get_mut(&resource.resource_type()) {
                 resource_vec.push(resource);
@@ -136,7 +144,7 @@ impl CachedSource {
 
         // Each work part equates to 2 energy per tick
         // Each source refills energy every 300 ticks.
-        let max_work_needed = (max_energy / 300) + 2;
+        let max_work_needed = (max_energy / 600) + 1;
 
         let work_parts_needed = max_work_needed - self.calculate_work_parts() as u32;
 

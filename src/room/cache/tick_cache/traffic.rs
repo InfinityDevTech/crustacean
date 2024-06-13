@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use super::{CachedRoom, RoomCache};
-use crate::traits::creep::CreepExtensions;
+use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions};
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {
@@ -31,6 +31,8 @@ impl TrafficCache {
 }
 
 pub fn run_movement(room_cache: &mut CachedRoom) {
+    let pre_traffic_cpu = game::cpu::get_used();
+
     room_cache.traffic.movement_map.clear();
     let mut creeps_with_movement_intent = Vec::new();
 
@@ -94,6 +96,9 @@ pub fn run_movement(room_cache: &mut CachedRoom) {
             room_cache.traffic.move_intents += 1;
         }
     }
+
+    let post_traffic_cpu = game::cpu::get_used();
+    room_cache.stats.cpu_traffic = post_traffic_cpu - pre_traffic_cpu;
 }
 
 fn depth_first_searh(creep: &Creep, room_cache: &mut CachedRoom, visited_creeps: &mut Vec<ObjectId<Creep>>, score: Option<i32>) -> i32 {

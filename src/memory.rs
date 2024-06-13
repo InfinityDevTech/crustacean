@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use log::error;
-use screeps::{Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, StructureContainer, StructureLink};
+use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -36,6 +36,10 @@ pub enum Role {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct CreepMemory{
+    // Role, to allow role switching
+    #[serde(rename = "20")]
+    pub role: Role,
+
     // Owning room
     #[serde(rename = "0")]
     pub owning_room: RoomName,
@@ -140,21 +144,47 @@ structstruck::strike! {
     }
 }
 
+// Stats
 structstruck::strike! {
-    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone, Default)]]
     pub struct StatsData {
-        pub gcl_level: u32,
-        pub gcl_progress: f64,
-        pub gcl_progress_total: f64,
-
-        pub gpl: u8,
-        pub credits: f64,
+        pub gpl: u32,
         pub tick: u32,
+        pub last_reset: u32,
         pub age: u32,
+
+        pub gcl: pub struct GCLStats {
+            pub level: u32,
+            pub progress: f64,
+            pub progress_total: f64,
+        },
+
+        pub market: pub struct MarketStats {
+            pub credits: f64,
+            pub cpu_unlocks: u32,
+            pub access_keys: u32,
+            pub pixels: u64,
+        },
+
+        pub memory_usage: pub struct MemoryStats {
+            pub used: u32,
+            pub total: u32,
+        },
+
+        pub heap_usage: pub struct Heapusage {
+            pub total: u32,
+            pub used: u32,
+        },
 
         pub cpu: pub struct CPUStats {
             pub bucket: i32,
             pub used: f64,
+            pub limit: u32,
+
+            pub rooms: f64,
+            pub memory: f64,
+            pub market: f64,
+            pub pathfinding: f64,
         },
 
         pub rooms: HashMap<RoomName, pub struct RoomStats {
@@ -167,6 +197,11 @@ structstruck::strike! {
             pub creep_count: u32,
             pub cpu_usage_by_role: HashMap<Role, f64>,
             pub creeps_by_role: HashMap<Role, u32>,
+
+            pub cpu_traffic: f64,
+            pub cpu_creeps: f64,
+            pub cpu_cache: f64,
+            pub cpu_hauling_orders: f64,
 
             pub energy: pub struct EnergyStats {
                 pub capacity: u32,
@@ -190,6 +225,7 @@ structstruck::strike! {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
+        pub id_index: u64,
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
         pub creeps: HashMap<String, CreepMemory>,
@@ -205,11 +241,14 @@ structstruck::strike! {
 
 impl ScreepsMemory {
     pub fn init_memory() -> Self {
+        let pre_memory_cpu = game::cpu::get_used();
+
         let memory_jsstring = screeps::raw_memory::get();
         let memory_string = memory_jsstring.as_string().unwrap();
         if memory_string.is_empty() {
 
             let mut memory = ScreepsMemory {
+                id_index: 0,
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
                 creeps: HashMap::new(),
@@ -222,10 +261,14 @@ impl ScreepsMemory {
             };
 
             memory.write_memory();
+
+            memory.stats.cpu.memory = game::cpu::get_used() - pre_memory_cpu;
             memory
         } else {
             match serde_json::from_str::<ScreepsMemory>(&memory_string) {
-                Ok(memory) => {
+                Ok(mut memory) => {
+                    memory.stats.cpu.memory = game::cpu::get_used() - pre_memory_cpu;
+
                     memory
                 },
                 Err(e) => {
@@ -233,7 +276,8 @@ impl ScreepsMemory {
                     error!("This is a critical error, memory MUST be reset to default state.");
                     error!("Memory: {}", memory_string);
 
-                    ScreepsMemory {
+                    let mut memory = ScreepsMemory {
+                        id_index: 0,
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
                         creeps: HashMap::new(),
@@ -243,7 +287,10 @@ impl ScreepsMemory {
                         allies: Vec::new(),
 
                         stats: StatsData::default(),
-                    }
+                    };
+
+                    memory.stats.cpu.memory = game::cpu::get_used() - pre_memory_cpu;
+                    memory
                 }
             }
         }
@@ -256,10 +303,10 @@ impl ScreepsMemory {
         screeps::raw_memory::set(&js_serialized);
     }
 
-    pub fn create_creep(&mut self, room_name: &str, creep_name: &str, object: CreepMemory) {
+    pub fn create_creep(&mut self, room_name: &RoomName, creep_name: &str, object: CreepMemory) {
         self.creeps.insert(creep_name.to_string(), object);
 
-        let room = self.rooms.get_mut(&RoomName::new(room_name).unwrap()).unwrap();
+        let room = self.rooms.get_mut(room_name).unwrap();
         room.creeps.push(creep_name.to_string());
     }
 
@@ -276,12 +323,18 @@ impl ScreepsMemory {
             object
         );
     }
+
+    pub fn get_id(&mut self) -> u64 {
+        self.id_index += 1;
+        self.id_index
+    }
 }
 
 impl Default for CreepMemory {
     fn default() -> Self {
         CreepMemory {
             owning_room: RoomName::new("W0N0").unwrap(),
+            role: Role::Hauler,
             owning_remote: None,
             path: None,
             needs_energy: None,
@@ -307,28 +360,5 @@ impl EnemyPlayer {
 
     pub fn increment_hate(&mut self, amount: f32) {
         self.hate += amount;
-    }
-}
-
-impl Default for StatsData {
-    fn default() -> Self {
-        let cpu = CPUStats {
-            bucket: 0,
-            used: 0.0,
-        };
-
-        StatsData {
-            gcl_level: 0,
-            gcl_progress: 0.0,
-            gcl_progress_total: 0.0,
-            gpl: 0,
-            credits: 0.0,
-            tick: 0,
-            age: 0,
-
-            cpu,
-
-            rooms: HashMap::new(),
-        }
     }
 }

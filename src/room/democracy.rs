@@ -8,26 +8,19 @@ use screeps::{
 
 use crate::{
     combat::{hate_handler, rank_room},
-    memory::ScreepsMemory,
+    memory::{Role, ScreepsMemory},
     room::{
-        cache::tick_cache::{hauling, resources, traffic, RoomCache},
-        creeps::{local::hauler, organizer, recovery::recover_creeps},
-        planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt},
-        tower,
-        visuals::run_full_visuals,
+        cache::tick_cache::{hauling, resources, traffic, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, spawning, tower, visuals::run_full_visuals
     },
     traits::room::RoomExtensions,
 };
 
 use super::{
     cache::tick_cache::CachedRoom,
-    planning::{
-        creep::miner::formulate_miner,
-        room::construction::{
+    planning::room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
         },
-    },
 };
 
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -53,6 +46,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             hauling::haul_extensions(cached_room);
             hauling::haul_ruins(cached_room);
             hauling::haul_storage(cached_room);
+            hauling::haul_spawn(cached_room);
 
             // Run creeps and other structures
             // Does NOT run haulers, as they need to be done last
@@ -63,9 +57,11 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         organizer::run_creeps(&room, memory, cache);
 
         // Run spawns
-        // TODO: Get a better spawn implementation
-        let _ = formulate_miner(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+        // TODO: Tune the better spawn implementation
+        spawning::handle_spawning(&room, cache.rooms.get_mut(&room.name()).unwrap(), memory);
 
+
+        let pre_hauler_cpu = game::cpu::get_used();
         // Run haulers
         // Haulers are done last as they need to know what to haul
         for creep in cache
@@ -78,6 +74,13 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         {
             let creep = game::creeps().get(creep.to_string()).unwrap();
             hauler::run_creep(&creep, memory, cache);
+        }
+        if let Some(room) = cache.rooms.get_mut(&room.name()) {
+            room.stats.cpu_creeps += game::cpu::get_used() - pre_hauler_cpu;
+        }
+
+        if let Some(hauler_cpu_usage) = cache.rooms.get_mut(&room.name()).unwrap().stats.cpu_usage_by_role.get_mut(&Role::Hauler) {
+            *hauler_cpu_usage += game::cpu::get_used() - pre_hauler_cpu;
         }
 
         // Recover creeps not existing in memory
@@ -98,6 +101,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
             }
+
+            room_cache.stats.spawning_stats(&mut room_cache.structures);
         }
     } else {
         // Room is NOT mine, therefore we should run creeps

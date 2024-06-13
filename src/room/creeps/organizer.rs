@@ -37,15 +37,17 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         let start_time = game::cpu::get_used();
 
         let creep = game::creeps().get(creep_name.clone()).unwrap();
+        let mut role = Role::Recycler;
 
-        if !memory.creeps.contains_key(creep_name.as_str()) {
-            continue;
+        if let Some(creep_memory) = memory.creeps.get(&creep.name()) {
+            role = creep_memory.role;
+        } else {
+            return;
         }
 
-        let role = utils::name_to_role(&creep.name());
-        if creep.spawning() || role.is_none() { continue; }
+        if creep.spawning() { continue; }
 
-        match role.unwrap() {
+        match role {
             Role::Miner => local::source_miner::run_creep(&creep, memory, cache),
             Role::Hauler => {
                 cache.rooms.get_mut(&room.name()).unwrap().hauling.haulers.push(creep.name());
@@ -57,6 +59,9 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
             Role::GiftBasket => global::gift_drop::run_creep(&creep, memory, cache),
             Role::RemoteMiner => remote::remote_harvester::run_creep(&creep, memory, cache),
+            Role::Unclaimer => global::unclaimer::run_creep(&creep, memory, cache),
+
+            Role::Recycler => global::recycler::run_creep(&creep, memory, cache),
         }
 
         let heap_creep = cached_room.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));
@@ -75,16 +80,16 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         }
         let end_time = game::cpu::get_used();
 
-        if let Some(role) = cpu_usage_by_role.get_mut(&role.unwrap()) {
+        if let Some(role) = cpu_usage_by_role.get_mut(&role) {
             *role += end_time - start_time;
         } else {
-            cpu_usage_by_role.insert(role.unwrap(), end_time - start_time);
+            cpu_usage_by_role.insert(role, end_time - start_time);
         }
 
-        if let Some(role) = creeps_by_role.get_mut(&role.unwrap()) {
+        if let Some(role) = creeps_by_role.get_mut(&role) {
             *role += 1;
         } else {
-            creeps_by_role.insert(role.unwrap(), 1);
+            creeps_by_role.insert(role, 1);
         }
     }
 

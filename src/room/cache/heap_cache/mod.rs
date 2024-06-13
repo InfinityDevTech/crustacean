@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
+use hauling::HeapHaulingCache;
 use screeps::{Creep, ObjectId, Room, Source};
 
 use crate::traits::room::RoomExtensions;
+
+pub mod hauling;
 
 #[derive(PartialEq)]
 pub enum HealthChangeType {
@@ -15,6 +18,7 @@ pub enum HealthChangeType {
 pub struct RoomHeapCache {
     pub room: String,
     pub creeps: HashMap<String, HeapCreep>,
+    pub hauling: HeapHaulingCache,
 
     pub sources: Vec<ObjectId<Source>>,
 }
@@ -29,6 +33,7 @@ impl RoomHeapCache {
         RoomHeapCache {
             room: room.name_str(),
             creeps: HashMap::new(),
+            hauling: HeapHaulingCache::new(),
 
             sources: Vec::new(),
         }

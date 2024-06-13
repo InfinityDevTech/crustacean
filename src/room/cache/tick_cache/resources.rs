@@ -145,8 +145,16 @@ impl CachedSource {
         // Each work part equates to 2 energy per tick
         // Each source refills energy every 300 ticks.
         let max_work_needed = (max_energy / 600) + 1;
+        let current_work = self.calculate_work_parts();
 
-        let work_parts_needed = max_work_needed - self.calculate_work_parts() as u32;
+        // Fixes issue where if we spawn with more parts,
+        // We would integer underflow and return u32::MAX parts.
+        if current_work as u32 >= max_work_needed {
+            //info!("Dodging underflow bug in parts_needed");
+            return 0;
+        }
+
+        let work_parts_needed = max_work_needed - current_work as u32;
 
         cmp::max(work_parts_needed, 0) as u8
     }

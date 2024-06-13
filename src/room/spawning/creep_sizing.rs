@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{game, Part, Room};
 
 use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom};
@@ -17,36 +18,61 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
     let has_miner = !cache.creeps.creeps_of_role.get(&Role::Miner).unwrap_or(&Vec::new()).is_empty();
 
     if has_miner {
-        let mut current_cost = part_costs()[PartsCost::Carry];
+        let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
         let mut work_part_count = 0;
         parts.push(Part::Carry);
+        parts.push(Part::Work);
+        parts.push(Part::Move);
 
-        while current_cost < max_energy {
-            if current_cost + cost_of_stamp > max_energy || work_part_count >= source_parts_needed {
+        let initial_cost = current_cost;
+
+        while current_cost < max_energy - initial_cost {
+            if current_cost > max_energy - initial_cost || work_part_count >= source_parts_needed {
                 break;
             }
 
-            parts.push(Part::Work);
-            parts.push(Part::Move);
-            current_cost += cost_of_stamp;
-            work_part_count += 1;
+            if work_part_count % 2 == 0 {
+                parts.push(Part::Move);
+                parts.push(Part::Work);
+                current_cost += part_costs()[PartsCost::Move] + part_costs()[PartsCost::Work];
+
+                work_part_count += 1;
+            } else {
+                parts.push(Part::Work);
+                current_cost += part_costs()[PartsCost::Work];
+
+                work_part_count += 1;
+            }
+
         }
 
         return parts;
     } else {
-        let mut current_cost = part_costs()[PartsCost::Carry];
+        let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
         let mut work_part_count = 0;
         parts.push(Part::Carry);
+        parts.push(Part::Work);
+        parts.push(Part::Move);
 
-        while current_cost < energy_stored {
-            if current_cost + cost_of_stamp > energy_stored || work_part_count >= source_parts_needed {
+        let initial_cost = current_cost;
+
+        while current_cost < energy_stored - initial_cost {
+            if current_cost > energy_stored - initial_cost || work_part_count >= source_parts_needed {
                 break;
             }
 
-            parts.push(Part::Work);
-            parts.push(Part::Move);
-            current_cost += cost_of_stamp;
-            work_part_count += 1;
+            if work_part_count % 2 == 0 {
+                parts.push(Part::Move);
+                parts.push(Part::Work);
+                current_cost += part_costs()[PartsCost::Move] + part_costs()[PartsCost::Work];
+
+                work_part_count += 1;
+            } else {
+                parts.push(Part::Work);
+                current_cost += part_costs()[PartsCost::Work];
+
+                work_part_count += 1;
+            }
         }
     }
     parts
@@ -61,7 +87,6 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let hauler_count = cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).len();
 
     let stamp_cost = part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
-    let min_cost = part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
 
     if hauler_count > 3 {
         let mut current_cost = stamp_cost;

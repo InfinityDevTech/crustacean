@@ -23,12 +23,14 @@ pub enum Role {
     Upgrader = 3,
     Builder = 4,
 
-    Bulldozer = 5,
-
     Scout = 10,
 
     RemoteMiner = 11,
 
+    Bulldozer = 20,
+    Unclaimer = 22,
+
+    Recycler = 99,
     GiftBasket = 100,
 }
 
@@ -90,6 +92,10 @@ pub struct CreepMemory{
         #[serde(rename = "4")]
         pub amount: Option<u32>,
     }>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "20")]
+    pub is_recycling: Option<bool>,
 }
 }
 
@@ -334,7 +340,7 @@ impl Default for CreepMemory {
     fn default() -> Self {
         CreepMemory {
             owning_room: RoomName::new("W0N0").unwrap(),
-            role: Role::Hauler,
+            role: Role::Recycler,
             owning_remote: None,
             path: None,
             needs_energy: None,
@@ -343,6 +349,7 @@ impl Default for CreepMemory {
             task_id: None,
             scout_target: None,
             hauling_task: None,
+            is_recycling: None,
         }
     }
 }

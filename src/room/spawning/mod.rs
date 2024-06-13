@@ -1,27 +1,117 @@
 use log::info;
-use screeps::Room;
+use screeps::{find, game, Part, Room};
 use spawn_manager::SpawnManager;
 
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, utils::get_body_cost};
+use crate::{
+    memory::{CreepMemory, Role, ScreepsMemory},
+    utils::get_body_cost,
+};
 
 use super::cache::tick_cache::CachedRoom;
 
-pub mod spawn_manager;
 pub mod creep_sizing;
+pub mod spawn_manager;
 
 pub fn handle_spawning(room: &Room, room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
     let mut spawn_manager = SpawnManager::new(&room.name(), room_cache);
 
     miner(room, room_cache, &mut spawn_manager);
     hauler(room, room_cache, &mut spawn_manager, memory);
+    fast_filler(room, room_cache, &mut spawn_manager);
+    flag_attacker(room, room_cache, &mut spawn_manager);
 
     spawn_manager.run_spawning(room, room_cache, memory);
 }
 
-pub fn hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager, memory: &mut ScreepsMemory) {
+pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+    if let Some(flag) = game::flags().get("bulldozeRoom".to_string()) {
+        let attackers = cache
+            .creeps
+            .creeps_of_role
+            .get(&Role::Bulldozer)
+            .unwrap_or(&Vec::new())
+            .len();
+
+        let unclaimer = cache
+            .creeps
+            .creeps_of_role
+            .get(&Role::Unclaimer)
+            .unwrap_or(&Vec::new())
+            .len();
+
+        let mut should_spawn_unclaimer = false;
+        if let Some(room) = flag.room() {
+            if room.find(find::HOSTILE_CREEPS, None).is_empty() && room.find(find::HOSTILE_SPAWNS, None).is_empty() {
+                should_spawn_unclaimer = true;
+            }
+        }
+
+        if attackers >= 4 && unclaimer >= 1 {
+            return;
+        }
+
+        if attackers < 4 {
+            let mut body = vec![Part::Move, Part::Move];
+            let max_energy = room.energy_capacity_available();
+            let mut cost = 100;
+
+            let mut isnt_potato = false;
+
+            while cost < max_energy {
+                if cost + 130 > max_energy {
+                    break;
+                }
+
+                isnt_potato = true;
+
+                body.push(Part::Attack);
+                body.push(Part::Move);
+                cost += 130;
+            }
+
+            if isnt_potato {
+                spawn_manager.create_spawn_request(Role::Bulldozer, body, 4.0, cost, None, None);
+            }
+        } else if unclaimer < 1 && !unclaimer > 3 && should_spawn_unclaimer {
+            let mut body = vec![Part::Move, Part::Move];
+            let max_energy = room.energy_capacity_available();
+            let mut cost = 100;
+
+            let mut isnt_potato = false;
+
+            while cost < max_energy {
+                if cost + 650 > max_energy {
+                    break;
+                }
+
+                isnt_potato = true;
+
+                body.push(Part::Claim);
+                body.push(Part::Move);
+                cost += 650;
+            }
+
+            if isnt_potato {
+                spawn_manager.create_spawn_request(Role::Unclaimer, body, 4.0, cost, None, None);
+            }
+        }
+    }
+}
+
+pub fn hauler(
+    room: &Room,
+    cache: &mut CachedRoom,
+    spawn_manager: &mut SpawnManager,
+    memory: &mut ScreepsMemory,
+) {
     let priority = 4.0;
 
-    let current_hauler_count = cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).len();
+    let current_hauler_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&Vec::new())
+        .len();
 
     let mut dropped_count = 0;
     for resource in &cache.resources.dropped_energy {
@@ -39,7 +129,7 @@ pub fn hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMana
     } else if energy_in_room > 10000 {
         energy_in_room / 5000
     } else {
-        energy_in_room / 1000
+        energy_in_room / 500
     };
 
     if current_hauler_count as u32 >= haulers_to_make {
@@ -52,9 +142,37 @@ pub fn hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMana
     spawn_manager.create_spawn_request(Role::Hauler, body, priority, cost, None, None);
 }
 
+pub fn fast_filler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+    let fast_filler_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::FastFiller)
+        .unwrap_or(&Vec::new())
+        .len();
+
+    if fast_filler_count >= 2 {
+        return;
+    }
+
+    let body = vec![Part::Carry, Part::Move];
+    let cost = get_body_cost(&body);
+
+    spawn_manager.create_spawn_request(Role::FastFiller, body, 4.0, cost, None, None);
+}
+
 pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
-    let miner_count = cache.creeps.creeps_of_role.get(&Role::Miner).unwrap_or(&Vec::new()).len();
-    let hauler_count = cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).len();
+    let miner_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Miner)
+        .unwrap_or(&Vec::new())
+        .len();
+    let hauler_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&Vec::new())
+        .len();
 
     for source in &cache.resources.sources {
         let parts_needed = source.parts_needed();
@@ -67,10 +185,17 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
 
         let mut priority = 0.0;
 
-        if miner_count < hauler_count { priority -= 1.0; }
+        if miner_count < hauler_count {
+            priority -= 1.0;
+        }
         priority += parts_needed as f64;
 
-        let index = &cache.resources.sources.iter().position(|s| s.id == source.id).unwrap();
+        let index = &cache
+            .resources
+            .sources
+            .iter()
+            .position(|s| s.id == source.id)
+            .unwrap();
 
         let creep_memory = CreepMemory {
             owning_room: room.name(),
@@ -78,6 +203,13 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
             ..Default::default()
         };
 
-        spawn_manager.create_spawn_request(Role::Miner, parts, priority, cost, Some(creep_memory), None);
+        spawn_manager.create_spawn_request(
+            Role::Miner,
+            parts,
+            priority,
+            cost,
+            Some(creep_memory),
+            None,
+        );
     }
 }

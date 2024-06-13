@@ -16,7 +16,17 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
         let room = split_name.next().unwrap();
         let _id = split_name.next().unwrap();
 
-        let room_name = RoomName::from_str(room).unwrap();
+        let room_name = RoomName::from_str(room);
+
+        // This fixes an issue with the old naming convention
+        // Past - <ROLE>-<GAME_TIME>-<ID>
+        // New - <ROLE>-<ROOM>-<ID>
+        if room_name.is_err() {
+            let _ = game::creeps().get(creep_name.clone()).unwrap().suicide();
+
+            return;
+        }
+        let room_name = room_name.unwrap();
 
         let creep = game::creeps().get(creep_name.clone()).unwrap();
 

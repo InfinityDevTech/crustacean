@@ -89,6 +89,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cached
             memory,
             Some(ResourceType::Energy),
             vec![HaulingType::Offer, HaulingType::Pickup],
+            &mut cache.heap_cache
         );
 
         if let Some(order) = new_order {

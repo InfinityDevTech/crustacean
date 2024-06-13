@@ -24,7 +24,9 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 HaulingType::Pickup,
                 HaulingType::Withdraw,
                 HaulingType::Offer,
-            ]);
+            ],
+            &mut cache.heap_cache
+        );
         return;
     }
 

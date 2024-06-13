@@ -2,10 +2,10 @@ use std::{collections::HashMap, ops::Div};
 
 use log::info;
 use rust_decimal::Decimal;
-use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties};
+use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties, TextStyle};
 use serde::{Deserialize, Serialize};
 
-use crate::{memory::{CreepHaulTask, Role, ScreepsMemory}, utils::scale_haul_priority};
+use crate::{heap, heap_cache, memory::{CreepHaulTask, Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
 
 use super::CachedRoom;
 
@@ -84,7 +84,7 @@ impl HaulingCache {
         self.new_orders.insert(id, order);
     }
 
-    pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Vec<HaulingType>) -> Option<CreepHaulTask> {
+    pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Vec<HaulingType>, heap_cache: &mut RoomHeapCache) -> Option<CreepHaulTask> {
         //let pre_find_cpu = game::cpu::get_used();
         let mut orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>().clone();
 
@@ -114,11 +114,42 @@ impl HaulingCache {
             vis.text(
                 x,
                 y,
-                format!("{:?} {}", order_type, score),
-                Default::default(),
+                format!("{:?}", score),
+                Some(TextStyle::default().font(0.5).align(screeps::TextAlign::Center)),
             );
 
-            if score >= current_score { continue; }
+            if order.haul_type == HaulingType::Transfer {
+                vis.text(
+                    x,
+                    y - 1.0,
+                    "T".to_string(),
+                    Some(TextStyle::default().font(0.5)),
+                );
+            } else {
+                vis.text(
+                    x,
+                    y - 1.0,
+                    "O".to_string(),
+                    Some(TextStyle::default().font(0.5)),
+                );
+            }
+
+            let reserved = if let Some(reserved_order) = heap_cache.hauling.reserved_orders.get(&order.target) {
+                let creep = game::creeps().get(reserved_order.to_string());
+                let mut reserved = true;
+
+                if creep.is_none() {
+                    heap_cache.hauling.reserved_orders.remove(&order.target);
+
+                    reserved = false;
+                }
+
+                reserved
+            } else {
+                false
+            };
+
+            if score >= current_score || reserved { continue; }
 
             //info!("Current_score {}", score);
 
@@ -140,6 +171,8 @@ impl HaulingCache {
         self.new_orders.remove(&order.id);
 
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
+        heap_cache.hauling.reserved_orders.insert(order.target, creep.name().to_string());
 
         creep_memory.hauling_task = Some(task);
         let to_ret = creep_memory.hauling_task.clone();

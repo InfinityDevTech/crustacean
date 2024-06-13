@@ -54,6 +54,8 @@ pub fn role_to_name(role: Role) -> String {
         Role::Bulldozer => "sa",
         Role::GiftBasket => "gb",
         Role::RemoteMiner => "rm",
+        Role::Unclaimer => "uc",
+        Role::Recycler => "rc",
     };
     data.to_string()
 }
@@ -62,7 +64,8 @@ pub fn role_to_name(role: Role) -> String {
 /// **Example:** sm **=** Miner
 /// **Example:** mb **=** Hauler
 pub fn name_to_role(name: &str) -> Option<Role> {
-    match &name[..2] {
+    let role_tag = name.split("-").next().unwrap();
+    match role_tag {
         "sm" => { Some(Role::Miner) },
         "mb" => { Some(Role::Hauler) },
         "ud" => { Some(Role::Upgrader) },
@@ -72,6 +75,8 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "sa" => { Some(Role::Bulldozer) },
         "gb" => { Some(Role::GiftBasket) },
         "rm" => { Some(Role::RemoteMiner) },
+        "uc" => { Some(Role::Unclaimer) },
+        "rc" => { Some(Role::Recycler) },
         _ => { None },
     }
 }

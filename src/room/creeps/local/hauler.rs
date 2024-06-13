@@ -5,7 +5,7 @@ use screeps::{
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::{CreepHaulTask, CreepMemory, ScreepsMemory},
+    memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory},
     room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache},
     traits::creep::CreepExtensions,
 };
@@ -22,12 +22,25 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     if let Some(order) = &creep_memory.hauling_task.clone() {
         let _ = creep.say("EXEC", false);
-        execute_order(
+
+        let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
+        if execute_order(
             creep,
-            memory.creeps.get_mut(&creep_name).unwrap(),
+            creep_memory,
             cached_room,
             order,
-        );
+        ) {
+            // Invalidate the path and the hauling task
+            // Since it was mission success
+            if creep_memory.hauling_task.is_some() {
+                cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap().heap_cache.hauling.reserved_orders.remove(&creep_memory.hauling_task.as_ref().unwrap().target_id);
+
+                creep_memory.hauling_task = None;
+            }
+            creep_memory.path = None;
+
+            run_creep(creep, memory, cache);
+        }
     } else {
         let new_order = if creep_memory.needs_energy.unwrap_or(false) {
             let _ = creep.say("📋", false);
@@ -41,23 +54,37 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                     HaulingType::Withdraw,
                     HaulingType::Offer,
                 ],
+                &mut cached_room.heap_cache
             )
         } else {
             let _ = creep.say("🔋", false);
 
             cached_room
                 .hauling
-                .find_new_order(creep, memory, None, vec![HaulingType::Transfer])
+                .find_new_order(creep, memory, None, vec![HaulingType::Transfer], &mut cached_room.heap_cache)
         };
 
         if let Some(order) = new_order {
             let _ = creep.say("EXEC", false);
-            execute_order(
+
+            let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
+            if execute_order(
                 creep,
-                memory.creeps.get_mut(&creep.name()).unwrap(),
+                creep_memory,
                 cached_room,
                 &order,
-            );
+            ) {
+                // Invalidate the path and the hauling task
+                // Since it was mission success
+                if creep_memory.hauling_task.is_some() {
+                    cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap().heap_cache.hauling.reserved_orders.remove(&creep_memory.hauling_task.as_ref().unwrap().target_id);
+
+                    creep_memory.hauling_task = None;
+                }
+                creep_memory.path = None;
+
+                run_creep(creep, memory, cache);
+            }
         }
     }
 
@@ -68,6 +95,8 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         mem.path = None;
 
         if mem.hauling_task.is_some() {
+            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap().heap_cache.hauling.reserved_orders.remove(&mem.hauling_task.as_ref().unwrap().target_id);
+
             mem.hauling_task = None;
         }
     }
@@ -79,6 +108,8 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         mem.path = None;
 
         if mem.hauling_task.is_some() {
+            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap().heap_cache.hauling.reserved_orders.remove(&mem.hauling_task.as_ref().unwrap().target_id);
+
             mem.hauling_task = None;
         }
     }
@@ -89,15 +120,18 @@ pub fn execute_order(
     creep_memory: &mut CreepMemory,
     cache: &mut CachedRoom,
     order: &CreepHaulTask,
-) {
+) -> bool {
     let pickup_target = order.target_id;
     let target = game::get_object_by_id_erased(&pickup_target);
     let position = order.get_target_position();
 
     if position.is_none() || target.is_none() {
         creep_memory.hauling_task = None;
+        creep_memory.path = None;
+
+        cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
         let _ = creep.say("INVLD", false);
-        return;
+        return true;
     }
 
     if !creep.pos().is_near_to(position.unwrap()) {
@@ -108,7 +142,7 @@ pub fn execute_order(
             HaulingType::Pickup => creep.say("MV-PKUP", false),
             HaulingType::Transfer => creep.say("MV-TFER", false),
         };
-        return;
+        return false;
     }
 
     let result: Result<(), ErrorCode> = match order.haul_type {
@@ -219,17 +253,24 @@ pub fn execute_order(
     if result.is_ok() {
         creep_memory.hauling_task = None;
         creep_memory.path = None;
+        cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
+
+        return true;
     } else if result.is_err() {
         match result.err().unwrap() {
             ErrorCode::InvalidTarget => {
                 let _ = creep.say("INVLD-TGT", false);
                 creep_memory.hauling_task = None;
                 creep_memory.path = None;
+
+                cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
             },
             ErrorCode::Full => {
                 let _ = creep.say("FULL", false);
                 creep_memory.hauling_task = None;
                 creep_memory.path = None;
+
+                cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
             },
             ErrorCode::NoBodypart => {
                 let _ = creep.say("NO-BP", false);
@@ -237,5 +278,9 @@ pub fn execute_order(
             },
             _ => {}
         }
+
+        return false;
     }
+
+    false
 }

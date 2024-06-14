@@ -1,6 +1,6 @@
 use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
+use crate::{memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
@@ -22,7 +22,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         if let Some(container) = container {
 
             if creep.pos().get_range_to(container.pos()) > 1 {
-                creep.better_move_to(creep_memory, cached_room, container.pos(), 1);
+                creep.better_move_to(creep_memory, cached_room, container.pos(), 1, MoveOptions::default());
                 return;
             } else {
                 let _ = creep.withdraw(container, ResourceType::Energy, None);
@@ -32,7 +32,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             let priority = scale_haul_priority(
                 creep.store().get_free_capacity(None) as u32,
                 creep.store().get_used_capacity(None),
-                HaulingPriority::Energy,
+                HaulingPriority::Upgrading,
                 true
             );
 
@@ -42,7 +42,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
 
     if controller.controller.pos().get_range_to(creep.pos()) > 2 {
-        creep.better_move_to(creep_memory, cached_room, controller.controller.pos(), 2);
+        creep.better_move_to(creep_memory, cached_room, controller.controller.pos(), 2, MoveOptions::default());
     } else {
         let _ = creep.upgrade_controller(&controller.controller);
 
@@ -57,7 +57,7 @@ pub fn sign_controller(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
         if creep.pos().is_near_to(controller.controller.pos()) {
             let _ = creep.sign_controller(&controller.controller, &get_room_sign());
         } else {
-            creep.better_move_to(creep_memory, cache, controller.controller.pos(), 1);
+            creep.better_move_to(creep_memory, cache, controller.controller.pos(), 1, MoveOptions::default());
         }
         return true;
     }

@@ -2,7 +2,7 @@ use log::info;
 use screeps::{game, Creep, HasPosition, Part, SharedCreepProperties};
 
 use crate::{
-    memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
+    memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -41,7 +41,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
                         return;
                     } else {
-                        creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), spawn_pos, 1);
+                        creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), spawn_pos, 1, MoveOptions::default().avoid_enemies(true));
                         return;
                     }
                 }

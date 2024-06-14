@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Tombstone
+    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Tombstone
 };
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
@@ -46,6 +46,7 @@ pub struct RoomStructureCache {
 
     pub controller: Option<CachedController>,
     pub storage: Option<StructureStorage>,
+    pub observer: Option<StructureObserver>,
 
     pub terrain: LocalRoomTerrain,
     pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
@@ -74,6 +75,7 @@ impl RoomStructureCache {
 
             controller: None,
             storage: None,
+            observer: None,
 
             terrain: LocalRoomTerrain::from(room.get_terrain()),
             roads: HashMap::new(),
@@ -172,6 +174,9 @@ impl RoomStructureCache {
                     if spawn.my() {
                         self.spawns.insert(spawn.id(), spawn);
                     }
+                }
+                StructureObject::StructureObserver(observer) => {
+                    self.observer = Some(observer);
                 }
                 _ => {}
             }

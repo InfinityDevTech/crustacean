@@ -5,9 +5,7 @@ use screeps::{
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory},
-    room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache},
-    traits::creep::CreepExtensions,
+    memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache}, traits::creep::CreepExtensions
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -39,7 +37,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             }
             creep_memory.path = None;
 
+            if creep.store().get_free_capacity(None) == 0 {
+                creep_memory.needs_energy = None;
+            } else if creep.store().get_used_capacity(None) == 0 {
+                creep_memory.needs_energy = Some(true);
+            }
+
             run_creep(creep, memory, cache);
+            return;
         }
     } else {
         let new_order = if creep_memory.needs_energy.unwrap_or(false) {
@@ -83,7 +88,14 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 }
                 creep_memory.path = None;
 
+                if creep.store().get_free_capacity(None) == 0 {
+                    creep_memory.needs_energy = None;
+                } else if creep.store().get_used_capacity(None) == 0 {
+                    creep_memory.needs_energy = Some(true);
+                }
+
                 run_creep(creep, memory, cache);
+                return;
             }
         }
     }
@@ -135,7 +147,7 @@ pub fn execute_order(
     }
 
     if !creep.pos().is_near_to(position.unwrap()) {
-        creep.better_move_to(creep_memory, cache, position.unwrap(), 1);
+        creep.better_move_to(creep_memory, cache, position.unwrap(), 1, MoveOptions::default());
         let _ = match order.haul_type {
             HaulingType::Offer => creep.say("MV-OFFR", false),
             HaulingType::Withdraw => creep.say("MV-WTHD", false),

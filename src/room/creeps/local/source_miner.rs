@@ -1,13 +1,12 @@
+use log::info;
 use screeps::{
-    game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties, Source
+    game, Creep, HasHits, HasId, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties, Source
 };
 
 use crate::{
-    memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::tick_cache::{
+    memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
-    },
-    traits::creep::CreepExtensions, utils::scale_haul_priority,
+    }, traits::creep::CreepExtensions, utils::scale_haul_priority
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -52,7 +51,8 @@ pub fn harvest_source(creep: &Creep, source: Source, creep_memory: &mut CreepMem
 
     if !creep.pos().is_near_to(source.pos()) {
         let _ = creep.say("🚚 🔋", false);
-        creep.better_move_to(creep_memory, cache, source.pos(), 1);
+
+        creep.better_move_to(creep_memory, cache, source.pos(), 1, MoveOptions::default());
     } else {
         let _ = creep.say("⛏️", false);
         let _ = creep.harvest(&source);
@@ -117,7 +117,7 @@ pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut
         } else if creep.pos().is_near_to(container.pos()) {
             let _ = creep.transfer(&container, ResourceType::Energy, None);
         } else {
-            creep.better_move_to(creep_memory, cache, container.pos(), 1);
+            creep.better_move_to(creep_memory, cache, container.pos(), 1, MoveOptions::default());
         }
     } else {
         let _ = creep.drop(ResourceType::Energy, None);
@@ -137,7 +137,7 @@ pub fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &m
         if container.hits() < container.hits_max() {
             if container.pos().get_range_to(creep.pos()) > 1 {
                 let _ = creep.say("🚚", false);
-                creep.better_move_to(creep_memory, cache, container.pos(), 1);
+                creep.better_move_to(creep_memory, cache, container.pos(), 1, MoveOptions::default());
                 return true;
             } else {
                 let _ = creep.say("🔧", false);

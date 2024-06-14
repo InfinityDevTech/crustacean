@@ -2,7 +2,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{find, game, Color, Creep, HasPosition, ResourceType, SharedCreepProperties, StructureProperties, StructureType};
 
 use crate::{
-    config, memory::ScreepsMemory, room::{cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache}, creeps::local::hauler}, traits::creep::CreepExtensions
+    config, memory::ScreepsMemory, movement::move_target::MoveOptions, room::{cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache}, creeps::local::hauler}, traits::creep::CreepExtensions
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -38,11 +38,11 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 let _ = creep.say("😍", true);
                 let _ = creep.suicide();
             } else {
-                creep.better_move_to(creep_memory, cache, flag.pos(), 1);
+                creep.better_move_to(creep_memory, cache, flag.pos(), 1, MoveOptions::default());
             }
         } else {
             let _ = creep.say("🚚", false);
-            creep.better_move_to(creep_memory, cache, flag.pos(), 2);
+            creep.better_move_to(creep_memory, cache, flag.pos(), 2, MoveOptions::default());
         }
     } else {
         let _ = creep.say("❓", false);

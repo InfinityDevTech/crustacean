@@ -1,6 +1,7 @@
 // If I set alliance tag to null, I dont want to to be added lol
 #![allow(clippy::comparison_to_empty)]
 
+use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Part, RoomName};
 

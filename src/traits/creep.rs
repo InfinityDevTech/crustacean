@@ -1,15 +1,16 @@
 use crate::{
     memory::CreepMemory,
     movement::{
-        move_target::MoveTarget,
+        move_target::{MoveOptions, MoveTarget},
         utils::{dir_to_coords, num_to_dir},
     },
     room::cache::tick_cache::{CachedRoom, RoomCache},
 };
 
+use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, Terrain,
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
 };
 
 pub trait CreepExtensions {
@@ -21,6 +22,7 @@ pub trait CreepExtensions {
         cache: &mut CachedRoom,
         target: Position,
         range: u16,
+        avoid_enemies: MoveOptions,
     );
 
     fn parts_of_type(&self, part: screeps::Part) -> u32;
@@ -90,6 +92,7 @@ impl CreepExtensions for screeps::Creep {
         cache: &mut CachedRoom,
         target: Position,
         range: u16,
+        move_options: MoveOptions,
     ) {
         let pre_move_cpu = game::cpu::get_used();
 
@@ -106,7 +109,7 @@ impl CreepExtensions for screeps::Creep {
                     pos: target,
                     range: range.into(),
                 }
-                .find_path_to(self.pos());
+                .find_path_to(self.pos(), move_options);
 
                 creep_memory.path = Some(target.clone());
 

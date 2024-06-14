@@ -17,9 +17,10 @@ pub enum HaulingPriority {
     Spawning = 5,
     Ruins = 30,
     Energy = 40,
-    Minerals = 50,
-    Market = 60,
-    Storage = 70,
+    Upgrading = 50,
+    Minerals = 60,
+    Market = 70,
+    Storage = 80,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
@@ -105,7 +106,7 @@ impl HaulingCache {
             let distance_to_target = structure.as_ref().unwrap().pos().get_range_to(creep.pos());
             let priority = order.priority;
 
-            let score = distance_to_target as f32 + priority;
+            let score = (distance_to_target as f32 * 0.75) + priority;
 
             let vis = creep.room().unwrap().visual();
 
@@ -172,12 +173,22 @@ impl HaulingCache {
 
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-        heap_cache.hauling.reserved_orders.insert(order.target, creep.name().to_string());
+        let storage_amount = creep.store().get_free_capacity(Some(task.resource));
+
+        // Only reserve if the order amount isnt specified
+        // or if the order amount is less than the free capacity of the creep
+        if order.haul_type == HaulingType::Offer || order.haul_type == HaulingType::Pickup || order.haul_type == HaulingType::Withdraw {
+            if let Some(order_amount) = order.amount {
+                if order_amount as i32 - storage_amount < 0 {
+                    heap_cache.hauling.reserved_orders.insert(order.target, creep.name().to_string());
+                }
+            }
+        } else {
+            heap_cache.hauling.reserved_orders.insert(order.target, creep.name().to_string());
+        }
 
         creep_memory.hauling_task = Some(task);
-        let to_ret = creep_memory.hauling_task.clone();
-
-        to_ret
+        creep_memory.hauling_task.clone()
     }
 
     /*
@@ -233,7 +244,6 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
     let has_ff = !room_cache.creeps.creeps_of_role.get(&Role::FastFiller).unwrap_or(&Vec::new()).is_empty();
 
     for spawn in room_cache.structures.spawns.values() {
-        info!("Spawn: {:?} - {}", spawn.id(), spawn.store().get_free_capacity(None) == 0 || has_ff);
         if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || has_ff { continue }
 
         let priority = scale_haul_priority(

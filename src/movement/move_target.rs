@@ -1,7 +1,27 @@
 use log::warn;
 use screeps::{
-    find, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Position, RoomName, RoomXY, StructureObject, StructureType
+    find, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
 };
+
+#[derive(Debug, Clone, Copy)]
+pub struct MoveOptions {
+    pub avoid_enemies: bool,
+}
+
+impl Default for MoveOptions {
+    fn default() -> Self {
+        MoveOptions {
+            avoid_enemies: false,
+        }
+    }
+}
+
+impl MoveOptions {
+    pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
+        self.avoid_enemies = avoid_enemies;
+        *self
+    }
+}
 
 pub struct MoveTarget {
     pub pos: Position,
@@ -9,8 +29,10 @@ pub struct MoveTarget {
 }
 
 impl MoveTarget {
-    pub fn find_path_to(&mut self, from: Position) -> String {
-        let opts = SearchOptions::new(path_call)
+    pub fn find_path_to(&mut self, from: Position, move_options: MoveOptions) -> String {
+        let opts = SearchOptions::new(|room_name| {
+            path_call(room_name, move_options)
+        })
             .max_rooms(4)
             .max_ops(2000);
         let search = pathfinder::search(from, self.pos, self.range, Some(opts));
@@ -53,7 +75,7 @@ impl MoveTarget {
     }
 }
 
-pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
+pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
     if let Some(room) = screeps::game::rooms().get(room_name) {
@@ -110,6 +132,32 @@ pub fn path_call(room_name: RoomName) -> MultiRoomCostResult {
         for creep in creeps {
             let pos = creep.pos();
             matrix.set(pos.xy(), 255);
+        }
+
+        if move_options.avoid_enemies {
+            let enemies = room.find(find::HOSTILE_CREEPS, None);
+            for enemy in enemies {
+                if enemy.body().iter().filter(|p| p.part() == Part::Attack || p.part() == Part::RangedAttack && p.hits() > 0).count() == 0 {
+                    continue;
+                }
+                
+                let radius = 3;
+
+                let start_x = enemy.pos().x().u8();
+                let start_y = enemy.pos().y().u8();
+
+                for x in start_x - radius..=start_x + radius {
+                    for y in start_y - radius..=start_y + radius {
+                        if x == start_x && y == start_y {
+                            continue;
+                        }
+
+                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
+
+                        matrix.set(xy, 255);
+                    }
+                }
+            }
         }
     }
     MultiRoomCostResult::CostMatrix(matrix.into())

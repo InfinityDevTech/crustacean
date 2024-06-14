@@ -8,6 +8,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
     let mut parts = Vec::new();
 
     if source_parts_needed == 0 {
+        info!("No parts needed for miner");
         return parts; // No parts needed at all, return empty
     }
 
@@ -26,18 +27,24 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
 
         let initial_cost = current_cost;
 
-        while current_cost < max_energy - initial_cost {
-            if current_cost > max_energy - initial_cost || work_part_count >= source_parts_needed {
-                break;
-            }
-
+        while current_cost < max_energy {
             if work_part_count % 2 == 0 {
+                if current_cost + cost_of_stamp > max_energy {
+                    break;
+                }
+
                 parts.push(Part::Move);
                 parts.push(Part::Work);
                 current_cost += part_costs()[PartsCost::Move] + part_costs()[PartsCost::Work];
 
                 work_part_count += 1;
             } else {
+
+                let cost = part_costs()[PartsCost::Work];
+                if current_cost + cost > max_energy {
+                    break;
+                }
+
                 parts.push(Part::Work);
                 current_cost += part_costs()[PartsCost::Work];
 
@@ -46,6 +53,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
 
         }
 
+        info!("Miner parts: {:?}", parts);
         return parts;
     } else {
         let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
@@ -54,10 +62,8 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
         parts.push(Part::Work);
         parts.push(Part::Move);
 
-        let initial_cost = current_cost;
-
-        while current_cost < energy_stored - initial_cost {
-            if current_cost > energy_stored - initial_cost || work_part_count >= source_parts_needed {
+        while current_cost < energy_stored {
+            if current_cost + cost_of_stamp > energy_stored || work_part_count >= source_parts_needed {
                 break;
             }
 
@@ -75,6 +81,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
             }
         }
     }
+    info!("Miner parts: {:?}", parts);
     parts
 }
 
@@ -94,7 +101,7 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         body.push(Part::Carry);
 
         while current_cost < max_capable {
-            if current_cost + part_costs()[PartsCost::Move] > max_capable {
+            if current_cost + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry] > max_capable {
                 break;
             }
 
@@ -121,6 +128,31 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     body
 }
 
+pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+    let mut parts = Vec::new();
+
+    let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
+    let max_capable = room.energy_capacity_available();
+
+    let mut current_cost = part_costs()[PartsCost::Move] * 2;
+    let mut work_part_count = 0;
+    parts.push(Part::Move);
+    parts.push(Part::Move);
+
+    while current_cost < max_capable {
+        if current_cost + stamp_cost > max_capable {
+            break;
+        }
+
+        parts.push(Part::Work);
+        parts.push(Part::Move);
+        parts.push(Part::Carry);
+        work_part_count += 1;
+        current_cost += stamp_cost;
+    }
+
+    parts
+}
 /// Returns the parts needed for a upgrader creep
 pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
@@ -144,8 +176,13 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         parts.iter().filter(|part| **part == Part::Work).count()
     }).sum::<usize>();
 
+    if current_work_parts >= target_work_parts {
+        return parts;
+    }
+
     let parts_needed_to_fill = target_work_parts - current_work_parts;
-    let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move];
+
+    let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
     let cost_capable = room.energy_available();
     let max_capable = room.energy_capacity_available();
 
@@ -166,6 +203,7 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
             }
 
             parts.push(Part::Work);
+            parts.push(Part::Carry);
             parts.push(Part::Move);
             work_part_count += 1;
             current_cost += stamp_cost;
@@ -185,5 +223,9 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         }
     }
 
-    parts
+    if parts.contains(&Part::Work) {
+        parts
+    } else {
+        vec![Part::Work, Part::Move, Part::Carry]
+    }
 }

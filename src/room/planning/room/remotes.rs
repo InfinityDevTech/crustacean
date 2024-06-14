@@ -14,7 +14,7 @@ pub fn fetch_possible_remotes(
     memory: &mut ScreepsMemory,
     room_cache: &mut CachedRoom,
 ) -> Vec<RoomName> {
-    let adjacent_rooms = room.get_adjacent(4);
+    let adjacent_rooms = room.get_adjacent(3);
 
     // Go through all the adjacent rooms and rank them
     let mut possible_remotes = Vec::new();

@@ -2,7 +2,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureProperties, StructureType};
 
 use crate::{
-    config, memory::{Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -26,7 +26,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 if creep.pos().is_near_to(flag.pos()) {
                     let _ = creep.say("👁️", true);
                 } else {
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1);
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default());
                 }
                 return;
             }
@@ -36,7 +36,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                     let _ = creep.say("JK - <3 U", true);
                 } else {
                     let _ = creep.say("DIE DIE DIE", true);
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1);
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default());
                 }
                 return;
             }
@@ -48,7 +48,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
                 if creep.attack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
-                    creep.better_move_to(creep_memory, room_cache, enemy.pos(), 1);
+                    creep.better_move_to(creep_memory, room_cache, enemy.pos(), 1, MoveOptions::default());
 
                     creep_memory.path = None;
                 }
@@ -63,7 +63,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                             let _ = creep.attack(attackabke);
                         }
                     } else {
-                        creep.better_move_to(creep_memory, room_cache, structure.pos(), 1);
+                        creep.better_move_to(creep_memory, room_cache, structure.pos(), 1, MoveOptions::default());
 
                         creep_memory.path = None;
                     }
@@ -74,9 +74,11 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             }
         } else {
             let _ = creep.say("🚚", false);
-            creep.better_move_to(creep_memory, room_cache, flag.pos(), 2);
+            creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
         }
     } else {
         let _ = creep.say("❓", false);
+
+        creep_memory.role = Role::Recycler;
     }
 }

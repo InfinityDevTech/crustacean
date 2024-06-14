@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use log::info;
 use screeps::{find, game, Part, Room};
 use spawn_manager::SpawnManager;
@@ -19,6 +21,9 @@ pub fn handle_spawning(room: &Room, room_cache: &mut CachedRoom, memory: &mut Sc
     hauler(room, room_cache, &mut spawn_manager, memory);
     fast_filler(room, room_cache, &mut spawn_manager);
     flag_attacker(room, room_cache, &mut spawn_manager);
+    builder(room, room_cache, &mut spawn_manager);
+    upgrader(room, room_cache, &mut spawn_manager);
+    scout(room, room_cache, &mut spawn_manager);
 
     spawn_manager.run_spawning(room, room_cache, memory);
 }
@@ -50,7 +55,7 @@ pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Sp
             return;
         }
 
-        if attackers < 4 {
+        if attackers < 4 && !should_spawn_unclaimer {
             let mut body = vec![Part::Move, Part::Move];
             let max_energy = room.energy_capacity_available();
             let mut cost = 100;
@@ -98,13 +103,84 @@ pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Sp
     }
 }
 
+pub fn scout(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+    let body = vec![Part::Move];
+    let cost = get_body_cost(&body);
+
+    let scouts = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Scout)
+        .unwrap_or(&Vec::new())
+        .len();
+
+    let has_observer = cache.structures.observer.is_some();
+
+    let count = if has_observer {
+        1
+    } else {
+        2
+    };
+
+    if scouts >= count {
+        return;
+    }
+
+    spawn_manager.create_spawn_request(Role::Scout, body, 4.0, cost, None, None);
+}
+
+pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+    let building_work_parts = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Builder)
+        .unwrap_or(&Vec::new())
+        .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work).count() as u32)
+        .sum::<u32>();
+
+    let construction_sites = cache.structures.construction_sites.len();
+
+    if construction_sites == 0 {
+        return;
+    }
+
+    let desired_work_parts = construction_sites / 3;
+    if building_work_parts as usize >= desired_work_parts {
+        return;
+    }
+
+    let body = crate::room::spawning::creep_sizing::builder(room, cache);
+    let cost = get_body_cost(&body);
+
+    spawn_manager.create_spawn_request(Role::Builder, body, 4.0, cost, None, None);
+
+}
+
+pub fn upgrader(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+    let upgraders = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Upgrader)
+        .unwrap_or(&Vec::new())
+        .len();
+
+    let body = crate::room::spawning::creep_sizing::upgrader(room, cache);
+    let cost = get_body_cost(&body);
+
+    if body.is_empty() {
+        return;
+    }
+
+    spawn_manager.create_spawn_request(Role::Upgrader, body, 4.0, cost, None, None);
+}
+
 pub fn hauler(
     room: &Room,
     cache: &mut CachedRoom,
     spawn_manager: &mut SpawnManager,
     memory: &mut ScreepsMemory,
 ) {
-    let priority = 4.0;
+    let priority = 5.0;
 
     let current_hauler_count = cache
         .creeps
@@ -129,7 +205,13 @@ pub fn hauler(
     } else if energy_in_room > 10000 {
         energy_in_room / 5000
     } else {
-        energy_in_room / 500
+        let count = energy_in_room / 500;
+
+        if count == 0 {
+            6
+        } else {
+            count
+        }
     };
 
     if current_hauler_count as u32 >= haulers_to_make {
@@ -188,7 +270,9 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
         if miner_count < hauler_count {
             priority -= 1.0;
         }
-        priority += parts_needed as f64;
+        priority += ( parts_needed as f64 );
+
+        priority = 500.0;
 
         let index = &cache
             .resources

@@ -5,11 +5,9 @@ use screeps::{
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory},
-    room::cache::tick_cache::{
+    memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
-    },
-    traits::creep::CreepExtensions, utils::scale_haul_priority,
+    }, traits::creep::CreepExtensions, utils::scale_haul_priority
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -67,7 +65,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             if creep.pos().is_near_to(container.pos()) {
                 let _ = creep.withdraw(&container, ResourceType::Energy, None);
             } else {
-                creep.better_move_to(creep_memory, cached_room, container.pos(), 1);
+                creep.better_move_to(creep_memory, cached_room, container.pos(), 1, MoveOptions::default());
             }
 
             return;
@@ -89,7 +87,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             None,
         );
     } else {
-        creep.better_move_to(creep_memory, cached_room, target.pos(), 1);
+        creep.better_move_to(creep_memory, cached_room, target.pos(), 1, MoveOptions::default());
     }
 }
 
@@ -166,6 +164,7 @@ pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cac
                 cache,
                 position_1.into(),
                 0,
+                MoveOptions::default(),
             );
             return true;
         } else if pos_2_creep.is_empty() {
@@ -174,6 +173,7 @@ pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cac
                 cache,
                 position_2.into(),
                 0,
+                MoveOptions::default(),
             );
             return true;
         }

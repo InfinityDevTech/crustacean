@@ -2,6 +2,7 @@ use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
 use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
+use crate::movement::move_target::MoveOptions;
 use crate::{
     memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
 };
@@ -31,6 +32,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 cached_room,
                 scout_target.pos(),
                 23,
+                MoveOptions::default().avoid_enemies(true)
             );
         }
     } else {
@@ -77,6 +79,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             cached_room,
             pos.pos(),
             23,
+            MoveOptions::default().avoid_enemies(true)
         );
         memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(*exit);
     }

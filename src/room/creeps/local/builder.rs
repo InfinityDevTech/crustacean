@@ -1,9 +1,7 @@
 use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties, StructureObject};
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory},
-    room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache},
-    traits::creep::CreepExtensions,
+    memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache}, traits::creep::CreepExtensions
 };
 
 use super::hauler::execute_order;
@@ -33,7 +31,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
 
         if repairable.pos().get_range_to(creep.pos()) > 1 {
             let _ = creep.say("🚚", false);
-            creep.better_move_to(creepmem, cache, repairable.pos(), 1);
+            creep.better_move_to(creepmem, cache, repairable.pos(), 1, MoveOptions::default());
             return;
         } else {
             let _ = creep.say("🔨", false);
@@ -60,7 +58,7 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
 
             if site.pos().get_range_to(creep.pos()) > 1 {
                 let _ = creep.say("🚚", false);
-                creep.better_move_to(creepmem, cache, site.pos(), 1);
+                creep.better_move_to(creepmem, cache, site.pos(), 1, MoveOptions::default());
             } else {
                 let _ = creep.say("🔨", false);
                 let _ = creep.build(site);

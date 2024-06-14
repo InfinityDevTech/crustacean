@@ -2,12 +2,10 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Creep, HasPosition, MaybeHasId, Position, RoomCoordinate, SharedCreepProperties};
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory},
-    room::{
+    memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::{
         cache::tick_cache::{CachedRoom, RoomCache},
         creeps::local::source_miner,
-    },
-    traits::{creep::CreepExtensions, room::RoomExtensions},
+    }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -30,6 +28,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
                 position,
                 24,
+                MoveOptions::default(),
             );
         } else {
             let room = game::rooms().get(remote_room).unwrap();

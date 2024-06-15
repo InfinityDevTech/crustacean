@@ -10,13 +10,15 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     if creep.store().get_free_capacity(None) > 0 {
 
-        let cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
+        let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
         if let Some(task) = creep_memory.hauling_task.clone() {
             hauler::execute_order(creep, creep_memory, cache, &task);
+
+            return;
         }
 
-        cache.hauling.find_new_order(
+        room_cache.hauling.find_new_order(
             creep,
             memory,
             Some(ResourceType::Energy),
@@ -25,7 +27,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 HaulingType::Withdraw,
                 HaulingType::Offer,
             ],
-            &mut cache.heap_cache
+            &mut room_cache.heap_cache
         );
         return;
     }

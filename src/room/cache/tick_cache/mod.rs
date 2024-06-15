@@ -42,6 +42,8 @@ pub struct CachedRoom {
     pub room_name: RoomName,
     pub manager: Option<RoomName>,
 
+    pub remotes: Vec<RoomName>,
+
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
     pub traffic: TrafficCache,
@@ -74,6 +76,7 @@ impl CachedRoom {
         let mut cached = CachedRoom {
             room_name: room.name(),
             manager: remote_manager,
+            remotes: Vec::new(),
 
             structures,
             creeps: CreepCache::new_from_room(room, memory),
@@ -86,6 +89,10 @@ impl CachedRoom {
             stats,
             //hauling: RefCell::new(HaulingCache::new()),
         };
+
+        if let Some(room_memory) = memory.rooms.get(&room.name()) {
+            cached.remotes = room_memory.remotes.clone();
+        }
 
         cached.stats.cpu_cache += game::cpu::get_used() - pre_cache_cpu;
 

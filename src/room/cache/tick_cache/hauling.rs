@@ -17,10 +17,10 @@ pub enum HaulingPriority {
     Spawning = 5,
     Ruins = 30,
     Energy = 40,
-    Upgrading = 50,
-    Minerals = 60,
-    Market = 70,
-    Storage = 80,
+    Upgrading = 100,
+    Minerals = 90,
+    Market = 101,
+    Storage = 110,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
@@ -71,6 +71,10 @@ impl HaulingCache {
     pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: f32, haul_type: HaulingType) {
         let id = self.get_unique_id();
 
+        if game::get_object_by_id_erased(&target).unwrap().pos().room_name() != "E12N6" {
+            info!("MAklking req {}", game::get_object_by_id_erased(&target).unwrap().pos().room_name());
+        }
+
         let decimal = Decimal::new(priority.round() as i64, 0).div(Decimal::new(200, 1));
 
         let order = RoomHaulingOrder {
@@ -99,6 +103,7 @@ impl HaulingCache {
                 if order.resource != Some(resource_type) { continue; }
             }
 
+            if creep.pos().room_name() != game::get_object_by_id_erased(&order.target).unwrap().pos().room_name() { info!("Romm dont match") }
 
             let structure = game::get_object_by_id_erased(&order.target);
             if structure.is_none() { continue; }
@@ -108,7 +113,7 @@ impl HaulingCache {
 
             let score = (distance_to_target as f32 * 0.75) + priority;
 
-            let vis = creep.room().unwrap().visual();
+            let vis = structure.as_ref().unwrap().room().unwrap().visual();
 
             let x = structure.as_ref().unwrap().pos().x().u8() as f32;
             let y = structure.as_ref().unwrap().pos().y().u8() as f32;
@@ -244,7 +249,7 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
     let has_ff = !room_cache.creeps.creeps_of_role.get(&Role::FastFiller).unwrap_or(&Vec::new()).is_empty();
 
     for spawn in room_cache.structures.spawns.values() {
-        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || has_ff { continue }
+        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || (has_ff && room_cache.structures.containers.fast_filler.is_some()) { continue }
 
         let priority = scale_haul_priority(
             spawn.store().get_capacity(Some(ResourceType::Energy)),

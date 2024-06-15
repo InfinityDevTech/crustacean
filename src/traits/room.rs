@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{config, room::cache::tick_cache::{CachedRoom, RoomCache}};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RoomType {
     Normal,
     Highway,

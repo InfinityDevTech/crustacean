@@ -1,17 +1,21 @@
-use log::warn;
+use log::{info, warn};
 use screeps::{
     find, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
 };
 
+use super::utils::visualise_path;
+
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
     pub avoid_enemies: bool,
+    pub path_age: u8,
 }
 
 impl Default for MoveOptions {
     fn default() -> Self {
         MoveOptions {
             avoid_enemies: false,
+            path_age: 8,
         }
     }
 }
@@ -19,6 +23,11 @@ impl Default for MoveOptions {
 impl MoveOptions {
     pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
         self.avoid_enemies = avoid_enemies;
+        *self
+    }
+
+    pub fn path_age(&mut self, path_age: u8) -> Self {
+        self.path_age = path_age;
         *self
     }
 }
@@ -30,6 +39,7 @@ pub struct MoveTarget {
 
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, move_options: MoveOptions) -> String {
+        //info!("Finding path to {}", self.pos);
         let opts = SearchOptions::new(|room_name| {
             path_call(room_name, move_options)
         })
@@ -64,13 +74,15 @@ impl MoveTarget {
             cur_pos = pos;
         }
         let mut steps_string = "".to_string();
-        let steps = &steps[0..std::cmp::min(steps.len(), 10)];
+        let steps = &steps[0..std::cmp::min(steps.len(), move_options.path_age as usize)];
         for dirint in steps {
             let int = *dirint as u8;
             let intstring = int.to_string();
 
             steps_string = steps_string + &intstring;
         }
+
+        //visualise_path(steps_string.clone(), from.room_name().to_string(), (from.x().u8() as f32, from.y().u8() as f32));
         steps_string
     }
 }
@@ -140,7 +152,7 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
                 if enemy.body().iter().filter(|p| p.part() == Part::Attack || p.part() == Part::RangedAttack && p.hits() > 0).count() == 0 {
                     continue;
                 }
-                
+
                 let radius = 3;
 
                 let start_x = enemy.pos().x().u8();

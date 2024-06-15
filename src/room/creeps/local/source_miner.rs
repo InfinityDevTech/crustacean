@@ -1,12 +1,18 @@
 use log::info;
 use screeps::{
-    game, Creep, HasHits, HasId, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties, Source
+    game, Creep, HasHits, HasId, HasPosition, MaybeHasId, Part, ResourceType,
+    SharedCreepProperties, Source, StructureContainer,
 };
 
 use crate::{
-    memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
-    }, traits::creep::CreepExtensions, utils::scale_haul_priority
+    memory::{CreepMemory, Role, ScreepsMemory},
+    movement::move_target::MoveOptions,
+    room::cache::tick_cache::{
+        hauling::{HaulingPriority, HaulingType},
+        CachedRoom, RoomCache,
+    },
+    traits::creep::CreepExtensions,
+    utils::scale_haul_priority,
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -31,7 +37,6 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         return;
     }
 
-
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
@@ -44,7 +49,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
-pub fn harvest_source(creep: &Creep, source: Source, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
+pub fn harvest_source(
+    creep: &Creep,
+    source: Source,
+    creep_memory: &mut CreepMemory,
+    cache: &mut CachedRoom,
+) {
     if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
         return;
     }
@@ -83,14 +93,14 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &CachedRoo
 }
 
 pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
-    if repair_container(creep, creep_memory, cache) {
-        return;
-    }
     let _ = creep.say("📦", false);
 
-    if let Some(container) =
-        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&cache.structures)
+    if let Some(container) = cache.resources.sources[creep_memory.task_id.unwrap() as usize]
+        .get_container(&cache.structures)
     {
+        if repair_container(creep, creep_memory, cache, &container) {
+            return;
+        }
         if container
             .store()
             .get_free_capacity(Some(ResourceType::Energy))
@@ -99,58 +109,58 @@ pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut
             let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
 
             let _ = creep.drop(ResourceType::Energy, Some(amount));
-
-            let priority = scale_haul_priority(
-                container.store().get_capacity(Some(ResourceType::Energy)),
-                amount,
-                HaulingPriority::Energy,
-                false
-            );
-
-            cache.hauling.create_order(
-                creep.try_raw_id().unwrap(),
-                Some(ResourceType::Energy),
-                Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
-                priority,
-                HaulingType::Pickup,
-            );
         } else if creep.pos().is_near_to(container.pos()) {
             let _ = creep.transfer(&container, ResourceType::Energy, None);
         } else {
-            creep.better_move_to(creep_memory, cache, container.pos(), 1, MoveOptions::default());
+            creep.better_move_to(
+                creep_memory,
+                cache,
+                container.pos(),
+                1,
+                MoveOptions::default(),
+            );
         }
     } else {
         let _ = creep.drop(ResourceType::Energy, None);
     }
 }
 
-pub fn repair_container(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
-
+pub fn repair_container(
+    creep: &Creep,
+    creep_memory: &mut CreepMemory,
+    cache: &mut CachedRoom,
+    container: &StructureContainer,
+) -> bool {
     if creep.store().get_used_capacity(None) == 0 {
         return false;
     }
 
-    let container =
-        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&cache.structures);
-
-    if let Some(container) = container {
-        if container.hits() < container.hits_max() {
-            if container.pos().get_range_to(creep.pos()) > 1 {
-                let _ = creep.say("🚚", false);
-                creep.better_move_to(creep_memory, cache, container.pos(), 1, MoveOptions::default());
-                return true;
-            } else {
-                let _ = creep.say("🔧", false);
-                let _ = creep.repair(&container);
-                return true;
-            }
+    if container.hits() < container.hits_max() {
+        if container.pos().get_range_to(creep.pos()) > 1 {
+            let _ = creep.say("🚚", false);
+            creep.better_move_to(
+                creep_memory,
+                cache,
+                container.pos(),
+                1,
+                MoveOptions::default(),
+            );
+            return true;
+        } else {
+            let _ = creep.say("🔧", false);
+            let _ = creep.repair(container);
+            return true;
         }
     }
     false
 }
 
 pub fn get_aproximate_energy_mined(creep: &Creep, source: &Source) -> u32 {
-    let work_parts = creep.body().iter().filter(|x| x.part() == Part::Work && x.hits() > 0).count() as u32;
+    let work_parts = creep
+        .body()
+        .iter()
+        .filter(|x| x.part() == Part::Work && x.hits() > 0)
+        .count() as u32;
 
     let max_mineable = work_parts * 2;
     let source_remaining = source.energy();

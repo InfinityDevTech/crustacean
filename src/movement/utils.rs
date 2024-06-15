@@ -2,8 +2,11 @@ use screeps::{Direction, game, RoomName, PolyStyle, RectStyle};
 
 pub fn visualise_path(path: String, room_name: String, starting_pos: (f32, f32)) {
     let room = game::rooms()
-        .get(RoomName::new(&room_name).unwrap())
-        .unwrap();
+        .get(RoomName::new(&room_name).unwrap());
+
+    if room.is_none() { return; }
+    let room = room.unwrap();
+    
     let room_vis = room.visual();
     let mut points = vec![];
     let mut cursor = starting_pos;

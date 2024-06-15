@@ -96,7 +96,7 @@ pub fn process_room_event_log(room: &Room, memory: &mut ScreepsMemory, _cache: &
                     }
                 }
             },
-            screeps::EventType::AttackController => todo!(),
+            screeps::EventType::AttackController => {},
             _ => {}
         }
     }

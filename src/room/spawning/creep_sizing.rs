@@ -16,9 +16,9 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
     let energy_stored = room.energy_available();
     let max_energy = room.energy_capacity_available();
 
-    let has_miner = !cache.creeps.creeps_of_role.get(&Role::Miner).unwrap_or(&Vec::new()).is_empty();
+    let miner_count = cache.creeps.creeps_of_role.get(&Role::Miner).unwrap_or(&Vec::new()).len();
 
-    if has_miner {
+    if miner_count > 2 {
         let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
         let mut work_part_count = 0;
         parts.push(Part::Carry);
@@ -161,11 +161,11 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let target_work_parts = match room_current_rcl {
         1 => 1,
         2 => 3,
-        3 => 5,
-        4 => 7,
+        3 => 10,
+        4 => 12,
         5 => 12,
-        6 => 16,
-        7 => 20,
+        6 => 12,
+        7 => 26,
         8 => 5,
         _ => 1,
     };

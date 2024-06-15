@@ -26,7 +26,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 if creep.pos().is_near_to(flag.pos()) {
                     let _ = creep.say("👁️", true);
                 } else {
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default());
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
                 }
                 return;
             }
@@ -36,7 +36,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                     let _ = creep.say("JK - <3 U", true);
                 } else {
                     let _ = creep.say("DIE DIE DIE", true);
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default());
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
                 }
                 return;
             }
@@ -48,7 +48,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
                 if creep.attack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
-                    creep.better_move_to(creep_memory, room_cache, enemy.pos(), 1, MoveOptions::default());
+                    creep.better_move_to(creep_memory, room_cache, enemy.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
 
                     creep_memory.path = None;
                 }
@@ -63,17 +63,23 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                             let _ = creep.attack(attackabke);
                         }
                     } else {
-                        creep.better_move_to(creep_memory, room_cache, structure.pos(), 1, MoveOptions::default());
+                        creep.better_move_to(creep_memory, room_cache, structure.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
 
                         creep_memory.path = None;
                     }
                 } else {
                     let _ = creep.say("🚚", false);
-                    creep_memory.role = Role::Recycler;
+                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
+                    //creep_memory.role = Role::Recycler;
                 }
             }
         } else {
             let _ = creep.say("🚚", false);
+
+            if creep.ticks_to_live() < Some(100) {
+                creep_memory.role = Role::Recycler;
+            }
+
             creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
         }
     } else {

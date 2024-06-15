@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{self, min};
 
 use log::info;
 use screeps::{find, game, Part, Room};
@@ -9,12 +9,14 @@ use crate::{
     utils::get_body_cost,
 };
 
-use super::cache::tick_cache::CachedRoom;
+use super::cache::tick_cache::{CachedRoom, RoomCache};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
 
-pub fn handle_spawning(room: &Room, room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
+pub fn handle_spawning(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
+    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+
     let mut spawn_manager = SpawnManager::new(&room.name(), room_cache);
 
     miner(room, room_cache, &mut spawn_manager);
@@ -25,7 +27,9 @@ pub fn handle_spawning(room: &Room, room_cache: &mut CachedRoom, memory: &mut Sc
     upgrader(room, room_cache, &mut spawn_manager);
     scout(room, room_cache, &mut spawn_manager);
 
-    spawn_manager.run_spawning(room, room_cache, memory);
+    remote_harvester(room, cache, memory, &mut spawn_manager);
+
+    spawn_manager.run_spawning(room, memory);
 }
 
 pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
@@ -46,7 +50,7 @@ pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Sp
 
         let mut should_spawn_unclaimer = false;
         if let Some(room) = flag.room() {
-            if room.find(find::HOSTILE_CREEPS, None).is_empty() && room.find(find::HOSTILE_SPAWNS, None).is_empty() {
+            if room.find(find::HOSTILE_CREEPS, None).is_empty() && room.find(find::HOSTILE_SPAWNS, None).is_empty() && room.find(find::HOSTILE_STRUCTURES, None).is_empty() {
                 should_spawn_unclaimer = true;
             }
         }
@@ -144,7 +148,7 @@ pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMan
         return;
     }
 
-    let desired_work_parts = construction_sites / 3;
+    let desired_work_parts = cmp::max(construction_sites / 3, 12);
     if building_work_parts as usize >= desired_work_parts {
         return;
     }
@@ -180,14 +184,18 @@ pub fn hauler(
     spawn_manager: &mut SpawnManager,
     memory: &mut ScreepsMemory,
 ) {
-    let priority = 5.0;
-
     let current_hauler_count = cache
         .creeps
         .creeps_of_role
         .get(&Role::Hauler)
         .unwrap_or(&Vec::new())
         .len();
+
+    let priority = if current_hauler_count < 2 {
+        10.0
+    } else {
+        4.5
+    };
 
     let mut dropped_count = 0;
     for resource in &cache.resources.dropped_energy {
@@ -270,9 +278,11 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
         if miner_count < hauler_count {
             priority -= 1.0;
         }
-        priority += ( parts_needed as f64 );
+        priority += (parts_needed as f64) * 0.75;
 
-        priority = 500.0;
+        if miner_count < cache.resources.sources.len() {
+            priority += 50.0;
+        }
 
         let index = &cache
             .resources
@@ -295,5 +305,53 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
             Some(creep_memory),
             None,
         );
+    }
+}
+
+pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) {
+    let remotes = cache.rooms.get_mut(&room.name()).unwrap().remotes.clone();
+    for remote in remotes {
+        if let Some(remote_room) = game::rooms().get(remote) {
+            cache.create_if_not_exists(&remote_room, memory, None);
+            let cache = cache.rooms.get_mut(&remote_room.name()).unwrap();
+
+            for source in cache.resources.sources.iter() {
+                let parts_needed = source.parts_needed();
+
+                if parts_needed == 0 || source.creeps.len() >= source.calculate_mining_spots(&remote_room).into() {
+                    continue;
+                }
+
+                let parts = crate::room::spawning::creep_sizing::miner(&remote_room, cache, parts_needed);
+                let cost = get_body_cost(&parts);
+
+                let mut priority = 0.0;
+
+                priority += (parts_needed as f64) * 0.75;
+
+                let index = &cache
+                    .resources
+                    .sources
+                    .iter()
+                    .position(|s| s.id == source.id)
+                    .unwrap();
+
+                let creep_memory = CreepMemory {
+                    owning_room: room.name(),
+                    owning_remote: Some(remote),
+                    task_id: Some((*index).try_into().unwrap()),
+                    ..Default::default()
+                };
+
+                spawn_manager.create_spawn_request(
+                    Role::RemoteHarvester,
+                    parts,
+                    priority,
+                    cost,
+                    Some(creep_memory),
+                    None,
+                );
+            }
+        }
     }
 }

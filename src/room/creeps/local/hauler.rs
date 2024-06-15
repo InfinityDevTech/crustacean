@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{
     game, Creep, ErrorCode, HasPosition, ObjectId, Resource, SharedCreepProperties, StructureStorage
 };
@@ -25,7 +26,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         if execute_order(
             creep,
             creep_memory,
-            cached_room,
+            cache,
             order,
         ) {
             // Invalidate the path and the hauling task
@@ -76,7 +77,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             if execute_order(
                 creep,
                 creep_memory,
-                cached_room,
+                cache,
                 &order,
             ) {
                 // Invalidate the path and the hauling task
@@ -130,24 +131,28 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 pub fn execute_order(
     creep: &Creep,
     creep_memory: &mut CreepMemory,
-    cache: &mut CachedRoom,
+    cache: &mut RoomCache,
     order: &CreepHaulTask,
 ) -> bool {
     let pickup_target = order.target_id;
     let target = game::get_object_by_id_erased(&pickup_target);
     let position = order.get_target_position();
 
+    let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
+
     if position.is_none() || target.is_none() {
         creep_memory.hauling_task = None;
         creep_memory.path = None;
 
-        cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
+        room_cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
         let _ = creep.say("INVLD", false);
         return true;
     }
 
     if !creep.pos().is_near_to(position.unwrap()) {
-        creep.better_move_to(creep_memory, cache, position.unwrap(), 1, MoveOptions::default());
+        let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+        info!("Name: {}", room_cache.room_name);
+        creep.better_move_to(creep_memory, room_cache, position.unwrap(), 1, MoveOptions::default());
         let _ = match order.haul_type {
             HaulingType::Offer => creep.say("MV-OFFR", false),
             HaulingType::Withdraw => creep.say("MV-WTHD", false),
@@ -265,7 +270,7 @@ pub fn execute_order(
     if result.is_ok() {
         creep_memory.hauling_task = None;
         creep_memory.path = None;
-        cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
+        room_cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
 
         return true;
     } else if result.is_err() {
@@ -275,14 +280,14 @@ pub fn execute_order(
                 creep_memory.hauling_task = None;
                 creep_memory.path = None;
 
-                cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
+                room_cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
             },
             ErrorCode::Full => {
                 let _ = creep.say("FULL", false);
                 creep_memory.hauling_task = None;
                 creep_memory.path = None;
 
-                cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
+                room_cache.heap_cache.hauling.reserved_orders.remove(&order.target_id);
             },
             ErrorCode::NoBodypart => {
                 let _ = creep.say("NO-BP", false);

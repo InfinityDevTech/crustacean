@@ -2,7 +2,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{find, game, Color, Creep, HasPosition, OwnedStructureProperties, SharedCreepProperties, StructureProperties, StructureType};
 
 use crate::{
-    config, memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions, utils::get_my_username
 };
 
 pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -14,6 +14,10 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         return;
     }
     let creep_memory = creep_memory.unwrap();
+
+    if creep.ticks_to_live() < Some(100) {
+        creep_memory.role = Role::Recycler;
+    }
 
     if creep.hits() < creep.hits_max() {
         let _ = creep.heal(creep);
@@ -52,7 +56,16 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 }
 
                 if creep.pos().is_near_to(controller.pos()) {
-                    let _ = creep.attack_controller(&controller);
+                    if controller.reservation().is_some() && controller.reservation().unwrap().username() == get_my_username() {
+                        let _ = creep.reserve_controller(&controller);
+                        return;
+                    }
+
+                    if controller.reservation().is_none() && memory.remote_rooms.contains_key(&creep.room().unwrap().name()) {
+                        let _ = creep.reserve_controller(&controller);
+                    } else {
+                        let _ = creep.attack_controller(&controller);
+                    }
                 } else {
                     creep.better_move_to(creep_memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
                 }

@@ -41,8 +41,6 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
         if let Some(creep_memory) = memory.creeps.get(&creep.name()) {
             role = creep_memory.role;
-        } else {
-            return;
         }
 
         if creep.spawning() { continue; }
@@ -50,6 +48,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         match role {
             Role::Miner => local::source_miner::run_creep(&creep, memory, cache),
             Role::Hauler => {
+                info!("Hauler: {} - {}", creep.name(), room.name());
                 cache.rooms.get_mut(&room.name()).unwrap().hauling.haulers.push(creep.name());
             }
             Role::Upgrader => local::upgrader::run_creep(&creep, memory, cache),
@@ -58,7 +57,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Bulldozer => global::bulldozer::run_creep(&creep, memory, cache),
             Role::Scout => global::scout::run_creep(&creep, memory, cache),
             Role::GiftBasket => global::gift_drop::run_creep(&creep, memory, cache),
-            Role::RemoteMiner => remote::remote_harvester::run_creep(&creep, memory, cache),
+            Role::RemoteHarvester => remote::remote_harvester::run_creep(&creep, memory, cache),
             Role::Unclaimer => global::unclaimer::run_creep(&creep, memory, cache),
 
             Role::Recycler => global::recycler::run_creep(&creep, memory, cache),

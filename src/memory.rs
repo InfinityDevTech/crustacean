@@ -25,7 +25,7 @@ pub enum Role {
 
     Scout = 10,
 
-    RemoteMiner = 11,
+    RemoteHarvester = 11,
 
     Bulldozer = 20,
     Unclaimer = 22,
@@ -104,7 +104,7 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
 pub struct RoomMemory{
     // Name
-    pub name: String,
+    pub name: RoomName,
     pub rcl: u8,
     pub id: u128,
     pub planned: bool,
@@ -112,6 +112,16 @@ pub struct RoomMemory{
     pub creeps: Vec<String>,
     pub remotes: Vec<RoomName>,
 }
+}
+
+structstruck::strike! {
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
+    pub struct RemoteRoomMemory {
+        pub name: RoomName,
+        pub owner: RoomName,
+
+        pub creeps: Vec<String>,
+    }
 }
 
 structstruck::strike! {
@@ -234,6 +244,7 @@ structstruck::strike! {
         pub id_index: u64,
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
+        pub remote_rooms: HashMap<RoomName, RemoteRoomMemory>,
         pub creeps: HashMap<String, CreepMemory>,
 
         pub enemy_players: HashMap<String, EnemyPlayer>,
@@ -257,6 +268,7 @@ impl ScreepsMemory {
                 id_index: 0,
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
+                remote_rooms: HashMap::new(),
                 creeps: HashMap::new(),
 
                 enemy_players: HashMap::new(),
@@ -286,6 +298,7 @@ impl ScreepsMemory {
                         id_index: 0,
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
+                        remote_rooms: HashMap::new(),
                         creeps: HashMap::new(),
 
                         enemy_players: HashMap::new(),

@@ -1,10 +1,10 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{game, Creep, HasPosition, MaybeHasId, Position, RoomCoordinate, SharedCreepProperties};
+use screeps::{game, Creep, HasPosition, MaybeHasId, Position, ResourceType, RoomCoordinate, SharedCreepProperties};
 
 use crate::{
     memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::{
         cache::tick_cache::{CachedRoom, RoomCache},
-        creeps::local::source_miner,
+        creeps::local::source_miner::{self, harvest_source, repair_container},
     }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
@@ -15,6 +15,17 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
     if let Some(remote_room) = memory.creeps.get(&creep.name()).unwrap().owning_remote {
+
+        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+        let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+
+        if creep_memory.task_id.is_none() {
+            let _ = creep.say("kurt kob", true);
+            return;
+        }
+
+        room_cache.resources.sources[creep_memory.task_id.unwrap() as usize].creeps.push(creep.try_id().unwrap());
+
         if creep.room().unwrap().name() != remote_room {
             let _ = creep.say("🚚", false);
 
@@ -24,7 +35,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             let position = Position::new(x, y, remote_room);
 
             creep.better_move_to(
-                memory.creeps.get_mut(&creep.name()).unwrap(),
+                creep_memory,
                 cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
                 position,
                 24,
@@ -32,9 +43,6 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             );
         } else {
             let room = game::rooms().get(remote_room).unwrap();
-
-            let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-            let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
             if creep_memory.task_id.is_none() {
                 let task = room.get_target_for_miner(room_cache);
@@ -46,23 +54,17 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 }
             }
 
+
             let scouted_source = &mut room_cache.resources.sources[creep_memory.task_id.unwrap() as usize];
             scouted_source.creeps.push(creep.try_id().unwrap());
 
-            if !build_container(creep, creep_memory, room_cache) || !source_miner::repair_container(creep, creep_memory, room_cache) {
-                let source = game::get_object_by_id_typed(
-                    &room_cache.resources.sources[creep_memory.task_id.unwrap() as usize]
-                        .id,
-                )
-                .unwrap();
-                source_miner::harvest_source(creep, source, creep_memory, room_cache);
+            let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
-                if creep.store().get_free_capacity(None) as f32
-                    <= (creep.store().get_capacity(None) as f32 * 0.5)
-                {
-                    source_miner::deposit_energy(creep, creep_memory, room_cache);
-                }
+            if creep.store().get_used_capacity(None) as f32 >= (creep.store().get_capacity(None) as f32 * 0.5) {
+                deposit_enegy(creep, creep_memory, room_cache);
             }
+
+            harvest_source(creep, source, creep_memory, room_cache);
         }
     } else {
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
@@ -100,14 +102,26 @@ pub fn build_container(
     false
 }
 
-pub fn find_remote_task(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+pub fn deposit_enegy(creep: &Creep, creep_memory: &mut CreepMemory, remote_cache: &mut CachedRoom) {
+    let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&remote_cache.structures);
 
-    let remotes = memory.rooms.get(&creep_memory.owning_room).unwrap().remotes.clone();
+    if build_container(creep, creep_memory, remote_cache) {
+        return;
+    }
 
-    let mut rng = StdRng::seed_from_u64(game::time() as u64);
+    if let Some(contianer) = contianer {
+        if repair_container(creep, creep_memory, remote_cache, contianer) {
+            return;
+        }
 
-    let remote = remotes[rng.gen_range(0..remotes.len())];
-
-    creep_memory.owning_remote = Some(remote);
+        if contianer.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
+            let _ = creep.drop(ResourceType::Energy, None);
+        } else if creep.pos().get_range_to(contianer.pos()) > 1 {
+            creep.better_move_to(creep_memory, remote_cache, contianer.pos(), 1, MoveOptions::default());
+        } else {
+            let _ = creep.transfer(contianer, ResourceType::Energy, None);
+        }
+    } else {
+        let _ = creep.drop(ResourceType::Energy, None);
+    }
 }

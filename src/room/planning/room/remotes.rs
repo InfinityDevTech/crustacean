@@ -4,9 +4,9 @@ use screeps::{
 };
 
 use crate::{
-    memory::ScreepsMemory,
+    memory::{RemoteRoomMemory, ScreepsMemory},
     room::{cache::tick_cache::{CachedRoom, RoomCache}, democracy::remote_path_call},
-    traits::room::RoomExtensions,
+    traits::room::{RoomExtensions, RoomType},
 };
 
 pub fn fetch_possible_remotes(
@@ -14,6 +14,15 @@ pub fn fetch_possible_remotes(
     memory: &mut ScreepsMemory,
     room_cache: &mut CachedRoom,
 ) -> Vec<RoomName> {
+    // Little high on CPU, but its run every 3k ticks, so its fine. I guess.
+    if let Some(existing_remotes) = memory.rooms.get_mut(&room.name()) {
+        for remote in existing_remotes.clone().remotes.iter() {
+            memory.remote_rooms.remove(remote);
+
+            existing_remotes.remotes.retain(|x| x != remote);
+        }
+    }
+
     let adjacent_rooms = room.get_adjacent(3);
 
     // Go through all the adjacent rooms and rank them
@@ -32,15 +41,23 @@ pub fn fetch_possible_remotes(
     let mut remotes = Vec::new();
 
     // Sort the remotes by rank - ascending
-    possible_remotes.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    possible_remotes.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
 
     // Get the top 2.
     for remote in possible_remotes.iter().take(2) {
-        remotes.push(remote.0);
-        room_memory.remotes.push(remote.0);
+        let remote = RemoteRoomMemory {
+            name: remote.0,
+            owner: room.name(),
+
+            creeps: Vec::new(),
+        };
+
+        remotes.push(remote.name);
+        room_memory.remotes.push(remote.name);
+        memory.remote_rooms.insert(remote.name, remote);
     }
 }
 
@@ -70,6 +87,10 @@ pub fn rank_remote_room(
     // This should be changed to add aggression.
     // As of right now, we are pacificists.
     if scouted.unwrap().owner.is_some() || scouted.unwrap().reserved.is_some() {
+        return u32::MAX;
+    }
+
+    if scouted.unwrap().room_type == RoomType::SourceKeeper || scouted.unwrap().room_type == RoomType::Highway {
         return u32::MAX;
     }
 

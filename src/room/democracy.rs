@@ -54,27 +54,18 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             tower::run_towers(cached_room);
         }
 
+        // Makes hauling requests for the rooms remotes :)
+        resources::haul_remotes(&room, memory, cache);
+
         organizer::run_creeps(&room, memory, cache);
 
         // Run spawns
         // TODO: Tune the better spawn implementation
-        spawning::handle_spawning(&room, cache.rooms.get_mut(&room.name()).unwrap(), memory);
+        spawning::handle_spawning(&room, cache, memory);
 
 
         let pre_hauler_cpu = game::cpu::get_used();
-        // Run haulers
-        // Haulers are done last as they need to know what to haul
-        for creep in cache
-            .rooms
-            .get(&room.name())
-            .unwrap()
-            .hauling
-            .haulers
-            .clone()
-        {
-            let creep = game::creeps().get(creep.to_string()).unwrap();
-            hauler::run_creep(&creep, memory, cache);
-        }
+
         if let Some(room) = cache.rooms.get_mut(&room.name()) {
             room.stats.cpu_creeps += game::cpu::get_used() - pre_hauler_cpu;
         }
@@ -96,7 +87,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             run_crap_planner_code(&room, memory, room_cache);
             run_full_visuals(&room, memory, room_cache);
 
-            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 2 {
+            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 2 || game::time() % 3000 == 0 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
@@ -111,6 +102,20 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
     }
+
+    // Run haulers
+        // Haulers are done last as they need to know what to haul
+        for creep in cache
+            .rooms
+            .get(&room.name())
+            .unwrap()
+            .hauling
+            .haulers
+            .clone()
+        {
+            let creep = game::creeps().get(creep.to_string()).unwrap();
+            hauler::run_creep(&creep, memory, cache);
+        }
 
     hate_handler::process_room_event_log(&room, memory, cache);
 

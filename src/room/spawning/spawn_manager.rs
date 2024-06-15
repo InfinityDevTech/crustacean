@@ -60,7 +60,7 @@ impl SpawnManager {
         self.spawn_queue.push(request);
     }
 
-    pub fn run_spawning(&mut self, room: &Room, cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
+    pub fn run_spawning(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         if self.spawn_queue.is_empty() { return; }
 
         let available_spawns = self.get_available_spawns();

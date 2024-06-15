@@ -3,9 +3,23 @@
 
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{game, Part, RoomName};
+use screeps::{game, OwnedStructureProperties, Part, RoomName};
 
 use crate::{config, constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+
+pub fn get_my_username() -> String {
+    if let Some(first_creep) = game::creeps().values().next() {
+        return first_creep.owner().username().to_string();
+    }
+
+    for room in game::rooms().values() {
+        if room.controller().is_some() && room.controller().unwrap().my() && room.controller().is_some() && room.controller().unwrap().my() {
+            return room.controller().unwrap().owner().unwrap().username();
+        }
+    }
+
+    panic!("Unable to determine my username!");
+}
 
 pub fn get_room_sign() -> String {
     let alliance_tag = config::ALLIANCE_TAG;
@@ -54,7 +68,7 @@ pub fn role_to_name(role: Role) -> String {
         Role::FastFiller => "ff",
         Role::Bulldozer => "sa",
         Role::GiftBasket => "gb",
-        Role::RemoteMiner => "rm",
+        Role::RemoteHarvester => "rm",
         Role::Unclaimer => "uc",
         Role::Recycler => "rc",
     };
@@ -75,7 +89,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "ff" => { Some(Role::FastFiller) }
         "sa" => { Some(Role::Bulldozer) },
         "gb" => { Some(Role::GiftBasket) },
-        "rm" => { Some(Role::RemoteMiner) },
+        "rm" => { Some(Role::RemoteHarvester) },
         "uc" => { Some(Role::Unclaimer) },
         "rc" => { Some(Role::Recycler) },
         _ => { None },

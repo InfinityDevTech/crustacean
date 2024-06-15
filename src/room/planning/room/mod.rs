@@ -19,7 +19,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
     let remotes = remotes::fetch_possible_remotes(room, memory, cache.rooms.get_mut(&room.name()).unwrap());
 
     let room_memory = RoomMemory {
-        name: room.name_str(),
+        name: room.name(),
         rcl: room.controller().unwrap().level(),
         planned: false,
         id: 0,

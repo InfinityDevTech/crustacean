@@ -3,7 +3,7 @@ use std::{cmp, collections::HashMap};
 use log::info;
 use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, RoomName, Source, StructureContainer, StructureLink, Terrain};
 
-use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
+use crate::{memory::ScreepsMemory, room::cache::{self, heap_cache::RoomHeapCache}, utils::scale_haul_priority};
 
 use super::{hauling::{HaulingCache, HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
@@ -21,12 +21,14 @@ pub struct CachedSource {
 #[derive(Debug, Clone)]
 pub struct RoomResourceCache {
     pub sources: Vec<CachedSource>,
+
     pub mineral: Option<Mineral>,
 
     pub dropped_energy: Vec<Resource>,
     pub dropped_resources: HashMap<ResourceType, Vec<Resource>>,
 
     pub total_energy: u32,
+    pub dropped_energy_amount: u32,
     pub energy_in_storing_structures: u32,
 }
 
@@ -37,6 +39,7 @@ impl RoomResourceCache {
             mineral: None,
 
             total_energy: 0,
+            dropped_energy_amount: 0,
             energy_in_storing_structures: 0,
 
             dropped_energy: Vec::new(),
@@ -63,6 +66,7 @@ impl RoomResourceCache {
         for resource in dropped_resources {
             if resource.resource_type() == screeps::ResourceType::Energy {
                 self.total_energy += resource.amount();
+                self.dropped_energy_amount += resource.amount();
                 
                 self.dropped_energy.push(resource);
             } else if let Some(resource_vec) = self.dropped_resources.get_mut(&resource.resource_type()) {
@@ -201,13 +205,56 @@ impl CachedSource {
     
 }
 
+pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    for remote_name in memory.rooms.get(&launching_room.name()).unwrap().remotes.clone().iter() {
+        let remote_room = game::rooms().get(*remote_name);
+
+        // If we have no visibility, continue...
+        if remote_room.is_none() {
+            continue;
+        }
+        let remote_room = remote_room.unwrap();
+
+        cache.create_if_not_exists(&remote_room, memory, Some(remote_room.name()));
+
+        let cached_room = cache.rooms.get_mut(remote_name).unwrap().clone();
+        let owning_room = cache.rooms.get_mut(&launching_room.name()).unwrap();
+
+        for resource in &cached_room.resources.dropped_energy {
+            let priority = scale_haul_priority(resource.amount(), resource.amount(), HaulingPriority::Energy, false);
+            owning_room.resources.dropped_energy_amount += resource.amount();
+            owning_room.hauling.create_order(resource.id().into(), Some(resource.resource_type()), Some(resource.amount()), priority, HaulingType::Pickup);
+        }
+
+        if cached_room.structures.containers.source_container.is_none() {
+            continue;
+        }
+
+        for container in &cached_room.structures.containers.source_container.unwrap() {
+            if container.store().get_used_capacity(None) > 0 {
+                let priority = scale_haul_priority(
+                    container.store().get_free_capacity(None) as u32,
+                    container.store().get_used_capacity(None),
+                    HaulingPriority::Energy,
+                    true
+                );
+
+                owning_room.resources.total_energy += container.store().get_used_capacity(None);
+                owning_room.resources.energy_in_storing_structures += container.store().get_used_capacity(None);
+    
+                owning_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Offer);
+            }
+        }
+    }
+}
+
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers.controller {
         if controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) {
             let priority = scale_haul_priority(
                 controller_container.store().get_free_capacity(None) as u32,
                 controller_container.store().get_used_capacity(None),
-                HaulingPriority::Energy,
+                HaulingPriority::Upgrading,
                 true
             );
 

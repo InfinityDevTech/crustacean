@@ -17,7 +17,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
     if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let _ = creep.say("📋", false);
-        find_energy(creep, memory, cached_room);
+        find_energy(creep, memory, cache);
     } else {
         build(creep, creep_memory, cached_room)
     }
@@ -73,8 +73,9 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
     }
 }
 
-pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
+pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get(&creep.name()).unwrap();
+    let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
     let task = &creepmem.hauling_task.clone();
 
@@ -82,12 +83,12 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cached
         let creepmem_mut = memory.creeps.get_mut(&creep.name()).unwrap();
         execute_order(creep, creepmem_mut, cache, task);
     } else {
-        let new_order = cache.hauling.find_new_order(
+        let new_order = room_cache.hauling.find_new_order(
             creep,
             memory,
             Some(ResourceType::Energy),
             vec![HaulingType::Offer, HaulingType::Pickup],
-            &mut cache.heap_cache
+            &mut room_cache.heap_cache
         );
 
         if let Some(order) = new_order {

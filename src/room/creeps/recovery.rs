@@ -37,27 +37,27 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
 
         match role {
             Role::Hauler => {
-                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::Hauler, ..Default::default() };
 
                 memory.create_creep(&room_name, &creep.name(), cmemory);
             }
             Role::Builder => {
-                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::Builder, ..Default::default() };
 
                 memory.create_creep(&room_name, &creep.name(), cmemory);
             }
             Role::Upgrader => {
-                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::Upgrader, ..Default::default() };
 
                 memory.create_creep(&room_name, &creep.name(), cmemory);
             }
             Role::Scout => {
-                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::Scout, ..Default::default() };
 
                 memory.create_creep(&room_name, &creep.name(), cmemory);
             }
             Role::Bulldozer => {
-                let cmemory = CreepMemory { owning_room: room_name, ..Default::default() };
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::Bulldozer, ..Default::default() };
 
                 memory.create_creep(&room_name, &creep.name(), cmemory);
             }

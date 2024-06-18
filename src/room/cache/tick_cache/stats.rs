@@ -43,7 +43,7 @@ pub struct EnergyStats {
     pub spending_repair: u32,
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StatsCache {
     pub fn spawning_stats(&mut self, structures: &mut RoomStructureCache) {
         for spawn in structures.spawns.values() {

@@ -56,6 +56,7 @@ pub struct HaulTaskRequest {
     pub resource_type: Option<ResourceType>
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulTaskRequest {
     pub fn creep_name(&mut self, creep_name: String) -> &mut Self {
         self.creep_name = creep_name;

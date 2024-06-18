@@ -2,6 +2,7 @@ use screeps::{Creep, HasPosition, Position, RoomCoordinate, SharedCreepPropertie
 
 use crate::{memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_physical_observer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if let Some(creep_memory) = memory.creeps.get_mut(&creep.name()) {
         if let Some(target_room) = creep_memory.scout_target {

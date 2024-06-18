@@ -148,16 +148,16 @@ impl CreepExtensions for screeps::Creep {
         let x = current_position.x().u8();
         let y = current_position.y().u8();
 
-        let to = dir_to_coords(target_delta, self.pos().x().u8(), self.pos().y().u8());
-        self.room().unwrap().visual().line(
-            (self.pos().x().u8() as f32, self.pos().y().u8() as f32),
-            (to.0 as f32, to.1 as f32),
-            None,
-        );
-        self.room()
-            .unwrap()
-            .visual()
-            .circle(to.0 as f32, to.1 as f32, None);
+        //let to = dir_to_coords(target_delta, self.pos().x().u8(), self.pos().y().u8());
+        //self.room().unwrap().visual().line(
+        //    (self.pos().x().u8() as f32, self.pos().y().u8() as f32),
+        //    (to.0 as f32, to.1 as f32),
+        //    None,
+        //);
+        //self.room()
+        //    .unwrap()
+        //    .visual()
+        //    .circle(to.0 as f32, to.1 as f32, None);
 
         let Some(id) = self.try_id() else { return };
 

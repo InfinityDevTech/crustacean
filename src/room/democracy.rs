@@ -97,7 +97,13 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         // Traffic is run on every room, so no need to put it here
         organizer::run_creeps(&room, memory, cache);
 
-        rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+        if let Some(scouted_room) = memory.scouted_rooms.get(&room.name()) {
+            if scouted_room.last_scouted < game::time() - 100 {
+                rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+            }
+        } else {
+            rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+        }
     }
 
     hate_handler::process_room_event_log(&room, memory, cache);

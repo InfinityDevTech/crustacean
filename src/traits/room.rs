@@ -124,16 +124,22 @@ impl RoomExtensions for screeps::Room {
     }
 
     fn get_room_type(&self) -> RoomType {
-        if self.is_highway() {
-            return RoomType::Highway;
-        }
-        if self.is_intersection() {
+        let split_name = self.split_name();
+        let east_west_distance = split_name.1;
+        let north_south_distance = split_name.3;
+
+        if east_west_distance % 10 == 0 || north_south_distance % 10 == 0 {
+            RoomType::Highway
+        } else if east_west_distance % 10 == 0 && north_south_distance % 10 == 0 {
             return RoomType::Intersection;
-        }
-        if self.is_source_keeper() {
+        } else if east_west_distance % 10 == 5
+        && north_south_distance % 10 == 5
+        && !north_south_distance % 10 == 0
+        && !east_west_distance % 10 == 0 {
             return RoomType::SourceKeeper;
+        } else {
+            return RoomType::Normal;
         }
-        RoomType::Normal
     }
     fn is_highway(&self) -> bool {
         let split_name = self.split_name();

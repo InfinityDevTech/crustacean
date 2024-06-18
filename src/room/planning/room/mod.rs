@@ -7,6 +7,7 @@ pub mod construction;
 pub mod structure_visuals;
 pub mod remotes;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     if game::cpu::bucket() < 500 {
         info!("[PLANNER] CPU bucket is too low to plan room: {}", room.name_str());

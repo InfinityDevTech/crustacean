@@ -4,11 +4,13 @@ use crate::memory::ScreepsMemory;
 
 use super::cache::tick_cache::{CachedRoom, RoomCache};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
     visualise_spawn_progess(room, memory, cached_room);
     visualise_controller_progress(room, memory, cached_room);
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     for spawn in cache.structures.spawns.values() {
         if let Some(spawning) = spawn.spawning() {
@@ -24,6 +26,7 @@ pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: 
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     for room in memory.scouted_rooms.values() {
         let circle_x = RoomCoordinate::new(46).unwrap();
@@ -63,6 +66,7 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_controller_progress(room: &Room, _memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     let controller = &cache.structures.controller.as_ref().unwrap().controller;
     let progress = (controller.progress().unwrap() as f32 / controller.progress_total().unwrap() as f32) * 100.0;

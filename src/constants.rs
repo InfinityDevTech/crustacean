@@ -24,6 +24,7 @@ pub enum PartsCost {
     Tough,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn part_costs() -> &'static EnumMap<PartsCost, u32> {
     static PART_COSTS: OnceLock<EnumMap<PartsCost, u32>> = OnceLock::new();
     PART_COSTS.get_or_init(|| enum_map! {

@@ -4,12 +4,14 @@ use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, utils
+    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, traits::room::RoomExtensions, utils
 };
 
 use super::local;
 
-pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> f64 {
+    let starting_cpu = game::cpu::get_used();
     let pre_creeps_cpu = game::cpu::get_used();
     let mut cpu_usage_by_role = HashMap::new();
     let mut creeps_by_role = HashMap::new();
@@ -23,11 +25,14 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
     let creeps = creeps.keys();
 
-    if creeps.len() == 0 { return; }
+    if creeps.len() == 0 {
+        return game::cpu::get_used() - starting_cpu;
+    }
 
-    let starting_cpu = game::cpu::get_used();
+    if room.my() {
+        info!("  [CREEPS] Running {} creeps", creeps.len());
+    }
 
-    info!("  [CREEPS] Running {} creeps", creeps.len());
     let creep_count = creeps.len();
 
     let mut highest_user: String = "".to_string();
@@ -41,26 +46,25 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
         if let Some(creep_memory) = memory.creeps.get(&creep.name()) {
             role = creep_memory.role;
+
+            cache.create_if_not_exists(&game::rooms().get(creep_memory.owning_room).unwrap(), memory, None);
         }
 
         if creep.spawning() { continue; }
 
         match role {
-            Role::Miner => local::source_miner::run_creep(&creep, memory, cache),
-            Role::Hauler => {
-                info!("Hauler: {} - {}", creep.name(), room.name());
-                cache.rooms.get_mut(&room.name()).unwrap().hauling.haulers.push(creep.name());
-            }
-            Role::Upgrader => local::upgrader::run_creep(&creep, memory, cache),
-            Role::Builder => local::builder::run_creep(&creep, memory, cache),
-            Role::FastFiller => local::fast_filler::run_creep(&creep, memory, cache),
-            Role::Bulldozer => global::bulldozer::run_creep(&creep, memory, cache),
-            Role::Scout => global::scout::run_creep(&creep, memory, cache),
-            Role::GiftBasket => global::gift_drop::run_creep(&creep, memory, cache),
-            Role::RemoteHarvester => remote::remote_harvester::run_creep(&creep, memory, cache),
-            Role::Unclaimer => global::unclaimer::run_creep(&creep, memory, cache),
-
-            Role::Recycler => global::recycler::run_creep(&creep, memory, cache),
+            Role::Miner => local::source_miner::run_sourceminer(&creep, memory, cache),
+            Role::Hauler => local::hauler::run_hauler(&creep, memory, cache),
+            Role::Upgrader => local::upgrader::run_upgrader(&creep, memory, cache),
+            Role::Builder => local::builder::run_builder(&creep, memory, cache),
+            Role::FastFiller => local::fast_filler::run_fastfiller(&creep, memory, cache),
+            Role::Bulldozer => global::bulldozer::run_bulldozer(&creep, memory, cache),
+            Role::Scout => global::scout::run_scout(&creep, memory, cache),
+            Role::GiftBasket => global::gift_drop::run_giftdrop(&creep, memory, cache),
+            Role::RemoteHarvester => remote::remote_harvester::run_remoteharvester(&creep, memory, cache),
+            Role::Unclaimer => global::unclaimer::run_unclaimer(&creep, memory, cache),
+            Role::Recycler => global::recycler::run_recycler(&creep, memory, cache),
+            Role::PhysicalObserver => global::physical_observer::run_physical_observer(&creep, memory, cache),
         }
 
         let heap_creep = cached_room.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));
@@ -98,10 +102,16 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         room_cache.stats.creeps_by_role = creeps_by_role;
 
     let end_cpu = game::cpu::get_used();
-    info!("  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep", end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64);
-    info!("  [CREEPS] Highest CPU usage: {:.4} by {}", highest_usage, highest_user);
+    if room.my() {
+        info!("  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep", end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64);
+        info!("  [CREEPS] Highest CPU usage: {:.4} by {}", highest_usage, highest_user);
+    } else {
+        info!("  [{}] Used {:.4} CPU to run creeps {:.4} CPU per creep - Highest: {} : {:.4}", room.name(), end_cpu - starting_cpu, (end_cpu - starting_cpu) / creep_count as f64, highest_user, highest_usage);
+    }
 
     if let Some(room) = cache.rooms.get_mut(&room.name()) {
         room.stats.cpu_creeps += game::cpu::get_used() - pre_creeps_cpu;
     }
+
+    end_cpu - starting_cpu
 }

@@ -1,18 +1,25 @@
 use std::{collections::HashMap, ops::Div};
 
-use log::info;
+use log::{info, warn};
 use rust_decimal::Decimal;
-use screeps::{game, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, SharedCreepProperties, TextStyle};
+use screeps::{
+    creep, game, CircleStyle, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, RoomName, SharedCreepProperties, TextStyle
+};
 use serde::{Deserialize, Serialize};
 
-use crate::{heap, heap_cache, memory::{CreepHaulTask, Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
+use crate::{
+    heap, heap_cache,
+    memory::{CreepHaulTask, Role, ScreepsMemory},
+    room::{cache::heap_cache::{hauling, RoomHeapCache}, creeps::local::hauler::execute_order},
+    utils::scale_haul_priority,
+};
 
-use super::CachedRoom;
+use super::{CachedRoom, RoomCache};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum HaulingPriority {
     Combat = 0,
-    Emergency = 9,
+    Emergency = 1,
     FastFillerContainer = 2,
     Spawning = 5,
     Ruins = 30,
@@ -28,7 +35,7 @@ pub enum HaulingType {
     Offer = 0,
     Withdraw = 1,
     Pickup = 2,
-    Transfer = 3
+    Transfer = 3,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -42,16 +49,67 @@ pub struct RoomHaulingOrder {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HaulTaskRequest {
+    pub creep_name: String,
+
+    pub haul_type: Vec<HaulingType>,
+    pub resource_type: Option<ResourceType>
+}
+
+impl HaulTaskRequest {
+    pub fn creep_name(&mut self, creep_name: String) -> &mut Self {
+        self.creep_name = creep_name;
+        self
+    }
+
+    pub fn haul_type(&mut self, haul_type: Vec<HaulingType>) -> &mut Self {
+        self.haul_type = haul_type;
+        self
+    }
+
+    pub fn resource_type(&mut self, resource_type: ResourceType) -> &mut Self {
+        self.resource_type = Some(resource_type);
+        self
+    }
+
+    pub fn finish(&mut self) -> HaulTaskRequest {
+        self.clone()
+    }
+}
+
+impl Default for HaulTaskRequest {
+    fn default() -> Self {
+        HaulTaskRequest {
+            creep_name: String::new(),
+
+            haul_type: vec![HaulingType::Withdraw, HaulingType::Pickup, HaulingType::Transfer],
+            resource_type: None
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HaulingCache {
     pub new_orders: HashMap<u32, RoomHaulingOrder>,
-
     pub current_id_index: u32,
-
     pub haulers: Vec<String>,
+    pub reserved_order_distances: HashMap<String, u32>,
+
+    pub wanting_orders: Vec<HaulTaskRequest>,
+
+    creeps_matched: HashMap<String, bool>,
+    orders_matched: HashMap<u32, bool>,
+
+    orders_matched_to_creeps: HashMap<u32, String>,
+    creeps_matched_to_orders: HashMap<String, u32>,
+
+    order_score_matches: HashMap<u32, u32>,
+    creep_score_matches: HashMap<String, u32>,
 
     iterator_salt: u32,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -59,6 +117,16 @@ impl HaulingCache {
             current_id_index: game::time(),
             haulers: Vec::new(),
 
+            wanting_orders: Vec::new(),
+
+            creeps_matched: HashMap::new(),
+            orders_matched: HashMap::new(),
+            orders_matched_to_creeps: HashMap::new(),
+            creeps_matched_to_orders: HashMap::new(),
+            order_score_matches: HashMap::new(),
+            creep_score_matches: HashMap::new(),
+
+            reserved_order_distances: HashMap::new(),
             iterator_salt: 0,
         }
     }
@@ -68,12 +136,15 @@ impl HaulingCache {
         self.current_id_index
     }
 
-    pub fn create_order(&mut self, target: RawObjectId, resource: Option<ResourceType>, amount: Option<u32>, priority: f32, haul_type: HaulingType) {
+    pub fn create_order(
+        &mut self,
+        target: RawObjectId,
+        resource: Option<ResourceType>,
+        amount: Option<u32>,
+        priority: f32,
+        haul_type: HaulingType,
+    ) {
         let id = self.get_unique_id();
-
-        if game::get_object_by_id_erased(&target).unwrap().pos().room_name() != "E12N6" {
-            info!("MAklking req {}", game::get_object_by_id_erased(&target).unwrap().pos().room_name());
-        }
 
         let decimal = Decimal::new(priority.round() as i64, 0).div(Decimal::new(200, 1));
 
@@ -89,152 +160,131 @@ impl HaulingCache {
         self.new_orders.insert(id, order);
     }
 
-    pub fn find_new_order(&mut self, creep: &Creep, memory: &mut ScreepsMemory, resource: Option<ResourceType>, order_type: Vec<HaulingType>, heap_cache: &mut RoomHeapCache) -> Option<CreepHaulTask> {
-        //let pre_find_cpu = game::cpu::get_used();
-        let mut orders = self.new_orders.values().collect::<Vec<&RoomHaulingOrder>>().clone();
+    pub fn match_haulers(&mut self, memory: &mut ScreepsMemory, room_name: &RoomName) {
+        let starting_cpu = game::cpu::get_used();
+        let mut matched_creeps = Vec::new();
 
-        orders.retain(|x| order_type.contains(&x.haul_type));
-
-        let mut top_scorer: Option<RoomHaulingOrder> = None;
-        let mut current_score: f32 = f32::MAX;
-
-        for order in orders {
-            if let Some(resource_type) = resource {
-                if order.resource != Some(resource_type) { continue; }
-            }
-
-            if creep.pos().room_name() != game::get_object_by_id_erased(&order.target).unwrap().pos().room_name() { info!("Romm dont match") }
-
-            let structure = game::get_object_by_id_erased(&order.target);
-            if structure.is_none() { continue; }
-
-            let distance_to_target = structure.as_ref().unwrap().pos().get_range_to(creep.pos());
-            let priority = order.priority;
-
-            let score = (distance_to_target as f32 * 0.75) + priority;
-
-            let vis = structure.as_ref().unwrap().room().unwrap().visual();
-
-            let x = structure.as_ref().unwrap().pos().x().u8() as f32;
-            let y = structure.as_ref().unwrap().pos().y().u8() as f32;
-            vis.text(
-                x,
-                y,
-                format!("{:?}", score),
-                Some(TextStyle::default().font(0.5).align(screeps::TextAlign::Center)),
-            );
-
-            if order.haul_type == HaulingType::Transfer {
-                vis.text(
-                    x,
-                    y - 1.0,
-                    "T".to_string(),
-                    Some(TextStyle::default().font(0.5)),
-                );
-            } else {
-                vis.text(
-                    x,
-                    y - 1.0,
-                    "O".to_string(),
-                    Some(TextStyle::default().font(0.5)),
-                );
-            }
-
-            let reserved = if let Some(reserved_order) = heap_cache.hauling.reserved_orders.get(&order.target) {
-                let creep = game::creeps().get(reserved_order.to_string());
-                let mut reserved = true;
-
-                if creep.is_none() {
-                    heap_cache.hauling.reserved_orders.remove(&order.target);
-
-                    reserved = false;
-                }
-
-                reserved
-            } else {
-                false
-            };
-
-            if score >= current_score || reserved { continue; }
-
-            //info!("Current_score {}", score);
-
-            current_score = score;
-            top_scorer = Some(order.clone());
+        if self.wanting_orders.is_empty() {
+            info!("  [HAULING] No haulers wanting orders");
+            return;
         }
 
-        top_scorer.as_ref()?;
-        let order = top_scorer.unwrap();
+        for hauler in self.wanting_orders.iter() {
+            let game_creep = game::creeps().get(hauler.creep_name.to_string()).unwrap();
 
-        let task = CreepHaulTask {
-            target_id: order.target,
-            resource: order.resource.unwrap_or(ResourceType::Energy),
-            amount: order.amount,
-            priority: order.priority,
-            haul_type: order.haul_type
-        };
+            let mut top_scorer = None;
+            let mut top_score = u32::MAX;
 
-        self.new_orders.remove(&order.id);
-
-        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-
-        let storage_amount = creep.store().get_free_capacity(Some(task.resource));
-
-        // Only reserve if the order amount isnt specified
-        // or if the order amount is less than the free capacity of the creep
-        if order.haul_type == HaulingType::Offer || order.haul_type == HaulingType::Pickup || order.haul_type == HaulingType::Withdraw {
-            if let Some(order_amount) = order.amount {
-                if order_amount as i32 - storage_amount < 0 {
-                    heap_cache.hauling.reserved_orders.insert(order.target, creep.name().to_string());
-                }
-            }
-        } else {
-            heap_cache.hauling.reserved_orders.insert(order.target, creep.name().to_string());
-        }
-
-        creep_memory.hauling_task = Some(task);
-        creep_memory.hauling_task.clone()
-    }
-
-    /*
-    orders.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
-
-            let mut seedable = StdRng::seed_from_u64((game::time() + self.iterator_salt).into());
-            self.iterator_salt += 1;
-
-            if let Some(order) = orders.clone().into_iter().next() {
-                let id = order.id;
-                orders.retain(|o| o.priority == order.priority);
-    
-                let order_int = &mut seedable.gen_range(0..orders.len());
-                let order = orders.get(*order_int).unwrap();
-    
-                let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-                let task = CreepHaulTask {
-                    target_id: order.target,
-                    resource: order.resource.unwrap_or(ResourceType::Energy),
-                    amount: order.amount,
-                    priority: order.priority,
-                    haul_type: order.haul_type,
-                };
-    
-
-                if let Some(order_amount) = order.amount {
-                    let creep_carry_capacity = creep.store().get_free_capacity(Some(task.resource));
-
-                    if order_amount as i32 - creep_carry_capacity < 0 {
-                        self.new_orders.remove(&id);
-                    } else {
-                        self.new_orders.get_mut(&id).unwrap().amount = Some((order_amount as i32 - creep_carry_capacity) as u32);
+            for order in self.new_orders.values() {
+                if let Some(resource_type) = hauler.resource_type {
+                    if order.resource != Some(resource_type) {
+                        continue;
                     }
                 }
-    
-                creep_memory.hauling_task = Some(task);
-                return creep_memory.hauling_task.clone();
+
+                if !hauler.haul_type.contains(&order.haul_type) {
+                    continue;
+                }
+
+                let score = score_couple(order, &game_creep);
+
+                if score < top_score {
+                    top_scorer = Some(order);
+                    top_score = score;
+                }
             }
-            None */
+
+            if let Some(top_scorer) = top_scorer {
+                let responsible_creep = self.orders_matched_to_creeps.get(&top_scorer.id);
+
+                if let Some(responsible_creep) = responsible_creep {
+                    if *responsible_creep == hauler.creep_name {
+                        continue;
+                    }
+
+                    let responsible_creep_score = self.creep_score_matches.get(responsible_creep).unwrap();
+
+                    if top_score > *responsible_creep_score {
+                        self.creep_score_matches.insert(hauler.creep_name.to_string(), top_score);
+                        self.creep_score_matches.insert(responsible_creep.to_string(), 0);
+
+                        self.orders_matched_to_creeps.insert(top_scorer.id, hauler.creep_name.to_string());
+                        self.creeps_matched_to_orders.insert(hauler.creep_name.to_string(), top_scorer.id);
+
+                        matched_creeps.push(hauler.creep_name.to_string());
+                    }
+                } else {
+                    self.creep_score_matches.insert(hauler.creep_name.to_string(), top_score);
+                    self.orders_matched_to_creeps.insert(top_scorer.id, hauler.creep_name.to_string());
+                    self.creeps_matched_to_orders.insert(hauler.creep_name.to_string(), top_scorer.id);
+
+                    matched_creeps.push(hauler.creep_name.to_string());
+                }
+            }
+        }
+
+        let room_visual = game::rooms().get(*room_name).unwrap().visual();
+
+        for creep in &matched_creeps {
+            let creep_memory = memory.creeps.get_mut(creep).unwrap();
+
+            let order_id = self.creeps_matched_to_orders.get(creep).unwrap();
+            let order = self.new_orders.get(order_id).unwrap();
+
+            let haul_task = CreepHaulTask {
+                target_id: order.target,
+                priority: order.priority,
+                resource: order.resource.unwrap_or(ResourceType::Energy),
+                amount: order.amount,
+                haul_type: order.haul_type,
+            };
+
+            let position = haul_task.get_target_position().unwrap();
+            room_visual.circle(position.x().u8() as f32, position.y().u8() as f32, Some(CircleStyle::default().radius(0.25).stroke("#ff0000").fill("#ff0000").opacity(0.5)));
+
+            if haul_task.haul_type == HaulingType::Transfer {
+                room_visual.text(
+                    position.x().u8() as f32,
+                    position.y().u8() as f32,
+                    format!("T {:.2}", haul_task.priority),
+                    Some(TextStyle::default().color("#ff0000")),
+                );
+            } else {
+                room_visual.text(
+                    position.x().u8() as f32,
+                    position.y().u8() as f32,
+                    format!("P {:.2}", haul_task.priority),
+                    Some(TextStyle::default().color("#00ff00")),
+                );
+            }
+
+            creep_memory.hauling_task = Some(haul_task.clone());
+
+            //execute_order(&game::creeps().get(creep).unwrap(), creep_memory, cache, &haul_task.clone());
+        }
+
+        info!(
+            "  [HAULING] Matched {} haulers to {} orders in {} CPU",
+            matched_creeps.len(),
+            self.new_orders.len(),
+            game::cpu::get_used() - starting_cpu
+        );
+    }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> u32 {
+    let creep_pos = creep.pos();
+    let target = game::get_object_by_id_erased(&order.target).unwrap();
+
+    let distance = creep_pos.get_range_to(target.pos());
+
+    let score = order.priority + distance as f32;
+
+    score as u32
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepHaulTask {
     pub fn get_target_position(&self) -> Option<Position> {
         let target = game::get_object_by_id_erased(&self.target_id);
@@ -245,17 +295,27 @@ impl CreepHaulTask {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_spawn(room_cache: &mut CachedRoom) {
-    let has_ff = !room_cache.creeps.creeps_of_role.get(&Role::FastFiller).unwrap_or(&Vec::new()).is_empty();
+    let has_ff = !room_cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::FastFiller)
+        .unwrap_or(&Vec::new())
+        .is_empty();
 
     for spawn in room_cache.structures.spawns.values() {
-        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || (has_ff && room_cache.structures.containers.fast_filler.is_some()) { continue }
+        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0
+            || (has_ff && room_cache.structures.containers.fast_filler.is_some())
+        {
+            continue;
+        }
 
         let priority = scale_haul_priority(
             spawn.store().get_capacity(Some(ResourceType::Energy)),
             spawn.store().get_free_capacity(Some(ResourceType::Energy)) as u32,
             HaulingPriority::Spawning,
-            true
+            true,
         );
 
         room_cache.hauling.create_order(
@@ -263,11 +323,12 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
             Some(ResourceType::Energy),
             Some(spawn.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
             priority,
-            HaulingType::Transfer
+            HaulingType::Transfer,
         );
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_ruins(room_cache: &mut CachedRoom) {
     let ruins = &room_cache.structures.ruins;
 
@@ -279,25 +340,39 @@ pub fn haul_ruins(room_cache: &mut CachedRoom) {
                 ruin.raw_id(),
                 Some(ResourceType::Energy),
                 Some(ruin.store().get_used_capacity(Some(ResourceType::Energy))),
-                scale_haul_priority(ruin.store().get_capacity(None), energy_amount, HaulingPriority::Ruins, false),
-                HaulingType::Offer
+                scale_haul_priority(
+                    ruin.store().get_capacity(None),
+                    energy_amount,
+                    HaulingPriority::Ruins,
+                    false,
+                ),
+                HaulingType::Offer,
             );
             return;
         }
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_storage(room_cache: &mut CachedRoom) {
     let storage = &room_cache.structures.storage;
 
     if let Some(storage) = storage {
-        if storage.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+        if storage
+            .store()
+            .get_used_capacity(Some(ResourceType::Energy))
+            > 0
+        {
             room_cache.hauling.create_order(
                 storage.raw_id(),
                 Some(ResourceType::Energy),
-                Some(storage.store().get_used_capacity(Some(ResourceType::Energy))),
+                Some(
+                    storage
+                        .store()
+                        .get_used_capacity(Some(ResourceType::Energy)),
+                ),
                 f32::MAX - 100.0,
-                HaulingType::Offer
+                HaulingType::Offer,
             )
         }
 
@@ -307,12 +382,13 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
                 None,
                 Some(storage.store().get_free_capacity(None).try_into().unwrap()),
                 f32::MAX - 100.0,
-                HaulingType::Transfer
+                HaulingType::Transfer,
             )
         }
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_extensions(room_cache: &mut CachedRoom) {
     for source in room_cache.structures.extensions.values() {
         if source.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
@@ -320,17 +396,19 @@ pub fn haul_extensions(room_cache: &mut CachedRoom) {
                 source.store().get_capacity(Some(ResourceType::Energy)),
                 source.store().get_used_capacity(Some(ResourceType::Energy)),
                 HaulingPriority::Spawning,
-                true
+                true,
             );
 
             room_cache.hauling.create_order(
                 source.raw_id(),
                 Some(ResourceType::Energy),
-                Some(source
-                    .store()
-                    .get_free_capacity(Some(ResourceType::Energy))
-                    .try_into()
-                    .unwrap()),
+                Some(
+                    source
+                        .store()
+                        .get_free_capacity(Some(ResourceType::Energy))
+                        .try_into()
+                        .unwrap(),
+                ),
                 priority,
                 HaulingType::Transfer,
             );

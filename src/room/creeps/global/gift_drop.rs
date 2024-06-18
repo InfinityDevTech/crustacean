@@ -2,10 +2,11 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{find, game, Color, Creep, HasPosition, ResourceType, SharedCreepProperties, StructureProperties, StructureType};
 
 use crate::{
-    config, memory::ScreepsMemory, movement::move_target::MoveOptions, room::{cache::tick_cache::{hauling::HaulingType, CachedRoom, RoomCache}, creeps::local::hauler}, traits::creep::CreepExtensions
+    config, memory::ScreepsMemory, movement::move_target::MoveOptions, room::{cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, creeps::local::hauler}, traits::creep::CreepExtensions
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_giftdrop(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if creep.store().get_free_capacity(None) > 0 {
@@ -13,22 +14,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
         if let Some(task) = creep_memory.hauling_task.clone() {
-            hauler::execute_order(creep, creep_memory, cache, &task);
+            hauler::execute_order(creep, creep_memory, room_cache, &task);
 
             return;
         }
 
-        room_cache.hauling.find_new_order(
-            creep,
-            memory,
-            Some(ResourceType::Energy),
-            vec![
-                HaulingType::Pickup,
-                HaulingType::Withdraw,
-                HaulingType::Offer,
-            ],
-            &mut room_cache.heap_cache
-        );
+        room_cache.hauling.wanting_orders.push(HaulTaskRequest::default().creep_name(creep.name()).resource_type(ResourceType::Energy).haul_type(vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer]).finish());
         return;
     }
 

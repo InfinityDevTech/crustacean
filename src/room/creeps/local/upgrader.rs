@@ -2,7 +2,8 @@ use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepPro
 
 use crate::{memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
         let _ = creep.say("😴", false);
         return;
@@ -50,6 +51,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn sign_controller(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
     let controller = cache.structures.controller.as_ref().unwrap();
 
@@ -65,6 +67,7 @@ pub fn sign_controller(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn energy_spent_upgrading(creep: &Creep) -> u32 {
     let parts = creep.body().iter().filter(|x| x.part() == Part::Work && x.hits() > 0).count() as u32;
 

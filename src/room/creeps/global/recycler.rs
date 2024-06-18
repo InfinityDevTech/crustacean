@@ -5,7 +5,8 @@ use crate::{
     memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     info!("Recycler creep is running");
 
     // If the creep is a spud and cant move, suicide
@@ -24,7 +25,12 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 
 
-    let owning_room = memory.creeps.get(&creep.name()).unwrap().owning_room;
+    let owning_room = memory.creeps.get(&creep.name());
+    if owning_room.is_none() {
+        return;
+    }
+
+    let owning_room = owning_room.unwrap().owning_room;
     if let Some(room) = game::rooms().get(owning_room) {
         cache.create_if_not_exists(&room, memory, None);
     }

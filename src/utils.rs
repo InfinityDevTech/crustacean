@@ -7,6 +7,7 @@ use screeps::{game, OwnedStructureProperties, Part, RoomName};
 
 use crate::{config, constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
     if let Some(first_creep) = game::creeps().values().next() {
         return first_creep.owner().username().to_string();
@@ -21,6 +22,7 @@ pub fn get_my_username() -> String {
     panic!("Unable to determine my username!");
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_room_sign() -> String {
     let alliance_tag = config::ALLIANCE_TAG;
 
@@ -39,6 +41,7 @@ pub fn get_room_sign() -> String {
 /// Amount: The amount of resources in the target
 /// Priority: The priority of the task
 /// Reverse: Get priority based off of how empty the container is
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority, reverse: bool) -> f32 {
     let priority = (priority as u32) as f32;
     let capacity = capacity as f32;
@@ -58,6 +61,7 @@ pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority
 /// Convert a role to its respective string
 /// **Example:** Miner **=** sm
 /// **Example:** Hauler **=** mb
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn role_to_name(role: Role) -> String {
     let data = match role {
         Role::Miner => "sm",
@@ -69,6 +73,7 @@ pub fn role_to_name(role: Role) -> String {
         Role::Bulldozer => "sa",
         Role::GiftBasket => "gb",
         Role::RemoteHarvester => "rm",
+        Role::PhysicalObserver => "po",
         Role::Unclaimer => "uc",
         Role::Recycler => "rc",
     };
@@ -78,6 +83,7 @@ pub fn role_to_name(role: Role) -> String {
 /// Convert a string to its respective role
 /// **Example:** sm **=** Miner
 /// **Example:** mb **=** Hauler
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn name_to_role(name: &str) -> Option<Role> {
     let role_tag = name.split("-").next().unwrap();
     match role_tag {
@@ -92,10 +98,12 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "rm" => { Some(Role::RemoteHarvester) },
         "uc" => { Some(Role::Unclaimer) },
         "rc" => { Some(Role::Recycler) },
+        "po" => { Some(Role::PhysicalObserver) },
         _ => { None },
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
     let mut cost = 0;
 
@@ -103,5 +111,5 @@ pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
         cost += part.cost();
     }
 
-    cost.into()
+    cost
 }

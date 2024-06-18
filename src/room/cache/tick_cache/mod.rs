@@ -19,12 +19,17 @@ pub mod stats;
 #[derive(Debug, Clone)]
 pub struct RoomCache {
     pub rooms: HashMap<RoomName, CachedRoom>,
+
+    pub my_rooms: Vec<RoomName>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomCache {
     pub fn new() -> RoomCache {
         RoomCache {
-            rooms: HashMap::new()
+            rooms: HashMap::new(),
+
+            my_rooms: Vec::new(),
         }
     }
 
@@ -58,6 +63,7 @@ pub struct CachedRoom {
     pub stats: StatsCache
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedRoom {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) -> CachedRoom {
         let pre_cache_cpu = game::cpu::get_used();
@@ -91,7 +97,7 @@ impl CachedRoom {
         };
 
         if let Some(room_memory) = memory.rooms.get(&room.name()) {
-            cached.remotes = room_memory.remotes.clone();
+            cached.remotes.clone_from(&room_memory.remotes);
         }
 
         cached.stats.cpu_cache += game::cpu::get_used() - pre_cache_cpu;

@@ -3,3 +3,4 @@ pub mod bulldozer;
 pub mod gift_drop;
 pub mod unclaimer;
 pub mod recycler;
+pub mod physical_observer;

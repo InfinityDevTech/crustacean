@@ -5,6 +5,7 @@ use crate::{
     room::cache::tick_cache::{CachedRoom, RoomCache}, traits::room::RoomExtensions,
 };
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
     if memory.rooms.contains_key(&room.name()) {
         return;

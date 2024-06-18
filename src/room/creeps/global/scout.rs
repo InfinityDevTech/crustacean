@@ -7,7 +7,8 @@ use crate::{
     memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
         let _ = creep.say("😴", false);
         return;
@@ -24,7 +25,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         if creep.room().unwrap().name() == scout_target.room_name() {
             creep_memory.scout_target = None;
-            run_creep(creep, memory, cache);
+            run_scout(creep, memory, cache);
         } else {
             let _ = creep.say("🔍 😛", true);
             creep.better_move_to(

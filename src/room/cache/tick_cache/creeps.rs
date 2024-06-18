@@ -18,6 +18,7 @@ pub struct CreepCache {
     pub allied_creeps: Vec<Creep>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepCache {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> CreepCache {
         let mut cache = CreepCache {

@@ -34,6 +34,8 @@ pub trait CreepExtensions {
     fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
 }
 
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {

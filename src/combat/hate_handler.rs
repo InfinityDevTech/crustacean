@@ -8,6 +8,7 @@ use crate::{
     room::cache::{heap_cache::HealthChangeType, tick_cache::RoomCache}, utils::name_to_role,
 };
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn increment_hate(memory: &mut ScreepsMemory, hate: f32, player_name: String) {
     if let Some(enemy) = memory.enemy_players.get_mut(&player_name) {
         enemy.increment_hate(hate);
@@ -26,6 +27,7 @@ pub fn increment_hate(memory: &mut ScreepsMemory, hate: f32, player_name: String
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn decay_hate(memory: &mut ScreepsMemory) {
     for enemy in memory.enemy_players.values_mut() {
         if enemy.last_attack - game::time() <= config::TICKS_BEFORE_DECAY {
@@ -34,6 +36,7 @@ pub fn decay_hate(memory: &mut ScreepsMemory) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_type: HealthChangeType) {
     let offending_creeps = creep.pos().find_in_range(find::HOSTILE_CREEPS, 3);
 
@@ -64,6 +67,7 @@ pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_ty
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn process_room_event_log(room: &Room, memory: &mut ScreepsMemory, _cache: &mut RoomCache) {
     let event_log = room.get_event_log();
     for event in event_log {

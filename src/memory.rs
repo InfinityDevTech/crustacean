@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
 use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
@@ -8,30 +9,41 @@ use js_sys::JsString;
 
 use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
 
+#[derive(Debug, Clone, Serialize, Deserialize, Enum)]
+pub enum SegmentIDs {
+    Profiler = 9
+}
+
+pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
+    enum_map! {
+        SegmentIDs::Profiler => 9,
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
 // The roles listed in creep memory
 // The order of this also is the order in which
 // Traffic Priority is handled.
 pub enum Role {
     // Mining industry
-    Miner = 0,
-    Hauler = 1,
-
-    FastFiller = 2,
-
+    Miner,
+    Hauler,
+    FastFiller,
+    RemoteHarvester,
     // Construction industry
-    Upgrader = 3,
-    Builder = 4,
+    Upgrader,
+    Builder,
 
-    Scout = 10,
+    Scout,
 
-    RemoteHarvester = 11,
+    Bulldozer,
+    Unclaimer,
 
-    Bulldozer = 20,
-    Unclaimer = 22,
+    PhysicalObserver,
 
-    Recycler = 99,
-    GiftBasket = 100,
+    // Assorted junk roles, recycler just recycles itself
+    Recycler,
+    GiftBasket,
 }
 
 // What each creep stores in its memory.
@@ -251,11 +263,11 @@ structstruck::strike! {
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
 
         pub allies: Vec<String>,
-
         pub stats: StatsData,
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl ScreepsMemory {
     pub fn init_memory() -> Self {
         let pre_memory_cpu = game::cpu::get_used();
@@ -274,7 +286,6 @@ impl ScreepsMemory {
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
                 allies: Vec::new(),
-
                 stats: StatsData::default(),
             };
 
@@ -304,7 +315,6 @@ impl ScreepsMemory {
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),
                         allies: Vec::new(),
-
                         stats: StatsData::default(),
                     };
 
@@ -320,6 +330,10 @@ impl ScreepsMemory {
         let js_serialized = JsString::from(serialized);
 
         screeps::raw_memory::set(&js_serialized);
+    }
+
+    pub fn activate_segments(&self) {
+        screeps::raw_memory::set_active_segments(&[segment_ids()[SegmentIDs::Profiler]]);
     }
 
     pub fn create_creep(&mut self, room_name: &RoomName, creep_name: &str, object: CreepMemory) {
@@ -367,6 +381,7 @@ impl Default for CreepMemory {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl EnemyPlayer {
     pub fn decrement_hate(&mut self, amount: f32) {
         let current_hate = self.hate;

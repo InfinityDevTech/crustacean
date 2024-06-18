@@ -32,6 +32,7 @@ pub struct SSSAllySync {
     pub next_sync_time: u32,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl SSSAllySync {
     pub fn new(memory: &mut ScreepsMemory) -> SSSAllySync {
         let allies = [

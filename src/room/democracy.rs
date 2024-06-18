@@ -16,13 +16,14 @@ use crate::{
 };
 
 use super::{
-    cache::tick_cache::CachedRoom,
+    cache::{self, tick_cache::CachedRoom},
     planning::room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
         },
 };
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let starting_cpu = game::cpu::get_used();
 
@@ -31,6 +32,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     cache.create_if_not_exists(&room, memory, None);
 
     if room.my() {
+        cache.my_rooms.push(room.name());
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
         if !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory, cache) {
@@ -58,11 +60,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         resources::haul_remotes(&room, memory, cache);
 
         organizer::run_creeps(&room, memory, cache);
-
-        // Run spawns
-        // TODO: Tune the better spawn implementation
-        spawning::handle_spawning(&room, cache, memory);
-
 
         let pre_hauler_cpu = game::cpu::get_used();
 
@@ -103,32 +100,23 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
     }
 
-    // Run haulers
-        // Haulers are done last as they need to know what to haul
-        for creep in cache
-            .rooms
-            .get(&room.name())
-            .unwrap()
-            .hauling
-            .haulers
-            .clone()
-        {
-            let creep = game::creeps().get(creep.to_string()).unwrap();
-            hauler::run_creep(&creep, memory, cache);
-        }
-
     hate_handler::process_room_event_log(&room, memory, cache);
 
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
+    // Match these haulers to their tasks, that way we can run them
+    room_cache.hauling.match_haulers(memory, &room.name());
+
     let start = game::cpu::get_used();
     traffic::run_movement(room_cache);
 
-    info!(
-        "  [TRAFFIX] Traffic took: {:.4} with {} intents",
-        game::cpu::get_used() - start,
-        room_cache.traffic.move_intents
-    );
+    if room.my() {
+        info!(
+            "  [TRAFFIX] Traffic took: {:.4} with {} intents",
+            game::cpu::get_used() - start,
+            room_cache.traffic.move_intents
+        );
+    }
     room_cache.write_cache_to_heap(&room);
 
     if room.my() {
@@ -144,6 +132,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
     let terrain = game::map::get_room_terrain(room_name);
@@ -170,6 +159,7 @@ pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
     MultiRoomCostResult::CostMatrix(matrix.into())
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
     let _coords = room_cache.structures.spawns.values().next().unwrap().pos();
     let _viz = RoomVisualExt::new(room.name());

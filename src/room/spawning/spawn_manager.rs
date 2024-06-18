@@ -21,6 +21,7 @@ pub struct SpawnManager {
     spawns: Vec<StructureSpawn>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl SpawnManager {
     pub fn new(room_name: &RoomName, cache: &mut CachedRoom) -> Self {
         Self {

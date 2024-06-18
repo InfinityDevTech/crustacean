@@ -20,6 +20,7 @@ impl Default for MoveOptions {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveOptions {
     pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
         self.avoid_enemies = avoid_enemies;
@@ -37,6 +38,7 @@ pub struct MoveTarget {
     pub range: u32
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
@@ -87,6 +89,7 @@ impl MoveTarget {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 

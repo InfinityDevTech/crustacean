@@ -30,6 +30,7 @@ impl TrafficCache {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_movement(room_cache: &mut CachedRoom) {
     let pre_traffic_cpu = game::cpu::get_used();
 
@@ -101,6 +102,7 @@ pub fn run_movement(room_cache: &mut CachedRoom) {
     room_cache.stats.cpu_traffic = post_traffic_cpu - pre_traffic_cpu;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn depth_first_searh(creep: &Creep, room_cache: &mut CachedRoom, visited_creeps: &mut Vec<ObjectId<Creep>>, score: Option<i32>) -> i32 {
     let mut score = score.unwrap_or(0);
     visited_creeps.push(creep.try_id().unwrap());
@@ -152,6 +154,7 @@ fn depth_first_searh(creep: &Creep, room_cache: &mut CachedRoom, visited_creeps:
     i32::MIN
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn assign_creep_to_coordinate(creep: &Creep, room_cache: &mut CachedRoom, coord: RoomXY) {
     let packed_coord = coord;
 

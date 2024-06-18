@@ -23,8 +23,8 @@ rand = "0.8.5"
 getrandom = { version = "0.2.15", features = ["js"] }
 rust_decimal = "1.35.0"
 enum-map = "2.7.3"
-#screeps-timing = { git = "https://github.com/Azaril/screeps-timing", optional = true }
-#screeps-timing-annotate = { git = "https://github.com/Azaril/screeps-timing-annotate", optional = true }
+screeps-timing = { git = "https://github.com/InfinityDevTech/screeps-timing", optional = true }
+screeps-timing-annotate = { git = "https://github.com/Azaril/screeps-timing-annotate", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
@@ -50,8 +50,6 @@ wasm-opt = ["-g", "--disable-sign-ext"]
 
 [features]
 default = ["profile"]
-# "screeps-timing-annotate"
-# "screeps-timing"
-profile = []
+profile = ["screeps-timing-annotate", "screeps-timing"]
 
 sim = ["screeps-game-api/sim"]

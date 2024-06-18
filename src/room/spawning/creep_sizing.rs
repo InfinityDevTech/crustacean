@@ -3,7 +3,9 @@ use screeps::{game, Part, Room};
 
 use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom};
 
+
 /// Returns the parts needed for a miner creep
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Part> {
     let mut parts = Vec::new();
 
@@ -53,7 +55,6 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
 
         }
 
-        info!("Miner parts: {:?}", parts);
         return parts;
     } else {
         let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
@@ -81,10 +82,11 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
             }
         }
     }
-    info!("Miner parts: {:?}", parts);
+
     parts
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut body = Vec::new();
 
@@ -128,6 +130,7 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     body
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
@@ -153,7 +156,9 @@ pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     parts
 }
+
 /// Returns the parts needed for a upgrader creep
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 

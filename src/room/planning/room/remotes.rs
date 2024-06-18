@@ -9,6 +9,7 @@ use crate::{
     traits::room::{RoomExtensions, RoomType},
 };
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fetch_possible_remotes(
     room: &Room,
     memory: &mut ScreepsMemory,
@@ -64,6 +65,7 @@ pub fn fetch_possible_remotes(
     remotes
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn rank_remote_room(
     memory: &mut ScreepsMemory,
     room_cache: &CachedRoom,

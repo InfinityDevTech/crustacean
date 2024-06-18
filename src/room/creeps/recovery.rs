@@ -4,6 +4,7 @@ use screeps::{game, RoomName, SharedCreepProperties};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, utils::name_to_role};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn recover_creeps(memory: &mut ScreepsMemory) {
     let creep_names = game::creeps().keys();
     for creep_name in creep_names {

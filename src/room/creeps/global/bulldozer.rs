@@ -5,8 +5,8 @@ use crate::{
     config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
     let creep_memory = memory.creeps.get_mut(&creep.name());

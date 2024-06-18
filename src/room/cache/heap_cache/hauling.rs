@@ -8,6 +8,7 @@ pub struct HeapHaulingCache {
     pub reserved_orders: HashMap<RawObjectId, String>
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HeapHaulingCache {
     pub fn new() -> HeapHaulingCache {
         HeapHaulingCache {

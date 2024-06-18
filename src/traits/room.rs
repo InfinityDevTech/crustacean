@@ -35,6 +35,7 @@ pub trait RoomExtensions {
     fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()

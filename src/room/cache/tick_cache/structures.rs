@@ -55,6 +55,7 @@ pub struct RoomStructureCache {
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,

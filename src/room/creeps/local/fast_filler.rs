@@ -10,7 +10,8 @@ use crate::{
     }, traits::creep::CreepExtensions, utils::scale_haul_priority
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
@@ -91,6 +92,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
     let spawn = cache.structures.spawns.values().next().unwrap();
 
@@ -99,6 +101,7 @@ pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_possible_targets(creep: &Creep, _cache: &CachedRoom) -> Vec<RawObjectId> {
     let find_call = creep.pos().find_in_range(find::STRUCTURES, 1);
 
@@ -128,6 +131,7 @@ pub fn find_possible_targets(creep: &Creep, _cache: &CachedRoom) -> Vec<RawObjec
     possible_targets
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
     let current_pos = creep.pos().xy();
     let spawn_pos = cache.structures.spawns.values().next().unwrap().pos().xy();
@@ -184,6 +188,7 @@ pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cac
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_container(
     creep: &Creep,
     cache: &mut CachedRoom,

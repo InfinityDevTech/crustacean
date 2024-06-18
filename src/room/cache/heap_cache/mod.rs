@@ -28,6 +28,7 @@ pub struct HeapCreep {
     pub health: u32,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomHeapCache {
     pub fn new(room: &Room) -> RoomHeapCache {
         RoomHeapCache {
@@ -40,6 +41,7 @@ impl RoomHeapCache {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HeapCreep {
     pub fn new(creep: &Creep) -> HeapCreep {
         HeapCreep {

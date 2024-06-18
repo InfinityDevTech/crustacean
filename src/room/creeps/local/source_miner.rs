@@ -15,7 +15,8 @@ use crate::{
     utils::scale_haul_priority,
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_sourceminer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if creep_memory.task_id.is_none() {
@@ -49,6 +50,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvest_source(
     creep: &Creep,
     source: Source,
@@ -72,6 +74,7 @@ pub fn harvest_source(
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &CachedRoom) -> bool {
     let link_id = creep_memory.link_id;
 
@@ -92,6 +95,7 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &CachedRoo
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
     let _ = creep.say("📦", false);
 
@@ -125,6 +129,7 @@ pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn repair_container(
     creep: &Creep,
     creep_memory: &mut CreepMemory,
@@ -155,6 +160,7 @@ pub fn repair_container(
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_aproximate_energy_mined(creep: &Creep, source: &Source) -> u32 {
     let work_parts = creep
         .body()

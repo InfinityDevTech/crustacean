@@ -8,7 +8,8 @@ use crate::{
     }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
-pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
         let _ = creep.say("😴", false);
         return;
@@ -78,6 +79,7 @@ pub fn run_creep(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn build_container(
     creep: &Creep,
     creep_memory: &mut CreepMemory,
@@ -102,6 +104,7 @@ pub fn build_container(
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_enegy(creep: &Creep, creep_memory: &mut CreepMemory, remote_cache: &mut CachedRoom) {
     let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&remote_cache.structures);
 

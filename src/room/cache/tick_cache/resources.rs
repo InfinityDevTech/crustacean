@@ -32,6 +32,7 @@ pub struct RoomResourceCache {
     pub energy_in_storing_structures: u32,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomResourceCache {
     pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory, heap_cache: &mut RoomHeapCache) -> RoomResourceCache {
         let mut cache = RoomResourceCache {
@@ -114,6 +115,7 @@ impl RoomResourceCache {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedSource {
     pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
         if let Some(container_id) = self.container {
@@ -205,6 +207,7 @@ impl CachedSource {
     
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote_name in memory.rooms.get(&launching_room.name()).unwrap().remotes.clone().iter() {
         let remote_room = game::rooms().get(*remote_name);
@@ -248,6 +251,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers.controller {
         if controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) {
@@ -299,6 +303,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
     for resource in &cached_room.resources.dropped_energy {
         let priority = scale_haul_priority(resource.amount(), resource.amount(), HaulingPriority::Energy, false);

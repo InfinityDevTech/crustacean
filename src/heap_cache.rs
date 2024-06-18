@@ -14,6 +14,8 @@ pub struct GlobalHeapCache {
     pub rooms: Mutex<HashMap<String, RoomHeapCache>>,
     pub memory: Mutex<ScreepsMemory>,
 
+    pub my_username: Mutex<String>,
+
     pub heap_lifetime: Mutex<u32>,
 }
 
@@ -22,6 +24,8 @@ impl GlobalHeapCache {
         GlobalHeapCache {
             rooms: Mutex::new(HashMap::new()),
             memory: Mutex::new(ScreepsMemory::init_memory()),
+
+            my_username: Mutex::new(String::new()),
 
             heap_lifetime: Mutex::new(0),
         }

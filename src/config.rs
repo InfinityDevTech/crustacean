@@ -1,6 +1,6 @@
 pub const MEMORY_VERSION: u8 = 1;
 
-pub const USERNAME: &str = "InfDev";
+pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "";
 

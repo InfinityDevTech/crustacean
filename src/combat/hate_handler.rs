@@ -5,7 +5,7 @@ use screeps::{find, game, Creep, HasPosition, ObjectId, Room, SharedCreepPropert
 use crate::{
     config,
     memory::{EnemyPlayer, Role, ScreepsMemory},
-    room::cache::{heap_cache::HealthChangeType, tick_cache::RoomCache}, utils::name_to_role,
+    room::cache::{heap_cache::HealthChangeType, tick_cache::RoomCache}, utils::{self, name_to_role},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -53,7 +53,7 @@ pub fn process_health_event(creep: &Creep, memory: &mut ScreepsMemory, health_ty
     if !offending_creeps.is_empty() {
         let offending_user = offending_creeps.first().unwrap().owner().username();
 
-        if offending_user == config::USERNAME {
+        if offending_user == utils::get_my_username() {
             return;
         }
 
@@ -81,7 +81,7 @@ pub fn process_room_event_log(room: &Room, memory: &mut ScreepsMemory, _cache: &
                     if let Some(attacker) = attacker  {
                         let owner = attacker.owner().username();
 
-                        if owner == config::USERNAME {
+                        if owner == utils::get_my_username() {
                             continue;
                         }
 
@@ -92,7 +92,7 @@ pub fn process_room_event_log(room: &Room, memory: &mut ScreepsMemory, _cache: &
                     if let Some(attacker) = attacker  {
                         let owner = attacker.owner().username();
 
-                        if owner == config::USERNAME {
+                        if owner == utils::get_my_username() {
                             continue;
                         }
 

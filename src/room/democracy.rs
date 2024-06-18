@@ -20,12 +20,14 @@ use super::{
     planning::room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
-        },
+        }, visuals::visualise_room_visual,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let starting_cpu = game::cpu::get_used();
+
+    visualise_room_visual(&room.name());
 
     // Caches various things, like resources
     // Caches structures and other creep things

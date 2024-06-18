@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Div};
 use log::{info, warn};
 use rust_decimal::Decimal;
 use screeps::{
-    creep, game, CircleStyle, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, RoomName, SharedCreepProperties, TextStyle
+    creep, game, CircleStyle, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, RoomName, RoomVisual, SharedCreepProperties, TextStyle
 };
 use serde::{Deserialize, Serialize};
 
@@ -110,7 +110,7 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -157,6 +157,28 @@ impl HaulingCache {
             priority: decimal.round_dp(2).try_into().unwrap(),
             haul_type,
         };
+
+        let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
+        let room_visual = game::rooms().get(position.room_name()).unwrap().visual();
+
+
+        room_visual.circle(position.x().u8() as f32, position.y().u8() as f32, Some(CircleStyle::default().radius(0.25).stroke("#ff0000").fill("#ff0000").opacity(0.5)));
+
+        if order.haul_type == HaulingType::Transfer {
+            room_visual.text(
+                position.x().u8() as f32,
+                position.y().u8() as f32,
+                format!("T {:.2}", order.priority),
+                Some(TextStyle::default().color("#ff0000")),
+            );
+        } else {
+            room_visual.text(
+                position.x().u8() as f32,
+                position.y().u8() as f32,
+                format!("P {:.2}", order.priority),
+                Some(TextStyle::default().color("#00ff00")),
+            );
+        }
 
         self.new_orders.insert(id, order);
     }
@@ -239,25 +261,6 @@ impl HaulingCache {
                 amount: order.amount,
                 haul_type: order.haul_type,
             };
-
-            let position = haul_task.get_target_position().unwrap();
-            room_visual.circle(position.x().u8() as f32, position.y().u8() as f32, Some(CircleStyle::default().radius(0.25).stroke("#ff0000").fill("#ff0000").opacity(0.5)));
-
-            if haul_task.haul_type == HaulingType::Transfer {
-                room_visual.text(
-                    position.x().u8() as f32,
-                    position.y().u8() as f32,
-                    format!("T {:.2}", haul_task.priority),
-                    Some(TextStyle::default().color("#ff0000")),
-                );
-            } else {
-                room_visual.text(
-                    position.x().u8() as f32,
-                    position.y().u8() as f32,
-                    format!("P {:.2}", haul_task.priority),
-                    Some(TextStyle::default().color("#00ff00")),
-                );
-            }
 
             creep_memory.hauling_task = Some(haul_task.clone());
 

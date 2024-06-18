@@ -165,12 +165,12 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let room_current_rcl = cache.structures.controller.as_ref().unwrap().controller.level();
     let target_work_parts = match room_current_rcl {
         1 => 1,
-        2 => 3,
-        3 => 10,
-        4 => 12,
-        5 => 12,
-        6 => 12,
-        7 => 26,
+        2 => 5,
+        3 => 12,
+        4 => 15,
+        5 => 15,
+        6 => 15,
+        7 => 25,
         8 => 5,
         _ => 1,
     };

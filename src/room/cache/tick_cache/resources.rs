@@ -245,7 +245,12 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
                 owning_room.resources.total_energy += container.store().get_used_capacity(None);
                 owning_room.resources.energy_in_storing_structures += container.store().get_used_capacity(None);
     
-                owning_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Offer);
+                owning_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), priority, HaulingType::Offer);
+            } else if container.store().get_free_capacity(None) == 0 {
+                owning_room.resources.total_energy += container.store().get_used_capacity(None);
+                owning_room.resources.energy_in_storing_structures += container.store().get_used_capacity(None);
+
+                owning_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), 0.0, HaulingType::Offer)
             }
         }
     }
@@ -298,7 +303,9 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
                 true
             );
 
-            cached_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Offer);
+            cached_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), priority, HaulingType::Offer);
+        } else if container.store().get_free_capacity(None) == 0 {
+            cached_room.hauling.create_order(container.id().into(), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), 0.0, HaulingType::Offer)
         }
     }
 }

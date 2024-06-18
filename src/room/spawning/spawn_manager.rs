@@ -1,7 +1,8 @@
 use log::info;
-use screeps::{creep, game, Part, Position, Room, RoomName, SpawnOptions, StructureSpawn};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use screeps::{creep, find, game, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions, StructureSpawn};
 
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::CachedRoom, utils::role_to_name};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::num_to_dir, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 pub struct SpawnRequest {
     role: Role,
@@ -64,7 +65,25 @@ impl SpawnManager {
     pub fn run_spawning(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         if self.spawn_queue.is_empty() { return; }
 
-        let available_spawns = self.get_available_spawns();
+        let (available_spawns, unavailable_spawns) = self.get_available_spawns();
+
+        if game::time() % 10 == 0 {
+            for spawn in unavailable_spawns.iter() {
+                let surrounding_creeps = spawn.pos().find_in_range(find::MY_CREEPS, 1);
+
+                let mut rng = StdRng::seed_from_u64(game::time() as u64);
+                for creep in surrounding_creeps {
+                    let name = creep.name();
+                    let role = name_to_role(&name);
+
+                    if role != Some(Role::FastFiller) {
+                        let dir = num_to_dir(rng.gen_range(1..9) as u8);
+                        let _ = creep.move_direction(dir);
+                    }
+                }
+            }
+        }
+
         if available_spawns.is_empty() { return; }
 
         // Sort the queue from highest to lowest
@@ -95,7 +114,7 @@ impl SpawnManager {
             return false;
         }
 
-        let available_spawn = self.get_available_spawns();
+        let (available_spawn, unavailable_spawns) = self.get_available_spawns();
         if available_spawn.is_empty() {
             return false;
         }
@@ -106,14 +125,18 @@ impl SpawnManager {
         dry_run_result.is_ok()
     }
 
-    pub fn get_available_spawns(&mut self) -> Vec<StructureSpawn> {
+    pub fn get_available_spawns(&mut self) -> (Vec<StructureSpawn>, Vec<StructureSpawn>) {
         let mut available_spawns = Vec::new();
+        let mut unavailable_spawns = Vec::new();
+
         for spawn in &self.spawns {
             if spawn.spawning().is_none() {
                 available_spawns.push(spawn.clone())
+            } else {
+                unavailable_spawns.push(spawn.clone())
             }
         }
 
-        available_spawns
+        (available_spawns, unavailable_spawns)
     }
 }

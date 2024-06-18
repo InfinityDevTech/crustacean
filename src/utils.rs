@@ -5,17 +5,28 @@ use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, OwnedStructureProperties, Part, RoomName};
 
-use crate::{config, constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+use crate::{config, constants::{part_costs, PartsCost}, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
+    let mut heap_username = heap().my_username.lock().unwrap();
+    if !heap_username.is_empty() {
+        return heap_username.clone();
+    }
+
     if let Some(first_creep) = game::creeps().values().next() {
+        let user = first_creep.owner().username().to_string();
+
+        heap_username.clone_from(&user);
         return first_creep.owner().username().to_string();
     }
 
     for room in game::rooms().values() {
         if room.controller().is_some() && room.controller().unwrap().my() && room.controller().is_some() && room.controller().unwrap().my() {
-            return room.controller().unwrap().owner().unwrap().username();
+            let user = room.controller().unwrap().owner().unwrap().username().to_string();
+
+            heap_username.clone_from(&user);
+            return user;
         }
     }
 

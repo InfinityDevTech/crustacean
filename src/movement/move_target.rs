@@ -1,6 +1,6 @@
 use log::{info, warn};
 use screeps::{
-    find, pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
+    find, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
 };
 
 use super::utils::visualise_path;
@@ -47,21 +47,30 @@ impl MoveTarget {
         })
             .max_rooms(4)
             .max_ops(2000);
-        let search = pathfinder::search(from, self.pos, self.range, Some(opts));
+        let search = self.pathfind(from, Some(opts));
 
-        if search.incomplete() {
-            //warn!(
-            //    "Incomplete pathfinding search {} {} {}",
-            //    search.ops(),
-            //    search.cost(),
-            //    self.pos
-            //);
-        }
+        let steps_string = self.serialize_path(from, search, move_options);
 
+        //visualise_path(steps_string.clone(), from.room_name().to_string(), (from.x().u8() as f32, from.y().u8() as f32));
+        steps_string
+    }
+
+    pub fn pathfind(&mut self, from: Position, opts: Option<SearchOptions<impl FnMut(RoomName) -> MultiRoomCostResult>>) -> SearchResults {
+        pathfinder::search(from, self.pos, self.range, opts)
+    }
+
+    pub fn serialize_path(&mut self, from: Position, search: SearchResults, move_options: MoveOptions) -> String {
         let mut cur_pos = from;
         let positions = search.path();
         let mut steps = Vec::with_capacity(positions.len());
+
+        let path_age = move_options.path_age as usize;
+
         for pos in positions {
+            if steps.len() >= path_age {
+                break;
+            }
+
             if pos.room_name() == cur_pos.room_name() {
                 match pos.get_direction_to(cur_pos) {
                     Some(dir) => {
@@ -77,6 +86,7 @@ impl MoveTarget {
         }
         let mut steps_string = "".to_string();
         let steps = &steps[0..std::cmp::min(steps.len(), move_options.path_age as usize)];
+
         for dirint in steps {
             let int = *dirint as u8;
             let intstring = int.to_string();
@@ -84,7 +94,6 @@ impl MoveTarget {
             steps_string = steps_string + &intstring;
         }
 
-        //visualise_path(steps_string.clone(), from.room_name().to_string(), (from.x().u8() as f32, from.y().u8() as f32));
         steps_string
     }
 }

@@ -118,7 +118,10 @@ pub fn game_loop() {
     }
 
     decay_hate(&mut memory);
-    visualise_scouted_rooms(&mut memory);
+
+    if config::VISUALISE_SCOUTING_DATA {
+        visualise_scouted_rooms(&mut memory);
+    }
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
 

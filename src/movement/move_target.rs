@@ -123,6 +123,12 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
 
         for csite in constructions {
             let pos = csite.pos();
+
+            if !csite.my() {
+                matrix.set(pos.xy(), 2);
+                continue;
+            }
+
             match csite.structure_type() {
                 StructureType::Container => matrix.set(pos.xy(), 2),
                 StructureType::Rampart => matrix.set(pos.xy(), 2),

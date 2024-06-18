@@ -27,7 +27,6 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     if let Some(order) = &creep_memory.hauling_task.clone() {
         let _ = creep.say("EXEC", false);
 
-        let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
         if execute_order(
             creep,
             creep_memory,
@@ -63,28 +62,26 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 
     if creep.store().get_free_capacity(None) == 0 {
-        let mem = memory.creeps.get_mut(&creep_name).unwrap();
-        if mem.needs_energy.is_none() { return }
-        mem.needs_energy = None;
-        mem.path = None;
+        if creep_memory.needs_energy.is_none() { return }
+        creep_memory.needs_energy = None;
+        creep_memory.path = None;
 
-        if mem.hauling_task.is_some() {
-            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap().heap_cache.hauling.reserved_orders.remove(&mem.hauling_task.as_ref().unwrap().target_id);
+        if creep_memory.hauling_task.is_some() {
+            cache.rooms.get_mut(&creep_memory.owning_room).unwrap().heap_cache.hauling.reserved_orders.remove(&creep_memory.hauling_task.as_ref().unwrap().target_id);
 
-            mem.hauling_task = None;
+            creep_memory.hauling_task = None;
         }
     }
 
     if creep.store().get_used_capacity(None) == 0 {
-        let mem = memory.creeps.get_mut(&creep_name).unwrap();
-        if mem.needs_energy.is_some() { return }
-        mem.needs_energy = Some(true);
-        mem.path = None;
+        if creep_memory.needs_energy.is_some() { return }
+        creep_memory.needs_energy = Some(true);
+        creep_memory.path = None;
 
-        if mem.hauling_task.is_some() {
-            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap().heap_cache.hauling.reserved_orders.remove(&mem.hauling_task.as_ref().unwrap().target_id);
+        if creep_memory.hauling_task.is_some() {
+            cache.rooms.get_mut(&creep_memory.owning_room).unwrap().heap_cache.hauling.reserved_orders.remove(&creep_memory.hauling_task.as_ref().unwrap().target_id);
 
-            mem.hauling_task = None;
+            creep_memory.hauling_task = None;
         }
     }
 }
@@ -246,7 +243,7 @@ pub fn execute_order(
                 let _ = creep.suicide();
             },
             _ => {
-                let _ = creep.say("UNKNWN", false);
+                let _ = creep.say(&format!("{:?}", result.err().unwrap()), false);
                 creep_memory.path = None;
                 creep_memory.hauling_task = None;
             }

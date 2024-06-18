@@ -1,4 +1,4 @@
-use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties, StructureObject};
+use screeps::{ConstructionSite, Creep, HasPosition, Part, Position, ResourceType, RoomCoordinate, SharedCreepProperties, StructureObject};
 
 use crate::{
     memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::{self, tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}}, traits::creep::CreepExtensions
@@ -9,7 +9,7 @@ use super::hauler::execute_order;
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room);
+    let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name());
     if cached_room.is_none() {
         return;
     }
@@ -24,6 +24,9 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let _ = creep.say("📋", false);
         find_energy(creep, memory, cache);
+    } else if creep.room().unwrap().name() != creep_memory.owning_room {
+        let _ = creep.say("🚚", false);
+        creep.better_move_to(creep_memory, cached_room, Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), creep_memory.owning_room), 23, MoveOptions::default());
     } else {
         build(creep, creep_memory, cached_room)
     }

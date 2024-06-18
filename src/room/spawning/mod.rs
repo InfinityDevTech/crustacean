@@ -1,7 +1,7 @@
 use std::cmp::{self, min};
 
 use log::info;
-use screeps::{find, game, Part, Room};
+use screeps::{find, game, Part, Room, SharedCreepProperties};
 use spawn_manager::SpawnManager;
 
 use crate::{
@@ -62,9 +62,9 @@ pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Sp
         }
 
         if attackers < 4 && !should_spawn_unclaimer {
-            let mut body = vec![Part::Move, Part::Move];
+            let mut body = vec![Part::Move, Part::Move, Part::Heal];
             let max_energy = room.energy_capacity_available();
-            let mut cost = 100;
+            let mut cost = 350;
 
             let mut isnt_potato = false;
 
@@ -235,7 +235,13 @@ pub fn hauler(
     let body = crate::room::spawning::creep_sizing::hauler(room, cache);
     let cost = get_body_cost(&body);
 
-    spawn_manager.create_spawn_request(Role::Hauler, body, priority, cost, None, None);
+    let creepmem = CreepMemory {
+        owning_room: room.name(),
+        needs_energy: Some(true),
+        ..Default::default()
+    };
+
+    spawn_manager.create_spawn_request(Role::Hauler, body, priority, cost, Some(creepmem), None);
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -316,7 +322,7 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) {
     let remotes = cache.rooms.get_mut(&room.name()).unwrap().remotes.clone();
     for remote in remotes {
@@ -340,7 +346,7 @@ pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut Screeps
 
                 let mut priority = 0.0;
 
-                priority += (parts_needed as f64) * 0.75;
+                priority += (parts_needed as f64) * 1.5;
 
                 let index = &cache
                     .resources
@@ -367,27 +373,35 @@ pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut Screeps
             }
         } else {
             let cached_room = cache.rooms.get_mut(&room.name()).unwrap();
-            let role_count = cached_room
+            let existing_physical_observers = cached_room
                 .creeps
                 .creeps_of_role
-                .get(&Role::PhysicalObserver)
-                .unwrap_or(&Vec::new())
-                .len();
+                .get(&Role::PhysicalObserver);
 
-            if role_count > 2 {
-                return;
+            if let Some(existing_observers) = existing_physical_observers {
+                for existing_observer in existing_observers.iter() {
+                    let creep = game::creeps().get(existing_observer.to_string()).unwrap();
+                    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
+                    if creep_memory.scout_target.is_none() || creep.room().unwrap().name() == creep_memory.scout_target.unwrap() {
+                        creep_memory.scout_target = Some(remote);
+
+                        return;
+                    }
+                }
+            } else {
+
+                let body = vec![Part::Move];
+                let cost = get_body_cost(&body);
+
+                let creep_memory = CreepMemory {
+                    owning_room: room.name(),
+                    scout_target: Some(remote),
+                    ..Default::default()
+                };
+
+                spawn_manager.create_spawn_request(Role::PhysicalObserver, body, 10.0, cost, Some(creep_memory), None);
             }
-
-            let body = vec![Part::Move];
-            let cost = get_body_cost(&body);
-
-            let creep_memory = CreepMemory {
-                owning_room: room.name(),
-                scout_target: Some(remote),
-                ..Default::default()
-            };
-
-            spawn_manager.create_spawn_request(Role::PhysicalObserver, body, 4.0, cost, Some(creep_memory), None);
         }
     }
 }

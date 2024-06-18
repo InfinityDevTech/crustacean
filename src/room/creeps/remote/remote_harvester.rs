@@ -18,14 +18,13 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
     if let Some(remote_room) = memory.creeps.get(&creep.name()).unwrap().owning_remote {
 
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+        cache.rooms.get_mut(&remote_room).unwrap().resources.sources[creep_memory.task_id.unwrap() as usize].creeps.push(creep.try_id().unwrap());
         let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
         if creep_memory.task_id.is_none() {
             let _ = creep.say("kurt kob", true);
             return;
         }
-
-        room_cache.resources.sources[creep_memory.task_id.unwrap() as usize].creeps.push(creep.try_id().unwrap());
 
         if creep.room().unwrap().name() != remote_room {
             let _ = creep.say("🚚", false);

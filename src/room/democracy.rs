@@ -27,8 +27,11 @@ use super::{
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let starting_cpu = game::cpu::get_used();
 
-    visualise_room_visual(&room.name());
+    if !room.my() && game::cpu::bucket() < 1000 {
+        info!("[{}] Skipping execution, bucket is too low...", room.name());
+    }
 
+    visualise_room_visual(&room.name());
     // Caches various things, like resources
     // Caches structures and other creep things
     cache.create_if_not_exists(&room, memory, None);
@@ -113,7 +116,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
     // Match these haulers to their tasks, that way we can run them
-    room_cache.hauling.match_haulers(memory, &room.name());
+    //room_cache.hauling.match_haulers(memory, &room.name());
 
     let start = game::cpu::get_used();
     traffic::run_movement(room_cache);

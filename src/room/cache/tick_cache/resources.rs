@@ -239,7 +239,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
                     container.store().get_free_capacity(None) as u32,
                     container.store().get_used_capacity(None),
                     HaulingPriority::Energy,
-                    true
+                    false
                 );
 
                 owning_room.resources.total_energy += container.store().get_used_capacity(None);

@@ -4,7 +4,7 @@ use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::{segment_ids, SegmentIDs};
-use room::{cache::{self, tick_cache::RoomCache}, spawning, visuals::visualise_scouted_rooms};
+use room::{cache::{self, tick_cache::{hauling, RoomCache}}, spawning, visuals::visualise_scouted_rooms};
 use screeps::{find, game, IntershardResourceType, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
@@ -102,6 +102,9 @@ pub fn game_loop() {
         // Run spawns
         // TODO: Tune the better spawn implementation
         spawning::handle_spawning(&game_room, &mut cache, &mut memory);
+
+        let room_cache = cache.rooms.get_mut(room).unwrap();
+        hauling::match_haulers(&mut cache, &mut memory, room);
     }
     memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu;
 

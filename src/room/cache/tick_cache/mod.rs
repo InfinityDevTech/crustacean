@@ -70,7 +70,7 @@ impl CachedRoom {
 
         let mut room_cache = heap().rooms.lock().unwrap();
 
-        let mut room_heap = room_cache.remove(&room.name_str()).unwrap_or_else(|| {
+        let mut room_heap = room_cache.remove(&room.name()).unwrap_or_else(|| {
             RoomHeapCache::new(room)
         });
 
@@ -120,6 +120,6 @@ impl CachedRoom {
     pub fn write_cache_to_heap(&self, room: &Room) {
         let mut heap_cache = heap().rooms.lock().unwrap();
 
-        heap_cache.insert(room.name_str(), self.heap_cache.clone());
+        heap_cache.insert(room.name(), self.heap_cache.clone());
     }
 }

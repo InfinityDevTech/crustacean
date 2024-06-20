@@ -1,4 +1,4 @@
-use screeps::{HasId, ResourceType, Room};
+use screeps::{HasId, ResourceType, Room, StructureProperties};
 
 use crate::utils::scale_haul_priority;
 
@@ -17,8 +17,9 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
 
             cached_room.hauling.create_order(
                 tower.raw_id(),
+                Some(tower.structure_type()),
                 Some(ResourceType::Energy),
-                    Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
+                Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
                 priority,
                 HaulingType::Transfer,
             );

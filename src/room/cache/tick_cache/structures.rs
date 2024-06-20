@@ -112,10 +112,6 @@ impl RoomStructureCache {
     }
 
     pub fn refresh_ruin_cache(&mut self, room: &Room) {
-        //if game::time() % 100 != 0 {
-        //    return;
-        //}
-
         let ruins = room.find(find::RUINS, None).into_iter();
 
         for ruin in ruins {
@@ -207,16 +203,15 @@ impl RoomStructureCache {
                 }
             });
 
-            let source_containers = self.containers.source_container.get_or_insert_with(|| Vec::new());
+            let source_containers = self.containers.source_container.get_or_insert_with(Vec::new);
             source_containers.extend(found_source_containers);
         }
 
-        if game::time() % 2 == 0 {
-            let tombstones = room.find(find::TOMBSTONES, None).into_iter();
 
-            for tombstone in tombstones {
-                self.tombstones.insert(tombstone.id(), tombstone);
-            }
+        let tombstones = room.find(find::TOMBSTONES, None);
+
+        for tombstone in tombstones {
+            self.tombstones.insert(tombstone.id(), tombstone);
         }
     }
 

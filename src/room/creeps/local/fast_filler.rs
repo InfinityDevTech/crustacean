@@ -47,6 +47,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 
             cached_room.hauling.create_order(
                 creep.try_raw_id().unwrap(),
+                None,
                 Some(ResourceType::Energy),
                 Some(creep.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
                 priority,

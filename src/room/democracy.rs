@@ -52,6 +52,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             resources::haul_dropped_resources(cached_room);
             hauling::haul_extensions(cached_room);
             hauling::haul_ruins(cached_room);
+            hauling::haul_tombstones(cached_room);
             hauling::haul_storage(cached_room);
             hauling::haul_spawn(cached_room);
 

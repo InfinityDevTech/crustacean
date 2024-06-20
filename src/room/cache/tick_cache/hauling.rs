@@ -3,8 +3,7 @@ use std::{collections::HashMap, ops::Div};
 use log::{info, warn};
 use rust_decimal::Decimal;
 use screeps::{
-    creep, game, CircleStyle, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType,
-    RoomName, RoomVisual, SharedCreepProperties, TextStyle,
+    creep, game, CircleStyle, Creep, HasId, HasPosition, Position, RawObjectId, ResourceType, RoomName, RoomVisual, SharedCreepProperties, StructureProperties, StructureType, TextStyle
 };
 use serde::{Deserialize, Serialize};
 
@@ -16,24 +15,26 @@ use crate::{
             hauling::{self, HeapHaulingReservation},
             RoomHeapCache,
         },
-        creeps::local::hauler::execute_order,
+        creeps::local::{base_hauler, hauler::execute_order},
     },
-    utils::scale_haul_priority,
+    utils::{name_to_role, scale_haul_priority},
 };
 
 use super::{CachedRoom, RoomCache};
 
+// Priorities are 1:1 now.
+// No more fucking decimal scaling. Im amazed marvin can do it.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum HaulingPriority {
     Combat = 0,
-    Emergency = 1,
-    FastFillerContainer = 2,
+    Emergency = 20,
+    FastFillerContainer = 70,
     Spawning = 5,
     Ruins = 30,
     Energy = 40,
-    Upgrading = 100,
+    Upgrading = 85,
     Minerals = 90,
-    Market = 101,
+    Market = 102,
     Storage = 110,
 }
 
@@ -49,6 +50,7 @@ pub enum HaulingType {
 pub struct RoomHaulingOrder {
     pub id: u32,
     pub target: RawObjectId,
+    pub target_type: Option<StructureType>,
     pub resource: Option<ResourceType>,
     pub amount: Option<u32>,
     pub priority: f32,
@@ -121,7 +123,7 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -151,6 +153,7 @@ impl HaulingCache {
     pub fn create_order(
         &mut self,
         target: RawObjectId,
+        target_type: Option<StructureType>,
         resource: Option<ResourceType>,
         amount: Option<u32>,
         priority: f32,
@@ -163,9 +166,11 @@ impl HaulingCache {
         let mut order = RoomHaulingOrder {
             id,
             target,
+            target_type,
             resource,
             amount,
-            priority: decimal.round_dp(2).try_into().unwrap(),
+            //priority: decimal.round_dp(2).try_into().unwrap(),
+            priority: priority.round(),
             haul_type,
         };
 
@@ -224,8 +229,6 @@ impl HaulingCache {
             );
         }
 
-        info!("Order Prio: {:?}", order.priority);
-
         self.new_orders.insert(id, order);
     }
 }
@@ -247,30 +250,24 @@ pub fn match_haulers(cache: &mut RoomCache, memory: &mut ScreepsMemory, room_nam
         let mut top_scorer = None;
         let mut top_score = f32::MAX;
 
+        let role = name_to_role(&hauler.creep_name);
+
         for order in hauling_cache.new_orders.values() {
-            if order.priority >= 500.0 {
-                info!("Storage order {:?}", order);
+            if order.target_type == Some(StructureType::Storage) && hauler.haul_type.contains(&HaulingType::Offer) && role == Some(Role::Hauler) {
+                continue;
             }
+
             if let Some(resource_type) = hauler.resource_type {
                 if order.resource.unwrap_or(ResourceType::Energy) != resource_type {
-                    if order.priority == 500.0 {
-                        info!("Order {:?} != {:?}", order.resource.unwrap_or(ResourceType::Energy), resource_type);
-                    }
                     continue;
                 }
             }
 
             if !hauler.haul_type.contains(&order.haul_type) {
-                if order.priority == 500.0 {
-                    info!("Order {:?} != {:?}", order.haul_type, hauler.haul_type);
-                }
                 continue;
             }
 
-            info!("Checking order {:?}", order.amount);
             let score = score_couple(order, &game_creep);
-
-            info!("Score is {}", score);
 
             if score < top_score {
                 top_scorer = Some(order);
@@ -451,6 +448,7 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
 
         room_cache.hauling.create_order(
             spawn.raw_id(),
+            Some(spawn.structure_type()),
             Some(ResourceType::Energy),
             Some(spawn.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
             priority,
@@ -469,6 +467,7 @@ pub fn haul_ruins(room_cache: &mut CachedRoom) {
         if energy_amount > 0 {
             room_cache.hauling.create_order(
                 ruin.raw_id(),
+                None,
                 Some(ResourceType::Energy),
                 Some(ruin.store().get_used_capacity(Some(ResourceType::Energy))),
                 scale_haul_priority(
@@ -485,8 +484,41 @@ pub fn haul_ruins(room_cache: &mut CachedRoom) {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn haul_tombstones(room_cache: &mut CachedRoom) {
+    let tombstones = &room_cache.structures.tombstones;
+
+    for tombstone in tombstones.values() {
+        let energy_amount = tombstone.store().get_used_capacity(Some(ResourceType::Energy));
+
+        if energy_amount > 0 {
+            room_cache.hauling.create_order(
+                tombstone.raw_id(),
+                None,
+                Some(ResourceType::Energy),
+                Some(tombstone.store().get_used_capacity(Some(ResourceType::Energy))),
+                scale_haul_priority(
+                    tombstone.store().get_capacity(None),
+                    energy_amount,
+                    HaulingPriority::Ruins,
+                    false,
+                ),
+                HaulingType::Offer,
+            );
+            return;
+        }
+    }
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_storage(room_cache: &mut CachedRoom) {
     let storage = &room_cache.structures.storage;
+    let base_hauler_count = room_cache.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+
+    let priority = if base_hauler_count >= 1 {
+        100.0
+    } else {
+        10000.0
+    };
 
     if let Some(storage) = storage {
         if storage
@@ -505,23 +537,28 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
 
             room_cache.hauling.create_order(
                 storage.raw_id(),
+                Some(storage.structure_type()),
                 Some(ResourceType::Energy),
                 Some(
                     storage
                         .store()
                         .get_used_capacity(Some(ResourceType::Energy)),
                 ),
-                priority + 4.0,
+                priority + 7.0,
                 HaulingType::Offer,
             )
         }
 
+        let fill_percent = (storage.store().get_used_capacity(None) as f32
+            / storage.store().get_capacity(None) as f32) * 100.0;
+
         if storage.store().get_free_capacity(None) > 0 {
             room_cache.hauling.create_order(
                 storage.raw_id(),
+                Some(storage.structure_type()),
                 None,
                 Some(storage.store().get_free_capacity(None).try_into().unwrap()),
-                10000.0,
+                priority - fill_percent,
                 HaulingType::Transfer,
             )
         }
@@ -530,6 +567,12 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_extensions(room_cache: &mut CachedRoom) {
+    let base_hauler_count = room_cache.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+
+    if base_hauler_count >= 1 {
+        return;
+    }
+
     for source in room_cache.structures.extensions.values() {
         if source.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
             let priority = scale_haul_priority(
@@ -541,6 +584,7 @@ pub fn haul_extensions(room_cache: &mut CachedRoom) {
 
             room_cache.hauling.create_order(
                 source.raw_id(),
+                Some(source.structure_type()),
                 Some(ResourceType::Energy),
                 Some(
                     source

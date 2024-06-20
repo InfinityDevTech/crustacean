@@ -28,6 +28,7 @@ pub enum Role {
     // Mining industry
     Miner,
     Hauler,
+    BaseHauler,
     FastFiller,
     RemoteHarvester,
     // Construction industry

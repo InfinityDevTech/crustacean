@@ -22,6 +22,7 @@ pub fn handle_spawning(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsM
 
     miner(room, room_cache, &mut spawn_manager);
     hauler(room, room_cache, &mut spawn_manager, memory);
+    base_hauler(room, room_cache, &mut spawn_manager, memory);
     fast_filler(room, room_cache, &mut spawn_manager);
     flag_attacker(room, room_cache, &mut spawn_manager);
     builder(room, room_cache, &mut spawn_manager);
@@ -152,7 +153,12 @@ pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMan
         return;
     }
 
-    let desired_work_parts = cmp::max(construction_sites / 3, 12);
+    let mut desired_work_parts = cmp::max(construction_sites / 3, 12);
+
+    if desired_work_parts < 3 {
+        desired_work_parts = 3;
+    }
+
     if building_work_parts as usize >= desired_work_parts {
         return;
     }
@@ -244,6 +250,53 @@ pub fn hauler(
     spawn_manager.create_spawn_request(Role::Hauler, body, priority, cost, Some(creepmem), None);
 }
 
+pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager, memory: &mut ScreepsMemory) {
+    let current_bh_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::BaseHauler)
+        .unwrap_or(&Vec::new())
+        .len();
+
+    let required_bh_bount = match room.controller().unwrap().level() {
+        1 => 0,
+        2 => 1,
+        3 => 1,
+        4 => 1,
+        5 => 1,
+        6 => 1,
+        7 => 1,
+        8 => 1,
+        _ => 1,
+    };
+
+    if current_bh_count >= required_bh_bount {
+        return;
+    }
+
+    let max_energy = room.energy_capacity_available();
+    let mut body = vec![Part::Move, Part::Carry];
+    let mut cost = 100;
+
+    while cost < max_energy {
+        if cost + 100 > max_energy {
+            break;
+        }
+
+        body.push(Part::Move);
+        body.push(Part::Carry);
+        cost += 100;
+    }
+
+    let creep_memory = CreepMemory {
+        owning_room: room.name(),
+        role: Role::BaseHauler,
+        ..Default::default()
+    };
+
+    spawn_manager.create_spawn_request(Role::BaseHauler, body, 500.0, cost, Some(creep_memory), None);
+}
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fast_filler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
     let fast_filler_count = cache
@@ -322,7 +375,7 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) {
     let remotes = cache.rooms.get_mut(&room.name()).unwrap().remotes.clone();
     for remote in remotes {

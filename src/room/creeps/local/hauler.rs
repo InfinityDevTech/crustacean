@@ -44,8 +44,12 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
             if creep.store().get_free_capacity(None) == 0 {
                 creep_memory.needs_energy = None;
+                creep_memory.hauling_task = None;
+                creep_memory.path = None;
             } else if creep.store().get_used_capacity(None) == 0 {
                 creep_memory.needs_energy = Some(true);
+                creep_memory.hauling_task = None;
+                creep_memory.path = None;
             }
 
             run_hauler(creep, memory, cache);

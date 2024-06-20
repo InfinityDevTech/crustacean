@@ -18,7 +18,7 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 
     let controller = cached_room.structures.controller.as_ref().unwrap();
 
-    if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+    if (creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5) {
         let container = &controller.container;
         if let Some(container) = container {
 
@@ -27,6 +27,10 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
                 return;
             } else {
                 let _ = creep.withdraw(container, ResourceType::Energy, None);
+
+                // This is dumb as hell, I can harvest and transfer in the same tick.
+                // But I cant upgrade and withdraw in the same tick.
+                //return;
             }
 
         } else {
@@ -37,7 +41,7 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
                 true
             );
 
-            cached_room.hauling.create_order(creep.try_raw_id().unwrap(), Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
+            cached_room.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
         }
     }
 

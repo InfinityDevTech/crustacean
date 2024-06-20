@@ -7,7 +7,7 @@ use screeps::{game, OwnedStructureProperties, Part, RoomName};
 
 use crate::{config, constants::{part_costs, PartsCost}, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
     let mut heap_username = heap().my_username.lock().unwrap();
     if !heap_username.is_empty() {
@@ -77,6 +77,7 @@ pub fn role_to_name(role: Role) -> String {
     let data = match role {
         Role::Miner => "sm",
         Role::Hauler => "mb",
+        Role::BaseHauler => "bh",
         Role::Upgrader => "ud",
         Role::Builder => "bd",
         Role::Scout => "fg",
@@ -100,6 +101,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     match role_tag {
         "sm" => { Some(Role::Miner) },
         "mb" => { Some(Role::Hauler) },
+        "bh" => { Some(Role::BaseHauler) },
         "ud" => { Some(Role::Upgrader) },
         "bd" => { Some(Role::Builder) },
         "fg" => { Some(Role::Scout) },

@@ -27,11 +27,9 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
         parts.push(Part::Work);
         parts.push(Part::Move);
 
-        let initial_cost = current_cost;
-
         while current_cost < max_energy {
             if work_part_count % 2 == 0 {
-                if current_cost + cost_of_stamp > max_energy {
+                if current_cost + cost_of_stamp > max_energy || work_part_count >= source_parts_needed {
                     break;
                 }
 
@@ -43,7 +41,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
             } else {
 
                 let cost = part_costs()[PartsCost::Work];
-                if current_cost + cost > max_energy {
+                if current_cost + cost > max_energy || work_part_count >= source_parts_needed {
                     break;
                 }
 
@@ -75,6 +73,12 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
 
                 work_part_count += 1;
             } else {
+
+                let cost = part_costs()[PartsCost::Work];
+                if current_cost + cost > max_energy || work_part_count >= source_parts_needed {
+                    break;
+                }
+
                 parts.push(Part::Work);
                 current_cost += part_costs()[PartsCost::Work];
 

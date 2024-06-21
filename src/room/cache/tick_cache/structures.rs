@@ -150,7 +150,8 @@ impl RoomStructureCache {
             if let Some(repairable) = structure.as_repairable() {
                 let max = if structure.structure_type() == StructureType::Rampart {
                     let controller = self.controller.as_ref().unwrap().controller.clone();
-                    get_rampart_repair_rcl(controller.level())
+                    //get_rampart_repair_rcl(controller.level())
+                    100_000
                 } else {
                     repairable.hits_max()
                 };

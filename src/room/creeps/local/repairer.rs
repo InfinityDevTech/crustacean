@@ -36,8 +36,9 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
             repairable.hits_max()
         };
 
-        // Repair it above the added 10% so we don't have to keep repairing it.
-        if repairable.hits() as f32 >= (max as f32) * 1.1 {
+        // Repair ramparts to 110% of our RCL max, just to avoid repairing them every 3 seconds
+        // Other structures, 100%
+        if ( repairable.structure_type() == StructureType::Rampart && repairable.hits() as f32 >= (max as f32) * 1.1) || ( repairable.structure_type() != StructureType::Rampart && repairable.hits() as f32 >= max as f32) {
             creep_memory.repair_target = None;
             creep_memory.path = None;
             return;

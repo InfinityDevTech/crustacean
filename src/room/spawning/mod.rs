@@ -156,6 +156,8 @@ pub fn repairer(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMa
         desired_repair_parts = 3;
     }
 
+    info!("Repairer parts: {} Desired: {} - Parts: {}", repairing_work_parts, desired_repair_parts, repair_sites);
+
     if repairing_work_parts >= desired_repair_parts as u32 {
         return;
     }
@@ -214,7 +216,8 @@ pub fn upgrader(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMa
     spawn_manager.create_spawn_request(Role::Upgrader, body, 4.0, cost, None, None);
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+// TODO: Math this shit! Make it better!
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn hauler(
     room: &Room,
     cache: &mut CachedRoom,
@@ -241,7 +244,7 @@ pub fn hauler(
 
     let energy_in_room = cache.resources.energy_in_storing_structures + dropped_count;
 
-    let haulers_to_make = if energy_in_room > 500000 {
+    /*let haulers_to_make = if energy_in_room > 500000 {
         energy_in_room / 100000
     } else if energy_in_room > 100000 {
         energy_in_room / 25000
@@ -257,7 +260,21 @@ pub fn hauler(
         } else {
             count
         }
+    };*/
+
+    let haulers_to_make = match cache.structures.controller.as_ref().unwrap().controller.level() {
+        1 => 6,
+        2 => 12,
+        3 => 16,
+        4 => 12,
+        5 => 10,
+        6 => 10,
+        7 => 10,
+        8 => 6,
+        _ => 6,
     };
+
+    info!("Haulers to make: {} - Current count: {}", haulers_to_make, current_hauler_count);
 
     if current_hauler_count as u32 >= haulers_to_make {
         return;

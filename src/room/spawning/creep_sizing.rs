@@ -101,10 +101,12 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     let stamp_cost = part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
 
+    let max_parts = 25;
+
     if hauler_count > 3 {
         let mut current_cost = stamp_cost;
         body.push(Part::Move);
-        body.push(Part::Carry);
+        body.push(Part::Move);
 
         while current_cost < max_capable {
             if current_cost + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry] > max_capable {
@@ -114,11 +116,15 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
             body.push(Part::Move);
             body.push(Part::Carry);
             current_cost += stamp_cost;
+
+            if body.len() >= max_parts {
+                break;
+            }
         }
     } else {
         let mut current_cost = stamp_cost;
         body.push(Part::Move);
-        body.push(Part::Carry);
+        body.push(Part::Move);
 
         while current_cost < currently_capable {
             if current_cost + stamp_cost > currently_capable {
@@ -128,6 +134,10 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
             body.push(Part::Move);
             body.push(Part::Carry);
             current_cost += stamp_cost;
+
+            if body.len() >= max_parts {
+                break;
+            }
         }
     }
 
@@ -169,7 +179,7 @@ pub fn repairer(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let max_capable = room.energy_capacity_available();
 
     let mut current_cost = part_costs()[PartsCost::Move] * 2;
-    let mut work_part_count = 0;
+    let mut part_count = 25;
     parts.push(Part::Move);
     parts.push(Part::Move);
 
@@ -181,8 +191,11 @@ pub fn repairer(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         parts.push(Part::Work);
         parts.push(Part::Move);
         parts.push(Part::Carry);
-        work_part_count += 1;
         current_cost += stamp_cost;
+
+        if parts.len() >= part_count {
+            break;
+        }
     }
 
     parts

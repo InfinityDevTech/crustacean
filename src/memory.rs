@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, StructureContainer, StructureLink};
+use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, Structure, StructureContainer, StructureLink, StructureObject};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -28,6 +28,7 @@ pub enum Role {
     // Mining industry
     Miner,
     Hauler,
+    Repairer,
     BaseHauler,
     FastFiller,
     RemoteHarvester,
@@ -87,11 +88,11 @@ pub struct CreepMemory{
     pub task_id: Option<u128>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "7")]
+    #[serde(rename = "8")]
     pub scout_target: Option<RoomName>,
     // The hauling task if a creep is a hauler.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "8")]
+    #[serde(rename = "9")]
     pub hauling_task: Option<pub struct CreepHaulTask {
         #[serde(rename = "0")]
         pub target_id: RawObjectId,
@@ -105,6 +106,12 @@ pub struct CreepMemory{
         #[serde(rename = "4")]
         pub amount: Option<u32>,
     }>,
+
+    // Role specific memory ----------
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "19")]
+    pub repair_target: Option<ObjectId<Structure>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "20")]
@@ -127,6 +134,7 @@ pub struct RoomMemory{
 }
 }
 
+// Remote Room memory
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct RemoteRoomMemory {
@@ -375,6 +383,8 @@ impl Default for CreepMemory {
             link_id: None,
             fastfiller_container: None,
             task_id: None,
+
+            repair_target: None,
             scout_target: None,
             hauling_task: None,
             is_recycling: None,

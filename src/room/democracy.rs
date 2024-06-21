@@ -16,11 +16,10 @@ use crate::{
 };
 
 use super::{
-    cache::{self, tick_cache::CachedRoom},
-    planning::room::construction::{
+    cache::{self, tick_cache::CachedRoom}, links, planning::room::{self, construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
-        }, visuals::visualise_room_visual,
+        }}, visuals::visualise_room_visual
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -55,6 +54,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             hauling::haul_tombstones(cached_room);
             hauling::haul_storage(cached_room);
             hauling::haul_spawn(cached_room);
+
+            links::balance_links(&room, cached_room);
 
             // Run creeps and other structures
             // Does NOT run haulers, as they need to be done last
@@ -178,6 +179,36 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
 
     if game::cpu::bucket() < 500 {
         return;
+    }
+
+    if game::cpu::bucket() > 1000 && game::time() % 1000 == 0 {
+        let stuffs = get_roads_and_ramparts();
+
+        let offset_x = room_cache
+                .structures
+                .spawns
+                .values()
+                .next()
+                .unwrap()
+                .pos()
+                .x();
+            let offset_y = room_cache
+                .structures
+                .spawns
+                .values()
+                .next()
+                .unwrap()
+                .pos()
+                .y();
+
+        for structure in stuffs {
+            let pos = RoomPosition::new(
+                structure.0 as u8 + offset_x.u8(),
+                structure.1 as u8 + offset_y.u8(),
+                room.name(),
+            );
+            let _ = room.create_construction_site(pos.x(), pos.y(), structure.2, None);
+        }
     }
 
     if !memory.rooms.get(&room.name()).unwrap().planned

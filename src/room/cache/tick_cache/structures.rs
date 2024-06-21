@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureRoad, StructureSpawn, StructureStorage, StructureTower, Tombstone
+    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureProperties, StructureRoad, StructureSpawn, StructureStorage, StructureTower, StructureType, Tombstone
 };
 
-use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
+use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::get_rampart_repair_rcl};
 
 use super::resources::RoomResourceCache;
 
@@ -32,6 +32,25 @@ impl CachedRoomContainers {
 }
 
 #[derive(Debug, Clone)]
+pub struct CachedRoomLinks {
+    pub controller: Option<StructureLink>,
+    pub fast_filler: Option<StructureLink>,
+    pub source: Option<Vec<StructureLink>>,
+    pub storage: Option<StructureLink>,
+}
+
+impl CachedRoomLinks {
+    pub fn new() -> Self {
+        CachedRoomLinks {
+            controller: None,
+            fast_filler: None,
+            source: None,
+            storage: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct RoomStructureCache {
     pub all_structures: Vec<StructureObject>,
     pub construction_sites: Vec<ConstructionSite>,
@@ -43,6 +62,7 @@ pub struct RoomStructureCache {
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
     pub containers: CachedRoomContainers,
+    pub links: CachedRoomLinks,
 
     pub controller: Option<CachedController>,
     pub storage: Option<StructureStorage>,
@@ -51,11 +71,10 @@ pub struct RoomStructureCache {
     pub terrain: LocalRoomTerrain,
     pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
 
-    pub links: HashMap<ObjectId<StructureLink>, StructureLink>,
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,
@@ -73,6 +92,7 @@ impl RoomStructureCache {
             towers: HashMap::new(),
             spawns: HashMap::new(),
             containers: CachedRoomContainers::new(),
+            links: CachedRoomLinks::new(),
 
             controller: None,
             storage: None,
@@ -81,7 +101,6 @@ impl RoomStructureCache {
             terrain: LocalRoomTerrain::from(room.get_terrain()),
             roads: HashMap::new(),
 
-            links: HashMap::new(),
             extensions: HashMap::new(),
         };
 
@@ -123,12 +142,20 @@ impl RoomStructureCache {
         let structures = room.find(find::STRUCTURES, None).into_iter();
 
         let mut my_containers = Vec::new();
+        let mut my_links = Vec::new();
 
         for structure in structures {
             self.all_structures.push(structure.clone());
 
             if let Some(repairable) = structure.as_repairable() {
-                if repairable.hits() < repairable.hits_max() {
+                let max = if structure.structure_type() == StructureType::Rampart {
+                    let controller = self.controller.as_ref().unwrap().controller.clone();
+                    get_rampart_repair_rcl(controller.level())
+                } else {
+                    repairable.hits_max()
+                };
+
+                if repairable.hits() < max {
                     self.needs_repair.push(structure.clone());
                 }
             }
@@ -152,7 +179,7 @@ impl RoomStructureCache {
                     }
                     resource_cache.energy_in_storing_structures += link.store().get_used_capacity(Some(ResourceType::Energy));
 
-                    self.links.insert(link.id(), link);
+                    my_links.push(link);
                 }
                 StructureObject::StructureRoad(road) => {
                     self.roads.insert(road.id(), road);
@@ -207,6 +234,40 @@ impl RoomStructureCache {
             source_containers.extend(found_source_containers);
         }
 
+        for link in my_links {
+            if let Some(controller) = &self.controller {
+                if link.pos().get_range_to(controller.controller.pos()) <= 2 {
+                    self.links.controller = Some(link);
+                    continue;
+                }
+            }
+
+            if let Some(spawn) = self.spawns.values().next() {
+                let xy = unsafe { RoomXY::unchecked_new(spawn.pos().x().u8(), spawn.pos().y().u8() - 1) };
+                if link.pos().xy() == xy {
+                    self.links.fast_filler = Some(link);
+                    continue;
+                }
+            }
+
+            if let Some(storage) = &self.storage {
+                if link.pos().get_range_to(storage.pos()) <= 2 {
+                    self.links.storage = Some(link);
+                    continue;
+                }
+            }
+
+            let found_source_containers = resource_cache.sources.iter().filter_map(|source| {
+                if link.pos().get_range_to(game::get_object_by_id_typed(&source.id).unwrap().pos()) <= 2 {
+                    Some(link.clone())
+                } else {
+                    None
+                }
+            });
+
+            let source_containers = self.links.source.get_or_insert_with(Vec::new);
+            source_containers.extend(found_source_containers);
+        }
 
         let tombstones = room.find(find::TOMBSTONES, None);
 

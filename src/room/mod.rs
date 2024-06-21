@@ -4,5 +4,6 @@ pub mod creeps;
 pub mod tower;
 pub mod planning;
 pub mod cache;
+pub mod links;
 pub mod visuals;
 pub mod spawning;

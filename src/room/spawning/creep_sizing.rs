@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Part, Room};
+use screeps::{game, Part, Room, SharedCreepProperties};
 
 use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom};
 
@@ -161,6 +161,33 @@ pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     parts
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn repairer(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+    let mut parts = Vec::new();
+
+    let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
+    let max_capable = room.energy_capacity_available();
+
+    let mut current_cost = part_costs()[PartsCost::Move] * 2;
+    let mut work_part_count = 0;
+    parts.push(Part::Move);
+    parts.push(Part::Move);
+
+    while current_cost < max_capable {
+        if current_cost + stamp_cost > max_capable {
+            break;
+        }
+
+        parts.push(Part::Work);
+        parts.push(Part::Move);
+        parts.push(Part::Carry);
+        work_part_count += 1;
+        current_cost += stamp_cost;
+    }
+
+    parts
+}
+
 /// Returns the parts needed for a upgrader creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
@@ -172,16 +199,18 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         2 => 5,
         3 => 12,
         4 => 15,
-        5 => 15,
-        6 => 15,
+        5 => 20,
+        6 => 25,
         7 => 25,
         8 => 5,
         _ => 1,
     };
 
+
     let current_work_parts = cache.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).iter().map(|creep| {
         let creep = game::creeps().get(creep.as_str().to_owned()).unwrap();
         let parts = creep.body().iter().map(|part| part.part()).collect::<Vec<Part>>();
+
         parts.iter().filter(|part| **part == Part::Work).count()
     }).sum::<usize>();
 

@@ -123,7 +123,7 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -216,14 +216,14 @@ impl HaulingCache {
         if order.haul_type == HaulingType::Transfer {
             room_visual.text(
                 position.x().u8() as f32,
-                position.y().u8() as f32,
+                position.y().u8() as f32 - 0.25,
                 format!("T {:.2}", order.priority),
                 Some(TextStyle::default().color("#ff0000")),
             );
         } else {
             room_visual.text(
                 position.x().u8() as f32,
-                position.y().u8() as f32,
+                position.y().u8() as f32 + 0.5,
                 format!("P {:.2}", order.priority),
                 Some(TextStyle::default().color("#00ff00")),
             );
@@ -334,6 +334,7 @@ pub fn match_haulers(cache: &mut RoomCache, memory: &mut ScreepsMemory, room_nam
             haul_type: order.haul_type,
         };
 
+        if order.target_type != Some(StructureType::Storage) {
         if let Some(reserved_order) = cache
             .rooms
             .get_mut(room_name)
@@ -362,6 +363,7 @@ pub fn match_haulers(cache: &mut RoomCache, memory: &mut ScreepsMemory, room_nam
                     },
                 );
         }
+    }
 
         creep_memory.hauling_task = Some(haul_task.clone());
 
@@ -544,13 +546,13 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
                         .store()
                         .get_used_capacity(Some(ResourceType::Energy)),
                 ),
-                priority + 7.0,
+                -5.0,
                 HaulingType::Offer,
             )
         }
 
-        let fill_percent = (storage.store().get_used_capacity(None) as f32
-            / storage.store().get_capacity(None) as f32) * 100.0;
+        let fill_percent = (1.0 - (storage.store().get_used_capacity(None) as f32
+            / storage.store().get_capacity(None) as f32)) * 100.0;
 
         if storage.store().get_free_capacity(None) > 0 {
             room_cache.hauling.create_order(

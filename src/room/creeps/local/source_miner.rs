@@ -8,8 +8,7 @@ use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType},
-        CachedRoom, RoomCache,
+        hauling::{HaulingPriority, HaulingType}, resources::CachedSource, CachedRoom, RoomCache
     },
     traits::creep::CreepExtensions,
     utils::scale_haul_priority,
@@ -75,16 +74,14 @@ pub fn harvest_source(
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &CachedRoom) -> bool {
-    let link_id = creep_memory.link_id;
+fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
+    let link_id = cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_link(&cache.structures);
 
-    if let Some(linkid) = link_id {
-        let link = cache.structures.links.get(&linkid).unwrap();
-
+    if let Some(link) = link_id {
         if creep.pos().is_near_to(link.pos()) {
             let _ = creep.say("🔗", false);
             let _ = creep.transfer(
-                link,
+                &link,
                 ResourceType::Energy,
                 Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
             );

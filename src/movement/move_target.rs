@@ -145,9 +145,7 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
             match structure {
                 StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 2),
                 StructureObject::StructureRampart(rampart) => {
-                    if rampart.my() {
-                        matrix.set(pos.xy(), 2);
-                    } else {
+                    if !rampart.my() {
                         matrix.set(pos.xy(), 255);
                     }
                 }

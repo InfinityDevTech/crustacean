@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::info;
 use screeps::{find, game, Creep, Room, SharedCreepProperties};
 
 use crate::{
@@ -49,6 +50,8 @@ impl CreepCache {
 
         //let mut non_existant_creeps = Vec::new();
 
+        // TODO: This can get very bad very fast. Each room iterating over all creeps in memory, each tick???
+        // BADDDDD
         if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
             for creep_name in &room_memory.creeps.clone() {
                 let creep = game::creeps().get(creep_name.to_string());

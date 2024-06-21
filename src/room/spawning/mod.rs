@@ -26,6 +26,7 @@ pub fn handle_spawning(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsM
     fast_filler(room, room_cache, &mut spawn_manager);
     flag_attacker(room, room_cache, &mut spawn_manager);
     builder(room, room_cache, &mut spawn_manager);
+    repairer(room, room_cache, &mut spawn_manager);
     upgrader(room, room_cache, &mut spawn_manager);
     scout(room, room_cache, &mut spawn_manager);
 
@@ -62,7 +63,7 @@ pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Sp
             return;
         }
 
-        if attackers < 4 && !should_spawn_unclaimer {
+        if attackers < 4 {
             let mut body = vec![Part::Move, Part::Move, Part::Heal];
             let max_energy = room.energy_capacity_available();
             let mut cost = 350;
@@ -137,21 +138,45 @@ pub fn scout(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
     spawn_manager.create_spawn_request(Role::Scout, body, 4.0, cost, None, None);
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn repairer(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+    let repairing_work_parts = cache
+    .creeps
+    .creeps_of_role
+    .get(&Role::Repairer)
+    .unwrap_or(&Vec::new())
+    .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32)
+    .sum::<u32>();
+
+    let repair_sites = cache.structures.needs_repair.len();
+
+    let mut desired_repair_parts = cmp::max(repair_sites / 3, 6);
+
+    if desired_repair_parts < 3 {
+        desired_repair_parts = 3;
+    }
+
+    if repairing_work_parts >= desired_repair_parts as u32 {
+        return;
+    }
+
+    let body = crate::room::spawning::creep_sizing::repairer(room, cache);
+    let cost = get_body_cost(&body);
+
+    spawn_manager.create_spawn_request(Role::Repairer, body, 55.0, cost, None, None);
+}
+
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
     let building_work_parts = cache
         .creeps
         .creeps_of_role
         .get(&Role::Builder)
         .unwrap_or(&Vec::new())
-        .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work).count() as u32)
+        .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32)
         .sum::<u32>();
 
     let construction_sites = cache.structures.construction_sites.len();
-
-    if construction_sites == 0 {
-        return;
-    }
 
     let mut desired_work_parts = cmp::max(construction_sites / 3, 12);
 
@@ -217,7 +242,7 @@ pub fn hauler(
     let energy_in_room = cache.resources.energy_in_storing_structures + dropped_count;
 
     let haulers_to_make = if energy_in_room > 500000 {
-        energy_in_room / 200000
+        energy_in_room / 100000
     } else if energy_in_room > 100000 {
         energy_in_room / 25000
     } else if energy_in_room > 50000 {
@@ -251,11 +276,18 @@ pub fn hauler(
 }
 
 pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager, memory: &mut ScreepsMemory) {
+    let thing_bc_rust_dum = Vec::new();
     let current_bh_count = cache
         .creeps
         .creeps_of_role
         .get(&Role::BaseHauler)
-        .unwrap_or(&Vec::new())
+        .unwrap_or(&thing_bc_rust_dum);
+
+    let hauler_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&thing_bc_rust_dum)
         .len();
 
     let required_bh_bount = match room.controller().unwrap().level() {
@@ -270,11 +302,12 @@ pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Spaw
         _ => 1,
     };
 
-    if current_bh_count >= required_bh_bount {
-        return;
-    }
+    let max_energy = if hauler_count > 0 {
+        room.energy_capacity_available()
+    } else {
+        room.energy_available()
+    };
 
-    let max_energy = room.energy_capacity_available();
     let mut body = vec![Part::Move, Part::Carry];
     let mut cost = 100;
 
@@ -286,6 +319,24 @@ pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Spaw
         body.push(Part::Move);
         body.push(Part::Carry);
         cost += 100;
+    }
+
+    let should_replace = if let Some(existing_bh) = current_bh_count.iter().next() {
+        let creep = game::creeps().get(existing_bh.to_string()).unwrap();
+
+        // Existing BH time to live
+        let ttl = creep.ticks_to_live().unwrap_or(0);
+        // New BH time to spawn
+        let tts = body.len() * 3;
+
+        // If ttl is less than or equal to tts, replace.
+        ttl <= tts as u32
+    } else {
+        true
+    };
+
+    if current_bh_count.len() >= required_bh_bount && !should_replace {
+        return;
     }
 
     let creep_memory = CreepMemory {

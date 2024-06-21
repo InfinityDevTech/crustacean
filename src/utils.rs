@@ -77,6 +77,7 @@ pub fn role_to_name(role: Role) -> String {
     let data = match role {
         Role::Miner => "sm",
         Role::Hauler => "mb",
+        Role::Repairer => "rb",
         Role::BaseHauler => "bh",
         Role::Upgrader => "ud",
         Role::Builder => "bd",
@@ -101,6 +102,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     match role_tag {
         "sm" => { Some(Role::Miner) },
         "mb" => { Some(Role::Hauler) },
+        "rb" => { Some(Role::Repairer) },
         "bh" => { Some(Role::BaseHauler) },
         "ud" => { Some(Role::Upgrader) },
         "bd" => { Some(Role::Builder) },
@@ -113,6 +115,20 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "rc" => { Some(Role::Recycler) },
         "po" => { Some(Role::PhysicalObserver) },
         _ => { None },
+    }
+}
+
+pub fn get_rampart_repair_rcl(rcl: u8) -> u32 {
+    match rcl {
+        1 => 500,
+        2 => 2000,
+        3 => 10000,
+        4 => 100000,
+        5 => 500000,
+        6 => 1000000,
+        7 => 10000000,
+        8 => 10000000,
+        _ => 0,
     }
 }
 

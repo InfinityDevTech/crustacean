@@ -101,12 +101,12 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     let stamp_cost = part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
 
-    let max_parts = 25;
+    let max_parts = 26;
 
     if hauler_count > 3 {
         let mut current_cost = stamp_cost;
         body.push(Part::Move);
-        body.push(Part::Move);
+        body.push(Part::Carry);
 
         while current_cost < max_capable {
             if current_cost + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry] > max_capable {
@@ -124,7 +124,7 @@ pub fn hauler(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     } else {
         let mut current_cost = stamp_cost;
         body.push(Part::Move);
-        body.push(Part::Move);
+        body.push(Part::Carry);
 
         while current_cost < currently_capable {
             if current_cost + stamp_cost > currently_capable {

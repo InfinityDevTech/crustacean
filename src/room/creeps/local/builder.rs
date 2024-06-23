@@ -9,11 +9,6 @@ use super::hauler::execute_order;
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name());
-    if cached_room.is_none() {
-        return;
-    }
-    let cached_room = cached_room.unwrap();
 
     let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
@@ -23,31 +18,30 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         find_energy(creep, memory, cache);
-    } else if creep.room().unwrap().name() != creep_memory.owning_room {
-        let _ = creep.say("🚚", false);
-        creep.better_move_to(creep_memory, cached_room, Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), creep_memory.owning_room), 23, MoveOptions::default());
     } else {
-        build(creep, creep_memory, cached_room)
+        build(creep, creep_memory, cache)
     }
 }
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) {
-    let sites = cache.structures.construction_sites.clone();
+pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut RoomCache) {
+    let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
+    let sites = room_cache.structures.construction_sites.clone();
 
-    for repairable in &cache.structures.needs_repair {
+    for repairable in &room_cache.structures.needs_repair {
         if repairable.structure_type() == StructureType::Rampart {
             let max = 100;
 
             if repairable.as_repairable().unwrap().hits() < max {
                 if creep.pos().get_range_to(repairable.pos()) > 2 {
                     let _ = creep.say("🚚", false);
-                    creep.better_move_to(creepmem, cache, repairable.pos(), 1, MoveOptions::default());
+                    let pos = repairable.pos();
+                    creep.better_move_to(creepmem, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), pos, 1, MoveOptions::default());
                     return;
                 } else {
                     let _ = creep.say("🔨", false);
                     let _ = creep.repair(repairable.as_repairable().unwrap());
-                    cache.stats.energy.spending_repair += energy_spent_repairing(creep, repairable);
+                    room_cache.stats.energy.spending_repair += energy_spent_repairing(creep, repairable);
                     return;
                 }
             }
@@ -68,16 +62,16 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
 
             if site.pos().get_range_to(creep.pos()) > 1 {
                 let _ = creep.say("🚚", false);
-                creep.better_move_to(creepmem, cache, site.pos(), 1, MoveOptions::default());
+                creep.better_move_to(creepmem, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), site.pos(), 1, MoveOptions::default());
             } else {
                 let _ = creep.say("🔨", false);
                 let _ = creep.build(site);
-                cache.stats.energy.spending_construction += energy_spent_building(creep, site);
+                room_cache.stats.energy.spending_construction += energy_spent_building(creep, site);
             }
 
         }
     } else {
-        for repairable in cache.structures.needs_repair.clone() {
+        for repairable in room_cache.structures.needs_repair.clone() {
             let max_hits = if repairable.structure_type() == StructureType::Rampart {
                 100_000
             } else {
@@ -90,12 +84,12 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
     
             if repairable.pos().get_range_to(creep.pos()) > 1 {
                 let _ = creep.say("🚚", false);
-                creep.better_move_to(creepmem, cache, repairable.pos(), 1, MoveOptions::default());
+                creep.better_move_to(creepmem, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), repairable.pos(), 1, MoveOptions::default());
                 return;
             } else {
                 let _ = creep.say("🔨", false);
                 let _ = creep.repair(repairable.as_repairable().unwrap());
-                cache.stats.energy.spending_repair += energy_spent_repairing(creep, &repairable);
+                room_cache.stats.energy.spending_repair += energy_spent_repairing(creep, &repairable);
                 return;
             }
         }
@@ -109,15 +103,20 @@ pub fn build(creep: &Creep, creepmem: &mut CreepMemory, cache: &mut CachedRoom) 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
-    let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
     let task = &creepmem.hauling_task.clone();
 
     if let Some(task) = task {
         let _ = creep.say("📋", false);
+
+        let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+
         execute_order(creep, creepmem, room_cache, task);
     } else {
         let _ = creep.say("🔋", false);
+
+        let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
+
         room_cache.hauling.wanting_orders.push(HaulTaskRequest::default().creep_name(creep.name()).resource_type(ResourceType::Energy).haul_type(vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer]).finish());
     }
 }

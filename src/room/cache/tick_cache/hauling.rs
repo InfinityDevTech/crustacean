@@ -170,7 +170,7 @@ impl HaulingCache {
             resource,
             amount,
             //priority: decimal.round_dp(2).try_into().unwrap(),
-            priority: priority.round(),
+            priority: priority,
             haul_type,
         };
 
@@ -265,6 +265,16 @@ pub fn match_haulers(cache: &mut RoomCache, memory: &mut ScreepsMemory, room_nam
 
             if !hauler.haul_type.contains(&order.haul_type) {
                 continue;
+            }
+
+            if order.haul_type == HaulingType::Pickup {
+                let score = order.amount.unwrap_or(0) as f32;
+
+                if score < top_score {
+                    top_scorer = Some(order);
+                    top_score = score as f32;
+                }
+                continue
             }
 
             let score = score_couple(order, &game_creep);

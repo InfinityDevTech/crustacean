@@ -10,14 +10,9 @@ use crate::{
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    if creep.spawning() || creep.tired() {
-        let _ = creep.say("😴", false);
-        return;
-    }
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if let Some(remote_room) = memory.creeps.get(&creep.name()).unwrap().owning_remote {
-
-        let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    if let Some(remote_room) = creep_memory.owning_remote {
 
         if creep_memory.task_id.is_none() {
             let _ = creep.say("kurt kob", true);
@@ -27,6 +22,12 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         if let Some(remote_room) = cache.rooms.get_mut(&remote_room) {
             remote_room.resources.sources[creep_memory.task_id.unwrap() as usize].creeps.push(creep.try_id().unwrap());
         }
+
+        if creep.tired() {
+            let _ = creep.say("😴", false);
+            return;
+        }
+        
         let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
         if creep.room().unwrap().name() != remote_room {

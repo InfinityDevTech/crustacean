@@ -48,6 +48,11 @@ pub fn init() {
 #[wasm_bindgen]
 // , screeps_timing_annotate::timing
 //#[cfg(feature = "profile")]
+
+// TODO: Improve logistics, or improve remoting, either or
+// Reserve remotes, we need the 3k energy from the sources.
+// Fix the hauler reserving logic? It doesnt appear to be persistent cross tick.
+// Either reserve more remotes, or add roads to the remotes.
 pub fn game_loop() {
     use room::democracy;
 

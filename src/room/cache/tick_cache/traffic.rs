@@ -52,6 +52,10 @@ pub fn run_movement(room_cache: &mut CachedRoom) {
         }
     }
 
+    if creeps_with_movement_intent.is_empty() {
+        return;
+    }
+
     let mut visited_creeps = Vec::new();
 
     for creep_id in creeps_with_movement_intent {

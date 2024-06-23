@@ -251,7 +251,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
         let owning_room = cache.rooms.get_mut(&launching_room.name()).unwrap();
 
         for resource in &cached_room.resources.dropped_energy {
-            let priority = scale_haul_priority(resource.amount(), resource.amount(), HaulingPriority::Energy, false);
+            let priority = scale_haul_priority(20000, resource.amount(), HaulingPriority::Energy, false);
             owning_room.resources.dropped_energy_amount += resource.amount();
             owning_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -priority, HaulingType::Pickup);
         }
@@ -354,7 +354,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
     for resource in &cached_room.resources.dropped_energy {
-        let priority = scale_haul_priority(resource.amount(), resource.amount(), HaulingPriority::Energy, false);
+        let priority = scale_haul_priority(50000, resource.amount(), HaulingPriority::Energy, false);
         cached_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -priority, HaulingType::Pickup);
     }
 }

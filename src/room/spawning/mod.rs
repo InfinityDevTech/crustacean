@@ -14,6 +14,12 @@ use super::cache::{self, tick_cache::{CachedRoom, RoomCache}};
 pub mod creep_sizing;
 pub mod spawn_manager;
 
+// TODO:
+//  Add required role counts
+//  Fuck this shit man, this looks like ass
+//  Tweak a shit load of numbers. Spawning needs to be PERFECT.
+//  TODO!!! Fix the double remote spawning bug!! This is BAD...
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn handle_spawning(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
@@ -138,7 +144,7 @@ pub fn scout(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
     spawn_manager.create_spawn_request(Role::Scout, body, 4.0, cost, None, None);
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn repairer(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
     let repairing_work_parts = cache
     .creeps
@@ -148,9 +154,13 @@ pub fn repairer(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMa
     .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32)
     .sum::<u32>();
 
+    if cache.structures.controller.as_ref().unwrap().controller.level() < 3 || cache.structures.storage.is_none() {
+        return;
+    }
+
     let repair_sites = cache.structures.needs_repair.len();
 
-    let mut desired_repair_parts = cmp::max(repair_sites / 3, 6);
+    let mut desired_repair_parts = cmp::max(repair_sites / 9, 3);
 
     if desired_repair_parts < 3 {
         desired_repair_parts = 3;
@@ -168,7 +178,7 @@ pub fn repairer(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMa
     spawn_manager.create_spawn_request(Role::Repairer, body, 55.0, cost, None, None);
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
     let building_work_parts = cache
         .creeps
@@ -177,6 +187,10 @@ pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMan
         .unwrap_or(&Vec::new())
         .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32)
         .sum::<u32>();
+
+        if cache.structures.controller.as_ref().unwrap().controller.level() < 2 {
+            return;
+        }
 
     let construction_sites = cache.structures.construction_sites.len();
 
@@ -217,7 +231,7 @@ pub fn upgrader(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMa
 }
 
 // TODO: Math this shit! Make it better!
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn hauler(
     room: &Room,
     cache: &mut CachedRoom,
@@ -231,11 +245,15 @@ pub fn hauler(
         .unwrap_or(&Vec::new())
         .len();
 
-    let priority = if current_hauler_count < 2 {
+    let priority = if current_hauler_count <= 1 {
+        9999999.0
+    } else if current_hauler_count < 4 {
         10.0
     } else {
-        4.5
+        4.0
     };
+
+    info!("Prio: {}, count {}", priority, current_hauler_count);
 
     let mut dropped_count = 0;
     for resource in &cache.resources.dropped_energy {
@@ -263,12 +281,12 @@ pub fn hauler(
     };*/
 
     let haulers_to_make = match cache.structures.controller.as_ref().unwrap().controller.level() {
-        1 => 6,
-        2 => 12,
-        3 => 16,
-        4 => 12,
-        5 => 10,
-        6 => 10,
+        1 => 8,
+        2 => 16,
+        3 => 20,
+        4 => 16,
+        5 => 14,
+        6 => 12,
         7 => 10,
         8 => 6,
         _ => 6,
@@ -292,7 +310,14 @@ pub fn hauler(
     spawn_manager.create_spawn_request(Role::Hauler, body, priority, cost, Some(creepmem), None);
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager, memory: &mut ScreepsMemory) {
+
+    // Since it pulls from the storage, dont spawn if there is no storage.
+    if cache.structures.storage.is_none() {
+        return;
+    }
+
     let thing_bc_rust_dum = Vec::new();
     let current_bh_count = cache
         .creeps
@@ -451,18 +476,16 @@ pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut Screeps
             cache.create_if_not_exists(&remote_room, memory, None);
             let cache = cache.rooms.get_mut(&remote_room.name()).unwrap();
 
-            info!("Room {:?} has {} sources", remote_room, cache.resources.sources.len());
-
             for source in cache.resources.sources.iter() {
                 let parts_needed = source.parts_needed();
+
+                info!("Source {} needs {} parts, has {} creeps max {} creeps", source.id, parts_needed, source.creeps.len(), source.calculate_mining_spots(&remote_room));
 
                 if parts_needed == 0 || source.creeps.len() >= source.calculate_mining_spots(&remote_room).into() {
                     continue;
                 }
 
-                info!("Parts needed {} for room {} and source {}", parts_needed, remote_room.name(), source.id);
-
-                let parts = crate::room::spawning::creep_sizing::miner(&remote_room, cache, parts_needed);
+                let parts = crate::room::spawning::creep_sizing::miner(&room, cache, parts_needed);
                 let cost = get_body_cost(&parts);
 
                 let mut priority = 0.0;

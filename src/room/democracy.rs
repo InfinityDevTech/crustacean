@@ -23,6 +23,13 @@ use super::{
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
+// TODO:
+// Separate logic of the room types, eg
+// Owned - Remote - Unknown - Enemy - (Potentially, Ally?)
+// Change the data stored for scouted rooms, such as safemode, MAX rcl
+// Potentially attempt to estimate where the spawn battery is by:
+//  Averaging the positions of all the spawns, get the base center
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let starting_cpu = game::cpu::get_used();
 
@@ -172,7 +179,7 @@ pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
     MultiRoomCostResult::CostMatrix(matrix.into())
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
     let _coords = room_cache.structures.spawns.values().next().unwrap().pos();
     let _viz = RoomVisualExt::new(room.name());
@@ -201,7 +208,14 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                 .pos()
                 .y();
 
+        let should_rampart = room_cache.structures.storage.is_some();
+
         for structure in stuffs {
+
+            if !should_rampart && structure.2 == StructureType::Rampart {
+                continue;
+            }
+
             let pos = RoomPosition::new(
                 structure.0 as u8 + offset_x.u8(),
                 structure.1 as u8 + offset_y.u8(),

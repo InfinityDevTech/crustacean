@@ -48,7 +48,7 @@ pub fn fetch_possible_remotes(
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
 
     // Get the top 2.
-    for remote in possible_remotes.iter().take(2) {
+    for remote in possible_remotes.iter().take(5) {
         let remote = RemoteRoomMemory {
             name: remote.0,
             owner: room.name(),

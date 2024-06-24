@@ -4,7 +4,8 @@ use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::{segment_ids, SegmentIDs};
-use room::{cache::{self, tick_cache::{hauling, RoomCache}}, spawning, visuals::visualise_scouted_rooms};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use room::{cache::{self, tick_cache::{hauling, traffic, RoomCache}}, spawning, visuals::visualise_scouted_rooms};
 use screeps::{find, game, IntershardResourceType, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
@@ -107,10 +108,42 @@ pub fn game_loop() {
         // Run spawns
         // TODO: Tune the better spawn implementation
         spawning::handle_spawning(&game_room, &mut cache, &mut memory);
+        hauling::match_haulers(&mut cache, &mut memory, room);
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
-        hauling::match_haulers(&mut cache, &mut memory, room);
+
+        // -- Begin creep chant stuffs
+        let mut random = StdRng::seed_from_u64(game::time() as u64);
+        let iterable = room_cache.creeps.creeps_in_room.values().collect::<Vec<_>>().to_vec();
+        let random_creep = iterable[random.gen_range(0..room_cache.creeps.creeps_in_room.len())];
+
+        let chant = config::CREEP_SONG;
+        let chant_count = chant.len();
+
+        let index = memory.chant_index;
+
+        if index + 1 >= chant_count.try_into().unwrap() {
+            memory.chant_index = 0;
+        } else {
+            memory.chant_index += 1;
+        }
+
+        let chant = chant[index as usize];
+        let _ = random_creep.say(chant, true);
+        // -- End creep chant stuffs
     }
+
+    for room in game::rooms().keys() {
+        let room = game::rooms().get(room).unwrap();
+        if let Some(room_cache) = cache.rooms.get_mut(&room.name()) {
+            traffic::run_movement(room_cache);
+
+            if room.my() {
+                room_cache.write_cache_to_heap(&room);
+            }
+        }
+    }
+
     memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu;
 
     set_stats(&mut memory);
@@ -236,6 +269,13 @@ pub fn big_red_button() {
     }
     let mut memory = memory::ScreepsMemory::init_memory();
     memory.rooms = HashMap::new();
+    memory.write_memory();
+}
+
+#[wasm_bindgen(js_name = wipe_scouting_data)]
+pub fn wipe_scouting_data() {
+    let mut memory = heap().memory.lock().unwrap();
+    memory.scouted_rooms = HashMap::new();
     memory.write_memory();
 }
 

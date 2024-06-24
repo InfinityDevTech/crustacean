@@ -13,6 +13,7 @@ pub enum RoomType {
     Highway,
     Intersection,
     SourceKeeper,
+    Center,
     Unknown,
 }
 
@@ -27,7 +28,7 @@ pub trait RoomExtensions {
 
     fn get_adjacent(&self, radius: u32) -> Vec<RoomName>;
 
-    fn get_room_type(&self) -> RoomType;
+    fn room_type(&self) -> RoomType;
     fn is_highway(&self) -> bool;
     fn is_intersection(&self) -> bool;
     fn is_source_keeper(&self) -> bool;
@@ -35,7 +36,7 @@ pub trait RoomExtensions {
     fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()
@@ -123,24 +124,29 @@ impl RoomExtensions for screeps::Room {
         config::ROOM_SIGNS.contains(&tag_without_alliance_marker.as_str())
     }
 
-    fn get_room_type(&self) -> RoomType {
-        let split_name = self.split_name();
-        let east_west_distance = split_name.1;
-        let north_south_distance = split_name.3;
+    fn room_type(&self) -> RoomType {
+            let room_x = self.name().x_coord();
+            let room_y = self.name().y_coord();
+        
+            let ew = room_x % 10;
+            let ns = room_y % 10;
+        
+            if ew == 0 && ns == 0 {
+                return RoomType::Intersection
+            }
+            if ew == 0 || ns == 0 {
+                return RoomType::Highway
+            }
+            if room_x % 5 == 0 && room_y % 5 == 0 {
+                return RoomType::Center
+            }
+            if (5 - ew).abs() <= 1 && (5 - ns).abs() <= 1 {
+                return RoomType::SourceKeeper
+            }
 
-        if east_west_distance % 10 == 0 || north_south_distance % 10 == 0 {
-            RoomType::Highway
-        } else if east_west_distance % 10 == 0 && north_south_distance % 10 == 0 {
-            return RoomType::Intersection;
-        } else if east_west_distance % 10 == 5
-        && north_south_distance % 10 == 5
-        && !north_south_distance % 10 == 0
-        && !east_west_distance % 10 == 0 {
-            return RoomType::SourceKeeper;
-        } else {
-            return RoomType::Normal;
+            RoomType::Normal
         }
-    }
+
     fn is_highway(&self) -> bool {
         let split_name = self.split_name();
         let east_west_distance = split_name.1;

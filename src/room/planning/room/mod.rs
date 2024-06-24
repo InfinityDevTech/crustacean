@@ -10,12 +10,11 @@ pub mod remotes;
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     if game::cpu::bucket() < 500 {
-        info!("[PLANNER] CPU bucket is too low to plan room: {}", room.name_str());
+        info!("  [PLANNER] CPU bucket is too low to plan room: {}", room.name_str());
         return false;
     }
 
-    info!("[PLANNER] Planning order recieved! Planning: {}", room.name_str());
-    cache.create_if_not_exists(room, memory, None);
+    info!("  [PLANNER] Planning order recieved! Planning: {}", room.name_str());
 
     let remotes = remotes::fetch_possible_remotes(room, memory, cache.rooms.get_mut(&room.name()).unwrap());
 
@@ -26,8 +25,13 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         id: 0,
         creeps: Vec::new(),
         remotes,
+        hauler_count: 0,
     };
 
     memory.create_room(&room.name(), room_memory);
+
+    info!("[PLANNER]  Inserted room into memory! Making cache!");
+
+    cache.create_if_not_exists(room, memory, None);
     true
 }

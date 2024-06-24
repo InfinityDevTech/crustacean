@@ -111,7 +111,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
         let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
-        execute_order(creep, creepmem, room_cache, task);
+        execute_order(creep, creepmem, cache, task);
     } else {
         let _ = creep.say("🔋", false);
 

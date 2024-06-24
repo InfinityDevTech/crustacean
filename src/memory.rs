@@ -131,6 +131,8 @@ pub struct RoomMemory{
     // Creeps by role
     pub creeps: Vec<String>,
     pub remotes: Vec<RoomName>,
+
+    pub hauler_count: u32,
 }
 }
 
@@ -263,6 +265,7 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
         pub id_index: u64,
+        pub chant_index: u64,
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
         pub remote_rooms: HashMap<RoomName, RemoteRoomMemory>,
@@ -287,6 +290,7 @@ impl ScreepsMemory {
 
             let mut memory = ScreepsMemory {
                 id_index: 0,
+                chant_index: 0,
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
                 remote_rooms: HashMap::new(),
@@ -316,6 +320,7 @@ impl ScreepsMemory {
 
                     let mut memory = ScreepsMemory {
                         id_index: 0,
+                        chant_index: 0,
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
                         remote_rooms: HashMap::new(),
@@ -328,6 +333,7 @@ impl ScreepsMemory {
                     };
 
                     memory.stats.cpu.memory = game::cpu::get_used() - pre_memory_cpu;
+                    memory.write_memory();
                     memory
                 }
             }

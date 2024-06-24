@@ -24,6 +24,12 @@ function console_error() {
   Game.notify(processedArgs);
 }
 
+global.clear_scouting_data = function() {
+  if (wasm_module) {
+    wasm_module.wipe_scouting_data()
+  }
+}
+
 global.pause_exec = function() {
   pause_exec = !pause_exec;
   return `[JS] pause_exec: ${pause_exec}`;

@@ -111,7 +111,6 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
 
 pub fn get_energy(creep: &Creep, memory: &mut CreepMemory, cache: &mut RoomCache) {
     if let Some(hauling_task) = memory.hauling_task.clone() {
-        let cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
         hauler::execute_order(creep, memory, cache, &hauling_task);
         return;
     } else {

@@ -43,12 +43,13 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     cache.create_if_not_exists(&room, memory, None);
 
     if room.my() {
-        cache.my_rooms.push(room.name());
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
         if !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory, cache) {
             return;
         }
+
+        cache.my_rooms.push(room.name());
 
         {
             let cached_room = cache.rooms.get_mut(&room.name()).unwrap();
@@ -98,7 +99,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             run_crap_planner_code(&room, memory, room_cache);
             run_full_visuals(&room, memory, room_cache);
 
-            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 2 || game::time() % 3000 == 0 {
+            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 5 || game::time() % 3000 == 0 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
@@ -137,7 +138,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             room_cache.traffic.move_intents
         );
     }
-    room_cache.write_cache_to_heap(&room);
 
     if room.my() {
         let end_cpu = game::cpu::get_used();

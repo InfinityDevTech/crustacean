@@ -62,11 +62,11 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::FastFiller => local::fast_filler::run_fastfiller(&creep, memory, cache),
             Role::Bulldozer => global::bulldozer::run_bulldozer(&creep, memory, cache),
             Role::Scout => global::scout::run_scout(&creep, memory, cache),
-            Role::GiftBasket => global::gift_drop::run_giftdrop(&creep, memory, cache),
             Role::RemoteHarvester => remote::remote_harvester::run_remoteharvester(&creep, memory, cache),
             Role::Unclaimer => global::unclaimer::run_unclaimer(&creep, memory, cache),
             Role::Recycler => global::recycler::run_recycler(&creep, memory, cache),
             Role::PhysicalObserver => global::physical_observer::run_physical_observer(&creep, memory, cache),
+            _ => {creep.say("BAD ROLE", true);},
         }
 
         let heap_creep = cached_room.heap_cache.creeps.entry(creep.name()).or_insert_with(|| HeapCreep::new(&creep));

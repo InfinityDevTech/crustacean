@@ -44,7 +44,7 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cach
 
     let scouted_room = ScoutedRoom {
         name: room_name,
-        room_type: room.get_room_type(),
+        room_type: room.room_type(),
         rcl: room_rcl,
         owner: owner.clone(),
         reserved: reserved.clone(),

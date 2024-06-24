@@ -3,9 +3,10 @@
 
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use regex::Regex;
 use screeps::{game, OwnedStructureProperties, Part, RoomName};
 
-use crate::{config, constants::{part_costs, PartsCost}, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+use crate::{config, constants::{part_costs, PartsCost}, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority, traits::room::RoomType};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {

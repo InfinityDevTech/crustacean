@@ -7,7 +7,8 @@ use screeps::{game, HasPosition, ObjectId, Position, RawObjectId};
 pub struct HeapHaulingReservation {
     pub target_id: RawObjectId,
     pub creeps_assigned: Vec<String>,
-    pub amount_reserved: u32,
+    pub order_amount: i32,
+    pub reserved_amount: i32,
 }
 
 #[derive(Debug, Clone)]

@@ -1,4 +1,4 @@
-use std::cmp::{self, min};
+use std::cmp::{self};
 
 use log::info;
 use screeps::{find, game, HasPosition, Part, Room, SharedCreepProperties};
@@ -8,7 +8,7 @@ use crate::{
     memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::{MoveOptions, MoveTarget}, utils::get_body_cost
 };
 
-use super::cache::{self, tick_cache::{CachedRoom, RoomCache}};
+use super::cache::tick_cache::{CachedRoom, RoomCache};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
@@ -118,7 +118,7 @@ pub fn flag_attacker(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Sp
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn scout(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+pub fn scout(_room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
     let body = vec![Part::Move];
     let cost = get_body_cost(&body);
 
@@ -215,13 +215,6 @@ pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMan
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn upgrader(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
-    let upgraders = cache
-        .creeps
-        .creeps_of_role
-        .get(&Role::Upgrader)
-        .unwrap_or(&Vec::new())
-        .len();
-
     let body = crate::room::spawning::creep_sizing::upgrader(room, cache);
     let cost = get_body_cost(&body);
 
@@ -255,10 +248,9 @@ pub fn hauler(
 
     if room_memory.hauler_count == 0 || game::time() % 100 == 0 {
         for remote in &room_memory.remotes {
-            let mut scouted_data = memory.scouted_rooms.get(&remote).unwrap();
 
-            if let Some(game_room) = game::rooms().get(*remote) {
-                let mut room_cache = cache.rooms.get(&remote).unwrap();
+            if game::rooms().get(*remote).is_some() {
+                let room_cache = cache.rooms.get(remote).unwrap();
 
                 for source in &room_cache.resources.sources {
                     let source_ept = (source.calculate_work_parts() * 2) as usize;
@@ -369,7 +361,7 @@ pub fn hauler(
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager, memory: &mut ScreepsMemory) {
+pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager, _memory: &mut ScreepsMemory) {
 
     // Since it pulls from the storage, dont spawn if there is no storage.
     if cache.structures.storage.is_none() {
@@ -449,7 +441,7 @@ pub fn base_hauler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut Spaw
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn fast_filler(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
+pub fn fast_filler(_room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManager) {
     let fast_filler_count = cache
         .creeps
         .creeps_of_role
@@ -558,7 +550,7 @@ pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut Screeps
                     continue;
                 }
 
-                let parts = crate::room::spawning::creep_sizing::miner(&room, cache, parts_needed);
+                let parts = crate::room::spawning::creep_sizing::miner(room, cache, parts_needed);
                 let cost = get_body_cost(&parts);
 
                 let mut priority = 0.0;

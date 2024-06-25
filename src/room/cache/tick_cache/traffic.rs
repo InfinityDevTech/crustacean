@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]use std::collections::HashMap;
 
 use screeps::{
-    game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomName, RoomXY
+    game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
 };
 
-use super::{CachedRoom, RoomCache};
-use crate::{memory::ScreepsMemory, traits::creep::CreepExtensions};
+use super::CachedRoom;
+use crate::traits::creep::CreepExtensions;
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {

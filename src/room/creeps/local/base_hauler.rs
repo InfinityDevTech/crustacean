@@ -1,6 +1,6 @@
 use std::cmp;
 
-use screeps::{CircleStyle, Creep, HasPosition, ResourceType, SharedCreepProperties};
+use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::{CreepMemory, Role, ScreepsMemory},
@@ -182,23 +182,11 @@ pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut Cac
     }
 
     if let Some(fastfill_containers) = &room_cache.structures.containers.fast_filler {
-        let mut most_filled = None;
-
-        for container in fastfill_containers {
-            if container.store().get_used_capacity(None) > 0 {
-                if most_filled.is_none() {
-                    most_filled = Some(container);
-                } else if container.store().get_used_capacity(None)
-                    > most_filled.unwrap().store().get_used_capacity(None)
-                {
-                    most_filled = Some(container);
-                }
-            }
-        }
+        let most_filled = fastfill_containers.iter().max_by_key(|x| x.store().get_used_capacity(None));
 
         let most_filled = most_filled.unwrap();
 
-        if creep.pos().is_near_to(most_filled.pos()) {
+        if most_filled.store().get_used_capacity(Some(ResourceType::Energy)) > 0 && creep.pos().is_near_to(most_filled.pos()) {
             let _ = creep.say("📋 - FASTFILL", false);
             let _ = creep.withdraw(
                 most_filled,
@@ -212,8 +200,7 @@ pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut Cac
                 ),
             );
         } else {
-            let _ = creep.say("🚚 - FASTFILL", false);
-            creep.better_move_to(memory, room_cache, most_filled.pos(), 1, Default::default());
+            let _ = creep.say("No 🔋?", false);
         }
     }
 }

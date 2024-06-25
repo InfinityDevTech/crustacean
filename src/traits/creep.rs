@@ -2,18 +2,15 @@ use crate::{
     memory::CreepMemory,
     movement::{
         move_target::{MoveOptions, MoveTarget},
-        utils::{dir_to_coords, num_to_dir, visualise_path},
+        utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::tick_cache::{CachedRoom, RoomCache},
+    room::cache::tick_cache::CachedRoom,
 };
 
-use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, Terrain
 };
-
-use super::room::RoomExtensions;
 
 pub trait CreepExtensions {
     // Movement
@@ -102,10 +99,6 @@ impl CreepExtensions for screeps::Creep {
 
         if self.tired() {
             return;
-        }
-
-        if let Some(path) = &creep_memory.path {
-            //visualise_path(path.to_string(), self.pos().room_name().to_string(), (self.pos().x().u8() as f32, self.pos().y().u8() as f32), false);
         }
 
         match &creep_memory.path {

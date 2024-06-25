@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use js_sys::Object;
-use screeps::{game, HasPosition, ObjectId, Position, RawObjectId};
+use screeps::{game, HasPosition, Position, RawObjectId};
 
 #[derive(Debug, Clone)]
 pub struct HeapHaulingReservation {
@@ -11,19 +10,10 @@ pub struct HeapHaulingReservation {
     pub reserved_amount: i32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HeapHaulingCache {
     pub reserved_orders: HashMap<RawObjectId, HeapHaulingReservation>
 
-}
-
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-impl HeapHaulingCache {
-    pub fn new() -> HeapHaulingCache {
-        HeapHaulingCache {
-            reserved_orders: HashMap::new()
-        }
-    }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

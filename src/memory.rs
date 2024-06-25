@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, Structure, StructureContainer, StructureLink, StructureObject};
+use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
 
-use crate::{config::MEMORY_VERSION, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
+use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Enum)]
 pub enum SegmentIDs {
@@ -271,6 +271,8 @@ structstruck::strike! {
         pub remote_rooms: HashMap<RoomName, RemoteRoomMemory>,
         pub creeps: HashMap<String, CreepMemory>,
 
+        pub goals: GoalMemory,
+
         pub enemy_players: HashMap<String, EnemyPlayer>,
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
 
@@ -295,6 +297,8 @@ impl ScreepsMemory {
                 rooms: HashMap::new(),
                 remote_rooms: HashMap::new(),
                 creeps: HashMap::new(),
+
+                goals: GoalMemory::default(),
 
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
@@ -325,6 +329,8 @@ impl ScreepsMemory {
                         rooms: HashMap::new(),
                         remote_rooms: HashMap::new(),
                         creeps: HashMap::new(),
+
+                        goals: GoalMemory::default(),
 
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),

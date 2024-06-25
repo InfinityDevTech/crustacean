@@ -1,7 +1,7 @@
 use std::cmp;
 
 use log::info;
-use screeps::{game, Part, Room, SharedCreepProperties};
+use screeps::{game, Part, Room};
 
 use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom};
 
@@ -126,14 +126,13 @@ pub fn hauler(room: &Room) -> Vec<Part> {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+pub fn builder(room: &Room, _cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
     let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
     let max_capable = room.energy_capacity_available();
 
     let mut current_cost = part_costs()[PartsCost::Move] * 2;
-    let mut work_part_count = 0;
     parts.push(Part::Move);
     parts.push(Part::Move);
 
@@ -145,7 +144,6 @@ pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         parts.push(Part::Work);
         parts.push(Part::Move);
         parts.push(Part::Carry);
-        work_part_count += 1;
         current_cost += stamp_cost;
     }
 
@@ -153,7 +151,7 @@ pub fn builder(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn repairer(room: &Room, parts_needed: u8, cache: &CachedRoom) -> Vec<Part> {
+pub fn repairer(room: &Room, parts_needed: u8, _cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
     let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];

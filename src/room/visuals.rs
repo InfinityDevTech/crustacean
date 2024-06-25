@@ -2,7 +2,7 @@ use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, Room
 
 use crate::{config, memory::ScreepsMemory};
 
-use super::cache::tick_cache::{CachedRoom, RoomCache};
+use super::cache::tick_cache::CachedRoom;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {

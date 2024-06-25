@@ -1,4 +1,4 @@
-use screeps::{game, memory, Creep, HasId, HasPosition, ResourceType, SharedCreepProperties, StructureTerminal, StructureType};
+use screeps::{game, Creep, HasId, HasPosition, ResourceType, SharedCreepProperties, StructureType};
 
 use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::creep::CreepExtensions, utils::get_rampart_repair_rcl};
 use wasm_bindgen::JsCast;
@@ -112,7 +112,6 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
 pub fn get_energy(creep: &Creep, memory: &mut CreepMemory, cache: &mut RoomCache) {
     if let Some(hauling_task) = memory.hauling_task.clone() {
         hauler::execute_order(creep, memory, cache, &hauling_task);
-        return;
     } else {
         let cache = cache.rooms.get_mut(&memory.owning_room).unwrap();
         cache.hauling.wanting_orders.push(HaulTaskRequest::default().creep_name(creep.name()).resource_type(ResourceType::Energy).haul_type(vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer]).finish());

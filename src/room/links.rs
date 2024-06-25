@@ -1,10 +1,8 @@
 use screeps::Room;
 
-use crate::memory::ScreepsMemory;
+use super::cache::tick_cache::CachedRoom;
 
-use super::cache::tick_cache::{CachedRoom, RoomCache};
-
-pub fn balance_links(room: &Room, room_cache: &mut CachedRoom) {
+pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
     //let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
     if let Some(storage_link) = &room_cache.structures.links.storage {
         if let Some(controller_link) = &room_cache.structures.links.controller {

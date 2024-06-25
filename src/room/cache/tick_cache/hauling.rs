@@ -1,22 +1,18 @@
-use std::{collections::HashMap, ops::Div};
+use std::collections::HashMap;
 
-use log::{info, warn};
-use rust_decimal::Decimal;
+use log::info;
 use screeps::{
-    creep, game, CircleStyle, Creep, HasId, HasPosition, Part, Position, RawObjectId, ResourceType, RoomName, RoomVisual, SharedCreepProperties, StructureProperties, StructureType, TextStyle
+    game, CircleStyle, Creep, HasId, HasPosition, Part, Position, RawObjectId, ResourceType, RoomName, SharedCreepProperties, StructureProperties, StructureType, TextStyle
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    heap, heap_cache,
-    memory::{CreepHaulTask, Role, ScreepsMemory},
-    room::{
-        cache::heap_cache::{
-            hauling::{self, HeapHaulingReservation},
-            RoomHeapCache,
-        },
-        creeps::local::{base_hauler, hauler::execute_order},
-    },
+    heap, memory::{CreepHaulTask, Role, ScreepsMemory},
+    room::
+        cache::heap_cache::
+            hauling::HeapHaulingReservation
+        
+    ,
     utils::{name_to_role, scale_haul_priority},
 };
 
@@ -148,8 +144,6 @@ impl HaulingCache {
         haul_type: HaulingType,
     ) {
         let id = self.get_unique_id();
-
-        let decimal = Decimal::new(priority.round() as i64, 0).div(Decimal::new(200, 1));
 
         let mut order = RoomHaulingOrder {
             id,
@@ -350,11 +344,11 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
     // For the matched creeps, we assign their tasks in memory
     // This is also where we reserve the orders, so other haulers dont take them.
-    for (order_id, (creep, score)) in cache.hauling.orders_matched_to_creeps.clone().iter() {
+    for (order_id, (creep, _score)) in cache.hauling.orders_matched_to_creeps.clone().iter() {
         let creep_memory = memory.creeps.get_mut(creep).unwrap();
         let creep = game::creeps().get(creep.to_string()).unwrap();
 
-        let order = cache.hauling.new_orders.get(&order_id).unwrap();
+        let order = cache.hauling.new_orders.get(order_id).unwrap();
 
         // Get the amount of resources the creep can carry
         let carry_capacity = creep
@@ -401,17 +395,6 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
         creep_memory.hauling_task = Some(haul_task.clone());
 
         saved.push((creep.name(), haul_task));
-    }
-
-    for (creep, haul_task) in saved {
-        let creep_memory = memory.creeps.get_mut(&creep).unwrap();
-
-        /*execute_order(
-            &game::creeps().get(creep).unwrap(),
-            creep_memory,
-            room_cache,
-            &haul_task.clone(),
-        );*/
     }
 
     info!(
@@ -620,15 +603,6 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
             .get_used_capacity(Some(ResourceType::Energy))
             > 0
         {
-            let priority = scale_haul_priority(
-                storage.store().get_capacity(Some(ResourceType::Energy)),
-                storage
-                    .store()
-                    .get_used_capacity(Some(ResourceType::Energy)),
-                HaulingPriority::Storage,
-                false,
-            );
-
             room_cache.hauling.create_order(
                 storage.raw_id(),
                 Some(storage.structure_type()),

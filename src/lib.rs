@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     collections::HashMap,
     sync::{Once, OnceLock},
 };
@@ -8,22 +7,17 @@ use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::{segment_ids, SegmentIDs};
-use movement::move_target;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::{
-        self,
-        tick_cache::{hauling, traffic, RoomCache},
-    },
+    cache::tick_cache::{hauling, traffic, RoomCache},
     spawning,
     visuals::visualise_scouted_rooms,
 };
-use screeps::{find, game, IntershardResourceType, OwnedStructureProperties, StructureProperties};
+use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
 use crate::{
     memory::ScreepsMemory,
-    room::planning::{self, room::plan_room},
     traits::room::RoomExtensions,
 };
 
@@ -33,6 +27,7 @@ mod constants;
 mod heap_cache;
 mod logging;
 mod memory;
+mod goal_memory;
 mod movement;
 mod room;
 mod traits;
@@ -254,7 +249,6 @@ pub fn get_memory_usage_bytes() -> u32 {
 pub fn set_stats(memory: &mut ScreepsMemory) {
     let stats = &mut memory.stats;
 
-    let market_resources = game::resources();
     let heap = game::cpu::get_heap_statistics();
 
     stats.tick = game::time();

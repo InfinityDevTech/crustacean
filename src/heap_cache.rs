@@ -3,9 +3,8 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use screeps::RoomName;
-use serde::{Deserialize, Serialize};
 
-use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache};
+use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
 
 
 // This is the Top level heap, if its mutable, its a mutex.

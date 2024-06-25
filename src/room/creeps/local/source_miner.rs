@@ -1,17 +1,15 @@
-use log::info;
 use screeps::{
-    game, Creep, HasHits, HasId, HasPosition, MaybeHasId, Part, ResourceType,
+    game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType,
     SharedCreepProperties, Source, StructureContainer,
 };
 
 use crate::{
-    memory::{CreepMemory, Role, ScreepsMemory},
+    memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType}, resources::CachedSource, CachedRoom, RoomCache
+        CachedRoom, RoomCache
     },
     traits::creep::CreepExtensions,
-    utils::scale_haul_priority,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

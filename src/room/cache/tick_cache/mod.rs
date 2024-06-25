@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use screeps::{game, Room, RoomName};
 use stats::StatsCache;
 
-use crate::{heap, memory::ScreepsMemory, traits::room::RoomExtensions};
+use crate::{heap, memory::ScreepsMemory};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
 
@@ -35,9 +35,9 @@ impl RoomCache {
 
     pub fn create_if_not_exists(&mut self, room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) {
         self.rooms.entry(room.name()).or_insert_with(|| {
-            let cached_room = CachedRoom::new_from_room(room, memory, remote_manager);
+            
 
-            cached_room
+            CachedRoom::new_from_room(room, memory, remote_manager)
         });
     }
 }

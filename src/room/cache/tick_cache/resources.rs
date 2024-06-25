@@ -1,11 +1,10 @@
 use std::{cmp, collections::HashMap};
 
-use log::info;
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, RoomName, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{memory::{Role, ScreepsMemory}, room::cache::{self, heap_cache::RoomHeapCache}, utils::scale_haul_priority};
+use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
 
-use super::{hauling::{HaulingCache, HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
+use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
 #[derive(Debug, Clone)]
 pub struct CachedSource {
@@ -305,7 +304,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
     }
 
     if let Some(fastfiller_containers) = &cached_room.structures.containers.fast_filler {
-        if cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len() < 1 {
+        if cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).is_empty() {
 
         for fastfiller_container in fastfiller_containers {
             if fastfiller_container.store().get_free_capacity(None) > 0 {

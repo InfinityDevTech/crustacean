@@ -8,15 +8,15 @@ use screeps::{
 
 use crate::{
     combat::{hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
-        cache::tick_cache::{hauling, resources, traffic, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, spawning, tower, visuals::run_full_visuals
+        cache::tick_cache::{hauling, resources, traffic, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
     }, traits::room::RoomExtensions
 };
 
 use super::{
-    cache::{self, tick_cache::CachedRoom}, links, planning::room::{self, construction::{
+    cache::tick_cache::CachedRoom, links, planning::room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
-        }}, visuals::visualise_room_visual
+        }, visuals::visualise_room_visual
 };
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

@@ -1,12 +1,10 @@
 // If I set alliance tag to null, I dont want to to be added lol
 #![allow(clippy::comparison_to_empty)]
 
-use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use regex::Regex;
-use screeps::{game, OwnedStructureProperties, Part, RoomName};
+use screeps::{game, OwnedStructureProperties, Part};
 
-use crate::{config, constants::{part_costs, PartsCost}, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority, traits::room::RoomType};
+use crate::{config, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {

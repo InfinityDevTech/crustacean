@@ -1,8 +1,8 @@
-use screeps::{HasId, ResourceType, Room, StructureProperties};
+use screeps::{HasId, ResourceType, StructureProperties};
 
 use crate::utils::scale_haul_priority;
 
-use super::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache};
+use super::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_towers(cached_room: &mut CachedRoom) {

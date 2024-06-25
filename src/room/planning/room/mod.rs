@@ -1,7 +1,7 @@
 use log::info;
 use screeps::{game, Room};
 
-use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::room::{RoomExtensions, RoomType}};
+use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::room::RoomExtensions};
 
 pub mod construction;
 pub mod structure_visuals;

@@ -1,6 +1,6 @@
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{creep, find, game, look, Creep, Direction, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions, StructureSpawn};
+use screeps::{find, game, look, Creep, Direction, HasPosition, Part, Room, RoomName, SharedCreepProperties, SpawnOptions, StructureSpawn};
 
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
@@ -65,7 +65,7 @@ impl SpawnManager {
     pub fn run_spawning(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         if self.spawn_queue.is_empty() { return; }
 
-        let (available_spawns, unavailable_spawns) = self.get_available_spawns();
+        let (available_spawns, _unavailable_spawns) = self.get_available_spawns();
 
         if game::time() % 10 == 0 {
             for spawn in self.spawns.iter() {
@@ -114,7 +114,7 @@ impl SpawnManager {
             return false;
         }
 
-        let (available_spawn, unavailable_spawns) = self.get_available_spawns();
+        let (available_spawn, _unavailable_spawns) = self.get_available_spawns();
         if available_spawn.is_empty() {
             return false;
         }
@@ -148,7 +148,6 @@ fn dfs_clear_spawn(creep: &Creep, dir: Direction) {
     let position = dir_to_coords(dir, cur_x, cur_y);
 
     let potential_creep = creep.room().unwrap().look_for_at_xy(look::CREEPS, position.0, position.1);
-    let mut rng = StdRng::seed_from_u64(game::time() as u64);
 
     if potential_creep.is_empty() {
         let _ = creep.move_direction(dir);

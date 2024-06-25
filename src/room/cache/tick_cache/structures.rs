@@ -4,7 +4,7 @@ use screeps::{
     find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureProperties, StructureRoad, StructureSpawn, StructureStorage, StructureTower, StructureType, Tombstone
 };
 
-use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache, utils::get_rampart_repair_rcl};
+use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
 
 use super::resources::RoomResourceCache;
 
@@ -80,7 +80,7 @@ impl RoomStructureCache {
         room: &Room,
         resource_cache: &mut RoomResourceCache,
         _memory: &mut ScreepsMemory,
-        heap_cache: &mut RoomHeapCache,
+        _heap_cache: &mut RoomHeapCache,
     ) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
             all_structures: Vec::new(),
@@ -149,7 +149,7 @@ impl RoomStructureCache {
 
             if let Some(repairable) = structure.as_repairable() {
                 let max = if structure.structure_type() == StructureType::Rampart {
-                    let controller = self.controller.as_ref().unwrap().controller.clone();
+                    //let controller = self.controller.as_ref().unwrap().controller.clone();
                     //get_rampart_repair_rcl(controller.level())
                     100_000
                 } else {

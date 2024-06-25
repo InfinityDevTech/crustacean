@@ -1,7 +1,7 @@
-use screeps::{ConstructionSite, Creep, HasPosition, Part, Position, ResourceType, RoomCoordinate, SharedCreepProperties, StructureObject, StructureProperties, StructureType};
+use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties, StructureObject};
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::{self, tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}}, traits::creep::{self, CreepExtensions}
+    memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, RoomCache}, traits::creep::CreepExtensions
 };
 
 use super::{hauler::execute_order, upgrader::run_upgrader};
@@ -69,8 +69,6 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     if let Some(task) = task {
         let _ = creep.say("📋", false);
-
-        let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
         execute_order(creep, creepmem, cache, task);
     } else {

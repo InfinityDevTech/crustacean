@@ -1,11 +1,7 @@
-use std::sync::Mutex;
-
-use log::{info, warn};
+use log::warn;
 use screeps::{
-    find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RectStyle, RoomName, RoomVisual, RoomXY, StructureObject, StructureType
+    find, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
 };
-
-use super::utils::visualise_path;
 
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
@@ -51,14 +47,9 @@ impl MoveTarget {
             .max_ops(20000);
 
         let search = self.pathfind(from, Some(opts));
+        
 
-        let vis = game::rooms().get(from.room_name()).unwrap().visual();
-        //vis.text(self.pos.x().u8() as f32, self.pos.y().u8() as f32, format!("{:?}", search.cost()), Some(Default::default()));
-
-        let steps_string = self.serialize_path(from, search.clone().into(), move_options);
-
-        //visualise_path(steps_string.clone(), from.room_name().to_string(), (from.x().u8() as f32, from.y().u8() as f32), search.incomplete());
-        steps_string
+        self.serialize_path(from, search.clone().into(), move_options)
     }
 
     pub fn pathfind(&mut self, from: Position, opts: Option<SearchOptions<impl FnMut(RoomName) -> MultiRoomCostResult>>) -> SearchResults {

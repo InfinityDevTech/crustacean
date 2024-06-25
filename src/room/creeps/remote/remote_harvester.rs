@@ -4,7 +4,7 @@ use screeps::{game, Creep, HasPosition, MaybeHasId, Position, ResourceType, Room
 use crate::{
     memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::{
         cache::tick_cache::{CachedRoom, RoomCache},
-        creeps::local::source_miner::{self, harvest_source, repair_container},
+        creeps::local::source_miner::{harvest_source, repair_container},
     }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 

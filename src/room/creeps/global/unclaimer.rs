@@ -1,5 +1,5 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{find, game, Color, Creep, HasPosition, OwnedStructureProperties, SharedCreepProperties, StructureProperties, StructureType};
+use screeps::{game, Color, Creep, HasPosition, OwnedStructureProperties, SharedCreepProperties};
 
 use crate::{
     config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions, utils::get_my_username

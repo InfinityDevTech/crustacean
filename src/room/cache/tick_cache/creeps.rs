@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{find, game, Creep, Room, SharedCreepProperties};
 
 use crate::{
-    config::ALLIES,
     memory::{Role, ScreepsMemory},
     utils::name_to_role,
 };

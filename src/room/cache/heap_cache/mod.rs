@@ -34,7 +34,7 @@ impl RoomHeapCache {
         RoomHeapCache {
             room: room.name_str(),
             creeps: HashMap::new(),
-            hauling: HeapHaulingCache::new(),
+            hauling: HeapHaulingCache::default(),
 
             sources: Vec::new(),
         }

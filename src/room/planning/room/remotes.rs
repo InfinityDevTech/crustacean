@@ -1,11 +1,10 @@
-use log::info;
 use screeps::{
-    pathfinder::{self, SearchOptions}, HasPosition, MapTextStyle, Position, Room, RoomCoordinate, RoomName
+    pathfinder::{self, SearchOptions}, HasPosition, Position, Room, RoomCoordinate, RoomName
 };
 
 use crate::{
     memory::{RemoteRoomMemory, ScreepsMemory},
-    room::{cache::tick_cache::{CachedRoom, RoomCache}, democracy::remote_path_call},
+    room::{cache::tick_cache::CachedRoom, democracy::remote_path_call},
     traits::room::{RoomExtensions, RoomType},
 };
 

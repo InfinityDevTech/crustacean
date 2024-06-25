@@ -1,11 +1,12 @@
+// This is done because since its in config, it CAN be changed to "" and then it will be empty
 #![allow(clippy::comparison_to_empty)]
 
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, OwnedStructureProperties, Room, RoomName, Terrain};
+use screeps::{CostMatrix, OwnedStructureProperties, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
-use crate::{config, room::cache::tick_cache::{CachedRoom, RoomCache}};
+use crate::{config, room::cache::tick_cache::CachedRoom};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RoomType {

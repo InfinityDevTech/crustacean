@@ -1,7 +1,6 @@
 use std::sync::OnceLock;
 
 use enum_map::{enum_map, Enum, EnumMap};
-use screeps::Part;
 
 // navigator.clipboard.writeText(`$TO_COPY`);
 pub static COPY_TEXT: &str = "

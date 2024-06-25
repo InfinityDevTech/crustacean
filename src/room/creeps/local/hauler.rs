@@ -1,6 +1,5 @@
-use log::info;
 use screeps::{
-    game, CircleStyle, Creep, ErrorCode, HasId, HasPosition, ObjectId, Position, Resource, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties, StructureStorage
+    game, Creep, ErrorCode, HasId, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
 };
 
 use wasm_bindgen::JsCast;
@@ -8,13 +7,10 @@ use wasm_bindgen::JsCast;
 use crate::{
     memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory},
     movement::move_target::MoveOptions,
-    room::cache::{
-        self,
-        tick_cache::{
+    room::cache::tick_cache::{
             hauling::{HaulTaskRequest, HaulingType},
             CachedRoom, RoomCache,
         },
-    },
     traits::creep::CreepExtensions,
 };
 
@@ -27,11 +23,6 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     let creep_name = creep.name();
 
     let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
-    let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name());
-    if cached_room.is_none() {
-        return;
-    }
-    let cached_room = cached_room.unwrap();
 
     if let Some(order) = &creep_memory.hauling_task.clone() {
         let _ = creep.say("EXEC", false);
@@ -88,7 +79,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 }
 
-pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut RoomCache) {
+pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache: &mut RoomCache) {
     if creep_memory.role == Role::Hauler {
         if creep.store().get_free_capacity(None) == 0 {
             if creep_memory.needs_energy.is_none() {
@@ -202,8 +193,6 @@ pub fn execute_order(
         }
 
     if !creep.pos().is_near_to(position.unwrap()) {
-        let coord = unsafe { RoomCoordinate::unchecked_new(25) };
-        //let pos = Position::new(coord, coord, RoomName::new("W9S7").unwrap());
         creep.better_move_to(
             creep_memory,
             cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),

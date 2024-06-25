@@ -208,7 +208,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                 .pos()
                 .y();
 
-        let should_rampart = room_cache.structures.storage.is_some();
+        let should_rampart = room_cache.structures.storage.is_some() && room_cache.structures.controller.as_ref().unwrap().controller.level() > 4;
+        let should_road = room_cache.structures.controller.as_ref().unwrap().controller.level() > 3;
+
+        if !should_road {
+            return;
+        }
 
         for structure in stuffs {
 

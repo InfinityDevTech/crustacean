@@ -298,7 +298,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
                 priority -= 20.0;
             }
 
-            let priority = priority as u32 - controller_container.pos().get_range_to(cached_room.structures.spawns.values().next().unwrap().pos());
+            let priority = priority - controller_container.pos().get_range_to(cached_room.structures.spawns.values().next().unwrap().pos()) as f32;
 
             cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority as f32, HaulingType::Transfer);
         }
@@ -308,7 +308,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
         if cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len() < 1 {
 
         for fastfiller_container in fastfiller_containers {
-            if fastfiller_container.store().get_used_capacity(None) < (fastfiller_container.store().get_capacity(None) / 2) {
+            if fastfiller_container.store().get_free_capacity(None) > 0 {
                 let priority = scale_haul_priority(
                     fastfiller_container.store().get_free_capacity(None) as u32,
                     fastfiller_container.store().get_used_capacity(None),

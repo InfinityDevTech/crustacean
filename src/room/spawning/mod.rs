@@ -207,7 +207,9 @@ pub fn builder(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnMan
     let body = crate::room::spawning::creep_sizing::builder(room, cache);
     let cost = get_body_cost(&body);
 
-    spawn_manager.create_spawn_request(Role::Builder, body, 4.0, cost, None, None);
+    let priority = desired_work_parts as f64 * 0.75;
+
+    spawn_manager.create_spawn_request(Role::Builder, body, priority, cost, None, None);
 
 }
 
@@ -251,7 +253,7 @@ pub fn hauler(
 
     let harvester_count = harvester_count + remote_harvester_count;
 
-    if room_memory.hauler_count == 0 || game::time() % 1002 == 0 {
+    if room_memory.hauler_count == 0 || game::time() % 100 == 0 {
         for remote in &room_memory.remotes {
             let mut scouted_data = memory.scouted_rooms.get(&remote).unwrap();
 
@@ -271,7 +273,7 @@ pub fn hauler(
 
                         (out_steps, in_steps)
                     } else {
-                        let spawn = room_cache.structures.spawns.values().next().unwrap();
+                        let spawn = owning_cache.structures.spawns.values().next().unwrap();
 
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                         let mut in_target = MoveTarget { pos: spawn.pos(), range: 1 };
@@ -311,7 +313,7 @@ pub fn hauler(
     
                 (out_steps, in_steps)
             };
-    
+
             carry_requirement += source_ept * (out_steps + in_steps);
         }
 
@@ -323,8 +325,8 @@ pub fn hauler(
             wanted_hauler_count.round() as u32
         };
 
-        if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
-            hauler_count = (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
+        if wanted_hauler_count > (f32::max(2.0, 10.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
+            hauler_count = (f32::max(2.0, 10.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
         }
 
         room_memory.hauler_count = hauler_count;
@@ -340,6 +342,10 @@ pub fn hauler(
         .len();
 
     if hauler_count >= wanted_count as usize && hauler_count > 3 {
+        return;
+    }
+
+    if harvester_count == 0 {
         return;
     }
 
@@ -523,6 +529,23 @@ pub fn miner(room: &Room, cache: &mut CachedRoom, spawn_manager: &mut SpawnManag
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) {
     let remotes = cache.rooms.get_mut(&room.name()).unwrap().remotes.clone();
+
+    let cached = cache.rooms.get_mut(&room.name()).unwrap();
+
+    let harvester_count = cached
+        .creeps
+        .creeps_of_role
+        .get(&Role::RemoteHarvester)
+        .unwrap_or(&Vec::new())
+        .len();
+
+    let hauler_count = cached
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&Vec::new())
+        .len();
+
     for remote in remotes {
         if let Some(remote_room) = game::rooms().get(remote) {
             cache.create_if_not_exists(&remote_room, memory, None);
@@ -555,6 +578,10 @@ pub fn remote_harvester(room: &Room, cache: &mut RoomCache, memory: &mut Screeps
                     task_id: Some((*index).try_into().unwrap()),
                     ..Default::default()
                 };
+
+                if hauler_count < harvester_count {
+                    priority -= 10.0;
+                }
 
                 spawn_manager.create_spawn_request(
                     Role::RemoteHarvester,

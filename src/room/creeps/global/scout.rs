@@ -25,7 +25,6 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         if creep.room().unwrap().name() == scout_target.room_name() {
             creep_memory.scout_target = None;
-            run_scout(creep, memory, cache);
         } else {
             let _ = creep.say("🔍 😛", true);
             creep.better_move_to(

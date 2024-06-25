@@ -1,3 +1,5 @@
+use std::cmp;
+
 use log::info;
 use screeps::{game, Part, Room, SharedCreepProperties};
 
@@ -109,14 +111,9 @@ pub fn hauler(room: &Room) -> Vec<Part> {
     let tile_usage = 100;
     let mut current_energy_usage = 0;
 
-    let energy_to_use = if room.energy_available() < energy_for_haulers {
-        room.energy_available()
-    } else {
-        energy_for_haulers
-    };
-
+    let energy_to_use = cmp::min(room.energy_available(), energy_for_haulers);
     while current_energy_usage < energy_to_use {
-        if current_energy_usage + tile_usage > energy_for_haulers {
+        if current_energy_usage + tile_usage > energy_to_use {
             break;
         }
 
@@ -190,12 +187,12 @@ pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let room_current_rcl = cache.structures.controller.as_ref().unwrap().controller.level();
     let target_work_parts = match room_current_rcl {
         1 => 1,
-        2 => 5,
+        2 => 7,
         3 => 12,
         4 => 15,
         5 => 20,
-        6 => 25,
-        7 => 25,
+        6 => 30,
+        7 => 40,
         8 => 5,
         _ => 1,
     };

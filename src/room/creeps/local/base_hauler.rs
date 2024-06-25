@@ -55,6 +55,19 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
             .get_free_capacity(Some(ResourceType::Energy))
             == 0
         {
+            if let Some(spawn) = &room_cache.structures.spawns.values().next() {
+                if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+                if creep.pos().is_near_to(spawn.pos()) {
+                    let _ = creep.say("📋 - SPAWN", false);
+                    let _ = creep.transfer(*spawn, ResourceType::Energy, None);
+                } else {
+                    let _ = creep.say("🚚 - SPAWN", false);
+                    creep.better_move_to(memory, room_cache, spawn.pos(), 1, Default::default());
+
+                    return;
+                }
+            }
+            }
             // Its right next to the storage lmao.
             if let Some(link) = link {
                 let upgrader_count = room_cache.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
@@ -72,22 +85,18 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
             }
 
             if let Some(fastfiller_containers) = &room_cache.structures.containers.fast_filler {
-                for container in fastfiller_containers {
-                    let container_half = container.store().get_capacity(None) / 2;
+                let lowest = fastfiller_containers.iter().min_by_key(|x| x.store().get_used_capacity(None)).unwrap();
 
-                    if container.store().get_used_capacity(None) > container_half {
-                        continue;
-                    }
-
-                    if creep.pos().is_near_to(container.pos()) {
+                if lowest.store().get_free_capacity(None) > 0 {
+                    if creep.pos().is_near_to(lowest.pos()) {
                         let _ = creep.say("📋 - FASTFILL", false);
-                        let _ = creep.transfer(container, ResourceType::Energy, None);
+                        let _ = creep.transfer(lowest, ResourceType::Energy, None);
                     } else {
                         let _ = creep.say("🚚 - FASTFILL", false);
                         creep.better_move_to(
                             memory,
                             room_cache,
-                            container.pos(),
+                            lowest.pos(),
                             1,
                             Default::default(),
                         );

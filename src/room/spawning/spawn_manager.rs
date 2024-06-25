@@ -1,8 +1,8 @@
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{creep, find, game, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions, StructureSpawn};
+use screeps::{creep, find, game, look, Creep, Direction, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions, StructureSpawn};
 
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::num_to_dir, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 pub struct SpawnRequest {
     role: Role,
@@ -68,7 +68,7 @@ impl SpawnManager {
         let (available_spawns, unavailable_spawns) = self.get_available_spawns();
 
         if game::time() % 10 == 0 {
-            for spawn in unavailable_spawns.iter() {
+            for spawn in self.spawns.iter() {
                 let surrounding_creeps = spawn.pos().find_in_range(find::MY_CREEPS, 1);
 
                 let mut rng = StdRng::seed_from_u64(game::time() as u64);
@@ -78,7 +78,7 @@ impl SpawnManager {
 
                     if role != Some(Role::FastFiller) {
                         let dir = num_to_dir(rng.gen_range(1..9) as u8);
-                        let _ = creep.move_direction(dir);
+                        dfs_clear_spawn(&creep, dir);
                     }
                 }
             }
@@ -138,5 +138,24 @@ impl SpawnManager {
         }
 
         (available_spawns, unavailable_spawns)
+    }
+}
+
+fn dfs_clear_spawn(creep: &Creep, dir: Direction) {
+    let cur_x = creep.pos().x().u8();
+    let cur_y = creep.pos().y().u8();
+
+    let position = dir_to_coords(dir, cur_x, cur_y);
+
+    let potential_creep = creep.room().unwrap().look_for_at_xy(look::CREEPS, position.0, position.1);
+    let mut rng = StdRng::seed_from_u64(game::time() as u64);
+
+    if potential_creep.is_empty() {
+        let _ = creep.move_direction(dir);
+    } else {
+        for creep in potential_creep {
+            //let random_dir = num_to_dir(rng.gen_range(1..9) as u8);
+            dfs_clear_spawn(&creep, dir);
+        }
     }
 }

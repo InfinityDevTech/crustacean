@@ -1,6 +1,8 @@
+use std::sync::Mutex;
+
 use log::{info, warn};
 use screeps::{
-    find, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
+    find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RectStyle, RoomName, RoomVisual, RoomXY, StructureObject, StructureType
 };
 
 use super::utils::visualise_path;
@@ -38,20 +40,24 @@ pub struct MoveTarget {
     pub range: u32
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
         let opts = SearchOptions::new(|room_name| {
             path_call(room_name, move_options)
         })
-            .max_rooms(4)
-            .max_ops(2000);
+            .max_rooms(15)
+            .max_ops(20000);
+
         let search = self.pathfind(from, Some(opts));
 
-        let steps_string = self.serialize_path(from, search, move_options);
+        let vis = game::rooms().get(from.room_name()).unwrap().visual();
+        //vis.text(self.pos.x().u8() as f32, self.pos.y().u8() as f32, format!("{:?}", search.cost()), Some(Default::default()));
 
-        //visualise_path(steps_string.clone(), from.room_name().to_string(), (from.x().u8() as f32, from.y().u8() as f32));
+        let steps_string = self.serialize_path(from, search.clone().into(), move_options);
+
+        //visualise_path(steps_string.clone(), from.room_name().to_string(), (from.x().u8() as f32, from.y().u8() as f32), search.incomplete());
         steps_string
     }
 
@@ -98,7 +104,9 @@ impl MoveTarget {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
+
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
@@ -159,7 +167,7 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
 
         for creep in creeps {
             let pos = creep.pos();
-            matrix.set(pos.xy(), 255);
+            matrix.set(pos.xy(), 3);
         }
 
         if move_options.avoid_enemies {
@@ -188,5 +196,40 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
             }
         }
     }
+
+    /*let t = TEMP_COUNT;
+    let mut count = t.lock().unwrap();
+
+    if let Some(vis) = game::rooms().get(room_name) {
+        if room_name != "W3N12" && *count < 1 {
+            return MultiRoomCostResult::CostMatrix(matrix.into());
+        }
+
+        let vis = vis.visual();
+
+        for x in 0..50 {
+            for y in 0..50 {
+                let score = matrix.get(unsafe { RoomXY::unchecked_new(x, y) });
+
+                let color = if score == 2 {
+                    "green"
+                } else if score == 1 {
+                    "white"
+                } else if score == 5 {
+                    "blue"
+                } else if score == 255 {
+                    "red"
+                } else {
+                    "black"
+                };
+
+                let style = RectStyle::default().fill(color).opacity(0.2);
+                vis.rect(x as f32 - 0.5, y as f32 - 0.5, 1.0, 1.0, Some(style));
+                //vis.text(x as f32 - 0.5, y as f32 - 0.5, format!("{}", score), Some(Default::default()));
+            }
+        }
+    }
+
+    *count += 1;*/
     MultiRoomCostResult::CostMatrix(matrix.into())
 }

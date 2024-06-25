@@ -1,6 +1,6 @@
 use screeps::{Direction, game, RoomName, PolyStyle, RectStyle};
 
-pub fn visualise_path(path: String, room_name: String, starting_pos: (f32, f32)) {
+pub fn visualise_path(path: String, room_name: String, starting_pos: (f32, f32), incomplete: bool) {
     let room = game::rooms()
         .get(RoomName::new(&room_name).unwrap());
 
@@ -20,13 +20,23 @@ pub fn visualise_path(path: String, room_name: String, starting_pos: (f32, f32))
         let (x, y) = dir_to_coords(dir, cursor.0 as u8, cursor.1 as u8);
         cursor = (x as f32, y as f32);
     }
+
+    let style = if incomplete {
+        PolyStyle::default()
+                .stroke("#ffff00")
+                .line_style(screeps::LineDrawStyle::Dashed)
+    } else {
+        PolyStyle::default()
+                .stroke("#ff0000")
+                .line_style(screeps::LineDrawStyle::Dashed)
+    };
+
+
     points.push((cursor.0, cursor.1));
     room_vis.poly(
         points,
         Some(
-            PolyStyle::default()
-                .stroke("#ff0000")
-                .line_style(screeps::LineDrawStyle::Dashed),
+            style,
         ),
     );
     room_vis.rect(

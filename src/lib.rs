@@ -1,11 +1,23 @@
-use std::{borrow::Borrow, collections::HashMap, sync::{Once, OnceLock}};
+use std::{
+    borrow::Borrow,
+    collections::HashMap,
+    sync::{Once, OnceLock},
+};
 
 use combat::{ally::Allies, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::{segment_ids, SegmentIDs};
+use movement::move_target;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use room::{cache::{self, tick_cache::{hauling, traffic, RoomCache}}, spawning, visuals::visualise_scouted_rooms};
+use room::{
+    cache::{
+        self,
+        tick_cache::{hauling, traffic, RoomCache},
+    },
+    spawning,
+    visuals::visualise_scouted_rooms,
+};
 use screeps::{find, game, IntershardResourceType, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
 
@@ -17,13 +29,13 @@ use crate::{
 
 mod combat;
 mod config;
+mod constants;
 mod heap_cache;
 mod logging;
 mod memory;
 mod movement;
 mod room;
 mod traits;
-mod constants;
 mod utils;
 
 static INITIALIZED: Once = Once::new();
@@ -38,7 +50,6 @@ pub fn last_reset() -> &'static u32 {
     static LAST_RESET: OnceLock<u32> = OnceLock::new();
     LAST_RESET.get_or_init(game::time)
 }
-
 
 #[wasm_bindgen]
 pub fn init() {
@@ -81,6 +92,8 @@ pub fn game_loop() {
         {
             finish_trace();
         }
+
+        return;
     }
 
     let mut memory = heap().memory.lock().unwrap();
@@ -113,24 +126,36 @@ pub fn game_loop() {
         let room_cache = cache.rooms.get_mut(room).unwrap();
 
         // -- Begin creep chant stuffs
-        let mut random = StdRng::seed_from_u64(game::time() as u64);
-        let iterable = room_cache.creeps.creeps_in_room.values().collect::<Vec<_>>().to_vec();
-        let random_creep = iterable[random.gen_range(0..room_cache.creeps.creeps_in_room.len())];
+        if !room_cache.creeps.creeps_in_room.is_empty() {
+            let mut random = StdRng::seed_from_u64(game::time() as u64);
+            let iterable = room_cache
+                .creeps
+                .creeps_in_room
+                .values()
+                .collect::<Vec<_>>()
+                .to_vec();
+            let random_creep =
+                iterable[random.gen_range(0..room_cache.creeps.creeps_in_room.len())];
 
-        let chant = config::CREEP_SONG;
-        let chant_count = chant.len();
+            let chant = config::CREEP_SONG;
+            let chant_count = chant.len();
 
-        let index = memory.chant_index;
+            let index = memory.chant_index;
 
-        if index + 1 >= chant_count.try_into().unwrap() {
-            memory.chant_index = 0;
-        } else {
-            memory.chant_index += 1;
+            if index + 1 >= chant_count.try_into().unwrap() {
+                memory.chant_index = 0;
+            } else {
+                memory.chant_index += 1;
+            }
+
+            let chant = chant[index as usize];
+            let _ = random_creep.say(chant, true);
+            // -- End creep chant stuffs
         }
+    }
 
-        let chant = chant[index as usize];
-        let _ = random_creep.say(chant, true);
-        // -- End creep chant stuffs
+    if game::time() % 100 == 0 {
+        hauling::clean_heap_hauling(&mut cache, &mut memory);
     }
 
     for room in game::rooms().keys() {
@@ -167,7 +192,9 @@ pub fn game_loop() {
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
 
     let heap = game::cpu::get_heap_statistics();
-    let used = ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64) / heap.heap_size_limit() as f64) * 100.0;
+    let used = ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64)
+        / heap.heap_size_limit() as f64)
+        * 100.0;
 
     info!("[STATS] Statistics are as follows: ");
     info!(
@@ -188,9 +215,12 @@ pub fn game_loop() {
         let trace = screeps_timing::stop_trace();
 
         if let Ok(trace_output) = serde_json::to_string(&trace) {
-
             //info!("Trace output: {}", trace_output);
-            let val = JsValue::from_str(&constants::COPY_TEXT.replace("$TO_COPY$", &trace_output).replace("$TIME", game::time().to_string().as_str()));
+            let val = JsValue::from_str(
+                &constants::COPY_TEXT
+                    .replace("$TO_COPY$", &trace_output)
+                    .replace("$TIME", game::time().to_string().as_str()),
+            );
             web_sys::console::log_1(&val);
         }
     }
@@ -267,6 +297,7 @@ pub fn big_red_button() {
             let _ = controller.unclaim();
         }
     }
+
     let mut memory = memory::ScreepsMemory::init_memory();
     memory.rooms = HashMap::new();
     memory.write_memory();

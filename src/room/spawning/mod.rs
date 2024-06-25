@@ -325,8 +325,8 @@ pub fn hauler(
             wanted_hauler_count.round() as u32
         };
 
-        if wanted_hauler_count > (f32::max(2.0, 10.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
-            hauler_count = (f32::max(2.0, 10.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
+        if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
+            hauler_count = (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
         }
 
         room_memory.hauler_count = hauler_count;

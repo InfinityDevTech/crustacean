@@ -1,7 +1,6 @@
 use log::info;
 use screeps::{
-    game, CircleStyle, Creep, ErrorCode, HasPosition, ObjectId, Position, Resource, ResourceType,
-    RoomCoordinate, RoomName, SharedCreepProperties, StructureStorage,
+    game, CircleStyle, Creep, ErrorCode, HasId, HasPosition, ObjectId, Position, Resource, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties, StructureStorage
 };
 
 use wasm_bindgen::JsCast;
@@ -130,6 +129,77 @@ pub fn execute_order(
         let _ = creep.say("INVLD", false);
         return true;
     }
+
+    let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+
+    let t = room_cache.resources.dropped_energy.clone();
+    let mut close_dropped_resources = t.iter().filter(|r| r.pos().is_near_to(creep.pos()));
+    if let Some(resource) = close_dropped_resources.next() {
+        let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
+
+        if free_capacity > 0{
+            let _ = creep.pickup(resource);
+
+            // If our free capacity is less than the resource, e.g. we can't pick it all up
+            // Drop our hauling task, drop our reservation, and drop the path.
+            if free_capacity < resource.amount().try_into().unwrap() {
+                creep_memory.path = None;
+                creep_memory.hauling_task = None;
+
+                release_reservation(creep, room_cache, order, resource.amount().try_into().unwrap());
+
+                return true;
+            } else {
+                room_cache.resources.dropped_energy.retain(|x| x.id() != resource.id());
+
+                let _ = creep.say("PKUP", false);
+                let _ = creep.pickup(resource);
+
+                if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
+                    creep_memory.hauling_task.as_mut().unwrap().amount = Some(haul_task - free_capacity as u32);
+                }
+
+                release_reservation(creep, room_cache, order, free_capacity);
+
+                return true;
+            }
+        }
+    }
+
+    let mut tombstones = room_cache.structures.tombstones.values().filter(|t| t.store().get_used_capacity(Some(ResourceType::Energy)) > 0 && t.pos().is_near_to(creep.pos()));
+    if let Some(tombstone) = tombstones.next() {
+        let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
+        let amount = std::cmp::min(
+            free_capacity,
+            tombstone.store().get_used_capacity(Some(ResourceType::Energy)) as i32,
+        );
+
+        if free_capacity > amount {
+            let _ = creep.withdraw(tombstone, ResourceType::Energy, Some(amount as u32));
+
+            if amount == free_capacity {
+                creep_memory.path = None;
+                creep_memory.hauling_task = None;
+
+                release_reservation(creep, room_cache, order, amount);
+
+                return true;
+            }
+        } else {
+                let _ = creep.say("WTHDW", false);
+
+                let _ = creep.withdraw(tombstone, ResourceType::Energy, Some(amount as u32));
+
+                if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
+                    creep_memory.hauling_task.as_mut().unwrap().amount = Some(haul_task - amount as u32);
+                }
+
+                room_cache.structures.tombstones.remove(&tombstone.id());
+
+                release_reservation(creep, room_cache, order, amount);
+                return true;
+            }
+        }
 
     if !creep.pos().is_near_to(position.unwrap()) {
         let coord = unsafe { RoomCoordinate::unchecked_new(25) };

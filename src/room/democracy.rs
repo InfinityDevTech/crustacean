@@ -7,12 +7,9 @@ use screeps::{
 };
 
 use crate::{
-    combat::{hate_handler, rank_room},
-    memory::{Role, ScreepsMemory},
-    room::{
+    combat::{hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
         cache::tick_cache::{hauling, resources, traffic, RoomCache}, creeps::{local::hauler, organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, spawning, tower, visuals::run_full_visuals
-    },
-    traits::room::RoomExtensions,
+    }, traits::room::RoomExtensions
 };
 
 use super::{
@@ -22,7 +19,7 @@ use super::{
         }}, visuals::visualise_room_visual
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -99,7 +96,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             run_crap_planner_code(&room, memory, room_cache);
             run_full_visuals(&room, memory, room_cache);
 
-            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 5 || game::time() % 3000 == 0 {
+            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 5 || game::time() % 3000 == 0 || *heap().heap_lifetime.lock().unwrap() == 0 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);

@@ -6,6 +6,7 @@ use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, Room
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
+use strum::EnumIter;
 
 use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
 
@@ -14,38 +15,39 @@ pub enum SegmentIDs {
     Profiler = 9
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
     enum_map! {
         SegmentIDs::Profiler => 9,
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy, EnumIter)]
 // The roles listed in creep memory
 // The order of this also is the order in which
 // Traffic Priority is handled.
 pub enum Role {
     // Mining industry
-    Miner,
-    Hauler,
-    Repairer,
-    BaseHauler,
-    FastFiller,
-    RemoteHarvester,
-    // Construction industry
-    Upgrader,
-    Builder,
+    Miner = 0,
+    Hauler = 1,
 
-    Scout,
+    FastFiller = 2,
+    BaseHauler = 3,
 
-    Bulldozer,
-    Unclaimer,
+    Upgrader = 4,
+    Repairer = 5,
+    Scout = 6,
+    Builder = 7,
 
-    PhysicalObserver,
+    RemoteHarvester = 8,
+    PhysicalObserver = 9,
+
+    Bulldozer = 10,
+    Unclaimer = 11,
 
     // Assorted junk roles, recycler just recycles itself
-    Recycler,
-    GiftBasket,
+    Recycler = 99,
+    GiftBasket = 100,
 }
 
 // What each creep stores in its memory.

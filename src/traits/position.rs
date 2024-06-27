@@ -4,6 +4,7 @@ pub trait PositionExtensions {
     fn get_accessible_positions_around(&self, range: u8) -> u8;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl PositionExtensions for Position {
     fn get_accessible_positions_around(&self, range: u8) -> u8 {
         let mut positions = 0;

@@ -2,6 +2,7 @@ use screeps::Room;
 
 use super::cache::tick_cache::CachedRoom;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
     //let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
     if let Some(storage_link) = &room_cache.structures.links.storage {

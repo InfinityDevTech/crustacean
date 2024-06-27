@@ -18,7 +18,6 @@ pub enum HealthChangeType {
 pub struct RoomHeapCache {
     pub room: String,
     pub creeps: HashMap<String, HeapCreep>,
-    pub hauling: HeapHaulingCache,
 
     pub sources: Vec<ObjectId<Source>>,
 }
@@ -34,7 +33,6 @@ impl RoomHeapCache {
         RoomHeapCache {
             room: room.name_str(),
             creeps: HashMap::new(),
-            hauling: HeapHaulingCache::default(),
 
             sources: Vec::new(),
         }

@@ -2,7 +2,7 @@ use screeps::RoomName;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RemoteReservationGoal {
+pub struct RoomReservationGoal {
     pub reservation_target: RoomName,
     pub accessible_reservation_spots: u8,
     pub creeps_assigned: Vec<String>,
@@ -11,6 +11,6 @@ pub struct RemoteReservationGoal {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone, Default)]]
     pub struct GoalMemory {
-        pub remote_reservation: Vec<RemoteReservationGoal>,
+        pub room_reservation: Vec<RoomReservationGoal>,
     }
 }

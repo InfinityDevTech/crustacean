@@ -23,7 +23,7 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();

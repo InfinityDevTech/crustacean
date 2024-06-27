@@ -25,6 +25,8 @@ rust_decimal = "1.35.0"
 enum-map = "2.7.3"
 screeps-timing = { git = "https://github.com/InfinityDevTech/screeps-timing", optional = true }
 screeps-timing-annotate = { git = "https://github.com/Azaril/screeps-timing-annotate", optional = true }
+strum = { version = "0.26.3", features = ["derive"] }
+strum_macros = "0.26.4"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

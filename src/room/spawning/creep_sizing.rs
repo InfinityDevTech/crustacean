@@ -8,7 +8,7 @@ use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_
 
 /// Returns the parts needed for a miner creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Part> {
+pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Part> {
     let mut parts = Vec::new();
 
     if source_parts_needed == 0 {
@@ -93,17 +93,20 @@ pub fn miner(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Pa
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn hauler(room: &Room) -> Vec<Part> {
+pub fn hauler_body(room: &Room) -> Vec<Part> {
     let mut body = Vec::new();
 
+    // Every hundo = 1C 1M
     let energy_for_haulers = match room.controller().unwrap().level() {
         1 => 100,
-        2 => 300,
-        3 => 500,
-        4 => 500,
-        5 => 800,
-        6 => 800,
+        2 => 200,
+        3 => 300,
+        4 => 400,
+        5 => 400,
+        6 => 400,
+        // We get more spawns, so they suck up less spawn time
         7 => 1200,
+        // 3 spawns, go ham.
         8 => 2000,
         _ => 100,
     };
@@ -125,8 +128,33 @@ pub fn hauler(room: &Room) -> Vec<Part> {
     body
 }
 
+pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+    let hauler_count = cache.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+
+    let max_energy = if hauler_count > 0 {
+        room.energy_capacity_available()
+    } else {
+        room.energy_available()
+    };
+
+    let mut body = vec![Part::Move, Part::Carry];
+    let mut cost = 100;
+
+    while cost < max_energy {
+        if cost + 100 > max_energy {
+            break;
+        }
+
+        body.push(Part::Move);
+        body.push(Part::Carry);
+        cost += 100;
+    }
+
+    body
+}
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn builder(room: &Room, _cache: &CachedRoom) -> Vec<Part> {
+pub fn builder_body(room: &Room, _cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
     let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
@@ -151,7 +179,7 @@ pub fn builder(room: &Room, _cache: &CachedRoom) -> Vec<Part> {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn repairer(room: &Room, parts_needed: u8, _cache: &CachedRoom) -> Vec<Part> {
+pub fn repairer_body(room: &Room, parts_needed: u8, _cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
     let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
@@ -179,7 +207,7 @@ pub fn repairer(room: &Room, parts_needed: u8, _cache: &CachedRoom) -> Vec<Part>
 
 /// Returns the parts needed for a upgrader creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn upgrader(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
     let room_current_rcl = cache.structures.controller.as_ref().unwrap().controller.level();

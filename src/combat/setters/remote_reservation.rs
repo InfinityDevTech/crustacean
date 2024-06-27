@@ -1,36 +1,42 @@
 use screeps::{game, HasPosition, OwnedStructureProperties, Position, Room, RoomCoordinate};
 
-use crate::{goal_memory::RemoteReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::PositionExtensions, utils::get_my_username};
+use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::PositionExtensions, utils::get_my_username};
 
-pub fn determine_reservations(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    //let mut reservations = Vec::new();
-
+pub fn determine_reservations(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote in memory.remote_rooms.values() {
-        let exists = memory.goals.remote_reservation.iter().any(|x| x.reservation_target == remote.name);
+        let exists = memory.goals.room_reservation.iter().any(|x| x.reservation_target == remote.name);
         if exists {
             continue;
         }
 
-        let room = game::rooms().get(remote.name).unwrap();
+        let room = game::rooms().get(remote.name);
 
-        let reservation = does_remote_need_reservation(&room, memory, cache);
+        if room.is_none() {
+            continue;
+        }
+        let room = room.unwrap();
 
-        let accessible_reservation_points = room.controller().unwrap().pos().get_accessible_positions_around(1);
+        if remote_need_reservation(&room, memory, cache) {
+            let accessible_reservation_points = room.controller().unwrap().pos().get_accessible_positions_around(1);
 
-        if reservation {
-            let goal = RemoteReservationGoal {
+            let goal = RoomReservationGoal {
                 reservation_target: remote.name,
                 accessible_reservation_spots: accessible_reservation_points,
                 creeps_assigned: Vec::new(),
             };
 
-            memory.goals.remote_reservation.push(goal);
+            memory.goals.room_reservation.push(goal);
         }
     }
 }
 
-pub fn does_remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &RoomCache) -> bool {
-    let remote_memory = memory.remote_rooms.get(&room.name()).unwrap();
+pub fn remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &RoomCache) -> bool {
+    let remote_memory = memory.remote_rooms.get(&room.name());
+    if remote_memory.is_none() {
+        return false;
+    }
+
+    let remote_memory = remote_memory.unwrap();
 
     if room.controller().is_none() {
         return false;

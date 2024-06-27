@@ -4,6 +4,7 @@ use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{haul
 use wasm_bindgen::JsCast;
 use super::hauler;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -69,6 +70,7 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
     let mut lowest_rank = f32::MAX;
     let mut lowest_rank_id = None;
@@ -109,6 +111,7 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_energy(creep: &Creep, memory: &mut CreepMemory, cache: &mut RoomCache) {
     if let Some(hauling_task) = memory.hauling_task.clone() {
         hauler::execute_order(creep, memory, cache, &hauling_task);

@@ -27,10 +27,11 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             let _ = creep.say("😴", false);
             return;
         }
-        
-        let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
-        if creep.room().unwrap().name() != remote_room {
+        let room_name = creep.room().unwrap().name();
+        let room_cache = cache.rooms.get_mut(&room_name).unwrap();
+
+        if room_name != remote_room {
             let _ = creep.say("🚚", false);
 
             let x = unsafe { RoomCoordinate::unchecked_new(25) };

@@ -5,13 +5,10 @@ use screeps::{
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory},
-    movement::move_target::MoveOptions,
-    room::cache::tick_cache::{
+    heap, memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{
             hauling::{HaulTaskRequest, HaulingType},
             CachedRoom, RoomCache,
-        },
-    traits::creep::CreepExtensions,
+        }, traits::creep::CreepExtensions
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -79,6 +76,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache: &mut RoomCache) {
     if creep_memory.role == Role::Hauler {
         if creep.store().get_free_capacity(None) == 0 {
@@ -102,7 +100,7 @@ pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache:
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn execute_order(
     creep: &Creep,
     creep_memory: &mut CreepMemory,
@@ -206,6 +204,8 @@ pub fn execute_order(
             HaulingType::Withdraw => creep.say("MV-WTHD", false),
             HaulingType::Pickup => creep.say("MV-PKUP", false),
             HaulingType::Transfer => creep.say("MV-TFER", false),
+
+            _ => { creep.say("MV-UNK", false) }
         };
         return false;
     }
@@ -326,6 +326,8 @@ pub fn execute_order(
                 (0, Err(ErrorCode::NotFound))
             }
         }
+
+        _ => (0, Ok(())),
     };
 
     let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -369,15 +371,15 @@ pub fn execute_order(
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn release_reservation(
     creep: &Creep,
     room_cache: &mut CachedRoom,
     order: &CreepHaulTask,
     amount_hauled: i32,
 ) {
-    if let Some(reservation) = room_cache
-        .heap_cache
-        .hauling
+    let mut heap_hauling = heap().hauling.lock().unwrap();
+    if let Some(reservation) = heap_hauling
         .reserved_orders
         .get_mut(&order.target_id)
     {
@@ -385,9 +387,7 @@ pub fn release_reservation(
         reservation.creeps_assigned.retain(|x| x != &creep.name());
 
         if reservation.reserved_amount <= 0 || reservation.creeps_assigned.is_empty() {
-            room_cache
-                .heap_cache
-                .hauling
+            heap_hauling
                 .reserved_orders
                 .remove(&order.target_id);
         }

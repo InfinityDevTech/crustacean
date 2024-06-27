@@ -36,7 +36,7 @@ pub struct MoveTarget {
     pub range: u32
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
@@ -97,7 +97,7 @@ impl MoveTarget {
 
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 

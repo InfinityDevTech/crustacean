@@ -117,6 +117,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_rampart_repair_rcl(rcl: u8) -> u32 {
     match rcl {
         1 => 500,

@@ -54,10 +54,6 @@ pub fn harvest_source(
     creep_memory: &mut CreepMemory,
     cache: &mut CachedRoom,
 ) {
-    if creep.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
-        return;
-    }
-
     if !creep.pos().is_near_to(source.pos()) {
         let _ = creep.say("🚚 🔋", false);
 

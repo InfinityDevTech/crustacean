@@ -97,35 +97,34 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
     let spawn = cache.structures.spawns.values().next().unwrap();
 
-    if creep.ticks_to_live() < Some(100) && creep.pos().is_near_to(spawn.pos()) {
+    if creep.ticks_to_live() < Some(100) && creep.pos().is_near_to(spawn.pos()) && spawn.spawning().is_none() {
         let _ = spawn.renew_creep(creep);
     }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn find_possible_targets(creep: &Creep, _cache: &CachedRoom) -> Vec<RawObjectId> {
-    let find_call = creep.pos().find_in_range(find::STRUCTURES, 1);
-
+pub fn find_possible_targets(creep: &Creep, cache: &CachedRoom) -> Vec<RawObjectId> {
     let mut possible_targets = Vec::new();
 
-    for target in find_call {
-        match target {
-            StructureObject::StructureExtension(extension) => {
-                if extension
-                    .store()
-                    .get_free_capacity(Some(ResourceType::Energy))
-                    > 0
-                {
-                    possible_targets.push(extension.raw_id());
-                }
-            }
+    for extension in cache.structures.extensions.values() {
+        if creep.pos().in_range_to(extension.pos(), 1) &&
+            extension
+            .store()
+            .get_free_capacity(Some(ResourceType::Energy))
+            > 0
+        {
+            possible_targets.push(extension.raw_id());
+        }
+    }
 
-            StructureObject::StructureSpawn(spawn) => {
-                if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
-                    possible_targets.push(spawn.raw_id());
-                }
-            }
-            _ => {}
+    for spawn in cache.structures.spawns.values() {
+        if creep.pos().in_range_to(spawn.pos(), 1) &&
+            spawn
+            .store()
+            .get_free_capacity(Some(ResourceType::Energy))
+            > 0
+        {
+            possible_targets.push(spawn.raw_id());
         }
     }
 

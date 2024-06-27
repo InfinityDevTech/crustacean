@@ -34,7 +34,7 @@ pub trait CreepExtensions {
 }
 
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {

@@ -57,9 +57,8 @@ pub fn init() {
 //#[cfg(feature = "profile")]
 
 // TODO: Improve logistics, or improve remoting, either or
-// Reserve remotes, we need the 3k energy from the sources.
+// Reserve remotes, we need the 3k energy from the sources. <- This is getting made, goal system.
 // Fix the hauler reserving logic? It doesnt appear to be persistent cross tick.
-// Either reserve more remotes, or add roads to the remotes.
 pub fn game_loop() {
     use room::democracy;
 
@@ -150,13 +149,29 @@ pub fn game_loop() {
     }
 
     if game::time() % 100 == 0 {
-        hauling::clean_heap_hauling(&mut cache, &mut memory);
+        hauling::clean_heap_hauling(&mut memory);
     }
 
     for room in game::rooms().keys() {
         let room = game::rooms().get(room).unwrap();
         if let Some(room_cache) = cache.rooms.get_mut(&room.name()) {
+            let start = game::cpu::get_used();
             traffic::run_movement(room_cache);
+
+            let name = if room.my() {
+                format!("MY-{}", room.name())
+            } else {
+                room.name().to_string()
+            };
+
+            if room.my() {
+                info!(
+                    "[{}] Traffic took: {:.4} with {} intents",
+                    name,
+                    game::cpu::get_used() - start,
+                    room_cache.traffic.move_intents
+                );
+            }
 
             if room.my() {
                 room_cache.write_cache_to_heap(&room);

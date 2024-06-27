@@ -21,6 +21,7 @@ pub struct CachedRoomContainers {
     pub source_container: Option<Vec<StructureContainer>>
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedRoomContainers {
     pub fn new() -> Self {
         CachedRoomContainers {
@@ -39,6 +40,7 @@ pub struct CachedRoomLinks {
     pub storage: Option<StructureLink>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedRoomLinks {
     pub fn new() -> Self {
         CachedRoomLinks {
@@ -74,7 +76,7 @@ pub struct RoomStructureCache {
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,
@@ -275,6 +277,21 @@ impl RoomStructureCache {
         for tombstone in tombstones {
             self.tombstones.insert(tombstone.id(), tombstone);
         }
+    }
+
+    pub fn get_spawns(&self) -> (Vec<StructureSpawn>, Vec<StructureSpawn>) {
+        let mut available_spawns = Vec::new();
+        let mut unavailable_spawns = Vec::new();
+    
+        for spawn in self.spawns.values() {
+            if spawn.spawning().is_none() {
+                available_spawns.push(spawn.clone())
+            } else {
+                unavailable_spawns.push(spawn.clone())
+            }
+        }
+
+        (available_spawns, unavailable_spawns)
     }
 
     pub fn refresh_construction_cache(&mut self, room: &Room) {

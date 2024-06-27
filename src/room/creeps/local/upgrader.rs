@@ -27,6 +27,7 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_energy(creep: &Creep, creep_memory: &mut CreepMemory, cached_room: &mut CachedRoom) -> bool {
     let controller = cached_room.structures.controller.as_ref().unwrap();
 

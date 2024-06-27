@@ -7,8 +7,6 @@ use crate::{
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    info!("Recycler creep is running");
-
     // If the creep is a spud and cant move, suicide
     // Because its wasting my damn space and time.
     let parts = creep

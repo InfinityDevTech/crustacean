@@ -1,5 +1,7 @@
+use log::info;
 use screeps::{
-    pathfinder::{self, SearchOptions}, HasPosition, Position, Room, RoomCoordinate, RoomName
+    pathfinder::{self, SearchOptions},
+    HasPosition, Position, Room, RoomCoordinate, RoomName,
 };
 
 use crate::{
@@ -15,14 +17,7 @@ pub fn fetch_possible_remotes(
     room_cache: &mut CachedRoom,
 ) -> Vec<RoomName> {
     // Little high on CPU, but its run every 3k ticks, so its fine. I guess.
-    if let Some(existing_remotes) = memory.rooms.get_mut(&room.name()) {
-        for remote in existing_remotes.clone().remotes.iter() {
-            memory.remote_rooms.remove(remote);
-
-            existing_remotes.remotes.retain(|x| x != remote);
-        }
-    }
-
+    let mut pre_existing = Vec::new();
     let adjacent_rooms = room.get_adjacent(3);
 
     // Go through all the adjacent rooms and rank them
@@ -38,28 +33,54 @@ pub fn fetch_possible_remotes(
         possible_remotes.push((room_name, rank));
     }
 
+    info!("Possible remotes: {:?}", possible_remotes.len());
+
     let mut remotes = Vec::new();
 
     // Sort the remotes by rank - ascending
     possible_remotes.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
+    let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
+    if possible_remotes.len() < 5 && room_memory.remotes.len() > 0 {
+        return room_memory.remotes.clone();
+    }
+
+    // ONLY, wipe this if we find new remotes. Fix this later
+    // TODO: Fix this so it doesnt remove existing ones for the tick duration. It fucks with things.
+    if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+        for remote in room_memory.remotes.clone().iter() {
+            memory.remote_rooms.remove(remote);
+            pre_existing.push(remote.clone());
+
+            room_memory.remotes.retain(|x| x != remote);
+        }
+    }
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+        // Get the top 2.
+        for remote in possible_remotes.iter().take(5) {
+            let remote = RemoteRoomMemory {
+                name: remote.0,
+                owner: room.name(),
 
-    // Get the top 2.
-    for remote in possible_remotes.iter().take(5) {
-        let remote = RemoteRoomMemory {
-            name: remote.0,
-            owner: room.name(),
+                creeps: Vec::new(),
+            };
 
-            creeps: Vec::new(),
-        };
-
-        remotes.push(remote.name);
-        room_memory.remotes.push(remote.name);
-        memory.remote_rooms.insert(remote.name, remote);
+            remotes.push(remote.name);
+            room_memory.remotes.push(remote.name);
+            memory.scouted_rooms.remove(&remote.name);
+            memory.remote_rooms.insert(remote.name, remote);
+        }
     }
-}
+
+    for remote in pre_existing {
+        if remotes.contains(&remote) {
+            continue;
+        } else {
+            memory.goals.room_reservation.retain(|x| x.reservation_target != remote);
+        }
+    }
 
     remotes
 }
@@ -91,7 +112,9 @@ pub fn rank_remote_room(
         return u32::MAX;
     }
 
-    if scouted.unwrap().room_type == RoomType::SourceKeeper || scouted.unwrap().room_type == RoomType::Highway {
+    if scouted.unwrap().room_type == RoomType::SourceKeeper
+        || scouted.unwrap().room_type == RoomType::Highway
+    {
         return u32::MAX;
     }
 

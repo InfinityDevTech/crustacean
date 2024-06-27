@@ -37,7 +37,7 @@ pub trait RoomExtensions {
     fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()
@@ -232,6 +232,7 @@ impl RoomExtensions for screeps::Room {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_pos_in_rect(rect: (u8, u8, u8, u8)) -> Vec<(u8, u8)> {
     let mut positions = Vec::new();
 

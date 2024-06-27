@@ -27,7 +27,7 @@ pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut CachedRoom) {
     // Sort by range.
     let link = room_cache.structures.links.storage.clone();
@@ -48,6 +48,16 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
         extension.pos().get_range_to(creep.pos())
     });
     let mut extensions = extensions.into_iter();
+
+    // If we are next to the storage, withdraw from it.
+    // This is done passively.
+    if let Some(storage) = &room_cache.structures.storage {
+        if creep.pos().is_near_to(storage.pos()) && creep.store().get_free_capacity(None) > 0 {
+            let _ = creep.say("📋 - STORE", false);
+            let amount = cmp::min(storage.store().get_used_capacity(Some(ResourceType::Energy)), creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap());
+            let _ = creep.withdraw(storage, ResourceType::Energy, Some(amount));
+        }
+    }
 
     if let Some(extension) = extensions.next() {
         if extension
@@ -143,17 +153,9 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
         }
     }
 
-    if let Some(storage) = &room_cache.structures.storage {
-        if creep.pos().is_near_to(storage.pos()) && creep.store().get_free_capacity(None) > 0 {
-            let _ = creep.say("📋 - STORE", false);
-            let amount = cmp::min(storage.store().get_used_capacity(Some(ResourceType::Energy)), creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap());
-            let _ = creep.withdraw(storage, ResourceType::Energy, Some(amount));
-        }
-    }
-
     if let Some(storage_link) = &room_cache.structures.links.storage {
         let upgrader_count = room_cache.creeps.creeps_of_role.get(&Role::Upgrader).map_or(0, |x| x.len());
-        if creep.pos().is_near_to(storage_link.pos()) && storage_link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 && upgrader_count > 0 {
+        if creep.pos().is_near_to(storage_link.pos()) && storage_link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 && upgrader_count > 0 && room_cache.structures.storage.as_ref().unwrap().store().get_used_capacity(Some(ResourceType::Energy)) > 10000 {
             let _ = creep.say("📋 - LINK", false);
             let _ = creep.transfer(storage_link, ResourceType::Energy, None);
         }

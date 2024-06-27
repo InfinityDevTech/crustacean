@@ -7,7 +7,7 @@ use screeps::{
 };
 
 use crate::{
-    combat::{hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
+    combat::{self, hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
         cache::tick_cache::{hauling, resources, traffic, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
     }, traits::room::RoomExtensions
 };
@@ -19,7 +19,7 @@ use super::{
         }, visuals::visualise_room_visual
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -32,6 +32,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
     if !room.my() && game::cpu::bucket() < 1000 {
         info!("[{}] Skipping execution, bucket is too low...", room.name());
+
+        return;
     }
 
     visualise_room_visual(&room.name());
@@ -70,6 +72,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         // Makes hauling requests for the rooms remotes :)
         resources::haul_remotes(&room, memory, cache);
+
+        // Where the fun stuff happens!
+        combat::room::run_room_combat(&room, memory, cache);
 
         organizer::run_creeps(&room, memory, cache);
 
@@ -125,17 +130,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     // Match these haulers to their tasks, that way we can run them
     //room_cache.hauling.match_haulers(memory, &room.name());
 
-    let start = game::cpu::get_used();
-    traffic::run_movement(room_cache);
-
-    if room.my() {
-        info!(
-            "  [TRAFFIX] Traffic took: {:.4} with {} intents",
-            game::cpu::get_used() - start,
-            room_cache.traffic.move_intents
-        );
-    }
-
     if room.my() {
         let end_cpu = game::cpu::get_used();
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
@@ -176,7 +170,7 @@ pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
     MultiRoomCostResult::CostMatrix(matrix.into())
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
     let _coords = room_cache.structures.spawns.values().next().unwrap().pos();
     let _viz = RoomVisualExt::new(room.name());

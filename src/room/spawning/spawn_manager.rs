@@ -1,16 +1,14 @@
 use std::collections::HashMap;
-use std::ops::Deref;
 
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::prelude::SliceRandom;
-use screeps::{find, game, look, spawn, Creep, Direction, HasPosition, Part, Room, RoomName, SharedCreepProperties, SpawnOptions, StructureSpawn};
+use screeps::{game, look, Creep, Direction, HasPosition, Part, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::room::cache::tick_cache::RoomCache;
-use crate::utils::{get_body_cost, get_unique_id};
+use crate::utils::get_unique_id;
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
-use super::creep_sizing::{base_hauler_body, hauler_body, miner_body, repairer_body, upgrader_body};
 use super::{base_hauler, create_spawn_requests_for_room, fast_filler, get_required_role_counts, hauler, miner, repairer, scout, upgrader};
 
 pub struct SpawnRequest {
@@ -93,7 +91,7 @@ impl SpawnManager {
 
                 if role != Some(Role::FastFiller) {
                     let dir = num_to_dir(rng.gen_range(1..9) as u8);
-                    dfs_clear_spawn(&creep, dir);
+                    dfs_clear_spawn(creep, dir);
                 }
             }
         }
@@ -119,7 +117,7 @@ impl SpawnManager {
         };
 
         if let Some(spawn) = available_spawn.first() {
-            let spawn_result = spawn.spawn_creep_with_options(&request.body, &name, &options);
+            let spawn_result = spawn.spawn_creep_with_options(&request.body, &name, options);
 
             if spawn_result.is_ok() {
                 memory.create_creep(&room.name(), &name, request.creep_memory.clone());
@@ -211,6 +209,11 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         if !spawned_this_tick {
             let mut room_requests = create_spawn_requests_for_room(&room, cache, memory);
+
+            if let Some(other_room_requests) = cache.spawning.room_spawn_queue.get_mut(&room.name()) {
+                room_requests.append(other_room_requests);
+            }
+
             let room_cache = cache.rooms.get(&room.name()).unwrap();
 
             room_requests.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());

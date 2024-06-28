@@ -100,10 +100,10 @@ pub fn hauler_body(room: &Room) -> Vec<Part> {
     let energy_for_haulers = match room.controller().unwrap().level() {
         1 => 100,
         2 => 200,
-        3 => 300,
-        4 => 400,
-        5 => 400,
-        6 => 400,
+        3 => 200,
+        4 => 200,
+        5 => 200,
+        6 => 200,
         // We get more spawns, so they suck up less spawn time
         7 => 1200,
         // 3 spawns, go ham.

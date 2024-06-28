@@ -1,6 +1,12 @@
+use log::info;
 use screeps::{game, Part, RoomName, SharedCreepProperties};
 
-use crate::{goal_memory::RoomReservationGoal, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
+use crate::{
+    goal_memory::RoomReservationGoal,
+    memory::{CreepMemory, Role, ScreepsMemory},
+    room::cache::tick_cache::RoomCache,
+    utils::{self, get_body_cost, get_unique_id, role_to_name},
+};
 
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.room_reservation.clone();
@@ -17,17 +23,19 @@ pub fn clear_creeps(goal: &mut RoomReservationGoal) {
     for creep in &goal.creeps_assigned {
         let creep = game::creeps().get(creep.to_string());
 
-        if creep.is_none() {
-            continue;
-        } else {
-            new_creeps.push(creep.unwrap().name().to_string());
+        if let Some(creep) = creep {
+            new_creeps.push(creep.name());
         }
     }
 
     goal.creeps_assigned = new_creeps;
 }
 
-pub fn attain_reservation(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn attain_reservation(
+    target_room: &RoomName,
+    memory: &mut ScreepsMemory,
+    cache: &mut RoomCache,
+) {
     let goal = memory.goals.room_reservation.get_mut(target_room).unwrap();
 
     clear_creeps(goal);
@@ -42,6 +50,19 @@ pub fn attain_reservation(target_room: &RoomName, memory: &mut ScreepsMemory, ca
         let new_creep = spawn_creep(goal, cache);
         if let Some(new) = new_creep {
             goal.creeps_assigned.push(new);
+        }
+    }
+
+    if let Some(room) = game::rooms().get(*target_room) {
+        let reservation_status = room.controller().unwrap().reservation();
+        if let Some(reservation) = reservation_status {
+            // Basically, we completed the goal. Soooo, we can remove it
+            if reservation.username() == utils::get_my_username()
+                && reservation.ticks_to_end() > 1200
+            {
+                info!("[{}] Successfully reserved remote to satisfactory levels. Removing goal", target_room);
+                memory.goals.room_reservation.remove(target_room);
+            }
         }
     }
 }
@@ -77,6 +98,10 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             let mut current_cost = 650;
 
             while current_cost < energy_storage {
+                if current_cost + stamp_cost > energy_storage {
+                    break;
+                }
+
                 body.push(Part::Claim);
                 body.push(Part::Move);
 
@@ -89,23 +114,40 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         };
         let cost = get_body_cost(&body);
 
-        let mut creep_memory = CreepMemory {
+        let creep_memory = CreepMemory {
             role: Role::Reserver,
             owning_room: best_spawned,
             target_room: Some(goal.reservation_target),
             ..Default::default()
         };
 
-        let name = format!("{}-{}-{}", role_to_name(Role::Reserver), best_spawned, get_unique_id());
+        let name = format!(
+            "{}-{}-{}",
+            role_to_name(Role::Reserver),
+            best_spawned,
+            get_unique_id()
+        );
 
-        let req = cache.spawning.create_room_spawn_request(Role::Reserver, body, 4.0, cost, best_spawned, Some(creep_memory), None, Some(name.clone()));
+        let req = cache.spawning.create_room_spawn_request(
+            Role::Reserver,
+            body,
+            4.0,
+            cost,
+            best_spawned,
+            Some(creep_memory),
+            None,
+            Some(name.clone()),
+        );
         if let Some(reqs) = cache.spawning.room_spawn_queue.get_mut(&best_spawned) {
             reqs.push(req);
         } else {
-            cache.spawning.room_spawn_queue.insert(best_spawned, vec![req]);
+            cache
+                .spawning
+                .room_spawn_queue
+                .insert(best_spawned, vec![req]);
         }
 
-        Some(name.clone());
+        return Some(name)
     }
 
     None

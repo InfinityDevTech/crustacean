@@ -7,7 +7,7 @@ use screeps::{
 use crate::{
     memory::{RemoteRoomMemory, ScreepsMemory},
     room::{cache::tick_cache::CachedRoom, democracy::remote_path_call},
-    traits::room::{RoomExtensions, RoomType},
+    traits::room::{RoomExtensions, RoomType}, utils,
 };
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -42,7 +42,7 @@ pub fn fetch_possible_remotes(
 
     let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-    if possible_remotes.len() < 5 && room_memory.remotes.len() > 0 {
+    if possible_remotes.len() < 5 && !room_memory.remotes.is_empty() {
         return room_memory.remotes.clone();
     }
 
@@ -51,7 +51,7 @@ pub fn fetch_possible_remotes(
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         for remote in room_memory.remotes.clone().iter() {
             memory.remote_rooms.remove(remote);
-            pre_existing.push(remote.clone());
+            pre_existing.push(*remote);
 
             room_memory.remotes.retain(|x| x != remote);
         }
@@ -89,7 +89,7 @@ pub fn fetch_possible_remotes(
     remotes
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn rank_remote_room(
     memory: &mut ScreepsMemory,
     room_cache: &CachedRoom,
@@ -112,7 +112,7 @@ pub fn rank_remote_room(
 
     // This should be changed to add aggression.
     // As of right now, we are pacificists.
-    if scouted.unwrap().owner.is_some() || scouted.unwrap().reserved.is_some() {
+    if scouted.unwrap().owner.is_some() || scouted.unwrap().reserved.is_some() && *scouted.unwrap().reserved.as_ref().unwrap() != utils::get_my_username() {
         return u32::MAX;
     }
 

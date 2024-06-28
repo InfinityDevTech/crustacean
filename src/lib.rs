@@ -6,11 +6,10 @@ use std::{
 use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
-use memory::{segment_ids, SegmentIDs};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::tick_cache::{hauling, traffic, RoomCache},
-    spawning::{self, spawn_manager::{self, SpawnManager}},
+    spawning::spawn_manager::{self, SpawnManager},
     visuals::visualise_scouted_rooms,
 };
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
@@ -94,7 +93,7 @@ pub fn game_loop() {
     }
 
     let mut memory = heap().memory.lock().unwrap();
-    let mut spawn_manager = SpawnManager::new();
+    let spawn_manager = SpawnManager::new();
     let mut cache = RoomCache::new(spawn_manager);
     let mut allies = Allies::new(&mut memory);
     allies.sync(&mut memory);
@@ -114,8 +113,6 @@ pub fn game_loop() {
     }
 
     for room in cache.my_rooms.clone().iter() {
-        let game_room = game::rooms().get(*room).unwrap();
-
         hauling::match_haulers(&mut cache, &mut memory, room);
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
@@ -304,7 +301,7 @@ pub fn big_red_button() {
 #[wasm_bindgen(js_name = hauler_rescan)]
 pub fn manual_hauler_rescan() {
     let mut memory = heap().memory.lock().unwrap();
-    for (name, rmemory) in &mut memory.rooms {
+    for rmemory in &mut memory.rooms.values_mut() {
         rmemory.hauler_count = 0;
     }
     memory.write_memory();

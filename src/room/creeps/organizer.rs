@@ -66,6 +66,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Unclaimer => global::unclaimer::run_unclaimer(&creep, memory, cache),
             Role::Recycler => global::recycler::run_recycler(&creep, memory, cache),
             Role::PhysicalObserver => global::physical_observer::run_physical_observer(&creep, memory, cache),
+            Role::Reserver => global::reserver::run_reserver(&creep, memory, cache),
             _ => {let _ = creep.say("BAD ROLE", true);},
         }
 

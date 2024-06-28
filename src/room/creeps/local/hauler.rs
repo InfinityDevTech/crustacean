@@ -1,14 +1,19 @@
 use screeps::{
-    game, Creep, ErrorCode, HasId, HasPosition, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
+    game, Creep, ErrorCode, HasId, HasPosition, ObjectId, Resource, ResourceType,
+    SharedCreepProperties, StructureStorage,
 };
 
 use wasm_bindgen::JsCast;
 
 use crate::{
-    heap, memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{
-            hauling::{HaulTaskRequest, HaulingType},
-            CachedRoom, RoomCache,
-        }, traits::creep::CreepExtensions
+    heap,
+    memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory},
+    movement::move_target::MoveOptions,
+    room::cache::tick_cache::{
+        hauling::{HaulTaskRequest, HaulingType},
+        CachedRoom, RoomCache,
+    },
+    traits::creep::CreepExtensions,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -126,7 +131,7 @@ pub fn execute_order(
     if let Some(resource) = close_dropped_resources.next() {
         let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
 
-        if free_capacity > 0{
+        if free_capacity > 0 {
             let _ = creep.pickup(resource);
 
             // If our free capacity is less than the resource, e.g. we can't pick it all up
@@ -135,17 +140,26 @@ pub fn execute_order(
                 creep_memory.path = None;
                 creep_memory.hauling_task = None;
 
-                release_reservation(creep, room_cache, order, resource.amount().try_into().unwrap());
+                release_reservation(
+                    creep,
+                    room_cache,
+                    order,
+                    resource.amount().try_into().unwrap(),
+                );
 
                 return true;
             } else {
-                room_cache.resources.dropped_energy.retain(|x| x.id() != resource.id());
+                room_cache
+                    .resources
+                    .dropped_energy
+                    .retain(|x| x.id() != resource.id());
 
                 let _ = creep.say("PKUP", false);
                 let _ = creep.pickup(resource);
 
                 if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
-                    creep_memory.hauling_task.as_mut().unwrap().amount = Some(haul_task - free_capacity as u32);
+                    creep_memory.hauling_task.as_mut().unwrap().amount =
+                        Some(haul_task - free_capacity as u32);
                 }
 
                 release_reservation(creep, room_cache, order, free_capacity);
@@ -155,32 +169,39 @@ pub fn execute_order(
         }
     }
 
-    let mut tombstones = room_cache.structures.tombstones.values().filter(|t| t.store().get_used_capacity(Some(ResourceType::Energy)) > 0 && t.pos().is_near_to(creep.pos()));
+    let mut tombstones = room_cache.structures.tombstones.values().filter(|t| {
+        t.store().get_used_capacity(Some(ResourceType::Energy)) > 0
+            && t.pos().is_near_to(creep.pos())
+    });
     if let Some(tombstone) = tombstones.next() {
         let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
         let amount = std::cmp::min(
             free_capacity,
-            tombstone.store().get_used_capacity(Some(ResourceType::Energy)) as i32,
+            tombstone
+                .store()
+                .get_used_capacity(Some(ResourceType::Energy)) as i32,
         );
 
-        if free_capacity > amount {
-            let _ = creep.withdraw(tombstone, ResourceType::Energy, Some(amount as u32));
+        if creep.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+            if free_capacity > amount {
+                let _ = creep.withdraw(tombstone, ResourceType::Energy, Some(amount as u32));
 
-            if amount == free_capacity {
-                creep_memory.path = None;
-                creep_memory.hauling_task = None;
+                if amount == free_capacity {
+                    creep_memory.path = None;
+                    creep_memory.hauling_task = None;
 
-                release_reservation(creep, room_cache, order, amount);
+                    release_reservation(creep, room_cache, order, amount);
 
-                return true;
-            }
-        } else {
+                    return true;
+                }
+            } else {
                 let _ = creep.say("WTHDW", false);
 
                 let _ = creep.withdraw(tombstone, ResourceType::Energy, None);
 
                 if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
-                    creep_memory.hauling_task.as_mut().unwrap().amount = Some(haul_task - amount as u32);
+                    creep_memory.hauling_task.as_mut().unwrap().amount =
+                        Some(haul_task - amount as u32);
                 }
 
                 room_cache.structures.tombstones.remove(&tombstone.id());
@@ -189,6 +210,7 @@ pub fn execute_order(
                 return true;
             }
         }
+    }
 
     if !creep.pos().is_near_to(position.unwrap()) {
         creep.better_move_to(
@@ -205,7 +227,7 @@ pub fn execute_order(
             HaulingType::Pickup => creep.say("MV-PKUP", false),
             HaulingType::Transfer => creep.say("MV-TFER", false),
 
-            _ => { creep.say("MV-UNK", false) }
+            _ => creep.say("MV-UNK", false),
         };
         return false;
     }
@@ -374,22 +396,17 @@ pub fn execute_order(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn release_reservation(
     creep: &Creep,
-    room_cache: &mut CachedRoom,
+    _room_cache: &mut CachedRoom,
     order: &CreepHaulTask,
     amount_hauled: i32,
 ) {
     let mut heap_hauling = heap().hauling.lock().unwrap();
-    if let Some(reservation) = heap_hauling
-        .reserved_orders
-        .get_mut(&order.target_id)
-    {
+    if let Some(reservation) = heap_hauling.reserved_orders.get_mut(&order.target_id) {
         reservation.reserved_amount -= amount_hauled;
         reservation.creeps_assigned.retain(|x| x != &creep.name());
 
         if reservation.reserved_amount <= 0 || reservation.creeps_assigned.is_empty() {
-            heap_hauling
-                .reserved_orders
-                .remove(&order.target_id);
+            heap_hauling.reserved_orders.remove(&order.target_id);
         }
     }
 }

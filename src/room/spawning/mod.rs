@@ -1,7 +1,6 @@
 use std::{cmp, collections::HashMap};
 
 use creep_sizing::base_hauler_body;
-use enum_map::{enum_map, EnumMap};
 use log::info;
 use screeps::{find, game, HasPosition, Part, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
@@ -11,7 +10,7 @@ use crate::{
     memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::{MoveOptions, MoveTarget}, utils::get_body_cost
 };
 
-use super::cache::{self, tick_cache::{CachedRoom, RoomCache}};
+use super::cache::tick_cache::{CachedRoom, RoomCache};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
@@ -276,7 +275,7 @@ pub fn hauler(
 
     let harvester_count = harvester_count + remote_harvester_count;
 
-    if room_memory.hauler_count == 0 || game::time() % 100 == 0 {
+    if room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200 {
         for remote in &room_memory.remotes {
 
             if game::rooms().get(*remote).is_some() {
@@ -351,7 +350,8 @@ pub fn hauler(
         //    hauler_count = (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
         //}
 
-        room_memory.hauler_count = hauler_count;
+        let clamped = hauler_count.clamp(3, 200);
+        room_memory.hauler_count = clamped;
     }
 
     let wanted_count = room_memory.hauler_count;
@@ -402,9 +402,7 @@ pub fn hauler(
 pub fn base_hauler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
 
     // Since it pulls from the storage, dont spawn if there is no storage.
-    if cache.structures.storage.is_none() {
-        return None;
-    }
+    cache.structures.storage.as_ref()?;
 
     let thing_bc_rust_dum = Vec::new();
     let current_bh_count = cache

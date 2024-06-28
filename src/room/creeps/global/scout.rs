@@ -1,6 +1,6 @@
 use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use screeps::{game, memory, Creep, HasPosition, RoomName, RoomPosition, SharedCreepProperties};
+use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
 use crate::movement::move_target::MoveOptions;
 use crate::{
@@ -54,7 +54,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         }
     } else {
         let exits = game::map::describe_exits(creep.room().unwrap().name());
-        let mut exits = exits.values().collect::<Vec<_>>();
+        let exits = exits.values().collect::<Vec<_>>();
 
         let mut exit_clone = exits.clone();
 
@@ -91,18 +91,18 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 }
             }
 
-            if top_scorer.is_none() {
-                let mut rng = StdRng::seed_from_u64(game::time() as u64);
-                exits.choose(&mut rng).unwrap()
+            if let Some(top_scorer) = top_scorer {
+                top_scorer
             } else {
-                &top_scorer.unwrap()
+                let mut rng = StdRng::seed_from_u64(game::time() as u64);
+                *exits.choose(&mut rng).unwrap()
             }
         } else {
             let mut rng = StdRng::seed_from_u64(game::time() as u64);
-            exit_clone.choose(&mut rng).unwrap()
+            *exit_clone.choose(&mut rng).unwrap()
         };
 
-        let pos = RoomPosition::new(25, 25, *exit);
+        let pos = RoomPosition::new(25, 25, exit);
 
         let _ = creep.say(&format!("👁️ {}", pos.room_name()), true);
 
@@ -113,6 +113,6 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             23,
             MoveOptions::default().avoid_enemies(true)
         );
-        memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(*exit);
+        memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(exit);
     }
 }

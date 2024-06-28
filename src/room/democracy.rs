@@ -8,12 +8,12 @@ use screeps::{
 
 use crate::{
     combat::{self, hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
-        cache::tick_cache::{hauling, resources, traffic, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
+        cache::tick_cache::{hauling, resources, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
     }, traits::room::RoomExtensions
 };
 
 use super::{
-    cache::{self, tick_cache::CachedRoom}, links, planning::room::construction::{
+    cache::tick_cache::CachedRoom, links, planning::room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
         }, visuals::visualise_room_visual
@@ -110,7 +110,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
                 lifetime = *heap().heap_lifetime.lock().unwrap();
             }
 
-            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 1000 {
+            let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
+            if room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 1000 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
@@ -133,8 +135,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     hate_handler::process_room_event_log(&room, memory, cache);
-
-    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
     // Match these haulers to their tasks, that way we can run them
     //room_cache.hauling.match_haulers(memory, &room.name());

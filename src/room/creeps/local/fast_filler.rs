@@ -1,5 +1,5 @@
 use screeps::{
-    find, game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension, StructureObject
+    game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension
 };
 
 use wasm_bindgen::JsCast;

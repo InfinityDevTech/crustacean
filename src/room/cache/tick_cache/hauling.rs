@@ -491,7 +491,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
-    let score = if order.no_distance_calc {
+    if order.no_distance_calc {
         order.priority
     } else {
         let creep_pos = creep.pos();
@@ -500,9 +500,7 @@ pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
         let distance = creep_pos.get_range_to(order_pos);
 
         order.priority + distance as f32
-    };
-
-    score as f32
+    }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

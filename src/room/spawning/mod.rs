@@ -11,7 +11,7 @@ use crate::{
     memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::{MoveOptions, MoveTarget}, utils::get_body_cost
 };
 
-use super::cache::tick_cache::{CachedRoom, RoomCache};
+use super::cache::{self, tick_cache::{CachedRoom, RoomCache}};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
@@ -48,23 +48,25 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
 //  TODO!!! Fix the double remote spawning bug!! This is BAD...
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn handle_spawning(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
-    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+pub fn create_spawn_requests_for_room(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory) -> Vec<SpawnRequest> {
+    let room_cache = cache.rooms.get(&room.name()).unwrap();
 
-    let mut spawn_manager = SpawnManager::new();
+    let requests = vec![
+        miner(room, room_cache, &mut cache.spawning),
+        base_hauler(room, room_cache, &mut cache.spawning),
+        fast_filler(room, room_cache, &mut cache.spawning),
+        flag_attacker(room, room_cache, &mut cache.spawning),
+        builder(room, room_cache, &mut cache.spawning),
+        repairer(room, room_cache, &mut cache.spawning),
+        upgrader(room, room_cache, &mut cache.spawning),
+        scout(room, room_cache, &mut cache.spawning),
 
-    miner(room, room_cache, &mut spawn_manager);
-    base_hauler(room, room_cache, &mut spawn_manager);
-    fast_filler(room, room_cache, &mut spawn_manager);
-    flag_attacker(room, room_cache, &mut spawn_manager);
-    builder(room, room_cache, &mut spawn_manager);
-    repairer(room, room_cache, &mut spawn_manager);
-    upgrader(room, room_cache, &mut spawn_manager);
-    scout(room, room_cache, &mut spawn_manager);
+        // More inter-room creeps that require the WHOLE cache.
+        remote_harvester(room, cache, memory),
+        hauler(room, cache, memory),
+    ];
 
-    remote_harvester(room, cache, memory, &mut spawn_manager);
-
-    hauler(room, cache, &mut spawn_manager, memory);
+    requests.into_iter().flatten().collect()
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -115,7 +117,7 @@ pub fn flag_attacker(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnM
             }
 
             if isnt_potato {
-                return Some(spawn_manager.create_room_spawn_request(Role::Bulldozer, body, 4.0, cost, room.name(), None, None));
+                return Some(spawn_manager.create_room_spawn_request(Role::Bulldozer, body, 4.0, cost, room.name(), None, None, None));
             }
             return None;
         } else if unclaimer < 1 && !unclaimer > 3 && should_spawn_unclaimer {
@@ -138,7 +140,7 @@ pub fn flag_attacker(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnM
             }
 
             if isnt_potato {
-                return Some(spawn_manager.create_room_spawn_request(Role::Unclaimer, body, 4.5, cost, room.name(), None, None));
+                return Some(spawn_manager.create_room_spawn_request(Role::Unclaimer, body, 4.5, cost, room.name(), None, None, None));
             }
             return None;
         }
@@ -171,7 +173,7 @@ pub fn scout(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) 
     }
 
     // These guys are SUPER cheap, but SUPER important.
-    Some(spawn_manager.create_room_spawn_request(Role::Scout, body, 400000.0, cost, room.name(), None, None))
+    Some(spawn_manager.create_room_spawn_request(Role::Scout, body, 400000.0, cost, room.name(), None, None, None))
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -205,7 +207,7 @@ pub fn repairer(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManage
     let body = crate::room::spawning::creep_sizing::repairer_body(room, desired_repair_parts as u8, cache);
     let cost = get_body_cost(&body);
 
-    Some(spawn_manager.create_room_spawn_request(Role::Repairer, body, 55.0, cost, room.name(), None, None))
+    Some(spawn_manager.create_room_spawn_request(Role::Repairer, body, 55.0, cost, room.name(), None, None, None))
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -218,19 +220,19 @@ pub fn builder(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager
         .iter().map(|c| game::creeps().get(c.to_string()).unwrap().body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32)
         .sum::<u32>();
 
-        if cache.structures.controller.as_ref().unwrap().controller.level() < 2 {
-            return None;
-        }
+    if cache.structures.controller.as_ref().unwrap().controller.level() < 2 {
+        return None;
+    }
+
+    if cache.structures.storage.is_some() && cache.structures.storage.as_ref().unwrap().store().get_used_capacity(Some(ResourceType::Energy)) < 10000 {
+        return None;
+    }
 
     let construction_sites = cache.structures.construction_sites.len();
 
-    let mut desired_work_parts = cmp::max(construction_sites / 3, 12);
+    let desired_work_parts = (construction_sites as f32 / 3.0).round().clamp(3.0, 12.0);
 
-    if desired_work_parts < 3 {
-        desired_work_parts = 3;
-    }
-
-    if building_work_parts as usize >= desired_work_parts {
+    if building_work_parts as f32 >= desired_work_parts {
         return None;
     }
 
@@ -239,7 +241,7 @@ pub fn builder(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager
 
     let priority = desired_work_parts as f64 * 0.75;
 
-    Some(spawn_manager.create_room_spawn_request(Role::Builder, body, priority, cost, room.name(), None, None))
+    Some(spawn_manager.create_room_spawn_request(Role::Builder, body, 4.5, cost, room.name(), None, None, None))
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -251,7 +253,7 @@ pub fn upgrader(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManage
         return None;
     }
 
-    Some(spawn_manager.create_room_spawn_request(Role::Upgrader, body, 99999999.0, cost, room.name(), None, None))
+    Some(spawn_manager.create_room_spawn_request(Role::Upgrader, body, 4.0, cost, room.name(), None, None, None))
 }
 
 // TODO: Math this shit! Make it better!
@@ -259,13 +261,12 @@ pub fn upgrader(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManage
 pub fn hauler(
     room: &Room,
     cache: &RoomCache,
-    spawn_manager: &mut SpawnManager,
     memory: &mut ScreepsMemory,
 ) -> Option<SpawnRequest> {
     let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
-    let mut carry_requirement = 0;
+    let mut carry_requirement: u128 = 0;
 
     let body = crate::room::spawning::creep_sizing::hauler_body(room);
     let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
@@ -282,15 +283,15 @@ pub fn hauler(
                 let room_cache = cache.rooms.get(remote).unwrap();
 
                 for source in &room_cache.resources.sources {
-                    let source_ept = (source.calculate_work_parts() * 2) as usize;
+                    let source_ept = (source.calculate_work_parts() * 2) as u128;
                     let source = game::get_object_by_id_typed(&source.id).unwrap();
 
                     let (out_steps, in_steps) = if let Some(storage) = &owning_cache.structures.storage {
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                         let mut in_target = MoveTarget { pos: storage.pos(), range: 1 };
 
-                        let out_steps = out_target.find_path_to(storage.pos(), MoveOptions::default().path_age(u8::MAX)).len();
-                        let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len();
+                        let out_steps = out_target.find_path_to(storage.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
 
                         (out_steps, in_steps)
                     } else {
@@ -299,8 +300,8 @@ pub fn hauler(
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                         let mut in_target = MoveTarget { pos: spawn.pos(), range: 1 };
 
-                        let out_steps = out_target.find_path_to(spawn.pos(), MoveOptions::default().path_age(u8::MAX)).len();
-                        let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len();
+                        let out_steps = out_target.find_path_to(spawn.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
 
                         (out_steps, in_steps)
                     };
@@ -312,15 +313,15 @@ pub fn hauler(
         }
 
         for source in &owning_cache.resources.sources {
-            let source_ept = (source.calculate_work_parts() * 2) as usize;
+            let source_ept = (source.calculate_work_parts() * 2) as u128;
             let source = game::get_object_by_id_typed(&source.id).unwrap();
     
             let (out_steps, in_steps) = if let Some(storage) = &owning_cache.structures.storage {
                 let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                 let mut in_target = MoveTarget { pos: storage.pos(), range: 1 };
     
-                let out_steps = out_target.find_path_to(storage.pos(), MoveOptions::default().path_age(u8::MAX)).len();
-                let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len();
+                let out_steps = out_target.find_path_to(storage.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
     
                 (out_steps, in_steps)
             } else {
@@ -329,8 +330,8 @@ pub fn hauler(
                 let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                 let mut in_target = MoveTarget { pos: spawn.pos(), range: 1 };
     
-                let out_steps = out_target.find_path_to(spawn.pos(), MoveOptions::default().path_age(u8::MAX)).len();
-                let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len();
+                let out_steps = out_target.find_path_to(spawn.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
     
                 (out_steps, in_steps)
             };
@@ -378,17 +379,23 @@ pub fn hauler(
         ..Default::default()
     };
 
+    // If we have less than 3 total haulers.
     let prio = if hauler_count < 3 {
         400000.0
-    } else if hauler_count > (wanted_count as f32 / 2.5).ceil() as usize {
-        2.4
+    // If we have more than half of the wanted count.
     } else if hauler_count > (wanted_count as f32 / 2.0).ceil() as usize {
+        2.0
+
+    // If we are at a third of the hauler count
+    } else if hauler_count > (wanted_count as f32 / 3.0).ceil() as usize {
         3.5
     } else {
+        // TODO
+        // I might need to tweak this number a bit.
         4.0
     };
 
-    Some(spawn_manager.create_room_spawn_request(Role::Hauler, body, prio, cost, room.name(), Some(creepmem), None))
+    Some(cache.spawning.create_room_spawn_request(Role::Hauler, body, prio, cost, room.name(), Some(creepmem), None, None))
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -445,7 +452,7 @@ pub fn base_hauler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
         ..Default::default()
     };
 
-    let req = spawn_manager.create_room_spawn_request(Role::BaseHauler, body, f64::MAX, cost, room.name(), Some(creep_memory), None);
+    let req = spawn_manager.create_room_spawn_request(Role::BaseHauler, body, f64::MAX, cost, room.name(), Some(creep_memory), None, None);
 
     Some(req)
 }
@@ -466,7 +473,7 @@ pub fn fast_filler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
     let body = vec![Part::Carry, Part::Move];
     let cost = get_body_cost(&body);
 
-    Some(spawn_manager.create_room_spawn_request(Role::FastFiller, body, f64::MAX, cost, room.name(), None, None))
+    Some(spawn_manager.create_room_spawn_request(Role::FastFiller, body, f64::MAX, cost, room.name(), None, None, None))
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -525,6 +532,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) 
             room.name(),
             Some(creep_memory),
             None,
+            None
         );
 
         return Some(req);
@@ -534,7 +542,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) 
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
+pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory) -> Option<SpawnRequest> {
     let remotes = cache.rooms.get(&room.name()).unwrap().remotes.clone();
 
     let cached = cache.rooms.get(&room.name()).unwrap();
@@ -555,23 +563,23 @@ pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemo
 
     for remote in remotes {
         if let Some(remote_room) = game::rooms().get(remote) {
-            let cache = cache.rooms.get(&remote_room.name()).unwrap();
+            let room_cache = cache.rooms.get(&remote_room.name()).unwrap();
 
-            for source in cache.resources.sources.iter() {
+            for source in room_cache.resources.sources.iter() {
                 let parts_needed = source.parts_needed();
 
                 if parts_needed == 0 || source.creeps.len() >= source.calculate_mining_spots(&remote_room).into() {
                     continue;
                 }
 
-                let parts = crate::room::spawning::creep_sizing::miner_body(room, cache, parts_needed);
+                let parts = crate::room::spawning::creep_sizing::miner_body(room, room_cache, parts_needed);
                 let cost = get_body_cost(&parts);
 
                 let mut priority = 0.0;
 
                 priority += (parts_needed as f64) * 1.5;
 
-                let index = &cache
+                let index = &room_cache
                     .resources
                     .sources
                     .iter()
@@ -589,7 +597,7 @@ pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemo
                     priority -= 10.0;
                 }
 
-                let req = spawn_manager.create_room_spawn_request(
+                let req = cache.spawning.create_room_spawn_request(
                     Role::RemoteHarvester,
                     parts,
                     priority,
@@ -597,6 +605,7 @@ pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemo
                     room.name(),
                     Some(creep_memory),
                     None,
+                    None
                 );
 
                 return Some(req);
@@ -630,7 +639,7 @@ pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemo
                     ..Default::default()
                 };
 
-                let req = spawn_manager.create_room_spawn_request(Role::PhysicalObserver, body, 10.0, cost, room.name(), Some(creep_memory), None);
+                let req = cache.spawning.create_room_spawn_request(Role::PhysicalObserver, body, 10.0, cost, room.name(), Some(creep_memory), None, None);
                 return Some(req);
             }
         }

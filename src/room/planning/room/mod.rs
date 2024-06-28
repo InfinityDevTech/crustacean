@@ -16,15 +16,13 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
     info!("  [PLANNER] Planning order recieved! Planning: {}", room.name_str());
 
-    let remotes = remotes::fetch_possible_remotes(room, memory, cache.rooms.get_mut(&room.name()).unwrap());
-
     let room_memory = RoomMemory {
         name: room.name(),
         rcl: room.controller().unwrap().level(),
         planned: false,
         id: 0,
         creeps: Vec::new(),
-        remotes,
+        remotes: Vec::new(),
         hauler_count: 0,
     };
 

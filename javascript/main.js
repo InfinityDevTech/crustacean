@@ -30,6 +30,12 @@ global.clear_scouting_data = function() {
   }
 }
 
+global.hauler_rescan = function() {
+  if (wasm_module) {
+    wasm_module.hauler_rescan()
+  }
+}
+
 global.pause_exec = function() {
   pause_exec = !pause_exec;
   return `[JS] pause_exec: ${pause_exec}`;
@@ -104,16 +110,16 @@ module.exports.loop = function () {
       let cpu_after = Game.cpu.getUsed();
       console.log(`[JS] ${cpu_after - cpu_before}cpu used to initialize wasm`);
 
-      // If CPU ran out compiling, the init wont run.
-      // Its been moved to the rust loop to ENSURE it runs.
-
-      // run the setup function, which configures logging
-      //if (Game.cpu.getUsed() < 400) {
-      //  wasm_module.init();
-      //}
-      // TODO: consider not running this if there's not enough bucket.
-      // run the loop for its first tick
-      //wasm_module.game_loop();
+      // I mean, hey, if we have double our execution time, fuck it.
+      // Why not run it?
+      if (Game.cpu.bucket > 1000) {
+        // This used to be called on the JS side, but its
+        // been moved to WASM to ensure it executes when the rust code executes.
+        console.log(`[JS] We have ${Game.cpu.bucket} CPU in the bucket, so we are running it.`)
+        //wasm_module.init();
+        wasm_module.game_loop();
+        console.log(`[JS] Successfully executed bot in the same tick that we loaded it. Huzzah!`)
+      }
 
       console.log("[JS] Module loaded");
     }

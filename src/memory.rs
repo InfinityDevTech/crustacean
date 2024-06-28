@@ -6,9 +6,9 @@ use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, Room
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
-use strum::EnumIter;
+use strum::{Display, EnumIter};
 
-use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
+use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, heap, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Enum)]
 pub enum SegmentIDs {
@@ -22,7 +22,7 @@ pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy, EnumIter)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy, EnumIter, Display)]
 // The roles listed in creep memory
 // The order of this also is the order in which
 // Traffic Priority is handled.
@@ -44,6 +44,8 @@ pub enum Role {
 
     Bulldozer = 10,
     Unclaimer = 11,
+
+    Reserver = 50,
 
     // Assorted junk roles, recycler just recycles itself
     Recycler = 99,
@@ -118,6 +120,10 @@ pub struct CreepMemory{
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "20")]
     pub is_recycling: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "21")]
+    pub target_room: Option<RoomName>,
 }
 }
 
@@ -266,7 +272,7 @@ structstruck::strike! {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
-        pub id_index: u64,
+        pub id_index: u128,
         pub chant_index: u64,
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
@@ -379,11 +385,6 @@ impl ScreepsMemory {
             object
         );
     }
-
-    pub fn get_id(&mut self) -> u64 {
-        self.id_index += 1;
-        self.id_index
-    }
 }
 
 impl Default for CreepMemory {
@@ -398,6 +399,7 @@ impl Default for CreepMemory {
             fastfiller_container: None,
             task_id: None,
 
+            target_room: None,
             repair_target: None,
             scout_target: None,
             hauling_task: None,

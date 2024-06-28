@@ -10,7 +10,7 @@ use crate::{
     traits::room::{RoomExtensions, RoomType},
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fetch_possible_remotes(
     room: &Room,
     memory: &mut ScreepsMemory,
@@ -78,7 +78,11 @@ pub fn fetch_possible_remotes(
         if remotes.contains(&remote) {
             continue;
         } else {
-            memory.goals.room_reservation.retain(|x| x.reservation_target != remote);
+            let cloned = memory.goals.room_reservation.clone();
+            let goal = cloned.values().filter(|x| x.reservation_target == remote);
+            for goal in goal {
+                memory.goals.room_reservation.remove(&goal.reservation_target);
+            }
         }
     }
 

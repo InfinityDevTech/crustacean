@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureProperties, StructureRoad, StructureSpawn, StructureStorage, StructureTower, StructureType, Tombstone
+    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTower, StructureType, Tombstone
 };
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
@@ -59,6 +59,8 @@ pub struct RoomStructureCache {
 
     pub needs_repair: Vec<StructureObject>,
 
+    pub ramparts: Vec<StructureRampart>,
+
     pub ruins: HashMap<ObjectId<Ruin>, Ruin>,
     pub tombstones: HashMap<ObjectId<Tombstone>, Tombstone>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
@@ -88,6 +90,8 @@ impl RoomStructureCache {
             all_structures: Vec::new(),
             construction_sites: Vec::new(),
             needs_repair: Vec::new(),
+
+            ramparts: Vec::new(),
 
             ruins: HashMap::new(),
             tombstones: HashMap::new(),
@@ -191,6 +195,12 @@ impl RoomStructureCache {
                     resource_cache.energy_in_storing_structures += container.store().get_used_capacity(Some(ResourceType::Energy));
 
                     my_containers.push(container);
+                }
+                StructureObject::StructureRampart(rampart) => {
+                    if !rampart.my() {
+                        continue;
+                    }
+                    self.ramparts.push(rampart);
                 }
                 StructureObject::StructureStorage(storage) => {
                     resource_cache.energy_in_storing_structures += storage.store().get_used_capacity(Some(ResourceType::Energy));

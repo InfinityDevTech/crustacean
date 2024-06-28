@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use screeps::RoomName;
+use screeps::{game, RoomName};
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::{hauling::HeapHaulingCache, RoomHeapCache}};
 
@@ -17,6 +17,7 @@ pub struct GlobalHeapCache {
     pub my_username: Mutex<String>,
 
     pub heap_lifetime: Mutex<u32>,
+    pub unique_id: Mutex<u128>,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -30,6 +31,7 @@ impl GlobalHeapCache {
             my_username: Mutex::new(String::new()),
 
             heap_lifetime: Mutex::new(0),
+            unique_id: Mutex::new(game::time() as u128),
         }
     }
 }

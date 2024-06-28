@@ -250,7 +250,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
         let owning_room = cache.rooms.get_mut(&launching_room.name()).unwrap();
 
         for resource in &cached_room.resources.dropped_energy {
-            owning_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(resource.amount() as f32), HaulingType::NoDistanceCalcPickup);
+            owning_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(resource.amount() as f32), HaulingType::Pickup);
         }
 
         if cached_room.structures.containers.source_container.is_none() {
@@ -322,7 +322,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
             // NEVER, and i mean NEVER leave containers full.
             if container.store().get_free_capacity(None) == 0 {
-                priority -= 1000000.0;
+                priority = -1000000.0;
             }
 
             cached_room.hauling.create_order(container.id().into(), Some(container.structure_type()), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), -priority, HaulingType::NoDistanceCalcOffer);
@@ -335,6 +335,6 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
     for resource in &cached_room.resources.dropped_energy {
-        cached_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(resource.amount() as f32), HaulingType::NoDistanceCalcPickup);
+        cached_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(resource.amount() as f32), HaulingType::Pickup);
     }
 }

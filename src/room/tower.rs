@@ -1,10 +1,10 @@
-use screeps::{HasId, ResourceType, StructureProperties};
+use screeps::{HasHits, HasId, ResourceType, StructureProperties, StructureType};
 
 use crate::utils::scale_haul_priority;
 
 use super::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom};
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_towers(cached_room: &mut CachedRoom) {
     for tower in cached_room.structures.towers.values() {
         if tower.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
@@ -55,8 +55,18 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
                     continue;
                 }
             }
+
+            let mut ramparts = cached_room.structures.ramparts.clone();
+            ramparts.sort_by_key(|rampart| rampart.hits());
+    
+            if let Some(rampart) = ramparts.first() {
+                if rampart.hits() < 1500 {
+                    let _ = tower.repair(rampart);
+                }
+            }
         } else {
             let _ = tower.attack(enemies.first().unwrap());
+            return;
         }
     }
 }

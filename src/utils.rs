@@ -2,9 +2,9 @@
 #![allow(clippy::comparison_to_empty)]
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{game, OwnedStructureProperties, Part};
+use screeps::{game, OwnedStructureProperties, Part, Position, RoomCoordinate, RoomName};
 
-use crate::{config, heap, memory::Role, room::cache::tick_cache::hauling::HaulingPriority};
+use crate::{config, heap, memory::Role, room::cache::tick_cache::{hauling::HaulingPriority, RoomCache}};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
@@ -88,6 +88,8 @@ pub fn role_to_name(role: Role) -> String {
         Role::PhysicalObserver => "po",
         Role::Unclaimer => "uc",
         Role::Recycler => "rc",
+
+        Role::Reserver => "rs",
     };
     data.to_string()
 }
@@ -113,8 +115,39 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "uc" => { Some(Role::Unclaimer) },
         "rc" => { Some(Role::Recycler) },
         "po" => { Some(Role::PhysicalObserver) },
+        "rs" => { Some(Role::Reserver) },
         _ => { None },
     }
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn find_closest_owned_room(target_room: &RoomName, cache: &RoomCache) -> Option<RoomName> {
+    let mut closest_room = None;
+    let mut closest_distance = 0;
+
+    let coord = RoomCoordinate::new(25).unwrap();
+    let target_position = Position::new(coord, coord, *target_room);
+
+    for room in &cache.my_rooms {
+        let position = Position::new(coord, coord, *room);
+
+        let distance = target_position.get_range_to(position);
+
+        if closest_room.is_none() || distance < closest_distance {
+            closest_room = Some(*room);
+            closest_distance = distance;
+        }
+    }
+
+    closest_room
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn get_unique_id() -> u128 {
+    let mut lock = heap().unique_id.lock().unwrap();
+    let id = *lock;
+    *lock += 1;
+    id
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

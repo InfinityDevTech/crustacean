@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use screeps::RoomName;
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +13,6 @@ pub struct RoomReservationGoal {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone, Default)]]
     pub struct GoalMemory {
-        pub room_reservation: Vec<RoomReservationGoal>,
+        pub room_reservation: HashMap<RoomName, RoomReservationGoal>,
     }
 }

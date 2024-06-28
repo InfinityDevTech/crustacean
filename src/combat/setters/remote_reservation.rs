@@ -4,7 +4,7 @@ use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache
 
 pub fn determine_reservations(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote in memory.remote_rooms.values() {
-        let exists = memory.goals.room_reservation.iter().any(|x| x.reservation_target == remote.name);
+        let exists = memory.goals.room_reservation.contains_key(&remote.name);
         if exists {
             continue;
         }
@@ -25,7 +25,7 @@ pub fn determine_reservations(_room: &Room, memory: &mut ScreepsMemory, cache: &
                 creeps_assigned: Vec::new(),
             };
 
-            memory.goals.room_reservation.push(goal);
+            memory.goals.room_reservation.insert(room.name(), goal);
         }
     }
 }

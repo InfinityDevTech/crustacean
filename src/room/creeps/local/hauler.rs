@@ -177,7 +177,7 @@ pub fn execute_order(
         } else {
                 let _ = creep.say("WTHDW", false);
 
-                let _ = creep.withdraw(tombstone, ResourceType::Energy, Some(amount as u32));
+                let _ = creep.withdraw(tombstone, ResourceType::Energy, None);
 
                 if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
                     creep_memory.hauling_task.as_mut().unwrap().amount = Some(haul_task - amount as u32);

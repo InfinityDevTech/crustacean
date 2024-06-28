@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use screeps::{game, Room, RoomName};
 use stats::StatsCache;
 
-use crate::{heap, memory::ScreepsMemory};
+use crate::{heap, memory::ScreepsMemory, room::spawning::spawn_manager::SpawnManager};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
 
@@ -16,20 +16,21 @@ pub mod resources;
 pub mod traffic;
 pub mod stats;
 
-#[derive(Debug, Clone)]
 pub struct RoomCache {
     pub rooms: HashMap<RoomName, CachedRoom>,
-
     pub my_rooms: Vec<RoomName>,
+
+    pub spawning: SpawnManager,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomCache {
-    pub fn new() -> RoomCache {
+    pub fn new(spawn_manager: SpawnManager) -> RoomCache {
         RoomCache {
             rooms: HashMap::new(),
-
             my_rooms: Vec::new(),
+
+            spawning: spawn_manager,
         }
     }
 

@@ -42,7 +42,25 @@ pub fn run_movement(room_cache: &mut CachedRoom) {
     // Just save some CPU, not much, but CPU is CPU
     if creep_names.is_empty() { return; }
 
-    for creep_name in &creep_names {
+    assign_coordinates(&creep_names, room_cache, &mut creeps_with_movement_intent);
+
+    if creeps_with_movement_intent.is_empty() {
+        return;
+    }
+
+    let mut visited_creeps = Vec::new();
+
+    solve_traffic(&creeps_with_movement_intent, room_cache, &mut visited_creeps);
+
+    move_creeps(&creep_names, room_cache);
+
+    let post_traffic_cpu = game::cpu::get_used();
+    room_cache.stats.cpu_traffic = post_traffic_cpu - pre_traffic_cpu;
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+fn assign_coordinates(creep_names: &Vec<String>, room_cache: &mut CachedRoom, creeps_with_movement_intent: &mut Vec<ObjectId<Creep>>) {
+    for creep_name in creep_names {
         let creep = game::creeps().get(creep_name.to_string()).unwrap();
 
         assign_creep_to_coordinate(&creep, room_cache, creep.pos().into());
@@ -51,33 +69,33 @@ pub fn run_movement(room_cache: &mut CachedRoom) {
             creeps_with_movement_intent.push(creep.try_id().unwrap());
         }
     }
+}
 
-    if creeps_with_movement_intent.is_empty() {
-        return;
-    }
-
-    let mut visited_creeps = Vec::new();
-
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+fn solve_traffic(creeps_with_movement_intent: &Vec<ObjectId<Creep>>, room_cache: &mut CachedRoom, visited_creeps: &mut Vec<ObjectId<Creep>>) {
     for creep_id in creeps_with_movement_intent {
-        let creep = game::get_object_by_id_typed(&creep_id).unwrap();
-        if room_cache.traffic.matched_coord.get(&creep_id) == room_cache.traffic.intended_move.get(&creep_id) {
+        let creep = game::get_object_by_id_typed(creep_id).unwrap();
+        if room_cache.traffic.matched_coord.get(creep_id) == room_cache.traffic.intended_move.get(creep_id) {
             continue;
         }
 
-        if room_cache.traffic.matched_coord.contains_key(&creep_id) {
-            room_cache.traffic.movement_map.remove(&room_cache.traffic.matched_coord[&creep_id]);
+        if room_cache.traffic.matched_coord.contains_key(creep_id) {
+            room_cache.traffic.movement_map.remove(&room_cache.traffic.matched_coord[creep_id]);
         }
-        room_cache.traffic.matched_coord.remove(&creep_id);
+        room_cache.traffic.matched_coord.remove(creep_id);
 
-        if depth_first_searh(&creep, room_cache, &mut visited_creeps, Some(0)) > 0 {
+        if depth_first_searh(&creep, room_cache, visited_creeps, Some(0)) > 0 {
             continue;
         }
 
         assign_creep_to_coordinate(&creep, room_cache, creep.pos().xy());
     }
+}
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+fn move_creeps(creep_names: &Vec<String>, room_cache: &mut CachedRoom) {
     for creep_name in creep_names {
-        let creep = game::creeps().get(creep_name).unwrap();
+        let creep = game::creeps().get(creep_name.to_string()).unwrap();
         let matched_coord = room_cache.traffic.matched_coord.get(&creep.try_id().unwrap());
 
         if matched_coord.is_none() || *matched_coord.unwrap() == creep.pos().xy() {
@@ -101,9 +119,6 @@ pub fn run_movement(room_cache: &mut CachedRoom) {
             room_cache.traffic.move_intents += 1;
         }
     }
-
-    let post_traffic_cpu = game::cpu::get_used();
-    room_cache.stats.cpu_traffic = post_traffic_cpu - pre_traffic_cpu;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

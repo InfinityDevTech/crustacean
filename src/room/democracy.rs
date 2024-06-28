@@ -13,13 +13,13 @@ use crate::{
 };
 
 use super::{
-    cache::tick_cache::CachedRoom, links, planning::room::construction::{
+    cache::{self, tick_cache::CachedRoom}, links, planning::room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
         }, visuals::visualise_room_visual
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -45,6 +45,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
         if !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory, cache) {
+            return;
+        }
+
+        if !memory.rooms.contains_key(&room.name()) || !cache.rooms.contains_key(&room.name()) {
             return;
         }
 
@@ -101,7 +105,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             run_crap_planner_code(&room, memory, room_cache);
             run_full_visuals(&room, memory, room_cache);
 
-            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 5 || game::time() % 3000 == 0 || *heap().heap_lifetime.lock().unwrap() == 0 {
+            let mut lifetime = 0;
+            {
+                lifetime = *heap().heap_lifetime.lock().unwrap();
+            }
+
+            if memory.rooms.get(&room.name()).unwrap().remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 1000 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);

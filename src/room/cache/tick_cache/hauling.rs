@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     heap,
     memory::{CreepHaulTask, Role, ScreepsMemory},
-    room::cache::heap_cache::hauling::HeapHaulingReservation,
+    room::{
+        cache::heap_cache::hauling::HeapHaulingReservation, creeps::local::hauler::execute_order,
+    },
     utils::{name_to_role, scale_haul_priority},
 };
 
@@ -186,22 +188,25 @@ impl HaulingCache {
             no_distance_calc,
         };
 
-        let lock = heap().hauling.lock().unwrap();
-        if let Some(existing_order) = lock.reserved_orders.get(&order.target) {
-            let reserved_amt = existing_order.order_amount;
+        {
+            // We want to drop this lock ASAP.
+            let lock = heap().hauling.lock().unwrap();
+            if let Some(existing_order) = lock.reserved_orders.get(&order.target) {
+                let reserved_amt = existing_order.order_amount;
 
-            if game::time() % 10 == 0 {
-                for creep in existing_order.creeps_assigned.iter() {
-                    if game::creeps().get(creep.to_string()).is_none() {
-                        continue;
+                if game::time() % 10 == 0 {
+                    for creep in existing_order.creeps_assigned.iter() {
+                        if game::creeps().get(creep.to_string()).is_none() {
+                            continue;
+                        }
                     }
                 }
-            }
 
-            if order.amount > Some(reserved_amt as u32) {
-                order.amount = Some(order.amount.unwrap() - reserved_amt as u32);
-            } else {
-                return;
+                if order.amount > Some(reserved_amt as u32) {
+                    order.amount = Some(order.amount.unwrap() - reserved_amt as u32);
+                } else {
+                    return;
+                }
             }
         }
 
@@ -245,109 +250,146 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
     let starting_cpu = game::cpu::get_used();
     let mut matched_creeps = Vec::new();
 
-    let mut heap_hauling = heap().hauling.lock().unwrap();
-
     let cache = &mut room_cache.rooms.get_mut(room_name).unwrap();
-    let base_hauler_count = cache
-        .creeps
-        .creeps_of_role
-        .get(&Role::BaseHauler)
-        .unwrap_or(&Vec::new())
-        .len();
+    let count = cache.hauling.new_orders.len();
+    let mut saved = Vec::new();
 
-    let mut orders = cache.hauling.new_orders.clone();
+    // This is wrapped because we want to drop the lock when were done with it.
+    // This also highlights where we actually select the haulers.
+    {
+        let mut heap_hauling = heap().hauling.lock().unwrap();
+        let base_hauler_count = cache
+            .creeps
+            .creeps_of_role
+            .get(&Role::BaseHauler)
+            .unwrap_or(&Vec::new())
+            .len();
 
-    // CPU saver, dont execute if theres no haulers
-    if cache.hauling.wanting_orders.is_empty() {
-        info!("  [HAULING] No haulers wanting orders");
-        return;
-    }
+        let mut orders = cache.hauling.new_orders.clone();
 
-    // Where the magic happens, each hauler runs through each order
-    for hauler in cache.hauling.wanting_orders.iter() {
-        let game_creep = game::creeps().get(hauler.creep_name.to_string()).unwrap();
+        // CPU saver, dont execute if theres no haulers
+        if cache.hauling.wanting_orders.is_empty() {
+            info!("  [HAULING] No haulers wanting orders");
+            return;
+        }
 
-        let mut top_scoring_order = None;
-        let mut top_score = f32::MAX;
+        // Where the magic happens, each hauler runs through each order
+        for hauler in cache.hauling.wanting_orders.iter() {
+            let game_creep = game::creeps().get(hauler.creep_name.to_string()).unwrap();
 
-        let role = name_to_role(&hauler.creep_name);
+            let mut top_scoring_order = None;
+            let mut top_score = f32::MAX;
 
-        let c = orders.clone();
-        for order in c.values() {
-            // Dont let haulers pull from storage if there is a base hauler
-            // Just to avoid them getting stuck.
-            if order.target_type == Some(StructureType::Storage)
-                && hauler.haul_type.contains(&HaulingType::Offer)
-                && role == Some(Role::Hauler)
-                && base_hauler_count >= 1
-            {
-                continue;
-            }
+            let role = name_to_role(&hauler.creep_name);
 
-            // Check if the haul type actually matches what we want
-            // Duh...
-            if !hauler.haul_type.contains(&order.haul_type) {
-                continue;
-            }
-
-            // If the order is for a specific resource, only match it if the hauler can carry it
-            // If the order doesnt contain a resource, assume energy.
-            if let Some(resource_type) = hauler.resource_type {
-                if order.resource.unwrap_or(ResourceType::Energy) != resource_type {
-                    continue;
-                }
-            }
-
-            // If the order is reserved, and the amount is reserved is
-            // greater than the amount of the order, skip it, as we dont want over-hauling.
-            if let Some(reserved) = heap_hauling.reserved_orders.get(&order.target) {
-                if reserved.creeps_assigned.contains(&hauler.creep_name)
-                    || reserved.reserved_amount >= order.amount.unwrap() as i32
+            let c = orders.clone();
+            for order in c.values() {
+                // Dont let haulers pull from storage if there is a base hauler
+                // Just to avoid them getting stuck.
+                if order.target_type == Some(StructureType::Storage)
+                    && hauler.haul_type.contains(&HaulingType::Offer)
+                    && role == Some(Role::Hauler)
+                    && base_hauler_count >= 1
                 {
                     continue;
                 }
-            }
 
-            // Changed how some things work. The order can "Not calculate distance"
-            // So that way, we can have orders that are just "highest priority" and not
-            // based on distance, for say, remotes.
-
-            // This function scores based off of
-            // priority + distance
-            // and if its the lowest, we take it.
-            // As its the highest priority, and the closest.
-            let mut score = score_couple(order, &game_creep);
-
-            // We dont want the hauler transferring to the storage
-            // if the base hauler doesnt exist, its to influence sending
-            // to extensions and upgrading. Treating it more of a "last resort"
-            if order.target_type == Some(StructureType::Storage)
-                && hauler.haul_type.contains(&HaulingType::Transfer)
-                && role == Some(Role::Hauler)
-                && base_hauler_count == 0
-            {
-                score += 1000.0;
-            }
-
-            if score < top_score {
-                top_scoring_order = Some(order);
-                top_score = score;
-            }
-        }
-
-        // If we have a match, we do stuffs!
-        if let Some(top_scorer) = top_scoring_order {
-            let responsible_creep = cache.hauling.orders_matched_to_creeps.get(&top_scorer.id);
-
-            // If we are a better match than the other creep, we take it.
-            // Fuck you other creep! This shit is mine!
-            // Yes, we lose one tick on the other creep, but if its more worth it, then its fine.
-            if let Some((responsible_creep, score)) = responsible_creep {
-                if *responsible_creep == hauler.creep_name {
+                // Check if the haul type actually matches what we want
+                // Duh...
+                if !hauler.haul_type.contains(&order.haul_type) {
                     continue;
                 }
 
-                if top_score < *score {
+                // If the order is for a specific resource, only match it if the hauler can carry it
+                // If the order doesnt contain a resource, assume energy.
+                if let Some(resource_type) = hauler.resource_type {
+                    if order.resource.unwrap_or(ResourceType::Energy) != resource_type {
+                        continue;
+                    }
+                }
+
+                // If the order is reserved, and the amount is reserved is
+                // greater than the amount of the order, skip it, as we dont want over-hauling.
+                if let Some(reserved) = heap_hauling.reserved_orders.get(&order.target) {
+                    if reserved.creeps_assigned.contains(&hauler.creep_name)
+                        || reserved.reserved_amount >= order.amount.unwrap() as i32
+                    {
+                        continue;
+                    }
+                }
+
+                // Changed how some things work. The order can "Not calculate distance"
+                // So that way, we can have orders that are just "highest priority" and not
+                // based on distance, for say, remotes.
+
+                // This function scores based off of
+                // priority + distance
+                // and if its the lowest, we take it.
+                // As its the highest priority, and the closest.
+                let mut score = score_couple(order, &game_creep);
+
+                // We dont want the hauler transferring to the storage
+                // if the base hauler doesnt exist, its to influence sending
+                // to extensions and upgrading. Treating it more of a "last resort"
+                if order.target_type == Some(StructureType::Storage)
+                    && hauler.haul_type.contains(&HaulingType::Transfer)
+                    && role == Some(Role::Hauler)
+                    && base_hauler_count == 0
+                {
+                    score += 1000.0;
+                }
+
+                if score < top_score {
+                    top_scoring_order = Some(order);
+                    top_score = score;
+                }
+            }
+
+            // If we have a match, we do stuffs!
+            if let Some(top_scorer) = top_scoring_order {
+                let responsible_creep = cache.hauling.orders_matched_to_creeps.get(&top_scorer.id);
+
+                // If we are a better match than the other creep, we take it.
+                // Fuck you other creep! This shit is mine!
+                // Yes, we lose one tick on the other creep, but if its more worth it, then its fine.
+                if let Some((responsible_creep, score)) = responsible_creep {
+                    if *responsible_creep == hauler.creep_name {
+                        continue;
+                    }
+
+                    if top_score < *score {
+                        let matched_order = (hauler.creep_name.to_string(), top_score);
+
+                        cache
+                            .hauling
+                            .orders_matched_to_creeps
+                            .insert(top_scorer.id, matched_order);
+
+                        let order = orders.get_mut(&top_scorer.id).unwrap();
+
+                        // If we are going to take it, decrease the resource amount by how much were going to take
+                        // That way, all of our haulers dont rush for a single source at once.
+                        if order.haul_type == HaulingType::Pickup {
+                            if let Some(amnt) = order.amount {
+                                let pickup_amount = cmp::min(
+                                    amnt as i32,
+                                    game_creep.store().get_free_capacity(Some(
+                                        order.resource.unwrap_or(ResourceType::Energy),
+                                    )),
+                                );
+                                let new_amount = amnt as i32 - pickup_amount;
+
+                                if new_amount < 0 {
+                                    orders.remove(&top_scorer.id);
+                                } else {
+                                    order.amount = Some(new_amount as u32);
+                                }
+                            }
+                        }
+
+                        matched_creeps.push(hauler.creep_name.to_string());
+                    }
+                } else {
                     let matched_order = (hauler.creep_name.to_string(), top_score);
 
                     cache
@@ -379,94 +421,64 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
                     matched_creeps.push(hauler.creep_name.to_string());
                 }
-            } else {
-                let matched_order = (hauler.creep_name.to_string(), top_score);
-
-                cache
-                    .hauling
-                    .orders_matched_to_creeps
-                    .insert(top_scorer.id, matched_order);
-
-                let order = orders.get_mut(&top_scorer.id).unwrap();
-
-                // If we are going to take it, decrease the resource amount by how much were going to take
-                // That way, all of our haulers dont rush for a single source at once.
-                if order.haul_type == HaulingType::Pickup {
-                    if let Some(amnt) = order.amount {
-                        let pickup_amount = cmp::min(
-                            amnt as i32,
-                            game_creep.store().get_free_capacity(Some(
-                                order.resource.unwrap_or(ResourceType::Energy),
-                            )),
-                        );
-                        let new_amount = amnt as i32 - pickup_amount;
-
-                        if new_amount < 0 {
-                            orders.remove(&top_scorer.id);
-                        } else {
-                            order.amount = Some(new_amount as u32);
-                        }
-                    }
-                }
-
-                matched_creeps.push(hauler.creep_name.to_string());
             }
+        }
+
+        // For the matched creeps, we assign their tasks in memory
+        // This is also where we reserve the orders, so other haulers dont take them.
+        for (order_id, (creep, _score)) in cache.hauling.orders_matched_to_creeps.clone().iter() {
+            let creep_memory = memory.creeps.get_mut(creep).unwrap();
+            let creep = game::creeps().get(creep.to_string()).unwrap();
+
+            let order = cache.hauling.new_orders.get(order_id).unwrap();
+
+            // Get the amount of resources the creep can carry
+            let carry_capacity = creep
+                .store()
+                .get_free_capacity(Some(order.resource.unwrap_or(ResourceType::Energy)));
+
+            // Haul task, for memory.
+            let haul_task = CreepHaulTask {
+                target_id: order.target,
+                priority: order.priority,
+                resource: order.resource.unwrap_or(ResourceType::Energy),
+                amount: order.amount,
+                haul_type: order.haul_type,
+            };
+
+            // If the target is not a storage, we reserve the order
+            if order.target_type != Some(StructureType::Storage) {
+                // If the order is already reserved, we add the creep to the list of creeps assigned to it
+                // Then increment the reserved amount.
+                if let Some(reserved_order) = heap_hauling.reserved_orders.get_mut(&order.target) {
+                    reserved_order.reserved_amount += carry_capacity as i32;
+                    reserved_order.creeps_assigned.push(creep.name());
+                } else {
+                    // If the order is not reserved, we reserve it.
+                    heap_hauling.reserved_orders.insert(
+                        order.target,
+                        HeapHaulingReservation {
+                            target_id: order.target,
+                            reserved_amount: carry_capacity as i32,
+                            creeps_assigned: vec![creep.name()],
+                            order_amount: order.amount.unwrap_or(0) as i32,
+                        },
+                    );
+                }
+            }
+
+            // Set it in memory, so the creep can execute it.
+            creep_memory.hauling_task = Some(haul_task.clone());
+
+            saved.push((creep.name(), haul_task));
         }
     }
 
-    let count = cache.hauling.new_orders.len();
-    let mut saved = Vec::new();
+    for (creep_name, haul_task) in saved {
+        let creep = game::creeps().get(creep_name.clone()).unwrap();
+        let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
 
-    // For the matched creeps, we assign their tasks in memory
-    // This is also where we reserve the orders, so other haulers dont take them.
-    for (order_id, (creep, _score)) in cache.hauling.orders_matched_to_creeps.clone().iter() {
-        let creep_memory = memory.creeps.get_mut(creep).unwrap();
-        let creep = game::creeps().get(creep.to_string()).unwrap();
-
-        let order = cache.hauling.new_orders.get(order_id).unwrap();
-
-        // Get the amount of resources the creep can carry
-        let carry_capacity = creep
-            .store()
-            .get_free_capacity(Some(order.resource.unwrap_or(ResourceType::Energy)));
-
-        // Haul task, for memory.
-        let haul_task = CreepHaulTask {
-            target_id: order.target,
-            priority: order.priority,
-            resource: order.resource.unwrap_or(ResourceType::Energy),
-            amount: order.amount,
-            haul_type: order.haul_type,
-        };
-
-        // If the target is not a storage, we reserve the order
-        if order.target_type != Some(StructureType::Storage) {
-            // If the order is already reserved, we add the creep to the list of creeps assigned to it
-            // Then increment the reserved amount.
-            if let Some(reserved_order) = heap_hauling
-                .reserved_orders
-                .get_mut(&order.target)
-            {
-                reserved_order.reserved_amount += carry_capacity as i32;
-                reserved_order.creeps_assigned.push(creep.name());
-            } else {
-                // If the order is not reserved, we reserve it.
-                heap_hauling.reserved_orders.insert(
-                    order.target,
-                    HeapHaulingReservation {
-                        target_id: order.target,
-                        reserved_amount: carry_capacity as i32,
-                        creeps_assigned: vec![creep.name()],
-                        order_amount: order.amount.unwrap_or(0) as i32,
-                    },
-                );
-            }
-        }
-
-        // Set it in memory, so the creep can execute it.
-        creep_memory.hauling_task = Some(haul_task.clone());
-
-        saved.push((creep.name(), haul_task));
+        execute_order(&creep, creep_memory, room_cache, &haul_task);
     }
 
     info!(
@@ -499,62 +511,62 @@ pub fn clean_heap_hauling(memory: &mut ScreepsMemory) {
 
     let mut lock = heap().hauling.lock().unwrap();
 
-        for hauling_order in lock.reserved_orders.values_mut() {
-            let mut removed = Vec::new();
-            // Remove creeps that are dead or have no task assigned
-            // Then add them to the ^^^^^ removed list, so we can calculate carry parts.
-            hauling_order.creeps_assigned.retain(|creep| {
-                if let Some(creep_memory) = memory.creeps.get_mut(creep) {
-                    if let Some(task_id) = creep_memory.hauling_task.as_ref() {
-                        let res = task_id.target_id == hauling_order.target_id;
+    for hauling_order in lock.reserved_orders.values_mut() {
+        let mut removed = Vec::new();
+        // Remove creeps that are dead or have no task assigned
+        // Then add them to the ^^^^^ removed list, so we can calculate carry parts.
+        hauling_order.creeps_assigned.retain(|creep| {
+            if let Some(creep_memory) = memory.creeps.get_mut(creep) {
+                if let Some(task_id) = creep_memory.hauling_task.as_ref() {
+                    let res = task_id.target_id == hauling_order.target_id;
 
-                        if !res {
-                            removed.push(creep.to_string());
-
-                            false
-                        } else {
-                            true
-                        }
-                    } else {
+                    if !res {
                         removed.push(creep.to_string());
 
                         false
+                    } else {
+                        true
                     }
                 } else {
                     removed.push(creep.to_string());
 
                     false
                 }
-            });
+            } else {
+                removed.push(creep.to_string());
 
-            // Calculate the amount of resources the creeps can carry
-            let mut carry_total = 0;
-            for creep in removed {
-                if let Some(game_creep) = game::creeps().get(creep) {
-                    carry_total += game_creep
-                        .body()
-                        .iter()
-                        .filter(|part| part.part() == Part::Carry)
-                        .count()
-                        * 50;
-                } else {
-                    carry_total += 200;
-                }
+                false
             }
+        });
 
-            hauling_order.reserved_amount -= carry_total as i32;
-            if hauling_order.reserved_amount <= 0
-                || hauling_order.reserved_amount > hauling_order.order_amount
-            {
-                to_delete.push(hauling_order.target_id);
+        // Calculate the amount of resources the creeps can carry
+        let mut carry_total = 0;
+        for creep in removed {
+            if let Some(game_creep) = game::creeps().get(creep) {
+                carry_total += game_creep
+                    .body()
+                    .iter()
+                    .filter(|part| part.part() == Part::Carry)
+                    .count()
+                    * 50;
+            } else {
+                carry_total += 200;
             }
         }
 
-        // Delete these marked orders
-        for target in to_delete {
-            lock.reserved_orders.remove(&target);
+        hauling_order.reserved_amount -= carry_total as i32;
+        if hauling_order.reserved_amount <= 0
+            || hauling_order.reserved_amount > hauling_order.order_amount
+        {
+            to_delete.push(hauling_order.target_id);
         }
     }
+
+    // Delete these marked orders
+    for target in to_delete {
+        lock.reserved_orders.remove(&target);
+    }
+}
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepHaulTask {

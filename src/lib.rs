@@ -1,16 +1,16 @@
 use std::{
     collections::HashMap,
-    sync::{Once, OnceLock},
+    sync::{Mutex, Once, OnceLock},
 };
 
-use combat::{ally::Allies, hate_handler::decay_hate};
+use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::{segment_ids, SegmentIDs};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::tick_cache::{hauling, traffic, RoomCache},
-    spawning,
+    spawning::{self, spawn_manager::{self, SpawnManager}},
     visuals::visualise_scouted_rooms,
 };
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
@@ -34,6 +34,7 @@ mod traits;
 mod utils;
 
 static INITIALIZED: Once = Once::new();
+pub static CLEAN_PROFILE: Mutex<bool> = Mutex::new(true);
 
 // pub static HEAP_CACHE: Lazy<GlobalHeapCache> = Lazy::new(GlobalHeapCache::new);
 pub fn heap() -> &'static GlobalHeapCache {
@@ -64,9 +65,11 @@ pub fn game_loop() {
 
     #[cfg(feature = "profile")]
     {
-        screeps_timing::start_trace(Box::new(|| {
-            (screeps::game::cpu::get_used() * 1000.0) as u64
-        }));
+        if game::cpu::bucket() > 1000 {
+            screeps_timing::start_trace(Box::new(|| {
+                (screeps::game::cpu::get_used() * 1000.0) as u64
+            }));
+        }
     }
 
     INITIALIZED.call_once(|| {
@@ -84,14 +87,15 @@ pub fn game_loop() {
 
         #[cfg(feature = "profile")]
         {
-            finish_trace();
+            let _ = screeps_timing::stop_trace();
         }
 
         return;
     }
 
     let mut memory = heap().memory.lock().unwrap();
-    let mut cache = RoomCache::new();
+    let mut spawn_manager = SpawnManager::new();
+    let mut cache = RoomCache::new(spawn_manager);
     let mut allies = Allies::new(&mut memory);
     allies.sync(&mut memory);
 
@@ -112,9 +116,6 @@ pub fn game_loop() {
     for room in cache.my_rooms.clone().iter() {
         let game_room = game::rooms().get(*room).unwrap();
 
-        // Run spawns
-        // TODO: Tune the better spawn implementation
-        spawning::handle_spawning(&game_room, &mut cache, &mut memory);
         hauling::match_haulers(&mut cache, &mut memory, room);
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
@@ -148,6 +149,10 @@ pub fn game_loop() {
         }
     }
 
+    run_goal_handlers(&mut memory, &mut cache);
+
+    spawn_manager::run_spawning(&mut memory, &mut cache);
+
     if game::time() % 100 == 0 {
         hauling::clean_heap_hauling(&mut memory);
     }
@@ -158,16 +163,10 @@ pub fn game_loop() {
             let start = game::cpu::get_used();
             traffic::run_movement(room_cache);
 
-            let name = if room.my() {
-                format!("MY-{}", room.name())
-            } else {
-                room.name().to_string()
-            };
-
             if room.my() {
                 info!(
                     "[{}] Traffic took: {:.4} with {} intents",
-                    name,
+                    room.name().to_string(),
                     game::cpu::get_used() - start,
                     room_cache.traffic.move_intents
                 );
@@ -186,11 +185,11 @@ pub fn game_loop() {
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
-    if game::time() % 10 == 0 && game::cpu::bucket() > 3000 {
+    if game::time() % 10 == 0 && game::cpu::bucket() > 3000 && game::cpu::get_used() < 300.0 {
         info!("[MEMORY] Writing memory!");
         memory.write_memory();
     } else {
-        info!("[MEMORY] Bucket is too low or tick isnt divisible by 10, skipping memory write");
+        info!("[MEMORY] Bucket is too low, CPU usage is too high, or tick isnt divisible by 10, skipping memory write");
     }
 
     decay_hate(&mut memory);
@@ -206,50 +205,40 @@ pub fn game_loop() {
         / heap.heap_size_limit() as f64)
         * 100.0;
 
+    let cpu_usage_percent = (game::cpu::get_used() as f32 / game::cpu::limit() as f32) * 100.0;
+
+    let percentage_to_next_gcl = (game::gcl::progress() / game::gcl::progress_total()) * 100.0;
+
     info!("[STATS] Statistics are as follows: ");
     info!(
-        "  GCL {}. Next: {} / {}",
+        "GCL {}. {:.2}% to level {}",
         game::gcl::level(),
-        game::gcl::progress(),
-        game::gcl::progress_total()
+        percentage_to_next_gcl,
+        game::gcl::level() + 1,
     );
-    info!("  CPU Usage:");
-    info!("       Total: {}", game::cpu::get_used());
-    info!("       Bucket: {}", game::cpu::bucket());
-    info!("       Heap: {:.2}%", used);
-    info!("       Heap Lifetime: {}", heap_lifetime);
+    info!("Used {:.2}% CPU:", cpu_usage_percent);
+    info!("  Total: {:.4}", game::cpu::get_used());
+    info!("  Bucket: {}", game::cpu::bucket());
+    info!("  Heap: {:.2}%", used);
+    info!("  Time since last reset: {}", heap_lifetime);
     *heap_lifetime += 1;
 
     #[cfg(feature = "profile")]
     {
-        let trace = screeps_timing::stop_trace();
+        if game::cpu::bucket() > 1000 {
+            let trace = screeps_timing::stop_trace();
 
-        if let Ok(trace_output) = serde_json::to_string(&trace) {
-            //info!("Trace output: {}", trace_output);
-            let val = JsValue::from_str(
-                &constants::COPY_TEXT
-                    .replace("$TO_COPY$", &trace_output)
-                    .replace("$TIME", game::time().to_string().as_str()),
-            );
-            web_sys::console::log_1(&val);
+            if let Ok(trace_output) = serde_json::to_string(&trace) {
+                //info!("Trace output: {}", trace_output);
+                let val = JsValue::from_str(
+                    &constants::COPY_TEXT
+                        .replace("$TO_COPY$", &trace_output)
+                        .replace("$TIME", game::time().to_string().as_str()),
+                );
+                web_sys::console::log_1(&val);
+            }
         }
     }
-}
-
-#[cfg(feature = "profile")]
-pub fn finish_trace() {
-    let trace = screeps_timing::stop_trace();
-
-    if let Ok(trace_output) = serde_json::to_string(&trace) {
-        screeps::raw_memory::segments().set(segment_ids()[SegmentIDs::Profiler], trace_output);
-    }
-}
-
-#[cfg(feature = "profile")]
-pub fn start_trace() {
-    screeps_timing::start_trace(Box::new(|| {
-        (screeps::game::cpu::get_used() * 1000.0) as u64
-    }));
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -309,6 +298,15 @@ pub fn big_red_button() {
 
     let mut memory = memory::ScreepsMemory::init_memory();
     memory.rooms = HashMap::new();
+    memory.write_memory();
+}
+
+#[wasm_bindgen(js_name = hauler_rescan)]
+pub fn manual_hauler_rescan() {
+    let mut memory = heap().memory.lock().unwrap();
+    for (name, rmemory) in &mut memory.rooms {
+        rmemory.hauler_count = 0;
+    }
     memory.write_memory();
 }
 

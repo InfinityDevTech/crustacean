@@ -18,6 +18,8 @@ use crate::{
 
 use super::{CachedRoom, RoomCache};
 
+// Order creation ------
+
 // Priorities are 1:1 now.
 // No more fucking decimal scaling. Im amazed marvin can do it.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
@@ -119,7 +121,7 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -192,7 +194,7 @@ impl HaulingCache {
             // We want to drop this lock ASAP.
             let lock = heap().hauling.lock().unwrap();
             if let Some(existing_order) = lock.reserved_orders.get(&order.target) {
-                let reserved_amt = existing_order.order_amount;
+                let reserved_amt = existing_order.reserved_amount;
 
                 if game::time() % 10 == 0 {
                     for creep in existing_order.creeps_assigned.iter() {
@@ -203,8 +205,30 @@ impl HaulingCache {
                 }
 
                 if order.amount > Some(reserved_amt as u32) {
+                    if order.target_type == Some(StructureType::Container)
+                        || order.target_type.is_none()
+                    {
+                        info!("Adjusting {} order amount from {} to {} because of {} reservation", if order.target_type.is_none() { "energy" } else { "container" }, order.amount.unwrap_or(0), order.amount.unwrap_or(0) - reserved_amt as u32, reserved_amt);
+                        info!("  Creeps assigned: {:?}", existing_order.creeps_assigned);
+                    }
                     order.amount = Some(order.amount.unwrap() - reserved_amt as u32);
+
+                    if order.haul_type == HaulingType::Pickup && order.target_type.is_none() {
+                        info!("Adjusting priority for dropped energy from: {}, to: {}", order.priority, -(order.amount.unwrap_or(0) as f32));
+                        order.priority = -(order.amount.unwrap_or(0) as f32);
+                    }
                 } else {
+                    if order.target_type == Some(StructureType::Container)
+                        || order.target_type.is_none()
+                    {
+                        info!(
+                            "{} has {} reserved, which is larger than {}, removing order",
+                            if order.target_type.is_none() { "energy" } else { "container" },
+                            reserved_amt,
+                            order.amount.unwrap_or(0)
+                        );
+                        info!("  Creeps assigned: {:?}", existing_order.creeps_assigned);
+                    }
                     return;
                 }
             }
@@ -282,8 +306,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
             let role = name_to_role(&hauler.creep_name);
 
-            let c = orders.clone();
-            for order in c.values() {
+            for order in orders.values() {
                 // Dont let haulers pull from storage if there is a base hauler
                 // Just to avoid them getting stuck.
                 if order.target_type == Some(StructureType::Storage)
@@ -340,7 +363,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                 }
 
                 if score < top_score {
-                    top_scoring_order = Some(order);
+                    top_scoring_order = Some(order.clone());
                     top_score = score;
                 }
             }
@@ -370,20 +393,18 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                         // If we are going to take it, decrease the resource amount by how much were going to take
                         // That way, all of our haulers dont rush for a single source at once.
                         if order.haul_type == HaulingType::Pickup {
-                            if let Some(amnt) = order.amount {
-                                let pickup_amount = cmp::min(
-                                    amnt as i32,
-                                    game_creep.store().get_free_capacity(Some(
-                                        order.resource.unwrap_or(ResourceType::Energy),
-                                    )),
-                                );
-                                let new_amount = amnt as i32 - pickup_amount;
+                            let pickup_amount = cmp::min(
+                                order.amount.unwrap_or(0) as i32,
+                                game_creep.store().get_free_capacity(Some(
+                                    order.resource.unwrap_or(ResourceType::Energy),
+                                )),
+                            );
+                            let new_amount = order.amount.unwrap_or(0) as i32 - pickup_amount;
 
-                                if new_amount < 0 {
-                                    orders.remove(&top_scorer.id);
-                                } else {
-                                    order.amount = Some(new_amount as u32);
-                                }
+                            if new_amount < 0 {
+                                orders.remove(&top_scorer.id);
+                            } else {
+                                order.amount = Some(new_amount as u32);
                             }
                         }
 
@@ -402,20 +423,18 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                     // If we are going to take it, decrease the resource amount by how much were going to take
                     // That way, all of our haulers dont rush for a single source at once.
                     if order.haul_type == HaulingType::Pickup {
-                        if let Some(amnt) = order.amount {
-                            let pickup_amount = cmp::min(
-                                amnt as i32,
-                                game_creep.store().get_free_capacity(Some(
-                                    order.resource.unwrap_or(ResourceType::Energy),
-                                )),
-                            );
-                            let new_amount = amnt as i32 - pickup_amount;
+                        let pickup_amount = cmp::min(
+                            order.amount.unwrap_or(0) as i32,
+                            game_creep.store().get_free_capacity(Some(
+                                order.resource.unwrap_or(ResourceType::Energy),
+                            )),
+                        );
+                        let new_amount = order.amount.unwrap_or(0) as i32 - pickup_amount;
 
-                            if new_amount < 0 {
-                                orders.remove(&top_scorer.id);
-                            } else {
-                                order.amount = Some(new_amount as u32);
-                            }
+                        if new_amount < 0 {
+                            orders.remove(&top_scorer.id);
+                        } else {
+                            order.amount = Some(new_amount as u32);
                         }
                     }
 
@@ -447,13 +466,26 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
             };
 
             // If the target is not a storage, we reserve the order
-            if order.target_type != Some(StructureType::Storage) {
+            if order.target_type != Some(StructureType::Storage) || order.target_type.is_none() {
+                if order.target_type.is_none() {
+                    info!("REserving dropped energy");
+                }
                 // If the order is already reserved, we add the creep to the list of creeps assigned to it
                 // Then increment the reserved amount.
                 if let Some(reserved_order) = heap_hauling.reserved_orders.get_mut(&order.target) {
                     reserved_order.reserved_amount += carry_capacity as i32;
                     reserved_order.creeps_assigned.push(creep.name());
+
+                    if order.target_type.is_none() {
+                        info!(
+                            "Rserving dropped energy {:?}",
+                            reserved_order.creeps_assigned
+                        );
+                    }
                 } else {
+                    if order.target_type.is_none() {
+                        info!("Reserving dropped energy");
+                    }
                     // If the order is not reserved, we reserve it.
                     heap_hauling.reserved_orders.insert(
                         order.target,
@@ -563,6 +595,92 @@ pub fn clean_heap_hauling(memory: &mut ScreepsMemory) {
     // Delete these marked orders
     for target in to_delete {
         lock.reserved_orders.remove(&target);
+    }
+}
+
+// End order creation ------
+// Relaying -----
+
+pub fn attempt_relay(
+    current_creep: &Creep,
+    coord: Position,
+    cache: &mut RoomCache,
+    memory: &mut ScreepsMemory,
+) -> bool {
+    let current_room_cache = cache
+        .rooms
+        .get_mut(&current_creep.room().unwrap().name())
+        .unwrap();
+
+    let flattened_coord = coord.y().u8() as u64 * 50 + coord.x().u8() as u64;
+    if let Some(target_creep) = current_room_cache
+        .creeps
+        .creeps_at_pos
+        .get(&flattened_coord)
+    {
+        let [current_creep_memory, target_creep_memory] = memory
+            .creeps
+            .get_many_mut([&current_creep.name(), &target_creep.name()])
+            .unwrap();
+        if target_creep_memory.role != Role::Hauler
+            || cache.creeps_moving_stuff.contains_key(&target_creep.name())
+        {
+            return false;
+        }
+
+        if target_creep.store().get_used_capacity(None) > 0 {
+            return false;
+        }
+        if target_creep.store().get_free_capacity(None)
+            < current_creep
+                .store()
+                .get_used_capacity(None)
+                .try_into()
+                .unwrap()
+        {
+            return false;
+        }
+
+        let mut target_distance_from_goal = 0;
+        let mut my_distance_from_goal = 0;
+
+        if let Some(target_creep_goal) = target_creep_memory.hauling_task.as_ref() {
+            let pos = target_creep_goal.get_target_position();
+
+            target_distance_from_goal = target_creep.pos().get_range_to(pos.unwrap());
+        }
+        if let Some(my_goal) = current_creep_memory.hauling_task.as_ref() {
+            let pos = my_goal.get_target_position();
+
+            my_distance_from_goal = current_creep.pos().get_range_to(pos.unwrap());
+        }
+
+        if target_distance_from_goal < my_distance_from_goal {
+            let _ = current_creep.say("🔄 - CRNT", false);
+            let _ = target_creep.say("🔄 - TRGT", false);
+
+            cache.creeps_moving_stuff.insert(current_creep.name(), true);
+            cache.creeps_moving_stuff.insert(target_creep.name(), true);
+
+            // Trade target and current creeps tasks
+            let target_task = target_creep_memory.hauling_task.clone();
+            let current_task = current_creep_memory.hauling_task.clone();
+
+            target_creep_memory.hauling_task = current_task;
+            current_creep_memory.hauling_task = target_task;
+
+            // Trade their paths
+            let target_path = target_creep_memory.path.clone();
+            let current_path = current_creep_memory.path.clone();
+
+            target_creep_memory.path = current_path;
+            current_creep_memory.path = target_path;
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
     }
 }
 

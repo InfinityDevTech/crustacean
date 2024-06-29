@@ -140,6 +140,8 @@ pub struct RoomMemory{
     pub creeps: Vec<String>,
     pub remotes: Vec<RoomName>,
 
+    pub under_attack: bool,
+
     pub hauler_count: u32,
 }
 }
@@ -152,6 +154,9 @@ structstruck::strike! {
         pub owner: RoomName,
 
         pub creeps: Vec<String>,
+
+        pub invader_energy_counter: u32,
+        pub under_attack: bool,
     }
 }
 

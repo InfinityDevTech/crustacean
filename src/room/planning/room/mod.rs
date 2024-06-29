@@ -24,6 +24,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         creeps: Vec::new(),
         remotes: Vec::new(),
         hauler_count: 0,
+        under_attack: false,
     };
 
     memory.create_room(&room.name(), room_memory);

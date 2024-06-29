@@ -1,3 +1,5 @@
+#![feature(map_many_mut)]
+
 use std::{
     collections::HashMap,
     sync::{Mutex, Once, OnceLock},
@@ -8,9 +10,7 @@ use heap_cache::GlobalHeapCache;
 use log::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::tick_cache::{hauling, traffic, RoomCache},
-    spawning::spawn_manager::{self, SpawnManager},
-    visuals::visualise_scouted_rooms,
+    cache::tick_cache::{hauling, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
 };
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
 use wasm_bindgen::prelude::*;
@@ -60,8 +60,6 @@ pub fn init() {
 // Reserve remotes, we need the 3k energy from the sources. <- This is getting made, goal system.
 // Fix the hauler reserving logic? It doesnt appear to be persistent cross tick.
 pub fn game_loop() {
-    use room::democracy;
-
     #[cfg(feature = "profile")]
     {
         if game::cpu::bucket() > 1000 {

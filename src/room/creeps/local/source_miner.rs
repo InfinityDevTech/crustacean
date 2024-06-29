@@ -53,17 +53,21 @@ pub fn harvest_source(
     source: Source,
     creep_memory: &mut CreepMemory,
     cache: &mut CachedRoom,
-) {
+) -> Option<u32> {
     if !creep.pos().is_near_to(source.pos()) {
         let _ = creep.say("🚚 🔋", false);
 
         creep.better_move_to(creep_memory, cache, source.pos(), 1, MoveOptions::default());
+
+        None
     } else {
         let _ = creep.say("⛏️", false);
         let _ = creep.harvest(&source);
 
         let amount_harvsted = get_aproximate_energy_mined(creep, &source);
         cache.stats.energy.income_mining += amount_harvsted;
+
+        Some(amount_harvsted)
     }
 }
 

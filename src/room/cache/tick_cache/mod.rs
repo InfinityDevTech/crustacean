@@ -21,6 +21,8 @@ pub struct RoomCache {
     pub my_rooms: Vec<RoomName>,
 
     pub spawning: SpawnManager,
+
+    pub creeps_moving_stuff: HashMap<String, bool>,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -31,6 +33,7 @@ impl RoomCache {
             my_rooms: Vec::new(),
 
             spawning: spawn_manager,
+            creeps_moving_stuff: HashMap::new(),
         }
     }
 

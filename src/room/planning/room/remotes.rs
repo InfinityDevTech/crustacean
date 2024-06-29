@@ -65,6 +65,8 @@ pub fn fetch_possible_remotes(
                 owner: room.name(),
 
                 creeps: Vec::new(),
+                under_attack: false,
+                invader_energy_counter: 0,
             };
 
             remotes.push(remote.name);

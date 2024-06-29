@@ -8,7 +8,7 @@ use crate::{
     }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
@@ -69,7 +69,12 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
                 deposit_enegy(creep, creep_memory, room_cache);
             }
 
-            harvest_source(creep, source, creep_memory, room_cache);
+            let harvested_amount = harvest_source(creep, source, creep_memory, room_cache);
+            if let Some(harvested_amount) = harvested_amount {
+                if let Some(mem) = memory.remote_rooms.get_mut(&remote_room) {
+                    mem.invader_energy_counter += harvested_amount;
+                }
+            }
         }
     } else {
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();

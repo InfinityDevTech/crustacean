@@ -110,6 +110,8 @@ pub fn game_loop() {
         democracy::start_government(game_room, &mut memory, &mut cache);
     }
 
+    combat::global::run_global_setters(&mut memory, &mut cache);
+
     for room in cache.my_rooms.clone().iter() {
         hauling::match_haulers(&mut cache, &mut memory, room);
 

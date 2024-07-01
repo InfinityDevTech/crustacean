@@ -1,6 +1,6 @@
 use log::warn;
 use screeps::{
-    find, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureType
+    find, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureProperties, StructureType
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -43,6 +43,8 @@ impl MoveTarget {
         let opts = SearchOptions::new(|room_name| {
             path_call(room_name, move_options)
         })
+            .plain_cost(2)
+            .swamp_cost(5)
             .max_rooms(15)
             .max_ops(20000);
 
@@ -97,7 +99,7 @@ impl MoveTarget {
 
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
@@ -107,7 +109,8 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
         let creeps = room.find(find::CREEPS, None);
         let terrain = LocalRoomTerrain::from(room.get_terrain());
 
-        for x in 0..50 {
+        // This might be redundant. I might be a dunce.
+        /*for x in 0..50 {
             for y in 0..50 {
                 let pos = unsafe { RoomXY::unchecked_new(x, y) };
                 let tile = terrain.get_xy(pos);
@@ -118,7 +121,7 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
                     screeps::Terrain::Swamp => matrix.set(pos, 5),
                 }
             }
-        }
+        }*/
 
         for csite in constructions {
             let pos = csite.pos();
@@ -139,6 +142,16 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
             }
         }
 
+        for creep in creeps {
+            let pos = creep.pos();
+            matrix.set(pos.xy(), 3);
+        }
+
+        for road in structures.iter().filter(|s| s.structure_type() == StructureType::Road) {
+            let pos = road.pos();
+            matrix.set(pos.xy(), 1);
+        }
+
         for structure in structures {
             let pos = structure.pos();
             match structure {
@@ -148,17 +161,12 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
                         matrix.set(pos.xy(), 255);
                     }
                 }
-                StructureObject::StructureRoad(_) => matrix.set(pos.xy(), 1),
+                StructureObject::StructureRoad(_) => {},
                 StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
                 _ => {
                     matrix.set(pos.xy(), 255);
                 }
             }
-        }
-
-        for creep in creeps {
-            let pos = creep.pos();
-            matrix.set(pos.xy(), 3);
         }
 
         if move_options.avoid_enemies {

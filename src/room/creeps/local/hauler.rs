@@ -125,6 +125,8 @@ pub fn execute_order(
         return true;
     }
 
+    cache.rooms.get_mut(&creep_memory.owning_room).unwrap().stats.energy.in_haulers += creep.store().get_used_capacity(Some(ResourceType::Energy));
+
     let current_room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
     let t = current_room_cache.resources.dropped_energy.clone();
@@ -310,6 +312,10 @@ pub fn execute_order(
                         Some(amount),
                     );
 
+                    if result.is_ok() {
+                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap().stats.energy.deposited_energy += amount;
+                    }
+
                     (amount as i32, result)
                 } else {
                     let result = creep.transfer(
@@ -317,6 +323,10 @@ pub fn execute_order(
                         order.resource,
                         None,
                     );
+
+                    if result.is_ok() {
+                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap().stats.energy.deposited_energy += creep.store().get_used_capacity(Some(order.resource)) ;
+                    }
 
                     (0, result)
                 }

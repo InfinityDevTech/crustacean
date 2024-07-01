@@ -555,9 +555,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "screeps-game-api"
-version = "0.21.0"
+version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cc400a684d152b3b40dce97f0c519ef5995471be14cae588a84fefa88b9f3e5"
+checksum = "5a388c726189c38098ebadcb47aa0e6a150afb39845c6fdc8602c2fda60852c1"
 dependencies = [
  "arrayvec",
  "enum-iterator",
@@ -585,7 +585,7 @@ dependencies = [
 [[package]]
 name = "screeps-timing"
 version = "0.1.0"
-source = "git+https://github.com/InfinityDevTech/screeps-timing#c7aa649e11cde9e56a81af36e1c46ecda8daae66"
+source = "git+https://github.com/InfinityDevTech/screeps-timing#009261b873517d3f8be0fedf9c29b72dabd1160b"
 dependencies = [
  "scopeguard",
  "serde",
@@ -641,9 +641,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.118"
+version = "1.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d947f6b3163d8857ea16c4fa0dd4840d52f3041039a85decd46867eb1abef2e4"
+checksum = "e8eddb61f0697cc3989c5d64b452f5488e2b8a60fd7d5076a3045076ffef8cb0"
 dependencies = [
  "itoa",
  "ryu",

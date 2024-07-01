@@ -22,7 +22,7 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
 
     for role in Role::iter() {
         let score = match role {
-            Role::Miner => 1,
+            Role::Harvester => 1,
             Role::Hauler => 1,
             Role::Repairer => { if controller.level() > 2 { 1 } else { 0 } },
             Role::BaseHauler => { if room_cache.structures.storage.is_some() { 1 } else { 0 } },
@@ -270,7 +270,7 @@ pub fn hauler(
     let body = crate::room::spawning::creep_sizing::hauler_body(room);
     let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
 
-    let harvester_count = owning_cache.creeps.creeps_of_role.get(&Role::Miner).unwrap_or(&Vec::new()).len();
+    let harvester_count = owning_cache.creeps.creeps_of_role.get(&Role::Harvester).unwrap_or(&Vec::new()).len();
     let remote_harvester_count = owning_cache.creeps.creeps_of_role.get(&Role::RemoteHarvester).unwrap_or(&Vec::new()).len();
 
     let harvester_count = harvester_count + remote_harvester_count;
@@ -479,7 +479,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) 
     let miner_count = cache
         .creeps
         .creeps_of_role
-        .get(&Role::Miner)
+        .get(&Role::Harvester)
         .unwrap_or(&Vec::new())
         .len();
     let hauler_count = cache
@@ -523,7 +523,7 @@ pub fn miner(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) 
         };
 
         let req = spawn_manager.create_room_spawn_request(
-            Role::Miner,
+            Role::Harvester,
             parts,
             priority,
             cost,
@@ -561,6 +561,11 @@ pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemo
 
     for remote in remotes {
         if let Some(remote_room) = game::rooms().get(remote) {
+            if let Some(remote_memory) = memory.remote_rooms.get(&remote) {
+                if remote_memory.under_attack {
+                    continue;
+                }
+            }
             let room_cache = cache.rooms.get(&remote_room.name()).unwrap();
 
             for source in room_cache.resources.sources.iter() {

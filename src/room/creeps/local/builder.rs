@@ -1,4 +1,4 @@
-use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties, StructureObject};
+use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, RoomCache}, traits::creep::CreepExtensions
@@ -87,14 +87,4 @@ pub fn energy_spent_building(creep: &Creep, csite: &ConstructionSite) -> u32 {
 
     
     work.min(csite.progress_total() - csite.progress())
-}
-
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn energy_spent_repairing(creep: &Creep, repairable: &StructureObject) -> u32 {
-    let work_parts = creep.body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32;
-    let work = creep.store().get_used_capacity(Some(ResourceType::Energy)).min(work_parts * 5);
-
-    let repairable = repairable.as_repairable().unwrap();
-
-    work.min(repairable.hits_max() - repairable.hits())
 }

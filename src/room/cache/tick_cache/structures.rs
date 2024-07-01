@@ -55,6 +55,7 @@ impl CachedRoomLinks {
 #[derive(Debug, Clone)]
 pub struct RoomStructureCache {
     pub all_structures: Vec<StructureObject>,
+    pub hostile_structures: Vec<StructureObject>,
     pub construction_sites: Vec<ConstructionSite>,
 
     pub needs_repair: Vec<StructureObject>,
@@ -78,7 +79,7 @@ pub struct RoomStructureCache {
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,
@@ -88,6 +89,7 @@ impl RoomStructureCache {
     ) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
             all_structures: Vec::new(),
+            hostile_structures: Vec::new(),
             construction_sites: Vec::new(),
             needs_repair: Vec::new(),
 
@@ -164,6 +166,12 @@ impl RoomStructureCache {
 
                 if repairable.hits() < max {
                     self.needs_repair.push(structure.clone());
+                }
+            }
+
+            if let Some(owner) = structure.as_owned() {
+                if !owner.my() {
+                    self.hostile_structures.push(structure.clone());
                 }
             }
 

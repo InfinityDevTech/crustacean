@@ -32,10 +32,20 @@ pub struct EnergyStats {
     pub capacity: u32,
     pub available: u32,
     pub stored: u32,
+    pub dropped: u32,
 
-    pub income_mining: u32,
+    pub in_haulers: u32,
+    pub in_base_haulers: u32,
+    pub in_containers: u32,
+
+    pub income_energy: u32,
+    pub income_minerals: u32,
+    pub income_power: u32,
     pub income_trading: u32,
     pub income_other: u32,
+
+    pub deposited_energy: u32,
+    pub deposited_minerals: u32,
 
     pub spending_spawning: u32,
     pub spending_upgrading: u32,
@@ -43,7 +53,7 @@ pub struct EnergyStats {
     pub spending_repair: u32,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StatsCache {
     pub fn spawning_stats(&mut self, structures: &mut RoomStructureCache) {
         for spawn in structures.spawns.values() {
@@ -70,18 +80,27 @@ impl StatsCache {
 
             room_stats.creep_count = self.creep_count;
 
-            room_stats.energy.capacity = self.energy.capacity;
-            room_stats.energy.available = self.energy.available;
-            room_stats.energy.stored = self.energy.stored;
+            room_stats.economy.energy_capacity = self.energy.capacity;
+            room_stats.economy.available_energy = self.energy.available;
+            room_stats.economy.stored_energy = self.energy.stored;
+            room_stats.economy.dropped_energy = self.energy.dropped;
 
-            room_stats.energy.income_mining = self.energy.income_mining;
-            room_stats.energy.income_trading = self.energy.income_trading;
-            room_stats.energy.income_other = self.energy.income_other;
+            room_stats.economy.stored_energy_in_base_haulers = self.energy.in_base_haulers;
+            room_stats.economy.stored_energy_in_containers = self.energy.in_containers;
+            room_stats.economy.stored_energy_in_haulers = self.energy.in_haulers;
 
-            room_stats.energy.spending_spawning = self.energy.spending_spawning;
-            room_stats.energy.spending_upgrading = self.energy.spending_upgrading;
-            room_stats.energy.spending_construction = self.energy.spending_construction;
-            room_stats.energy.spending_repair = self.energy.spending_repair;
+            room_stats.economy.income_energy = self.energy.income_energy;
+            room_stats.economy.income_minerals = self.energy.income_minerals;
+            room_stats.economy.income_trading = self.energy.income_trading;
+            room_stats.economy.income_other = self.energy.income_other;
+
+            room_stats.economy.deposited_energy = self.energy.deposited_energy;
+            room_stats.economy.deposited_minerals = self.energy.deposited_minerals;
+
+            room_stats.economy.spending_spawning = self.energy.spending_spawning;
+            room_stats.economy.spending_upgrading = self.energy.spending_upgrading;
+            room_stats.economy.spending_construction = self.energy.spending_construction;
+            room_stats.economy.spending_repair = self.energy.spending_repair;
 
             room_stats.cpu_used = cpu_used;
             room_stats.cpu_traffic = self.cpu_traffic;
@@ -92,14 +111,24 @@ impl StatsCache {
             room_stats.cpu_usage_by_role.clone_from(&self.cpu_usage_by_role);
             room_stats.creeps_by_role.clone_from(&self.creeps_by_role);
         } else {
-            let energy = memory::EnergyStats {
-                capacity: self.energy.capacity,
-                available: self.energy.available,
-                stored: self.energy.stored,
+            let energy = memory::EconomyStats {
+                energy_capacity: self.energy.capacity,
+                available_energy: self.energy.available,
+                stored_energy: self.energy.stored,
+                dropped_energy: self.energy.dropped,
 
-                income_mining: self.energy.income_mining,
+                stored_energy_in_base_haulers: self.energy.in_base_haulers,
+                stored_energy_in_containers: self.energy.in_containers,
+                stored_energy_in_haulers: self.energy.in_haulers,
+
+                income_energy: self.energy.income_energy,
+                income_minerals: self.energy.income_minerals,
+                income_power: self.energy.income_power,
                 income_trading: self.energy.income_trading,
                 income_other: self.energy.income_other,
+
+                deposited_energy: self.energy.deposited_energy,
+                deposited_minerals: self.energy.deposited_minerals,
 
                 spending_spawning: self.energy.spending_spawning,
                 spending_upgrading: self.energy.spending_upgrading,
@@ -118,7 +147,7 @@ impl StatsCache {
                 cpu_hauling_orders: self.cpu_hauling_orders,
 
                 cpu_used,
-                energy,
+                economy: energy,
                 creeps_by_role: self.creeps_by_role.clone(),
                 cpu_usage_by_role: self.cpu_usage_by_role.clone(),
 

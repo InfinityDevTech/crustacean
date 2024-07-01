@@ -326,7 +326,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                 // If the order is for a specific resource, only match it if the hauler can carry it
                 // If the order doesnt contain a resource, assume energy.
                 if let Some(resource_type) = hauler.resource_type {
-                    if order.resource.unwrap_or(ResourceType::Energy) != resource_type {
+                    if order.resource.is_some() && order.resource.unwrap() != resource_type {
                         continue;
                     }
                 }
@@ -844,6 +844,8 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
                 HaulingType::Transfer,
             )
         }
+
+        room_cache.stats.energy.stored = storage.store().get_used_capacity(Some(ResourceType::Energy));
     }
 }
 

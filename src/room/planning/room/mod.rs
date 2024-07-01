@@ -6,6 +6,7 @@ use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCa
 pub mod construction;
 pub mod structure_visuals;
 pub mod remotes;
+pub mod roads;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {

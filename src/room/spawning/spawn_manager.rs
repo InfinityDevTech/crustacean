@@ -78,6 +78,12 @@ impl SpawnManager {
         for spawn in room_cache.structures.spawns.values() {
             let mut creeps_in_range = Vec::new();
 
+            // Only push when there is an imminent creep, because we
+            // don't want to move creeps that are not in the way
+            if spawn.spawning().is_none() {
+                continue;
+            }
+
             for creep in room_cache.creeps.owned_creeps.values() {
                 if creep.pos().is_near_to(spawn.pos()) {
                     creeps_in_range.push(creep);
@@ -177,7 +183,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
             if current_count_for_role < (*required_count_for_role).try_into().unwrap() {
                 let spawn_request = match required_role {
-                    Role::Miner => miner(&room, room_cache, &mut cache.spawning),
+                    Role::Harvester => miner(&room, room_cache, &mut cache.spawning),
                     Role::Hauler => hauler(&room, cache, memory),
                     Role::FastFiller => fast_filler(&room, room_cache, &mut cache.spawning),
                     Role::BaseHauler => base_hauler(&room, room_cache, &mut cache.spawning),

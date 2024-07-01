@@ -128,10 +128,10 @@ impl RoomExtensions for screeps::Room {
     fn room_type(&self) -> RoomType {
             let room_x = self.name().x_coord();
             let room_y = self.name().y_coord();
-        
+
             let ew = room_x % 10;
             let ns = room_y % 10;
-        
+
             if ew == 0 && ns == 0 {
                 return RoomType::Intersection
             }

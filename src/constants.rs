@@ -1,6 +1,8 @@
+
 use std::sync::OnceLock;
 
 use enum_map::{enum_map, Enum, EnumMap};
+use screeps::Part;
 
 // navigator.clipboard.writeText(`$TO_COPY`);
 pub static COPY_TEXT: &str = "
@@ -10,6 +12,17 @@ pub static COPY_TEXT: &str = "
     <button style='color: black; border-radius: 7px; margin: 0; padding: 0;' onclick='selectText()'> Copy profiler output </button>
 </div>
 ";
+
+pub static HOSTILE_PARTS: [Part; 3] = [Part::Attack, Part::RangedAttack, Part::Heal];
+
+pub fn part_attack_weight(part: &Part) -> u32 {
+    match part {
+        Part::Attack => 30,
+        Part::RangedAttack => 10,
+        Part::Heal => 12,
+        _ => 0,
+    }
+}
 
 #[derive(Debug, Enum)]
 pub enum PartsCost {

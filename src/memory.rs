@@ -28,7 +28,7 @@ pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
 // Traffic Priority is handled.
 pub enum Role {
     // Mining industry
-    Miner = 0,
+    Harvester = 0,
     Hauler = 1,
 
     FastFiller = 2,
@@ -46,6 +46,8 @@ pub enum Role {
     Unclaimer = 11,
 
     Reserver = 50,
+    RemoteDefender = 51,
+    InvaderCleaner = 52,
 
     // Assorted junk roles, recycler just recycles itself
     Recycler = 99,
@@ -255,14 +257,23 @@ structstruck::strike! {
             pub cpu_cache: f64,
             pub cpu_hauling_orders: f64,
 
-            pub energy: pub struct EnergyStats {
-                pub capacity: u32,
-                pub available: u32,
-                pub stored: u32,
+            pub economy: pub struct EconomyStats {
+                pub energy_capacity: u32,
+                pub available_energy: u32,
+                pub dropped_energy: u32,
+                pub stored_energy: u32,
+                pub stored_energy_in_haulers: u32,
+                pub stored_energy_in_base_haulers: u32,
+                pub stored_energy_in_containers: u32,
 
-                pub income_mining: u32,
+                pub income_energy: u32,
+                pub income_minerals: u32,
+                pub income_power: u32,
                 pub income_trading: u32,
                 pub income_other: u32,
+
+                pub deposited_energy: u32,
+                pub deposited_minerals: u32,
 
                 pub spending_spawning: u32,
                 pub spending_upgrading: u32,

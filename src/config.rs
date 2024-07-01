@@ -4,6 +4,7 @@ pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "";
 
+pub const INVADER_USERNAME: &str = "Invader";
 pub const ALLIES: [&str; 3] = ["MarvinTMB", "Shylo132", "kbharlem"];
 
 pub const ROOM_SIGNS: [&str; 24] = [

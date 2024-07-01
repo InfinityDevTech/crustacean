@@ -8,7 +8,7 @@ use crate::{
     traits::creep::CreepExtensions,
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
         let _ = creep.say("😴", false);
@@ -17,6 +17,8 @@ pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 
     let room_memory = memory.creeps.get_mut(&creep.name().to_string()).unwrap();
     let room_cache = cache.rooms.get_mut(&room_memory.owning_room).unwrap();
+
+    room_cache.stats.energy.in_base_haulers += creep.store().get_used_capacity(Some(ResourceType::Energy));
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         let _ = creep.say("📋", false);

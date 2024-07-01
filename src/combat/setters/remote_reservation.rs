@@ -2,7 +2,7 @@ use screeps::{game, HasPosition, OwnedStructureProperties, Position, Room, RoomC
 
 use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::PositionExtensions, utils::get_my_username};
 
-pub fn determine_reservations(_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote in memory.remote_rooms.values() {
         let exists = memory.goals.room_reservation.contains_key(&remote.name);
         if exists {
@@ -61,7 +61,7 @@ pub fn remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &Room
 
     let distance = center_position.get_range_to(owner_center);
 
-    if reservation.ticks_to_end() < distance || reservation.ticks_to_end() < 100 {
+    if reservation.ticks_to_end() < distance || reservation.ticks_to_end() < 1000 {
         return true;
     }
 

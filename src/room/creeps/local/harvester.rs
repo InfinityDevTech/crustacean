@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn run_sourceminer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if creep_memory.task_id.is_none() {
@@ -65,7 +65,7 @@ pub fn harvest_source(
         let _ = creep.harvest(&source);
 
         let amount_harvsted = get_aproximate_energy_mined(creep, &source);
-        cache.stats.energy.income_mining += amount_harvsted;
+        cache.stats.energy.income_energy += amount_harvsted;
 
         Some(amount_harvsted)
     }

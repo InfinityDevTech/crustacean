@@ -1,8 +1,6 @@
 use screeps::{game, Creep, HasPosition, Position, RoomCoordinate, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions};
-
-use super::recycler::run_recycler;
+use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::{cache::tick_cache::RoomCache, creeps::global::recycler::run_recycler}, traits::creep::CreepExtensions};
 
 pub fn run_reserver(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();

@@ -1,4 +1,4 @@
-use screeps::{HasHits, HasId, ResourceType, StructureProperties, StructureType};
+use screeps::{HasHits, HasId, ResourceType, StructureProperties};
 
 use crate::utils::scale_haul_priority;
 

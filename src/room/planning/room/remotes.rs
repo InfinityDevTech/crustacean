@@ -5,9 +5,7 @@ use screeps::{
 };
 
 use crate::{
-    memory::{RemoteRoomMemory, ScreepsMemory},
-    room::{cache::tick_cache::CachedRoom, democracy::remote_path_call},
-    traits::room::{RoomExtensions, RoomType}, utils,
+    goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::room::{RoomExtensions, RoomType}, utils
 };
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -59,9 +57,23 @@ pub fn fetch_possible_remotes(
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         // Get the top 2.
-        for remote in possible_remotes.iter().take(5) {
+        for (remote_name, score) in possible_remotes.iter().take(5) {
+            // I was too lazy to make it a string, so yk
+            // u32::MAX -2 goes hard.
+            if *score == u32::MAX - 2 {
+                let goal = RemoteInvaderCleanup {
+                    cleanup_target: *remote_name,
+                    creeps_assigned: Vec::new(),
+                };
+
+                memory.goals.remote_invader_cleanup.insert(*remote_name, goal);
+
+                // Continue as its un-usable, since its reserved.
+                continue;
+            }
+
             let remote = RemoteRoomMemory {
-                name: remote.0,
+                name: *remote_name,
                 owner: room.name(),
 
                 creeps: Vec::new(),
@@ -108,18 +120,27 @@ pub fn rank_remote_room(
 
     // If we have no scouting data
     let scouted = memory.scouted_rooms.get(remote_room);
-    if scouted.is_none() || scouted.unwrap().sources.is_none() {
+    // This >= 4 check is for SK rooms, idk why, or how, but my room classification is borked.
+    if scouted.is_none() || scouted.unwrap().sources.is_none() || scouted.unwrap().sources.as_ref().unwrap().len() >= 4 {
         return u32::MAX;
     }
 
     // This should be changed to add aggression.
     // As of right now, we are pacificists.
     if scouted.unwrap().owner.is_some() || scouted.unwrap().reserved.is_some() && *scouted.unwrap().reserved.as_ref().unwrap() != utils::get_my_username() {
+        if let Some(reservation) = scouted.unwrap().reserved.as_ref() {
+            // FUCK these dues. Seriously, they are so FUCKING annoying.
+            // They just delay my remotes, they are easy to delete, they just SUCK ASS.
+            if reservation == "Invader" {
+                return u32::MAX - 2;
+            }
+        }
         return u32::MAX;
     }
 
     if scouted.unwrap().room_type == RoomType::SourceKeeper
         || scouted.unwrap().room_type == RoomType::Highway
+        || scouted.unwrap().room_type == RoomType::Center
     {
         return u32::MAX;
     }

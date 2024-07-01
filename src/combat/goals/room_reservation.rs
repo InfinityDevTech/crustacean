@@ -84,10 +84,15 @@ pub fn get_claim_parts(goal: &mut RoomReservationGoal) -> u8 {
 }
 
 pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<String> {
-    let room = utils::find_closest_owned_room(&goal.reservation_target, cache);
+    let room = utils::find_closest_owned_room(&goal.reservation_target, cache, Some(4));
 
     if let Some(best_spawned) = room {
         let room = game::rooms().get(best_spawned).unwrap();
+
+        // Only at RCL 4 do we really start to care about reserving rooms
+        if room.controller().unwrap().level() < 4 {
+            return None;
+        }
 
         let energy_storage = room.energy_capacity_available();
 

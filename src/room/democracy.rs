@@ -13,10 +13,10 @@ use crate::{
 };
 
 use super::{
-    cache::tick_cache::CachedRoom, links, planning::room::construction::{
+    cache::tick_cache::CachedRoom, links, planning::{self, room::construction::{
             get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
             get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
-        }, visuals::visualise_room_visual
+        }}, visuals::visualise_room_visual
 };
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -76,9 +76,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         // Makes hauling requests for the rooms remotes :)
         resources::haul_remotes(&room, memory, cache);
-
-        // Where the fun stuff happens!
-        combat::room::run_room_combat(&room, memory, cache);
 
         organizer::run_creeps(&room, memory, cache);
 
@@ -208,11 +205,13 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                 .pos()
                 .y();
 
-        let should_rampart = room_cache.structures.storage.is_some() && room_cache.structures.controller.as_ref().unwrap().controller.level() > 4;
+        let should_rampart = room_cache.structures.storage.is_some() && room_cache.structures.controller.as_ref().unwrap().controller.level() >= 4;
         let should_road = room_cache.structures.controller.as_ref().unwrap().controller.level() > 3;
 
         if !should_road {
             return;
+        } else {
+            planning::room::roads::plan_main_room_roads(room, room_cache, memory);
         }
 
         for structure in stuffs {

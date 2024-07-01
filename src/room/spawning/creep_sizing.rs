@@ -3,89 +3,46 @@ use std::cmp;
 use log::info;
 use screeps::{game, Part, Room};
 
-use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom};
+use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom, utils};
 
 
 /// Returns the parts needed for a miner creep
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Part> {
-    let mut parts = Vec::new();
+    let mut parts = vec![Part::Work, Part::Carry, Part::Move];
 
     if source_parts_needed == 0 {
         info!("No parts needed for miner");
         return parts; // No parts needed at all, return empty
     }
 
-    let cost_of_stamp = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move];
-    let energy_stored = room.energy_available();
-    let max_energy = room.energy_capacity_available();
+    let cost_of_stamp = 150;
+    let miner_count = cache.creeps.creeps_of_role.get(&Role::Harvester).unwrap_or(&Vec::new()).len();
 
-    let miner_count = cache.creeps.creeps_of_role.get(&Role::Miner).unwrap_or(&Vec::new()).len();
+    let mut current_work_count = 1;
+    let mut current_cost = utils::get_body_cost(&parts);
 
-    if miner_count > 2 {
-        let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
-        let mut work_part_count = 0;
-        parts.push(Part::Carry);
-        parts.push(Part::Work);
-        parts.push(Part::Move);
+    let energy_to_use = if miner_count < 2 {
+        room.energy_available()
+    } else {
+        room.energy_capacity_available()
+    };
 
-        while current_cost < max_energy {
-            if work_part_count % 2 == 0 {
-                if current_cost + cost_of_stamp > max_energy || work_part_count >= source_parts_needed {
-                    break;
-                }
-
-                parts.push(Part::Move);
-                parts.push(Part::Work);
-                current_cost += part_costs()[PartsCost::Move] + part_costs()[PartsCost::Work];
-
-                work_part_count += 1;
-            } else {
-
-                let cost = part_costs()[PartsCost::Work];
-                if current_cost + cost > max_energy || work_part_count >= source_parts_needed {
-                    break;
-                }
-
-                parts.push(Part::Work);
-                current_cost += part_costs()[PartsCost::Work];
-
-                work_part_count += 1;
-            }
-
+    while current_cost < energy_to_use {
+        if current_cost + cost_of_stamp > energy_to_use || current_work_count >= source_parts_needed {
+            break;
         }
 
-        return parts;
-    } else {
-        let mut current_cost = part_costs()[PartsCost::Carry] + cost_of_stamp;
-        let mut work_part_count = 0;
-        parts.push(Part::Carry);
-        parts.push(Part::Work);
-        parts.push(Part::Move);
+        if current_work_count % 2 == 0 {
+            parts.push(Part::Work);
+            parts.push(Part::Move);
 
-        while current_cost < energy_stored {
-            if current_cost + cost_of_stamp > energy_stored || work_part_count >= source_parts_needed {
-                break;
-            }
-
-            if work_part_count % 2 == 0 {
-                parts.push(Part::Move);
-                parts.push(Part::Work);
-                current_cost += part_costs()[PartsCost::Move] + part_costs()[PartsCost::Work];
-
-                work_part_count += 1;
-            } else {
-
-                let cost = part_costs()[PartsCost::Work];
-                if current_cost + cost > max_energy || work_part_count >= source_parts_needed {
-                    break;
-                }
-
-                parts.push(Part::Work);
-                current_cost += part_costs()[PartsCost::Work];
-
-                work_part_count += 1;
-            }
+            current_cost += 150;
+            current_work_count += 1;
+        } else {
+            parts.push(Part::Work);
+            current_cost += 100;
+            current_work_count += 1;
         }
     }
 
@@ -99,13 +56,13 @@ pub fn hauler_body(room: &Room) -> Vec<Part> {
     // Every hundo = 1C 1M
     let energy_for_haulers = match room.controller().unwrap().level() {
         1 => 100,
-        2 => 200,
-        3 => 200,
-        4 => 200,
-        5 => 200,
-        6 => 200,
+        2 => 300,
+        3 => 400,
+        4 => 500,
+        5 => 1000,
+        6 => 1200,
         // We get more spawns, so they suck up less spawn time
-        7 => 1200,
+        7 => 1500,
         // 3 spawns, go ham.
         8 => 2000,
         _ => 100,

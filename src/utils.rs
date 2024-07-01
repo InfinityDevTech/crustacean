@@ -4,7 +4,7 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, OwnedStructureProperties, Part, Position, RoomCoordinate, RoomName};
 
-use crate::{config, heap, memory::Role, room::cache::tick_cache::{hauling::HaulingPriority, RoomCache}};
+use crate::{config, heap, memory::Role, room::cache::tick_cache::{hauling::HaulingPriority, RoomCache}, traits::room::RoomType};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
@@ -46,6 +46,28 @@ pub fn get_room_sign() -> String {
     sign.to_string()
 }
 
+pub fn room_type(name: &RoomName) -> RoomType {
+    let room_x = name.x_coord();
+    let room_y = name.y_coord();
+
+    let ew = room_x % 10;
+    let ns = room_y % 10;
+
+    if ew == 0 && ns == 0 {
+        return RoomType::Intersection
+    }
+    if ew == 0 || ns == 0 {
+        return RoomType::Highway
+    }
+    if room_x % 5 == 0 && room_y % 5 == 0 {
+        return RoomType::Center
+    }
+    if (5 - ew).abs() <= 1 && (5 - ns).abs() <= 1 {
+        return RoomType::SourceKeeper
+    }
+
+    RoomType::Normal
+}
 /// Scale the hauling priority based on the amount of resources in the target.
 /// Capacity: The total capacity of the target
 /// Amount: The amount of resources in the target
@@ -74,7 +96,7 @@ pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn role_to_name(role: Role) -> String {
     let data = match role {
-        Role::Miner => "sm",
+        Role::Harvester => "sm",
         Role::Hauler => "mb",
         Role::Repairer => "rb",
         Role::BaseHauler => "bh",
@@ -90,6 +112,8 @@ pub fn role_to_name(role: Role) -> String {
         Role::Recycler => "rc",
 
         Role::Reserver => "rs",
+        Role::RemoteDefender => "rd",
+        Role::InvaderCleaner => "ic",
     };
     data.to_string()
 }
@@ -101,7 +125,7 @@ pub fn role_to_name(role: Role) -> String {
 pub fn name_to_role(name: &str) -> Option<Role> {
     let role_tag = name.split("-").next().unwrap();
     match role_tag {
-        "sm" => { Some(Role::Miner) },
+        "sm" => { Some(Role::Harvester) },
         "mb" => { Some(Role::Hauler) },
         "rb" => { Some(Role::Repairer) },
         "bh" => { Some(Role::BaseHauler) },
@@ -116,12 +140,14 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "rc" => { Some(Role::Recycler) },
         "po" => { Some(Role::PhysicalObserver) },
         "rs" => { Some(Role::Reserver) },
+        "rd" => { Some(Role::RemoteDefender) },
+        "ic" => { Some(Role::InvaderCleaner) },
         _ => { None },
     }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn find_closest_owned_room(target_room: &RoomName, cache: &RoomCache) -> Option<RoomName> {
+pub fn find_closest_owned_room(target_room: &RoomName, cache: &RoomCache, min_rcl: Option<u8>) -> Option<RoomName> {
     let mut closest_room = None;
     let mut closest_distance = 0;
 
@@ -132,6 +158,13 @@ pub fn find_closest_owned_room(target_room: &RoomName, cache: &RoomCache) -> Opt
         let position = Position::new(coord, coord, *room);
 
         let distance = target_position.get_range_to(position);
+
+        if let Some(min_rcl) = min_rcl {
+            let room = game::rooms().get(*room).unwrap();
+            if room.controller().unwrap().level() < min_rcl {
+                continue;
+            }
+        }
 
         if closest_room.is_none() || distance < closest_distance {
             closest_room = Some(*room);

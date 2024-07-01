@@ -1,10 +1,9 @@
-use screeps::{game, Creep, HasId, HasPosition, ResourceType, SharedCreepProperties, StructureType};
+use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureType};
 
 use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::creep::CreepExtensions, utils::get_rampart_repair_rcl};
-use wasm_bindgen::JsCast;
 use super::hauler;
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -45,13 +44,17 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
             return;
         }
 
-        let repairable = repairable.unchecked_ref::<screeps::StructureRoad>();
-        if creep.pos().get_range_to(repairable.pos()) < 3 {
+        let repairable_obj = StructureObject::from(repairable);
+        let repairable_struct = repairable_obj.as_repairable().unwrap();
+        if creep.pos().get_range_to(repairable_obj.pos()) < 3 {
             let _ = creep.say("🔧", false);
-            let _ = creep.repair(repairable);
+            let _ = creep.repair(repairable_struct);
+
+            let energy_spent = energy_spent_repairing(creep, repairable_struct);
+            room_cache.stats.energy.spending_repair += energy_spent;
         } else {
             let _ = creep.say("🚚", false);
-            creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), repairable.pos(), 2, Default::default());
+            creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), repairable_obj.pos(), 2, Default::default());
 
             return;
         }
@@ -119,4 +122,12 @@ pub fn get_energy(creep: &Creep, memory: &mut CreepMemory, cache: &mut RoomCache
         let cache = cache.rooms.get_mut(&memory.owning_room).unwrap();
         cache.hauling.wanting_orders.push(HaulTaskRequest::default().creep_name(creep.name()).resource_type(ResourceType::Energy).haul_type(vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer]).finish());
     }
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn energy_spent_repairing(creep: &Creep, repairable: &dyn Repairable) -> u32 {
+    let work_parts = creep.body().iter().filter(|p| p.part() == Part::Work && p.hits() > 0).count() as u32;
+    let work = creep.store().get_used_capacity(Some(ResourceType::Energy)).min(work_parts * 5);
+
+    work.min(repairable.hits_max() - repairable.hits())
 }

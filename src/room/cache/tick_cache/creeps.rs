@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use screeps::{find, game, Creep, HasPosition, Room, SharedCreepProperties};
 
 use crate::{
-    memory::{Role, ScreepsMemory},
-    utils::name_to_role,
+    constants::HOSTILE_PARTS, memory::{Role, ScreepsMemory}, utils::name_to_role
 };
 
 #[derive(Debug, Clone)]
@@ -14,6 +13,7 @@ pub struct CreepCache {
     pub creeps_of_role: HashMap<Role, Vec<String>>,
 
     pub enemy_creeps: Vec<Creep>,
+    pub enemy_creeps_with_attack: Vec<Creep>,
     pub allied_creeps: Vec<Creep>,
 
     pub creeps_at_pos: HashMap<u64, Creep>,
@@ -28,6 +28,7 @@ impl CreepCache {
             creeps_of_role: HashMap::new(),
 
             enemy_creeps: Vec::new(),
+            enemy_creeps_with_attack: Vec::new(),
             allied_creeps: Vec::new(),
 
             creeps_at_pos: HashMap::new(),
@@ -49,6 +50,10 @@ impl CreepCache {
             } else if memory.allies.contains(&creep.owner().username()) {
                 self.allied_creeps.push(creep);
             } else {
+                if creep.body().iter().any(|x| HOSTILE_PARTS.contains(&x.part())) {
+                    self.enemy_creeps_with_attack.push(creep.clone());
+                }
+
                 self.enemy_creeps.push(creep);
             }
         }

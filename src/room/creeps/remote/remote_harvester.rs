@@ -4,7 +4,7 @@ use screeps::{game, Creep, HasPosition, MaybeHasId, Position, ResourceType, Room
 use crate::{
     memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::{
         cache::tick_cache::{CachedRoom, RoomCache},
-        creeps::local::source_miner::{harvest_source, repair_container},
+        creeps::local::harvester::{harvest_source, repair_container},
     }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
@@ -73,6 +73,10 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             if let Some(harvested_amount) = harvested_amount {
                 if let Some(mem) = memory.remote_rooms.get_mut(&remote_room) {
                     mem.invader_energy_counter += harvested_amount;
+                }
+
+                if let Some(remote_room) = cache.rooms.get_mut(&creep_memory.owning_room) {
+                    remote_room.stats.energy.income_energy += harvested_amount;
                 }
             }
         }

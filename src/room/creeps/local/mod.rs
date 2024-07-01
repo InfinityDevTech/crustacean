@@ -1,5 +1,5 @@
 pub mod builder;
-pub mod source_miner;
+pub mod harvester;
 pub mod upgrader;
 pub mod hauler;
 pub mod base_hauler;

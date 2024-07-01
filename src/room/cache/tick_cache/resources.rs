@@ -1,6 +1,6 @@
 use std::{cmp, collections::HashMap};
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, Mineral, ObjectId, Part, Resource, ResourceType, Room, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
 use crate::{memory::{Role, ScreepsMemory}, room::{cache::heap_cache::RoomHeapCache, creeps::local::fast_filler}, utils::scale_haul_priority};
 
@@ -233,12 +233,18 @@ impl CachedSource {
     
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote_name in memory.rooms.get(&launching_room.name()).unwrap().remotes.clone().iter() {
         let remote_room = game::rooms().get(*remote_name);
         if let Some(remote_room_memory) = memory.remote_rooms.get_mut(remote_name) {
             if remote_room_memory.under_attack {
+                let x = unsafe { RoomCoordinate::unchecked_new(46) };
+                let y = unsafe { RoomCoordinate::unchecked_new(4) };
+
+                let pos = Position::new(x, y, *remote_name);
+                let style = MapTextStyle::default().font_size(6.0).align(screeps::TextAlign::Center);
+                MapVisual::text(pos, "⚠️".to_string(), style);
                 continue;
             }
         }

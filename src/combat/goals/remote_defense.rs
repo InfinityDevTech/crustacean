@@ -90,6 +90,20 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
             goal.power_rescan_tick = if goal.invaders { game::time() + 100 } else { game::time() + 10 };
         }
 
+        if let Some(remote_cache) = cache.rooms.get_mut(&goal.defending_remote) {
+            let hostile_creeps = &remote_cache.creeps.enemy_creeps_with_attack;
+
+            if hostile_creeps.is_empty() {
+                memory.goals.remote_defense.remove(goal_room);
+
+                if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+                    remote_mem.under_attack = false;
+                }
+
+                return;
+            }
+        }
+
         let room_cache = cache.rooms.get_mut(&room).unwrap();
 
         let my_creeps = &goal.creeps_assigned;

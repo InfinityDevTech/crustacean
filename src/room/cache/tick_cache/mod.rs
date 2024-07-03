@@ -39,8 +39,6 @@ impl RoomCache {
 
     pub fn create_if_not_exists(&mut self, room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) {
         self.rooms.entry(room.name()).or_insert_with(|| {
-            
-
             CachedRoom::new_from_room(room, memory, remote_manager)
         });
     }
@@ -52,8 +50,8 @@ pub struct CachedRoom {
     pub manager: Option<RoomName>,
 
     pub remotes: Vec<RoomName>,
-    pub spawn_center: RoomXY,
-    pub storage_center: RoomXY,
+    pub spawn_center: Option<RoomXY>,
+    pub storage_center: Option<RoomXY>,
 
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
@@ -81,15 +79,21 @@ impl CachedRoom {
         let mut stats =  StatsCache::default();
         stats.energy.spending_spawning = 0;
 
-        let mut room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+        let mut sp_center = None;
+        let mut st_center = None;
+
+        if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+            sp_center = Some(room_memory.spawn_center);
+            st_center = Some(room_memory.storage_center);
+        }
 
         let mut cached = CachedRoom {
             room_name: room.name(),
             manager: remote_manager,
             remotes: Vec::new(),
 
-            spawn_center: room_memory.spawn_center,
-            storage_center: room_memory.storage_center,
+            spawn_center: sp_center,
+            storage_center: st_center,
 
             structures,
             creeps: CreepCache::new_from_room(room, memory),

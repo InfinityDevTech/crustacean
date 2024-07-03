@@ -110,7 +110,7 @@ pub fn rank_remote_room(
     remote_room: &RoomName,
 ) -> u32 {
     // If our room doesnt have a spawn placed yet.
-    let spawn_pos = room_cache.spawn_center.as_position(&room_cache.room_name);
+    let spawn_pos = room_cache.spawn_center.unwrap().as_position(&room_cache.room_name);
     let mut i = 0;
     let mut current_avg = 0;
 

@@ -298,6 +298,16 @@ pub fn big_red_button() {
     memory.write_memory();
 }
 
+#[wasm_bindgen(js_name = wipe_memory)]
+pub fn wipe_memory() {
+    let mut heap_mem = heap().memory.lock().unwrap();
+
+    let mut new_mem = ScreepsMemory::init_memory();
+
+    new_mem.write_memory();
+    *heap_mem = new_mem;
+}
+
 #[wasm_bindgen(js_name = hauler_rescan)]
 pub fn manual_hauler_rescan() {
     let mut memory = heap().memory.lock().unwrap();

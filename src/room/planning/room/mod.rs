@@ -26,9 +26,11 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
     let mut spawn = my_spawn.first().unwrap();
 
+    let spawn = unsafe { RoomXY::unchecked_new(spawn.pos().x().u8(), spawn.pos().y().u8() - 1) };
+
     let store_pos = if my_storage.is_empty() {
-        let spawn_x = spawn.pos().x().u8();
-        let spawn_y = spawn.pos().y().u8();
+        let spawn_x = spawn.x.u8();
+        let spawn_y = spawn.y.u8();
 
         unsafe { RoomXY::unchecked_new(spawn_x + 1, spawn_y + 3) }
     } else {
@@ -46,7 +48,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         creeps: Vec::new(),
         remotes: Vec::new(),
 
-        spawn_center: spawn.pos().xy(),
+        spawn_center: spawn,
         storage_center: store_pos,
 
         hauler_count: 0,

@@ -42,9 +42,12 @@ global.pause_exec = function() {
 }
 
 global.wipe_memory = function() {
-  RawMemory._parsed = {};
   Memory = {};
-  Memory.rooms = {}
+  RawMemory.set(JSON.stringify(Memory));
+
+  if (wasm_module) {
+    wasm_module.wipe_memory();
+  }
 
   return "[JS] Memory wiped";
 }

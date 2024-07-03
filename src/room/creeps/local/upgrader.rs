@@ -31,7 +31,7 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 pub fn get_energy(creep: &Creep, creep_memory: &mut CreepMemory, cached_room: &mut CachedRoom) -> bool {
     let controller = cached_room.structures.controller.as_ref().unwrap();
 
-    if (creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5) {
+    if (creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32) < (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.75) {
         if let Some(controller_link) = cached_room.structures.links.controller.as_ref() {
             if controller_link.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
 

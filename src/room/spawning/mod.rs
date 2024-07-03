@@ -294,7 +294,7 @@ pub fn hauler(
 
                         (out_steps, in_steps)
                     } else {
-                        let spawn = owning_cache.spawn_center.as_position(&owning_cache.room_name);
+                        let spawn = owning_cache.spawn_center.unwrap().as_position(&owning_cache.room_name);
 
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                         let mut in_target = MoveTarget { pos: spawn, range: 1 };
@@ -324,7 +324,7 @@ pub fn hauler(
     
                 (out_steps, in_steps)
             } else {
-                let spawn = owning_cache.spawn_center.as_position(&owning_cache.room_name);
+                let spawn = owning_cache.spawn_center.unwrap().as_position(&owning_cache.room_name);
 
                 let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                 let mut in_target = MoveTarget { pos: spawn, range: 1 };

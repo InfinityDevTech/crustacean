@@ -7,7 +7,7 @@ pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, memory: &mut Screep
         let origin_position = if cache.structures.storage.is_some() {
             cache.structures.storage.as_ref().unwrap().pos()
         } else {
-            let pos = cache.spawn_center;
+            let pos = cache.spawn_center.unwrap();
 
             let y = pos.y.u8();
 

@@ -57,7 +57,7 @@ pub fn remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &Room
 
     let twenty_five = RoomCoordinate::new(25).unwrap();
     let center_position = Position::new(twenty_five, twenty_five, room.name());
-    let owner_center = owning_room_cache.spawn_center.as_position(&room.name());
+    let owner_center = owning_room_cache.spawn_center.unwrap().as_position(&room.name());
 
     let distance = center_position.get_range_to(owner_center);
 

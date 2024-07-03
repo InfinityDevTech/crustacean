@@ -33,6 +33,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         return;
     }
 
+    if room.my() && !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory, cache) {
+        return;
+    }
+
     visualise_room_visual(&room.name());
     // Caches various things, like resources
     // Caches structures and other creep things
@@ -40,10 +44,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
     if room.my() {
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
-
-        if !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory, cache) {
-            return;
-        }
 
         if !memory.rooms.contains_key(&room.name()) || !cache.rooms.contains_key(&room.name()) {
             return;
@@ -106,7 +106,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-            if room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 1000 {
+            if room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 5000 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
 
                 info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
@@ -183,10 +183,10 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
     if game::cpu::bucket() > 1000 && game::time() % 1000 == 0 {
         let stuffs = get_roads_and_ramparts();
 
-        let pos = room_cache.spawn_center;
+        let pos = room_cache.spawn_center.unwrap();
 
         let offset_x = pos.x;
-        let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() - 1) };
+        let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
 
         let should_rampart = room_cache.structures.storage.is_some() && room_cache.structures.controller.as_ref().unwrap().controller.level() >= 4;
         let should_road = room_cache.structures.controller.as_ref().unwrap().controller.level() > 3;

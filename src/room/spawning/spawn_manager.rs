@@ -255,6 +255,10 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
 fn randomize_top_priorities(requests: Vec<SpawnRequest>) -> Vec<SpawnRequest> {
     let mut top_scorers = Vec::new();
+    if requests.is_empty() {
+        return top_scorers;
+    }
+    
     let top_scorer = requests.first().unwrap().priority;
 
     for request in requests {

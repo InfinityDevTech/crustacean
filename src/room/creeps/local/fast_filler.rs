@@ -134,7 +134,7 @@ pub fn find_possible_targets(creep: &Creep, cache: &CachedRoom) -> Vec<RawObject
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
     let current_pos = creep.pos().xy();
-    let spawn_pos = cache.spawn_center;
+    let spawn_pos = cache.spawn_center.unwrap();
 
     let position_1 = RoomPosition::new(
         spawn_pos.x.u8() + 1,

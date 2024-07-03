@@ -1,9 +1,6 @@
 use log::info;
 use screeps::{
-    game,
-    look::{self, LookResult},
-    pathfinder::MultiRoomCostResult,
-    HasPosition, LocalCostMatrix, Room, RoomName, RoomPosition, RoomXY, StructureType, Terrain,
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureType, Terrain
 };
 
 use crate::{
@@ -176,10 +173,8 @@ pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
     MultiRoomCostResult::CostMatrix(matrix.into())
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
-    let _coords = room_cache.structures.spawns.values().next().unwrap().pos();
-    let _viz = RoomVisualExt::new(room.name());
 
     if game::cpu::bucket() < 500 {
         return;
@@ -188,22 +183,10 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
     if game::cpu::bucket() > 1000 && game::time() % 1000 == 0 {
         let stuffs = get_roads_and_ramparts();
 
-        let offset_x = room_cache
-                .structures
-                .spawns
-                .values()
-                .next()
-                .unwrap()
-                .pos()
-                .x();
-            let offset_y = room_cache
-                .structures
-                .spawns
-                .values()
-                .next()
-                .unwrap()
-                .pos()
-                .y();
+        let pos = room_cache.spawn_center;
+
+        let offset_x = pos.x;
+        let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() - 1) };
 
         let should_rampart = room_cache.structures.storage.is_some() && room_cache.structures.controller.as_ref().unwrap().controller.level() >= 4;
         let should_road = room_cache.structures.controller.as_ref().unwrap().controller.level() > 3;

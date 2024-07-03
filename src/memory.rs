@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
+use screeps::{game, Mineral, ObjectId, Position, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -142,8 +142,10 @@ pub struct RoomMemory{
     pub creeps: Vec<String>,
     pub remotes: Vec<RoomName>,
 
-    pub under_attack: bool,
+    pub spawn_center: RoomXY,
+    pub storage_center: RoomXY,
 
+    pub under_attack: bool,
     pub hauler_count: u32,
 }
 }

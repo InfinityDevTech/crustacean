@@ -59,6 +59,12 @@ impl SpawnManager {
         //    self.room_spawn_queue.insert(owning_room, vec![request.clone()]);
         //};
 
+        let body = if body.len() > 50 {
+            info!("Body too large for {}: {:#?}", role, body);
+            body.iter().take(50).cloned().collect::<Vec<_>>() // Limit body to 50 parts
+        } else {
+            body
+        };
 
         SpawnRequest {
             name,
@@ -105,6 +111,7 @@ impl SpawnManager {
 
     pub fn room_spawn_creep(&self, room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom, request: &SpawnRequest) -> bool {
         let (available_spawn, _unavailable_spawns) = room_cache.structures.get_spawns();
+        info!("soawbibg");
         if available_spawn.is_empty() {
             return false;
         }
@@ -128,6 +135,8 @@ impl SpawnManager {
             if spawn_result.is_ok() {
                 memory.create_creep(&room.name(), &name, request.creep_memory.clone());
                 return true;
+            } else {
+                info!("[{}] Failed to spawn {} creep: {:#?}", room.name(), request.role, spawn_result);
             }
         }
 

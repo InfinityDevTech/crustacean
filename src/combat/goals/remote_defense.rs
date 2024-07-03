@@ -87,7 +87,7 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
                 }
             }
 
-            goal.power_rescan_tick = if goal.invaders { game::time() + 100 } else { game::time() + 10 };
+            goal.power_rescan_tick = if goal.invaders { game::time() + 50 } else { game::time() + 10 };
         }
 
         if let Some(remote_cache) = cache.rooms.get_mut(&goal.defending_remote) {

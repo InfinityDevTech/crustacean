@@ -1,4 +1,4 @@
-use screeps::{game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CostMatrix, HasPosition, LocalCostMatrix, Room, RoomName};
+use screeps::{game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CostMatrix, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName};
 
 use crate::{memory::ScreepsMemory, room::cache::tick_cache::CachedRoom};
 
@@ -7,7 +7,13 @@ pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, memory: &mut Screep
         let origin_position = if cache.structures.storage.is_some() {
             cache.structures.storage.as_ref().unwrap().pos()
         } else {
-            cache.structures.spawns.values().next().unwrap().pos()
+            let pos = cache.spawn_center;
+
+            let y = pos.y.u8();
+
+            let y = RoomCoordinate::new(y - 2).unwrap();
+
+            Position::new(pos.x, y, room.name())
         };
 
         let game_source = game::get_object_by_id_typed(&source.id).unwrap();

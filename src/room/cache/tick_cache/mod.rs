@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{game, Room, RoomName};
+use screeps::{game, Room, RoomName, RoomXY};
 use stats::StatsCache;
 
 use crate::{heap, memory::ScreepsMemory, room::spawning::spawn_manager::SpawnManager};
@@ -52,18 +52,16 @@ pub struct CachedRoom {
     pub manager: Option<RoomName>,
 
     pub remotes: Vec<RoomName>,
+    pub spawn_center: RoomXY,
+    pub storage_center: RoomXY,
 
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
     pub traffic: TrafficCache,
-
     pub resources: RoomResourceCache,
-
     //pub hauling: RefCell<HaulingCache>,
     pub hauling: HaulingCache,
-
     pub heap_cache: RoomHeapCache,
-
     pub stats: StatsCache
 }
 
@@ -83,18 +81,21 @@ impl CachedRoom {
         let mut stats =  StatsCache::default();
         stats.energy.spending_spawning = 0;
 
+        let mut room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
         let mut cached = CachedRoom {
             room_name: room.name(),
             manager: remote_manager,
             remotes: Vec::new(),
 
+            spawn_center: room_memory.spawn_center,
+            storage_center: room_memory.storage_center,
+
             structures,
             creeps: CreepCache::new_from_room(room, memory),
             traffic: TrafficCache::new(),
             resources,
-
             hauling: HaulingCache::new(),
-
             heap_cache: room_heap,
             stats,
             //hauling: RefCell::new(HaulingCache::new()),

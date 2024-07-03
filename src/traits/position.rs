@@ -1,4 +1,4 @@
-use screeps::{game, Position, Terrain};
+use screeps::{game, Position, RoomName, RoomXY, Terrain};
 
 pub trait PositionExtensions {
     fn get_accessible_positions_around(&self, range: u8) -> u8;
@@ -20,5 +20,15 @@ impl PositionExtensions for Position {
             }
         }
         positions
+    }
+}
+
+pub trait RoomXYExtensions {
+    fn as_position(&self, room_name: &RoomName) -> Position;
+}
+
+impl RoomXYExtensions for RoomXY {
+    fn as_position(&self, room_name: &RoomName) -> Position {
+        Position::new(self.x, self.y, *room_name)
     }
 }

@@ -1,4 +1,4 @@
-use std::{cmp, collections::HashMap};
+use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::base_hauler_body;
 use log::info;
@@ -7,7 +7,7 @@ use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
 
 use crate::{
-    memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::{MoveOptions, MoveTarget}, utils::get_body_cost
+    memory::{CreepMemory, Role, ScreepsMemory}, movement::move_target::{MoveOptions, MoveTarget}, traits::position::RoomXYExtensions, utils::get_body_cost
 };
 
 use super::cache::tick_cache::{CachedRoom, RoomCache};
@@ -256,7 +256,7 @@ pub fn upgrader(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManage
 }
 
 // TODO: Math this shit! Make it better!
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn hauler(
     room: &Room,
     cache: &RoomCache,
@@ -294,12 +294,12 @@ pub fn hauler(
 
                         (out_steps, in_steps)
                     } else {
-                        let spawn = owning_cache.structures.spawns.values().next().unwrap();
+                        let spawn = owning_cache.spawn_center.as_position(&owning_cache.room_name);
 
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
-                        let mut in_target = MoveTarget { pos: spawn.pos(), range: 1 };
+                        let mut in_target = MoveTarget { pos: spawn, range: 1 };
 
-                        let out_steps = out_target.find_path_to(spawn.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let out_steps = out_target.find_path_to(spawn, MoveOptions::default().path_age(u8::MAX)).len() as u128;
                         let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
 
                         (out_steps, in_steps)
@@ -324,12 +324,12 @@ pub fn hauler(
     
                 (out_steps, in_steps)
             } else {
-                let spawn = owning_cache.structures.spawns.values().next().unwrap();
-    
+                let spawn = owning_cache.spawn_center.as_position(&owning_cache.room_name);
+
                 let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
-                let mut in_target = MoveTarget { pos: spawn.pos(), range: 1 };
-    
-                let out_steps = out_target.find_path_to(spawn.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                let mut in_target = MoveTarget { pos: spawn, range: 1 };
+
+                let out_steps = out_target.find_path_to(spawn, MoveOptions::default().path_age(u8::MAX)).len() as u128;
                 let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
     
                 (out_steps, in_steps)
@@ -427,6 +427,10 @@ pub fn base_hauler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
     let cost = get_body_cost(&body);
 
     let should_replace = if let Some(existing_bh) = current_bh_count.iter().next() {
+        if current_bh_count.len() > required_bh_bount {
+            return None;
+        }
+
         let creep = game::creeps().get(existing_bh.to_string()).unwrap();
 
         // Existing BH time to live
@@ -455,7 +459,7 @@ pub fn base_hauler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
     Some(req)
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fast_filler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
     let fast_filler_count = cache
         .creeps
@@ -468,7 +472,15 @@ pub fn fast_filler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
         return None;
     }
 
-    let body = vec![Part::Carry, Part::Move];
+    let level = cache.structures.controller.as_ref().unwrap().controller.level();
+    let body = if level < 7 {
+        vec![Part::Carry, Part::Move]
+    } else if level == 7 {
+        vec![Part::Carry, Part::Carry, Part::Move]
+    } else {
+        vec![Part::Carry, Part::Carry, Part::Carry, Part::Carry, Part::Move]
+    };
+
     let cost = get_body_cost(&body);
 
     Some(spawn_manager.create_room_spawn_request(Role::FastFiller, body, f64::MAX, cost, room.name(), None, None, None))

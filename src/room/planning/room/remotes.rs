@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use crate::{
-    goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::room::{RoomExtensions, RoomType}, utils
+    goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -110,11 +110,7 @@ pub fn rank_remote_room(
     remote_room: &RoomName,
 ) -> u32 {
     // If our room doesnt have a spawn placed yet.
-    let spawn_pos = room_cache.structures.spawns.values().next();
-    if spawn_pos.is_none() {
-        return u32::MAX;
-    }
-
+    let spawn_pos = room_cache.spawn_center.as_position(&room_cache.room_name);
     let mut i = 0;
     let mut current_avg = 0;
 
@@ -153,7 +149,7 @@ pub fn rank_remote_room(
             *remote_room,
         );
         let options = Some(SearchOptions::new(remote_path_call).max_rooms(16));
-        let path = pathfinder::search(spawn_pos.unwrap().pos(), position, 1, options);
+        let path = pathfinder::search(spawn_pos, position, 1, options);
 
         current_avg += path.cost();
         i += 1;

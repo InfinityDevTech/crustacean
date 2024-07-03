@@ -205,30 +205,12 @@ impl HaulingCache {
                 }
 
                 if order.amount > Some(reserved_amt as u32) {
-                    if order.target_type == Some(StructureType::Container)
-                        || order.target_type.is_none()
-                    {
-                        info!("Adjusting {} order amount from {} to {} because of {} reservation", if order.target_type.is_none() { "energy" } else { "container" }, order.amount.unwrap_or(0), order.amount.unwrap_or(0) - reserved_amt as u32, reserved_amt);
-                        info!("  Creeps assigned: {:?}", existing_order.creeps_assigned);
-                    }
                     order.amount = Some(order.amount.unwrap() - reserved_amt as u32);
 
                     if order.haul_type == HaulingType::Pickup && order.target_type.is_none() {
-                        info!("Adjusting priority for dropped energy from: {}, to: {}", order.priority, -(order.amount.unwrap_or(0) as f32));
                         order.priority = -(order.amount.unwrap_or(0) as f32);
                     }
                 } else {
-                    if order.target_type == Some(StructureType::Container)
-                        || order.target_type.is_none()
-                    {
-                        info!(
-                            "{} has {} reserved, which is larger than {}, removing order",
-                            if order.target_type.is_none() { "energy" } else { "container" },
-                            reserved_amt,
-                            order.amount.unwrap_or(0)
-                        );
-                        info!("  Creeps assigned: {:?}", existing_order.creeps_assigned);
-                    }
                     return;
                 }
             }

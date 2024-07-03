@@ -123,25 +123,6 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
             }
         }*/
 
-        for csite in constructions {
-            let pos = csite.pos();
-
-            if !csite.my() {
-                matrix.set(pos.xy(), 2);
-                continue;
-            }
-
-            match csite.structure_type() {
-                StructureType::Container => matrix.set(pos.xy(), 2),
-                StructureType::Rampart => matrix.set(pos.xy(), 2),
-                StructureType::Road => matrix.set(pos.xy(), 2),
-                StructureType::Wall => matrix.set(pos.xy(), 255),
-                _ => {
-                    matrix.set(pos.xy(), 255);
-                }
-            }
-        }
-
         for creep in creeps {
             let pos = creep.pos();
             matrix.set(pos.xy(), 3);
@@ -163,6 +144,24 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
                 }
                 StructureObject::StructureRoad(_) => {},
                 StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
+                _ => {
+                    matrix.set(pos.xy(), 255);
+                }
+            }
+        }
+
+        for csite in constructions {
+            let pos = csite.pos();
+
+            if !csite.my() {
+                matrix.set(pos.xy(), 2);
+                continue;
+            }
+
+            match csite.structure_type() {
+                StructureType::Container => {},
+                StructureType::Rampart => {},
+                StructureType::Road => {},
                 _ => {
                     matrix.set(pos.xy(), 255);
                 }

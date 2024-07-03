@@ -1,6 +1,6 @@
 use screeps::{game, HasPosition, OwnedStructureProperties, Position, Room, RoomCoordinate};
 
-use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::PositionExtensions, utils::get_my_username};
+use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::{PositionExtensions, RoomXYExtensions}, utils::get_my_username};
 
 pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote in memory.remote_rooms.values() {
@@ -57,7 +57,7 @@ pub fn remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &Room
 
     let twenty_five = RoomCoordinate::new(25).unwrap();
     let center_position = Position::new(twenty_five, twenty_five, room.name());
-    let owner_center = owning_room_cache.structures.spawns.values().next().unwrap().pos();
+    let owner_center = owning_room_cache.spawn_center.as_position(&room.name());
 
     let distance = center_position.get_range_to(owner_center);
 

@@ -94,6 +94,8 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         room.energy_available()
     };
 
+    info!("BH Energy {}", max_energy);
+
     let mut body = vec![Part::Move, Part::Carry];
     let mut cost = 100;
 

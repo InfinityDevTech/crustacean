@@ -67,11 +67,11 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
             .get_free_capacity(Some(ResourceType::Energy))
             == 0
         {
-            if let Some(spawn) = &room_cache.structures.spawns.values().next() {
+            for spawn in room_cache.structures.spawns.values() {
                 if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
                 if creep.pos().is_near_to(spawn.pos()) {
                     let _ = creep.say("📋 - SPAWN", false);
-                    let _ = creep.transfer(*spawn, ResourceType::Energy, None);
+                    let _ = creep.transfer(spawn, ResourceType::Energy, None);
                 } else {
                     let _ = creep.say("🚚 - SPAWN", false);
                     creep.better_move_to(memory, room_cache, spawn.pos(), 1, Default::default());

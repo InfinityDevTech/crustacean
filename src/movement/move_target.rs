@@ -49,7 +49,7 @@ impl MoveTarget {
             .max_ops(20000);
 
         let search = self.pathfind(from, Some(opts));
-        
+
 
         self.serialize_path(from, search.clone().into(), move_options)
     }

@@ -29,21 +29,23 @@ pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
 pub enum Role {
     // Mining industry
     Harvester = 0,
-    Hauler = 1,
+    Miner = 1,
+    Hauler = 2,
 
-    FastFiller = 2,
-    BaseHauler = 3,
+    FastFiller = 3,
+    BaseHauler = 4,
+    StorageHauler = 5,
 
-    Upgrader = 4,
-    Repairer = 5,
-    Scout = 6,
-    Builder = 7,
+    Upgrader = 6,
+    Repairer = 7,
+    Scout = 8,
+    Builder = 9,
 
-    RemoteHarvester = 8,
-    PhysicalObserver = 9,
+    RemoteHarvester = 10,
+    PhysicalObserver = 11,
 
-    Bulldozer = 10,
-    Unclaimer = 11,
+    Bulldozer = 12,
+    Unclaimer = 13,
 
     Reserver = 50,
     RemoteDefender = 51,

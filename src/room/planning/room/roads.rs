@@ -2,6 +2,8 @@ use screeps::{game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOp
 
 use crate::{memory::ScreepsMemory, room::cache::tick_cache::CachedRoom};
 
+use super::convert_path_to_roads;
+
 pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory) {
     for source in &cache.resources.sources {
         let origin_position = if cache.structures.storage.is_some() {
@@ -22,19 +24,28 @@ pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, memory: &mut Screep
         let pathfinder_options = SearchOptions::new(|room_name| room_callback(&room_name, cache)).plain_cost(2).swamp_cost(2);
         let result = pathfinder::search(origin_position, destination_position, 1, Some(pathfinder_options));
 
-        if result.incomplete() {
-            log::error!("Pathfinding failed for source {:?}", source.id);
-            continue;
-        }
+        convert_path_to_roads(room, result);
+    }
 
-        let path = result.path();
+    if let Some(mineral) = &cache.resources.mineral {
+        let origin_position = if cache.structures.storage.is_some() {
+            cache.structures.storage.as_ref().unwrap().pos()
+        } else {
+            let pos = cache.spawn_center.unwrap();
 
-        for pos in path {
-            let x = pos.x().u8();
-            let y = pos.y().u8();
+            let y = pos.y.u8();
 
-            let _ = room.create_construction_site(x, y, screeps::StructureType::Road, None);
-        }
+            let y = RoomCoordinate::new(y - 2).unwrap();
+
+            Position::new(pos.x, y, room.name())
+        };
+
+        let destination_position = mineral.pos();
+
+        let pathfinder_options = SearchOptions::new(|room_name| room_callback(&room_name, cache)).plain_cost(2).swamp_cost(2);
+        let result = pathfinder::search(origin_position, destination_position, 1, Some(pathfinder_options));
+
+        convert_path_to_roads(room, result);
     }
 }
 

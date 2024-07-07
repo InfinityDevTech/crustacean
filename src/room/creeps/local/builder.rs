@@ -1,4 +1,4 @@
-use screeps::{ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties};
+use screeps::{ConstructionSite, Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, RoomCache}, traits::creep::CreepExtensions
@@ -19,6 +19,9 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     if needs_energy || creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         find_energy(creep, memory, cache);
     } else {
+        creep_memory.needs_energy = None;
+        creep_memory.hauling_task = None;
+
         build(creep, memory, cache)
     }
 }
@@ -61,11 +64,17 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
 
     let task = &creepmem.hauling_task.clone();
+
+    let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
+
+    //let amount = creep.store().get_free_capacity(Some(ResourceType::Energy));
+    //let prio = creep.store().get_used_capacity(Some(ResourceType::Energy));
+    //room_cache.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(amount as u32), prio as f32, HaulingType::Transfer);
 
     if let Some(task) = task {
         let _ = creep.say("📋", false);
@@ -73,8 +82,6 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         execute_order(creep, creepmem, cache, task);
     } else {
         let _ = creep.say("🔋", false);
-
-        let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
         room_cache.hauling.wanting_orders.push(HaulTaskRequest::default().creep_name(creep.name()).resource_type(ResourceType::Energy).haul_type(vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer]).finish());
     }

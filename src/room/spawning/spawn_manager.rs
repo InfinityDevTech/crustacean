@@ -60,7 +60,7 @@ impl SpawnManager {
         //};
 
         let body = if body.len() > 50 {
-            info!("Body too large for {}: {:#?}", role, body);
+            info!("Body too large for {} {}/50 parts", role, body.len());
             body.iter().take(50).cloned().collect::<Vec<_>>() // Limit body to 50 parts
         } else {
             body
@@ -111,7 +111,6 @@ impl SpawnManager {
 
     pub fn room_spawn_creep(&self, room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom, request: &SpawnRequest) -> bool {
         let (available_spawn, _unavailable_spawns) = room_cache.structures.get_spawns();
-        info!("soawbibg");
         if available_spawn.is_empty() {
             return false;
         }
@@ -258,7 +257,7 @@ fn randomize_top_priorities(requests: Vec<SpawnRequest>) -> Vec<SpawnRequest> {
     if requests.is_empty() {
         return top_scorers;
     }
-    
+
     let top_scorer = requests.first().unwrap().priority;
 
     for request in requests {

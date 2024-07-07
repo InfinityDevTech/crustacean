@@ -47,6 +47,9 @@ impl RoomCache {
 #[derive(Debug, Clone)]
 pub struct CachedRoom {
     pub room_name: RoomName,
+    pub rcl: u8,
+
+    pub idle_haulers: u32,
     pub manager: Option<RoomName>,
 
     pub remotes: Vec<RoomName>,
@@ -89,6 +92,8 @@ impl CachedRoom {
 
         let mut cached = CachedRoom {
             room_name: room.name(),
+            rcl: 0,
+            idle_haulers: 0,
             manager: remote_manager,
             remotes: Vec::new(),
 
@@ -107,6 +112,10 @@ impl CachedRoom {
 
         if let Some(room_memory) = memory.rooms.get(&room.name()) {
             cached.remotes.clone_from(&room_memory.remotes);
+        }
+
+        if let Some(ref controller) = cached.structures.controller {
+            cached.rcl = controller.controller.level();
         }
 
         cached.stats.cpu_cache += game::cpu::get_used() - pre_cache_cpu;

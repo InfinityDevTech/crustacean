@@ -26,7 +26,7 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
             Role::Hauler => 1,
             Role::Repairer => { if controller.level() > 2 { 1 } else { 0 } },
             Role::BaseHauler => { if room_cache.structures.storage.is_some() { 1 } else { 0 } },
-            Role::FastFiller => { if room_cache.structures.containers.fast_filler.is_some() { 2 } else { 0 } },
+            Role::FastFiller => { if room_cache.structures.containers.fast_filler.is_some() && !room_cache.structures.containers.fast_filler.as_ref().unwrap().is_empty() { 2 } else { 0 } },
             Role::Upgrader => { if controller.ticks_to_downgrade() < Some(1500) { 1 } else { 0 } },
             Role::Scout => { if controller.level() > 2 { 1 } else { 0 } },
             _ => 0,
@@ -350,7 +350,19 @@ pub fn hauler(
         //    hauler_count = (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
         //}
 
-        let clamped = hauler_count.clamp(3, 200);
+        let max = match owning_cache.rcl {
+            1 => 20,
+            2 => 40,
+            3 => 70,
+            4 => 100,
+            5 => 100,
+            6 => 100,
+            7 => 100,
+            8 => 100,
+            _ => 100,
+        };
+
+        let clamped = hauler_count.clamp(3, max);
         room_memory.hauler_count = clamped;
     }
 
@@ -395,6 +407,13 @@ pub fn hauler(
         4.0
     };
 
+    // TODO
+    // Patchwork fix to stop idle haulers from clogging space.
+    // But hey, it works, somewhat.
+    if owning_cache.idle_haulers >= 3 {
+        return None;
+    }
+
     Some(cache.spawning.create_room_spawn_request(Role::Hauler, body, prio, cost, room.name(), Some(creepmem), None, None))
 }
 
@@ -415,9 +434,9 @@ pub fn base_hauler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
         1 => 0,
         2 => 1,
         3 => 1,
-        4 => 1,
-        5 => 1,
-        6 => 1,
+        4 => 2,
+        5 => 2,
+        6 => 2,
         7 => 1,
         8 => 1,
         _ => 1,
@@ -660,10 +679,4 @@ pub fn remote_harvester(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemo
         }
     }
     None
-}
-
-// --- Combat dependent things. Called globally, not per room.
-
-pub fn spawn_claimer(cache: &mut RoomCache, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) {
-
 }

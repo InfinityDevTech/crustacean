@@ -97,9 +97,11 @@ pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority
 pub fn role_to_name(role: Role) -> String {
     let data = match role {
         Role::Harvester => "sm",
+        Role::Miner => "md",
         Role::Hauler => "mb",
         Role::Repairer => "rb",
         Role::BaseHauler => "bh",
+        Role::StorageHauler => "sh",
         Role::Upgrader => "ud",
         Role::Builder => "bd",
         Role::Scout => "fg",
@@ -127,8 +129,10 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     match role_tag {
         "sm" => { Some(Role::Harvester) },
         "mb" => { Some(Role::Hauler) },
+        "md" => { Some(Role::Miner) },
         "rb" => { Some(Role::Repairer) },
         "bh" => { Some(Role::BaseHauler) },
+        "sh" => { Some(Role::StorageHauler) },
         "ud" => { Some(Role::Upgrader) },
         "bd" => { Some(Role::Builder) },
         "fg" => { Some(Role::Scout) },

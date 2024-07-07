@@ -64,11 +64,14 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                 );
         } else {
             let _ = creep.say("🔋", false);
+            let room_cache = cache
+            .rooms
+            .get_mut(&creep_memory.owning_room)
+            .unwrap();
 
-            cache
-                .rooms
-                .get_mut(&creep_memory.owning_room)
-                .unwrap()
+            //room_cache.idle_haulers += 1;
+
+            room_cache
                 .hauling
                 .wanting_orders
                 .push(
@@ -218,6 +221,21 @@ pub fn execute_order(
                 cache.creeps_moving_stuff.insert(creep.name(), true);
 
                 release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, amount);
+                return true;
+            }
+        }
+    }
+
+    if order.haul_type == HaulingType::Transfer {
+        if let Some(ref target) = target {
+            let store = target.unchecked_ref::<StructureStorage>().store();
+
+            if store.get_free_capacity(Some(order.resource)) == 0 {
+                creep_memory.hauling_task = None;
+                creep_memory.path = None;
+
+                release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, 0);
+
                 return true;
             }
         }

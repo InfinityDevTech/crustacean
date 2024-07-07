@@ -62,14 +62,9 @@ pub fn get_energy(creep: &Creep, creep_memory: &mut CreepMemory, cached_room: &m
             }
 
         } else {
-            let priority = scale_haul_priority(
-                creep.store().get_free_capacity(None) as u32,
-                creep.store().get_used_capacity(None),
-                HaulingPriority::Upgrading,
-                false
-            );
+            let priority = creep.store().get_free_capacity(Some(ResourceType::Energy));
 
-            cached_room.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
+            cached_room.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority as f32, HaulingType::Transfer);
             return false;
         }
     }

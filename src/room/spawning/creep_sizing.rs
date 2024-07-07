@@ -62,9 +62,9 @@ pub fn hauler_body(room: &Room) -> Vec<Part> {
         5 => 1000,
         6 => 1200,
         // We get more spawns, so they suck up less spawn time
-        7 => 1500,
+        7 => 2000,
         // 3 spawns, go ham.
-        8 => 2000,
+        8 => 3000,
         _ => 100,
     };
 
@@ -96,17 +96,32 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     info!("BH Energy {}", max_energy);
 
-    let mut body = vec![Part::Move, Part::Carry];
-    let mut cost = 100;
+    let mut body = Vec::new();
+    let mut cost = 0;
+
+    let stamp_cost = if cache.rcl >= 4 {
+        150
+    } else {
+        100
+    };
 
     while cost < max_energy {
-        if cost + 100 > max_energy {
+        if cost + stamp_cost > max_energy {
             break;
         }
 
-        body.push(Part::Move);
-        body.push(Part::Carry);
-        cost += 100;
+        // Odds are, we have roads at this point.
+        // So, we can expand the size.
+        if cache.rcl >= 4 {
+            body.push(Part::Carry);
+            body.push(Part::Carry);
+            body.push(Part::Move);
+            cost += stamp_cost;
+        } else {
+            body.push(Part::Move);
+            body.push(Part::Carry);
+            cost += stamp_cost;
+        }
     }
 
     body
@@ -171,7 +186,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     let room_current_rcl = cache.structures.controller.as_ref().unwrap().controller.level();
     let target_work_parts = match room_current_rcl {
-        1 => 1,
+        1 => 4,
         2 => 7,
         3 => 12,
         4 => 15,

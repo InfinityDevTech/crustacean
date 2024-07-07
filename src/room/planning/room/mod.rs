@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{find, game, HasPosition, Room, RoomXY, StructureProperties};
+use screeps::{find, game, pathfinder::SearchResults, HasPosition, Room, RoomXY, StructureProperties};
 
 use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::room::RoomExtensions};
 
@@ -61,4 +61,19 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
     cache.create_if_not_exists(room, memory, None);
     true
+}
+
+pub fn convert_path_to_roads(room: &Room, result: SearchResults) {
+    if result.incomplete() {
+        return;
+    }
+
+    let path = result.path();
+
+    for pos in path {
+        let x = pos.x().u8();
+        let y = pos.y().u8();
+
+        let _ = room.create_construction_site(x, y, screeps::StructureType::Road, None);
+    }
 }

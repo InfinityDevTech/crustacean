@@ -67,7 +67,7 @@ pub fn attain_reservation(
     }
 }
 
-pub fn get_claim_parts(goal: &mut RoomReservationGoal) -> u8 {
+pub fn get_claim_parts(goal: &RoomReservationGoal) -> u8 {
     let mut count = 0;
 
     for creep in &goal.creeps_assigned {
@@ -95,6 +95,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         }
 
         let energy_storage = room.energy_capacity_available();
+        let mut current_claim = 0;
 
         let body = if energy_storage > 1300 {
             let mut body = vec![Part::Claim, Part::Move];
@@ -103,13 +104,14 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             let mut current_cost = 650;
 
             while current_cost < energy_storage {
-                if current_cost + stamp_cost > energy_storage {
+                if current_cost + stamp_cost > energy_storage || current_claim >= 3 {
                     break;
                 }
 
                 body.push(Part::Claim);
                 body.push(Part::Move);
 
+                current_claim += 1;
                 current_cost += 650;
             }
 
@@ -118,6 +120,11 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             vec![Part::Claim, Part::Move]
         };
         let cost = get_body_cost(&body);
+
+        // If we can only make one part, and we cant have 2 creeps, then we dont spawn
+        if goal.accessible_reservation_spots == 1 && current_claim == 1 {
+            return None;
+        }
 
         let creep_memory = CreepMemory {
             role: Role::Reserver,
@@ -133,10 +140,18 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             get_unique_id()
         );
 
+        // One part reservers do nothing. They are a waste of time
+        // So we spawn a companion to assist!
+        let priority = if get_claim_parts(goal) == 1 {
+            4.5
+        } else {
+            4.0
+        };
+
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,
             body,
-            4.0,
+            priority,
             cost,
             best_spawned,
             Some(creep_memory),

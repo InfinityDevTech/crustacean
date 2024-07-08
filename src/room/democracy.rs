@@ -86,6 +86,20 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             *hauler_cpu_usage += game::cpu::get_used() - pre_hauler_cpu;
         }
 
+        for flag in game::flags().values() {
+            if flag.name().starts_with("forceCenter") {
+                let pos = flag.pos();
+
+                if flag.pos().room_name() == room.name() {
+                    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+                    let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
+                    room_cache.spawn_center = Some(pos.xy());
+                    room_memory.spawn_center = pos.xy();
+                }
+            }
+        }
+
         // Recover creeps not existing in memory
         // Only works for haulers as of right now
         // All other un-recoverables get suicided

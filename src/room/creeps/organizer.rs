@@ -4,7 +4,7 @@ use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, traits::room::RoomExtensions
+    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
 use super::{combat, local};
@@ -50,7 +50,8 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             cache.create_if_not_exists(&game::rooms().get(creep_memory.owning_room).unwrap(), memory, None);
         }
 
-        if creep.spawning() { continue; }
+        // Fucks up harvester spawning. Should be done per-creep.
+        //if creep.spawning() { continue; }
 
         match role {
             Role::Harvester => local::harvester::run_harvester(&creep, memory, cache),
@@ -70,7 +71,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
             Role::RemoteDefender => combat::remote_defender::run_remotedefender(&creep, memory, cache),
             _ => {
-                let _ = creep.say("BAD ROLE", true);
+                creep.bsay("BAD ROLE", true);
                 global::recycler::run_recycler(&creep, memory, cache);
             },
         }

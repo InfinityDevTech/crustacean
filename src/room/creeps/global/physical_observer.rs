@@ -11,7 +11,7 @@ pub fn run_physical_observer(creep: &Creep, memory: &mut ScreepsMemory, cache: &
             let pos = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), target_room);
 
             if creep_room.name() != target_room {
-                let _ = creep.say(&format!("🔍 {}", target_room), true);
+                creep.bsay(&format!("🔍 {}", target_room), true);
                 creep.better_move_to(
                     creep_memory,
                     cache.rooms.get_mut(&creep_room.name()).unwrap(),
@@ -29,7 +29,7 @@ pub fn run_physical_observer(creep: &Creep, memory: &mut ScreepsMemory, cache: &
                         Default::default(),
                     );
                 }
-                let _ = creep.say("👁️ 🫵", true);
+                creep.bsay("👁️ 🫵", true);
             }
         }
     }

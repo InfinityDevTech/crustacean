@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::info;
 use screeps::{
     find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTower, StructureType, Tombstone
 };
@@ -84,7 +85,7 @@ impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,
         resource_cache: &mut RoomResourceCache,
-        _memory: &mut ScreepsMemory,
+        memory: &mut ScreepsMemory,
         _heap_cache: &mut RoomHeapCache,
     ) -> RoomStructureCache {
         let mut cache = RoomStructureCache {
@@ -134,7 +135,7 @@ impl RoomStructureCache {
 
         cache.refresh_construction_cache(room);
         cache.refresh_ruin_cache(room);
-        cache.refresh_structure_cache(resource_cache, room);
+        cache.refresh_structure_cache(resource_cache, memory, room);
         cache
     }
 
@@ -146,11 +147,19 @@ impl RoomStructureCache {
         }
     }
 
-    pub fn refresh_structure_cache(&mut self, resource_cache: &mut RoomResourceCache, room: &Room) {
+    pub fn refresh_structure_cache(&mut self, resource_cache: &mut RoomResourceCache, memory: &mut ScreepsMemory, room: &Room) {
         let structures = room.find(find::STRUCTURES, None).into_iter();
 
         let mut my_containers = Vec::new();
         let mut my_links = Vec::new();
+
+        let mut sp_center = None;
+        let mut st_center = None;
+
+        if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+            sp_center = Some(room_memory.spawn_center);
+            st_center = Some(room_memory.storage_center);
+        }
 
         for structure in structures {
             self.all_structures.push(structure.clone());
@@ -263,9 +272,8 @@ impl RoomStructureCache {
                 }
             }
 
-            if let Some(spawn) = self.spawns.values().next() {
-                let xy = unsafe { RoomXY::unchecked_new(spawn.pos().x().u8(), spawn.pos().y().u8() - 1) };
-                if link.pos().xy() == xy {
+            if let Some(sp_center) = sp_center {
+                if link.pos().xy() == sp_center {
                     self.links.fast_filler = Some(link);
                     continue;
                 }
@@ -278,8 +286,9 @@ impl RoomStructureCache {
                 }
             }
 
-            let found_source_containers = resource_cache.sources.iter().filter_map(|source| {
+            let found_source_containers = resource_cache.sources.iter_mut().filter_map(|source| {
                 if link.pos().get_range_to(game::get_object_by_id_typed(&source.id).unwrap().pos()) <= 2 {
+                    source.link = Some(link.id());
                     Some(link.clone())
                 } else {
                     None

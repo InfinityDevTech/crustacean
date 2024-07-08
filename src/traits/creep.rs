@@ -1,15 +1,13 @@
 use crate::{
-    memory::CreepMemory,
-    movement::{
+    heap, memory::CreepMemory, movement::{
         move_target::{MoveOptions, MoveTarget},
         utils::{dir_to_coords, num_to_dir},
-    },
-    room::cache::tick_cache::CachedRoom,
+    }, room::cache::tick_cache::CachedRoom
 };
 
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, Terrain
+    game, Direction, ErrorCode, HasPosition, MaybeHasId, Position, RoomXY, Terrain
 };
 
 pub trait CreepExtensions {
@@ -24,6 +22,8 @@ pub trait CreepExtensions {
         avoid_enemies: MoveOptions,
     );
 
+    fn bsay(&self, message: &str, pub_to_room: bool);
+
     fn parts_of_type(&self, part: screeps::Part) -> u32;
 
     fn tired(&self) -> bool;
@@ -34,7 +34,7 @@ pub trait CreepExtensions {
 }
 
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
@@ -119,6 +119,14 @@ impl CreepExtensions for screeps::Creep {
         }
 
         cache.stats.global_pathfinding += game::cpu::get_used() - pre_move_cpu;
+    }
+
+    fn bsay(&self, message: &str, pub_to_room: bool) {
+        let csay = heap().creep_say.lock().unwrap();
+
+        if *csay {
+            let _ = self.say(message, pub_to_room);
+        }
     }
 
     fn parts_of_type(&self, part: screeps::Part) -> u32 {

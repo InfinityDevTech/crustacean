@@ -1,4 +1,4 @@
-use screeps::{game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CostMatrix, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName};
+use screeps::{game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CostMatrix, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, StructureProperties};
 
 use crate::{memory::ScreepsMemory, room::cache::tick_cache::CachedRoom};
 
@@ -55,6 +55,18 @@ fn room_callback(room_name: &RoomName, room_cache: &CachedRoom) -> MultiRoomCost
     for road in room_cache.structures.roads.values() {
         let xy = road.pos().xy();
         local_matrix.set(xy, 1);
+    }
+
+    for structure in &room_cache.structures.all_structures {
+        let walkable = matches!(structure.structure_type(), screeps::StructureType::Road | screeps::StructureType::Container | screeps::StructureType::Rampart);
+
+        if walkable {
+            let xy = structure.pos().xy();
+            local_matrix.set(xy, 1);
+        } else {
+            let xy = structure.pos().xy();
+            local_matrix.set(xy, 255);
+        }
     }
 
     MultiRoomCostResult::CostMatrix(local_matrix.into())

@@ -13,12 +13,12 @@ use crate::{
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
-        let _ = creep.say("😴", false);
+        creep.bsay("😴", false);
         return;
     }
 
     let _ = creep.notify_when_attacked(false);
-    let _ = creep.say("🔍 😛", true);
+    creep.bsay("🔍 😛", true);
 
     let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
@@ -28,7 +28,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         if creep.room().unwrap().name() == scout_target.room_name() {
             if creep.pos().get_range_to(scout_target.pos()) <= 23 {
-                let _ = creep.say("🔍 🏠", true);
+                creep.bsay("🔍 🏠", true);
 
                 creep_memory.scout_target = None;
 
@@ -43,7 +43,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 );
             }
         } else {
-            let _ = creep.say("🔍 😛", true);
+            creep.bsay("🔍 😛", true);
             creep.better_move_to(
                 memory.creeps.get_mut(&creep.name()).unwrap(),
                 cached_room,
@@ -58,7 +58,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         let mut exit_clone = exits.clone();
 
-        let _ = creep.say("🚚", false);
+        creep.bsay("🚚", false);
 
         for exit in exits.clone() {
             let existing_data = memory.scouted_rooms.get(&exit);
@@ -104,7 +104,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         let pos = RoomPosition::new(25, 25, exit);
 
-        let _ = creep.say(&format!("👁️ {}", pos.room_name()), true);
+        creep.bsay(&format!("👁️ {}", pos.room_name()), true);
 
         creep.better_move_to(
             memory.creeps.get_mut(&creep.name()).unwrap(),

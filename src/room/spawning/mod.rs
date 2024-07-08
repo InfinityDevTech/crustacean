@@ -51,7 +51,7 @@ pub fn create_spawn_requests_for_room(room: &Room, cache: &mut RoomCache, memory
     let room_cache = cache.rooms.get(&room.name()).unwrap();
 
     let requests = vec![
-        miner(room, room_cache, &mut cache.spawning),
+        harvester(room, room_cache, &mut cache.spawning),
         base_hauler(room, room_cache, &mut cache.spawning),
         fast_filler(room, room_cache, &mut cache.spawning),
         flag_attacker(room, room_cache, &mut cache.spawning),
@@ -446,7 +446,7 @@ pub fn base_hauler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
     let cost = get_body_cost(&body);
 
     let should_replace = if let Some(existing_bh) = current_bh_count.iter().next() {
-        if current_bh_count.len() > required_bh_bount {
+        if current_bh_count.len() >= required_bh_bount {
             return None;
         }
 
@@ -492,6 +492,10 @@ pub fn fast_filler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
     }
 
     let level = cache.structures.controller.as_ref().unwrap().controller.level();
+    if cache.structures.containers.fast_filler.is_none() || cache.structures.containers.fast_filler.as_ref().unwrap().is_empty() {
+        return None;
+    }
+
     let body = if level < 7 {
         vec![Part::Carry, Part::Move]
     } else if level == 7 {
@@ -506,7 +510,7 @@ pub fn fast_filler(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnMan
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
+pub fn harvester(room: &Room, cache: &CachedRoom, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
     let miner_count = cache
         .creeps
         .creeps_of_role

@@ -8,12 +8,9 @@ use screeps::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    heap,
-    memory::{CreepHaulTask, Role, ScreepsMemory},
-    room::{
+    heap, memory::{CreepHaulTask, Role, ScreepsMemory}, room::{
         cache::heap_cache::hauling::HeapHaulingReservation, creeps::local::hauler::execute_order,
-    },
-    utils::{name_to_role, scale_haul_priority},
+    }, traits::creep::CreepExtensions, utils::{name_to_role, scale_haul_priority}
 };
 
 use super::{CachedRoom, RoomCache};
@@ -449,9 +446,6 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
             // If the target is not a storage, we reserve the order
             if order.target_type != Some(StructureType::Storage) || order.target_type.is_none() {
-                if order.target_type.is_none() {
-                    info!("REserving dropped energy");
-                }
                 // If the order is already reserved, we add the creep to the list of creeps assigned to it
                 // Then increment the reserved amount.
                 if let Some(reserved_order) = heap_hauling.reserved_orders.get_mut(&order.target) {
@@ -465,9 +459,6 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                         );
                     }
                 } else {
-                    if order.target_type.is_none() {
-                        info!("Reserving dropped energy");
-                    }
                     // If the order is not reserved, we reserve it.
                     heap_hauling.reserved_orders.insert(
                         order.target,
@@ -638,8 +629,8 @@ pub fn attempt_relay(
         }
 
         if target_distance_from_goal < my_distance_from_goal {
-            let _ = current_creep.say("🔄 - CRNT", false);
-            let _ = target_creep.say("🔄 - TRGT", false);
+            current_creep.bsay("🔄 - CRNT", false);
+            target_creep.bsay("🔄 - TRGT", false);
 
             cache.creeps_moving_stuff.insert(current_creep.name(), true);
             cache.creeps_moving_stuff.insert(target_creep.name(), true);
@@ -657,12 +648,12 @@ pub fn attempt_relay(
 
             target_creep_memory.path = current_path;
             current_creep_memory.path = target_path;
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     } else {
-        return false;
+        false
     }
 }
 

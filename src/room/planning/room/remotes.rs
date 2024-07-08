@@ -77,8 +77,7 @@ pub fn fetch_possible_remotes(
                 owner: room.name(),
 
                 creeps: Vec::new(),
-                under_attack: false,
-                invader_energy_counter: 0,
+                under_attack: false
             };
 
             remotes.push(remote.name);
@@ -117,7 +116,7 @@ pub fn rank_remote_room(
     // If we have no scouting data
     let scouted = memory.scouted_rooms.get(remote_room);
     // This >= 4 check is for SK rooms, idk why, or how, but my room classification is borked.
-    if scouted.is_none() || scouted.unwrap().sources.is_none() || scouted.unwrap().sources.as_ref().unwrap().len() >= 4 {
+    if scouted.is_none() || scouted.unwrap().sources.is_none() || scouted.unwrap().sources.as_ref().unwrap().len() >= 3 {
         return u32::MAX;
     }
 

@@ -92,6 +92,10 @@ pub fn visualise_controller_progress(
     cache: &mut CachedRoom,
 ) {
     let controller = &cache.structures.controller.as_ref().unwrap().controller;
+
+    if controller.level() == 8 {
+        return;
+    }
     let progress = (controller.progress().unwrap() as f32
         / controller.progress_total().unwrap() as f32)
         * 100.0;

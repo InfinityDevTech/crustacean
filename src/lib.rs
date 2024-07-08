@@ -98,6 +98,11 @@ pub fn game_loop() {
 
     memory.activate_segments();
 
+    {
+        let mut csay = heap().creep_say.lock().unwrap();
+        *csay = memory.creep_say;
+    }
+
     memory.stats.cpu.pathfinding = 0.0;
 
     //if just_reset() {

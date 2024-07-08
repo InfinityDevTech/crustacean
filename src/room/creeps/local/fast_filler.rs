@@ -1,16 +1,22 @@
 use screeps::{
-    game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension
+    game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
+    RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,
 };
 
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::{
-        hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache
-    }, traits::creep::CreepExtensions, utils::scale_haul_priority
+    memory::{CreepMemory, ScreepsMemory},
+    movement::move_target::MoveOptions,
+    room::cache::tick_cache::{
+        hauling::{HaulingPriority, HaulingType},
+        CachedRoom, RoomCache,
+    },
+    traits::creep::CreepExtensions,
+    utils::scale_haul_priority,
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -18,12 +24,12 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     let fastfiller_container = creep_memory.fastfiller_container;
 
     if creep.spawning() || creep.tired() {
-        let _ = creep.say("😴", false);
+        creep.bsay("😴", false);
         return;
     }
 
     if check_current_position(creep, creep_memory, cached_room) {
-        return
+        return;
     }
 
     self_renew(creep, cached_room);
@@ -35,14 +41,14 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     }
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-        let _ = creep.say("WTHD", false);
+        creep.bsay("WTHD", false);
         let container_id = creep_memory.fastfiller_container;
         if container_id.is_none() {
             let priority = scale_haul_priority(
                 creep.store().get_capacity(None),
                 creep.store().get_used_capacity(None),
                 HaulingPriority::Emergency,
-                true
+                true,
             );
 
             cached_room.hauling.create_order(
@@ -64,10 +70,22 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 
             let container = container.unwrap();
 
-            if creep.pos().is_near_to(container.pos()) {
+            if container.store().get_used_capacity(None) == 0 {
+                if let Some(link) = &cached_room.structures.links.fast_filler {
+                    if creep.pos().is_near_to(link.pos()) {
+                        let _ = creep.withdraw(link, ResourceType::Energy, None);
+                    }
+                }
+            } else if creep.pos().is_near_to(container.pos()) {
                 let _ = creep.withdraw(&container, ResourceType::Energy, None);
             } else {
-                creep.better_move_to(creep_memory, cached_room, container.pos(), 1, MoveOptions::default());
+                creep.better_move_to(
+                    creep_memory,
+                    cached_room,
+                    container.pos(),
+                    1,
+                    MoveOptions::default(),
+                );
             }
 
             return;
@@ -89,7 +107,13 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
             None,
         );
     } else {
-        creep.better_move_to(creep_memory, cached_room, target.pos(), 1, MoveOptions::default());
+        creep.better_move_to(
+            creep_memory,
+            cached_room,
+            target.pos(),
+            1,
+            MoveOptions::default(),
+        );
     }
 }
 
@@ -97,7 +121,10 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
     let spawn = cache.structures.spawns.values().next().unwrap();
 
-    if creep.ticks_to_live() < Some(100) && creep.pos().is_near_to(spawn.pos()) && spawn.spawning().is_none() {
+    if creep.ticks_to_live() < Some(100)
+        && creep.pos().is_near_to(spawn.pos())
+        && spawn.spawning().is_none()
+    {
         let _ = spawn.renew_creep(creep);
     }
 }
@@ -107,22 +134,19 @@ pub fn find_possible_targets(creep: &Creep, cache: &CachedRoom) -> Vec<RawObject
     let mut possible_targets = Vec::new();
 
     for extension in cache.structures.extensions.values() {
-        if creep.pos().in_range_to(extension.pos(), 1) &&
-            extension
-            .store()
-            .get_free_capacity(Some(ResourceType::Energy))
-            > 0
+        if creep.pos().in_range_to(extension.pos(), 1)
+            && extension
+                .store()
+                .get_free_capacity(Some(ResourceType::Energy))
+                > 0
         {
             possible_targets.push(extension.raw_id());
         }
     }
 
     for spawn in cache.structures.spawns.values() {
-        if creep.pos().in_range_to(spawn.pos(), 1) &&
-            spawn
-            .store()
-            .get_free_capacity(Some(ResourceType::Energy))
-            > 0
+        if creep.pos().in_range_to(spawn.pos(), 1)
+            && spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0
         {
             possible_targets.push(spawn.raw_id());
         }
@@ -132,7 +156,11 @@ pub fn find_possible_targets(creep: &Creep, cache: &CachedRoom) -> Vec<RawObject
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
+pub fn check_current_position(
+    creep: &Creep,
+    creep_memory: &mut CreepMemory,
+    cache: &mut CachedRoom,
+) -> bool {
     let current_pos = creep.pos().xy();
     let spawn_pos = cache.spawn_center.unwrap();
 
@@ -150,7 +178,7 @@ pub fn check_current_position(creep: &Creep, creep_memory: &mut CreepMemory, cac
     if current_pos != unsafe { RoomXY::unchecked_new(position_1.x(), position_1.y()) }
         && current_pos != unsafe { RoomXY::unchecked_new(position_2.x(), position_2.y()) }
     {
-        let _ = creep.say("MV-FFPOS", false);
+        creep.bsay("MV-FFPOS", false);
         let pos_1_creep =
             creep
                 .room()

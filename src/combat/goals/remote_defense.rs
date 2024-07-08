@@ -37,6 +37,12 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
         return;
     }
 
+    // Returns true if there are no more known enemy creeps.
+    // TODO: Make this use observers to validate.
+    if decrease_ttl(goal_room, memory) {
+        return;
+    }
+
     let goal = memory.goals.remote_defense.get_mut(goal_room).unwrap();
 
     let closest_room = if goal.invaders {
@@ -113,6 +119,38 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
             determine_spawn_needs(&game::rooms().get(room).unwrap(), goal, cache);
         }
     }
+}
+
+fn decrease_ttl(goal_room: &RoomName, memory: &mut ScreepsMemory) -> bool {
+    let goal = memory.goals.remote_defense.get_mut(goal_room).unwrap();
+    let mut new_creeps = Vec::new();
+
+    for creep in &goal.attacking_creeps {
+        let newttl = creep.ttl - 1;
+
+        if newttl > 0 {
+            let newcreep = AttackingCreep {
+                ttl: newttl,
+                ..creep.clone()
+            };
+
+            new_creeps.push(newcreep);
+        }
+    }
+
+    goal.attacking_creeps = new_creeps.clone();
+
+    if new_creeps.is_empty() {
+        memory.goals.remote_defense.remove(goal_room);
+
+        if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+            remote_mem.under_attack = false;
+        }
+
+        return true;
+    }
+
+    false
 }
 
 fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, cache: &mut RoomCache) {

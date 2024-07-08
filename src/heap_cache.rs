@@ -16,6 +16,8 @@ pub struct GlobalHeapCache {
 
     pub my_username: Mutex<String>,
 
+    pub creep_say: Mutex<bool>,
+
     pub heap_lifetime: Mutex<u32>,
     pub unique_id: Mutex<u128>,
 }
@@ -29,6 +31,8 @@ impl GlobalHeapCache {
             hauling: Mutex::new(HeapHaulingCache::default()),
 
             my_username: Mutex::new(String::new()),
+
+            creep_say: Mutex::new(true),
 
             heap_lifetime: Mutex::new(0),
             unique_id: Mutex::new(game::time() as u128),

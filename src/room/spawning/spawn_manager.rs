@@ -9,7 +9,7 @@ use crate::room::cache::tick_cache::RoomCache;
 use crate::utils::get_unique_id;
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
-use super::{base_hauler, create_spawn_requests_for_room, fast_filler, get_required_role_counts, hauler, miner, repairer, scout, upgrader};
+use super::{base_hauler, create_spawn_requests_for_room, fast_filler, get_required_role_counts, hauler, harvester, repairer, scout, upgrader};
 
 pub struct SpawnRequest {
     name: Option<String>,
@@ -189,9 +189,9 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let required_count_for_role = required_roles.get(required_role).unwrap();
             let current_count_for_role = room_cache.creeps.creeps_of_role.get(required_role).unwrap_or(&Vec::new()).len();
 
-            if current_count_for_role < (*required_count_for_role).try_into().unwrap() {
+            if current_count_for_role <= (*required_count_for_role).try_into().unwrap() && required_count_for_role > &0 {
                 let spawn_request = match required_role {
-                    Role::Harvester => miner(&room, room_cache, &mut cache.spawning),
+                    Role::Harvester => harvester(&room, room_cache, &mut cache.spawning),
                     Role::Hauler => hauler(&room, cache, memory),
                     Role::FastFiller => fast_filler(&room, room_cache, &mut cache.spawning),
                     Role::BaseHauler => base_hauler(&room, room_cache, &mut cache.spawning),
@@ -205,8 +205,6 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                     continue;
                 }
 
-                info!("[{}] {} Did not meet required count for role: {:#?}, spawning...", room.name(), required_role, required_count_for_role);
-
                 if let Some(spawn_request) = spawn_request {
                     let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, &spawn_request);
 
@@ -216,6 +214,8 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                         if spawned {
                             spawned_this_tick = true;
                         }
+                    } else {
+                        break;
                     }
                 }
             }
@@ -244,7 +244,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                     if spawned {
                         spawned_this_tick = true;
 
-                        break;
+                        continue;
                     }
                 }
             }

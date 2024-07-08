@@ -47,19 +47,19 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
         let repairable_obj = StructureObject::from(repairable);
         let repairable_struct = repairable_obj.as_repairable().unwrap();
         if creep.pos().get_range_to(repairable_obj.pos()) < 3 {
-            let _ = creep.say("🔧", false);
+            creep.bsay("🔧", false);
             let _ = creep.repair(repairable_struct);
 
             let energy_spent = energy_spent_repairing(creep, repairable_struct);
             room_cache.stats.energy.spending_repair += energy_spent;
         } else {
-            let _ = creep.say("🚚", false);
+            creep.bsay("🚚", false);
             creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), repairable_obj.pos(), 2, Default::default());
 
             return;
         }
     } else if !get_repair_task(creep, creep_memory, room_cache) {
-        let _ = creep.say("❓", false);
+        creep.bsay("❓", false);
         return;
     } else {
         run_repairer(creep, memory, cache);

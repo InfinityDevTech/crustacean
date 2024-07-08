@@ -125,7 +125,7 @@ impl CachedRoom {
 
     pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
         self.resources.refresh_source_cache(room, &mut self.heap_cache);
-        self.structures.refresh_structure_cache(&mut self.resources, room);
+        self.structures.refresh_structure_cache(&mut self.resources, memory, room);
 
         self.creeps.refresh_creep_cache(memory, room);
 

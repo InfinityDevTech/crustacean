@@ -31,7 +31,7 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
                         let _ = creep.ranged_mass_attack();
                     }
 
-                    let _ = creep.say("🔫", false);
+                    creep.bsay("🔫", false);
                     creep.better_move_to(creep_memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
                 }
             } else {

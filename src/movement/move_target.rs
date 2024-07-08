@@ -154,7 +154,7 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
             let pos = csite.pos();
 
             if !csite.my() {
-                matrix.set(pos.xy(), 2);
+                matrix.set(pos.xy(), 255);
                 continue;
             }
 

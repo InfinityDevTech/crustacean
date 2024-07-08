@@ -20,7 +20,7 @@ use crate::{
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
-        let _ = creep.say("😴", false);
+        creep.bsay("😴", false);
         return;
     }
     let creep_name = creep.name();
@@ -28,7 +28,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
 
     if let Some(order) = &creep_memory.hauling_task.clone() {
-        let _ = creep.say("EXEC", false);
+        creep.bsay("EXEC", false);
 
         if execute_order(creep, creep_memory, cache, order) {
             // Invalidate the path and the hauling task
@@ -44,7 +44,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
     if creep_memory.hauling_task.is_none() {
         if creep_memory.needs_energy.unwrap_or(false) {
-            let _ = creep.say("📋", false);
+            creep.bsay("📋", false);
 
             cache
                 .rooms
@@ -63,7 +63,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                         .finish(),
                 );
         } else {
-            let _ = creep.say("🔋", false);
+            creep.bsay("🔋", false);
             let room_cache = cache
             .rooms
             .get_mut(&creep_memory.owning_room)
@@ -88,7 +88,8 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache: &mut RoomCache) {
     if creep_memory.role == Role::Hauler {
-        if creep.store().get_free_capacity(None) == 0 {
+        let half_capcaity = creep.store().get_capacity(None) as f32 * 0.5;
+        if creep.store().get_used_capacity(None) as f32 > half_capcaity {
             if creep_memory.needs_energy.is_none() {
                 return;
             }
@@ -98,7 +99,7 @@ pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache:
             creep_memory.hauling_task = None;
         }
 
-        if creep.store().get_used_capacity(None) == 0 {
+        if creep.store().get_used_capacity(None) as f32 <= half_capcaity {
             if creep_memory.needs_energy.is_some() {
                 return;
             }
@@ -124,7 +125,7 @@ pub fn execute_order(
         creep_memory.hauling_task = None;
         creep_memory.path = None;
 
-        let _ = creep.say("INVLD", false);
+        creep.bsay("INVLD", false);
         return true;
     }
 
@@ -162,7 +163,7 @@ pub fn execute_order(
                     .dropped_energy
                     .retain(|x| x.id() != resource.id());
 
-                let _ = creep.say("PKUP", false);
+                creep.bsay("PKUP", false);
                 let _ = creep.pickup(resource);
 
                 if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
@@ -207,7 +208,7 @@ pub fn execute_order(
                     return true;
                 }
             } else {
-                let _ = creep.say("WTHDW", false);
+                creep.bsay("WTHDW", false);
 
                 let _ = creep.withdraw(tombstone, ResourceType::Energy, None);
 
@@ -251,19 +252,19 @@ pub fn execute_order(
         );
 
         let _ = match order.haul_type {
-            HaulingType::Offer => creep.say("MV-OFFR", false),
-            HaulingType::Withdraw => creep.say("MV-WTHD", false),
-            HaulingType::Pickup => creep.say("MV-PKUP", false),
-            HaulingType::Transfer => creep.say("MV-TFER", false),
+            HaulingType::Offer => creep.bsay("MV-OFFR", false),
+            HaulingType::Withdraw => creep.bsay("MV-WTHD", false),
+            HaulingType::Pickup => creep.bsay("MV-PKUP", false),
+            HaulingType::Transfer => creep.bsay("MV-TFER", false),
 
-            _ => creep.say("MV-UNK", false),
+            _ => creep.bsay("MV-UNK", false),
         };
         return false;
     }
 
     let (amount, result): (i32, Result<(), ErrorCode>) = match order.haul_type {
         HaulingType::Pickup => {
-            let _ = creep.say("PKUP", false);
+            creep.bsay("PKUP", false);
 
             let resource: Option<Resource> =
                 game::get_object_by_id_typed(&ObjectId::from(pickup_target));
@@ -283,7 +284,7 @@ pub fn execute_order(
             }
         }
         HaulingType::Withdraw => {
-            let _ = creep.say("WTHD", false);
+            creep.bsay("WTHD", false);
 
             if let Some(target) = target {
                 if let Some(amount) = order.amount {
@@ -316,7 +317,7 @@ pub fn execute_order(
             }
         }
         HaulingType::Transfer => {
-            let _ = creep.say("TFER", false);
+            creep.bsay("TFER", false);
 
             if let Some(target) = target {
                 if let Some(amount) = order.amount {
@@ -353,7 +354,7 @@ pub fn execute_order(
             }
         }
         HaulingType::Offer => {
-            let _ = creep.say("OFFR", false);
+            creep.bsay("OFFR", false);
 
             if let Some(target) = target {
                 if let Some(amount) = order.amount {
@@ -411,17 +412,17 @@ pub fn execute_order(
     } else if result.is_err() {
         match result.err().unwrap() {
             ErrorCode::InvalidTarget => {
-                let _ = creep.say("INVLD-TGT", false);
+                creep.bsay("INVLD-TGT", false);
             }
             ErrorCode::Full => {
-                let _ = creep.say("FULL", false);
+                creep.bsay("FULL", false);
             }
             ErrorCode::NoBodypart => {
-                let _ = creep.say("NO-BP", false);
+                creep.bsay("NO-BP", false);
                 let _ = creep.suicide();
             }
             _ => {
-                let _ = creep.say(&format!("{:?}", result.err().unwrap()), false);
+                creep.bsay(&format!("{:?}", result.err().unwrap()), false);
             }
         }
 

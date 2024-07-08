@@ -161,7 +161,6 @@ structstruck::strike! {
 
         pub creeps: Vec<String>,
 
-        pub invader_energy_counter: u32,
         pub under_attack: bool,
     }
 }
@@ -292,6 +291,8 @@ structstruck::strike! {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
+        pub creep_say: bool,
+
         pub id_index: u128,
         pub chant_index: u64,
         pub mem_version: u8,
@@ -319,6 +320,8 @@ impl ScreepsMemory {
         if memory_string.is_empty() {
 
             let mut memory = ScreepsMemory {
+                creep_say: true,
+
                 id_index: 0,
                 chant_index: 0,
                 mem_version: MEMORY_VERSION,
@@ -351,6 +354,8 @@ impl ScreepsMemory {
                     error!("Memory: {}", memory_string);
 
                     let mut memory = ScreepsMemory {
+                        creep_say: true,
+
                         id_index: 0,
                         chant_index: 0,
                         mem_version: MEMORY_VERSION,

@@ -11,7 +11,7 @@ use crate::{
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if creep.spawning() || creep.tired() {
-        let _ = creep.say("😴", false);
+        creep.bsay("😴", false);
         return;
     }
 
@@ -21,10 +21,10 @@ pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     room_cache.stats.energy.in_base_haulers += creep.store().get_used_capacity(Some(ResourceType::Energy));
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-        let _ = creep.say("📋", false);
+        creep.bsay("📋", false);
         find_energy(creep, room_memory, room_cache);
     } else {
-        let _ = creep.say("🔋", false);
+        creep.bsay("🔋", false);
         deposit_energy(creep, room_memory, room_cache);
     }
 }
@@ -55,7 +55,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
     // This is done passively.
     if let Some(storage) = &room_cache.structures.storage {
         if creep.pos().is_near_to(storage.pos()) && creep.store().get_free_capacity(None) > 0 {
-            let _ = creep.say("📋 - STORE", false);
+            creep.bsay("📋 - STORE", false);
             let amount = cmp::min(storage.store().get_used_capacity(Some(ResourceType::Energy)), creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap());
             let _ = creep.withdraw(storage, ResourceType::Energy, Some(amount));
         }
@@ -70,10 +70,10 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
             for spawn in room_cache.structures.spawns.values() {
                 if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
                 if creep.pos().is_near_to(spawn.pos()) {
-                    let _ = creep.say("📋 - SPAWN", false);
+                    creep.bsay("📋 - SPAWN", false);
                     let _ = creep.transfer(spawn, ResourceType::Energy, None);
                 } else {
-                    let _ = creep.say("🚚 - SPAWN", false);
+                    creep.bsay("🚚 - SPAWN", false);
                     creep.better_move_to(memory, room_cache, spawn.pos(), 1, Default::default());
 
                     return;
@@ -85,10 +85,10 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
                 let upgrader_count = room_cache.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
                 if link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 && upgrader_count > 0 {
                     if creep.pos().is_near_to(link.pos()) {
-                        let _ = creep.say("📋 - LINK", false);
+                        creep.bsay("📋 - LINK", false);
                         let _ = creep.transfer(&link, ResourceType::Energy, None);
                     } else {
-                        let _ = creep.say("🚚 - LINK", false);
+                        creep.bsay("🚚 - LINK", false);
                         creep.better_move_to(memory, room_cache, link.pos(), 1, Default::default());
 
                         return;
@@ -101,10 +101,10 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
 
                 if lowest.store().get_free_capacity(None) > 0 {
                     if creep.pos().is_near_to(lowest.pos()) {
-                        let _ = creep.say("📋 - FASTFILL", false);
+                        creep.bsay("📋 - FASTFILL", false);
                         let _ = creep.transfer(lowest, ResourceType::Energy, None);
                     } else {
-                        let _ = creep.say("🚚 - FASTFILL", false);
+                        creep.bsay("🚚 - FASTFILL", false);
                         creep.better_move_to(
                             memory,
                             room_cache,
@@ -121,7 +121,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
         }
 
         if creep.pos().is_near_to(extension.pos()) {
-            let _ = creep.say("📋 - EXT", false);
+            creep.bsay("📋 - EXT", false);
             let tfer_amount = std::cmp::min(
                 creep.store().get_used_capacity(Some(ResourceType::Energy)),
                 extension
@@ -139,7 +139,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
                 if creep.pos().get_range_to(next_best.pos()) > 1
                     && creep.store().get_used_capacity(Some(ResourceType::Energy)) > 0
                 {
-                    let _ = creep.say("🚚 - EXT", false);
+                    creep.bsay("🚚 - EXT", false);
                     creep.better_move_to(
                         memory,
                         room_cache,
@@ -150,7 +150,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
                 }
             }
         } else {
-            let _ = creep.say("🚚 - EXT", false);
+            creep.bsay("🚚 - EXT", false);
             creep.better_move_to(memory, room_cache, extension.pos(), 1, Default::default())
         }
     }
@@ -158,7 +158,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
     if let Some(storage_link) = &room_cache.structures.links.storage {
         let upgrader_count = room_cache.creeps.creeps_of_role.get(&Role::Upgrader).map_or(0, |x| x.len());
         if creep.pos().is_near_to(storage_link.pos()) && storage_link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 && upgrader_count > 0 && room_cache.structures.storage.as_ref().unwrap().store().get_used_capacity(Some(ResourceType::Energy)) > 10000 {
-            let _ = creep.say("📋 - LINK", false);
+            creep.bsay("📋 - LINK", false);
             let _ = creep.transfer(storage_link, ResourceType::Energy, None);
         }
     }
@@ -169,7 +169,7 @@ pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut Cac
     if let Some(storage) = &room_cache.structures.storage {
         if storage.store().get_used_capacity(None) > 0 {
             if creep.pos().is_near_to(storage.pos()) {
-                let _ = creep.say("📋 - STORE", false);
+                creep.bsay("📋 - STORE", false);
                 let amount = cmp::min(storage.store().get_used_capacity(Some(ResourceType::Energy)), creep.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap());
                 let _ = creep.withdraw(
                     storage,
@@ -178,7 +178,7 @@ pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut Cac
                 );
                 return;
             } else {
-                let _ = creep.say("🚚 - STORE", false);
+                creep.bsay("🚚 - STORE", false);
                 creep.better_move_to(memory, room_cache, storage.pos(), 1, Default::default());
                 return;
             }
@@ -191,7 +191,7 @@ pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut Cac
         let most_filled = most_filled.unwrap();
 
         if most_filled.store().get_used_capacity(Some(ResourceType::Energy)) > 0 && creep.pos().is_near_to(most_filled.pos()) {
-            let _ = creep.say("📋 - FASTFILL", false);
+            creep.bsay("📋 - FASTFILL", false);
             let _ = creep.withdraw(
                 most_filled,
                 ResourceType::Energy,
@@ -204,7 +204,7 @@ pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut Cac
                 ),
             );
         } else {
-            let _ = creep.say("No 🔋?", false);
+            creep.bsay("No 🔋?", false);
         }
     }
 }

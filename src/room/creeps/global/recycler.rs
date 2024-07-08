@@ -6,7 +6,7 @@ use crate::{
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let _ = creep.say("♻️", false);
+    creep.bsay("♻️", false);
     // If the creep is a spud and cant move, suicide
     // Because its wasting my damn space and time.
     let parts = creep
@@ -18,7 +18,7 @@ pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
         // If we reach this point, the creep is lacking something
         // to be able to recycle properly. So we just commit suicide
         // Duh...
-        let _ = creep.say("AAHHHHHHHHH", true);
+        creep.bsay("AAHHHHHHHHH", true);
         let _ = creep.suicide();
     }
 
@@ -56,6 +56,6 @@ pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
     // If we reach this point, the creep is lacking something
     // to be able to recycle properly. So we just commit suicide
     // Duh...
-    let _ = creep.say("AAHHHHHHHHH", true);
+    creep.bsay("AAHHHHHHHHH", true);
     let _ = creep.suicide();
 }

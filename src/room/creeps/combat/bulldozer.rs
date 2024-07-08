@@ -24,7 +24,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
             if flag.color() == Color::Blue {
                 if creep.pos().is_near_to(flag.pos()) {
-                    let _ = creep.say("👁️", true);
+                    creep.bsay("👁️", true);
                 } else {
                     creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
                 }
@@ -33,9 +33,9 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
             if flag.color() == Color::Green {
                 if creep.pos().is_near_to(flag.pos()) {
-                    let _ = creep.say("JK - <3 U", true);
+                    creep.bsay("JK - <3 U", true);
                 } else {
-                    let _ = creep.say("DIE DIE DIE", true);
+                    creep.bsay("DIE DIE DIE", true);
                     creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
                 }
                 return;
@@ -43,7 +43,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
             let mut rng = StdRng::seed_from_u64(game::time() as u64);
             let to_say = config::ATTACK_SIGNS[rng.gen_range(0..config::ATTACK_SIGNS.len())];
-            let _ = creep.say(to_say, true);
+            creep.bsay(to_say, true);
 
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
@@ -68,13 +68,13 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                         creep_memory.path = None;
                     }
                 } else {
-                    let _ = creep.say("🚚", false);
+                    creep.bsay("🚚", false);
                     creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
                     //creep_memory.role = Role::Recycler;
                 }
             }
         } else {
-            let _ = creep.say("🚚", false);
+            creep.bsay("🚚", false);
 
             if creep.ticks_to_live() < Some(100) {
                 creep_memory.role = Role::Recycler;
@@ -83,7 +83,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
             creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
         }
     } else {
-        let _ = creep.say("❓", false);
+        creep.bsay("❓", false);
 
         creep_memory.role = Role::Recycler;
     }

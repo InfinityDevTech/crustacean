@@ -15,7 +15,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
     if let Some(remote_room) = creep_memory.owning_remote {
 
         if creep_memory.task_id.is_none() {
-            let _ = creep.say("kurt kob", true);
+            creep.bsay("kurt kob", true);
             return;
         }
 
@@ -24,7 +24,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         }
 
         if creep.tired() {
-            let _ = creep.say("😴", false);
+            creep.bsay("😴", false);
             return;
         }
 
@@ -32,7 +32,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         let room_cache = cache.rooms.get_mut(&room_name).unwrap();
 
         if room_name != remote_room {
-            let _ = creep.say("🚚", false);
+            creep.bsay("🚚", false);
 
             let x = unsafe { RoomCoordinate::unchecked_new(25) };
             let y = unsafe { RoomCoordinate::unchecked_new(25) };
@@ -55,7 +55,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
                 if let Some(task) = task {
                     creep_memory.task_id = Some(task.into());
                 } else {
-                    let _ = creep.say("kurt kob", true);
+                    creep.bsay("kurt kob", true);
                 }
             }
 
@@ -71,10 +71,6 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
 
             let harvested_amount = harvest_source(creep, source, creep_memory, room_cache);
             if let Some(harvested_amount) = harvested_amount {
-                if let Some(mem) = memory.remote_rooms.get_mut(&remote_room) {
-                    mem.invader_energy_counter += harvested_amount;
-                }
-
                 if let Some(remote_room) = cache.rooms.get_mut(&creep_memory.owning_room) {
                     remote_room.stats.energy.income_energy += harvested_amount;
                 }

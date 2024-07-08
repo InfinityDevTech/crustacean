@@ -328,6 +328,10 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
         let container = container.unwrap();
 
+        if container.store().get_used_capacity(None) == 0 {
+            continue;
+        }
+
         cached_room.stats.energy.in_containers = container.store().get_used_capacity(None);
 
         let mut priority = container.store().get_used_capacity(None) as f32;

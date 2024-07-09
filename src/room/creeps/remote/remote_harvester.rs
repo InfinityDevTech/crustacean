@@ -40,7 +40,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             let position = Position::new(x, y, remote_room);
 
             creep.better_move_to(
-                creep_memory,
+                memory,
                 cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
                 position,
                 24,
@@ -66,12 +66,15 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
             if creep.store().get_used_capacity(None) as f32 >= (creep.store().get_capacity(None) as f32 * 0.5) {
-                deposit_enegy(creep, creep_memory, room_cache);
+                deposit_enegy(creep, memory, room_cache);
             }
 
-            let harvested_amount = harvest_source(creep, source, creep_memory, room_cache);
+            let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+            let owning_room = creep_memory.owning_room.clone();
+
+            let harvested_amount = harvest_source(creep, source, memory, room_cache);
             if let Some(harvested_amount) = harvested_amount {
-                if let Some(remote_room) = cache.rooms.get_mut(&creep_memory.owning_room) {
+                if let Some(remote_room) = cache.rooms.get_mut(&owning_room) {
                     remote_room.stats.energy.income_energy += harvested_amount;
                 }
             }
@@ -114,7 +117,8 @@ pub fn build_container(
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn deposit_enegy(creep: &Creep, creep_memory: &mut CreepMemory, remote_cache: &mut CachedRoom) {
+pub fn deposit_enegy(creep: &Creep, memory: &mut ScreepsMemory, remote_cache: &mut CachedRoom) {
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_container(&remote_cache.structures);
 
     if build_container(creep, creep_memory, remote_cache) {
@@ -122,14 +126,14 @@ pub fn deposit_enegy(creep: &Creep, creep_memory: &mut CreepMemory, remote_cache
     }
 
     if let Some(contianer) = contianer {
-        if repair_container(creep, creep_memory, remote_cache, contianer) {
+        if repair_container(creep, memory, remote_cache, contianer) {
             return;
         }
 
         if contianer.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
             let _ = creep.drop(ResourceType::Energy, None);
         } else if creep.pos().get_range_to(contianer.pos()) > 1 {
-            creep.better_move_to(creep_memory, remote_cache, contianer.pos(), 1, MoveOptions::default());
+            creep.better_move_to(memory, remote_cache, contianer.pos(), 1, MoveOptions::default());
         } else {
             let _ = creep.transfer(contianer, ResourceType::Energy, None);
         }

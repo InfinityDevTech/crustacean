@@ -262,7 +262,7 @@ pub fn hauler(
     cache: &RoomCache,
     memory: &mut ScreepsMemory,
 ) -> Option<SpawnRequest> {
-    let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+    let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
 
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
     let mut carry_requirement: u128 = 0;
@@ -289,8 +289,8 @@ pub fn hauler(
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                         let mut in_target = MoveTarget { pos: storage.pos(), range: 1 };
 
-                        let out_steps = out_target.find_path_to(storage.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
-                        let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let out_steps = out_target.find_path_to(storage.pos(), memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let in_steps = in_target.find_path_to(source.pos(), memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
 
                         (out_steps, in_steps)
                     } else {
@@ -299,8 +299,8 @@ pub fn hauler(
                         let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                         let mut in_target = MoveTarget { pos: spawn, range: 1 };
 
-                        let out_steps = out_target.find_path_to(spawn, MoveOptions::default().path_age(u8::MAX)).len() as u128;
-                        let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let out_steps = out_target.find_path_to(spawn, memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                        let in_steps = in_target.find_path_to(source.pos(), memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
 
                         (out_steps, in_steps)
                     };
@@ -319,9 +319,9 @@ pub fn hauler(
                 let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                 let mut in_target = MoveTarget { pos: storage.pos(), range: 1 };
     
-                let out_steps = out_target.find_path_to(storage.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
-                let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
-    
+                let out_steps = out_target.find_path_to(storage.pos(), memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                let in_steps = in_target.find_path_to(source.pos(), memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
+
                 (out_steps, in_steps)
             } else {
                 let spawn = owning_cache.spawn_center.unwrap().as_position(&owning_cache.room_name);
@@ -329,8 +329,8 @@ pub fn hauler(
                 let mut out_target = MoveTarget { pos: source.pos(), range: 1 };
                 let mut in_target = MoveTarget { pos: spawn, range: 1 };
 
-                let out_steps = out_target.find_path_to(spawn, MoveOptions::default().path_age(u8::MAX)).len() as u128;
-                let in_steps = in_target.find_path_to(source.pos(), MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                let out_steps = out_target.find_path_to(spawn, memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
+                let in_steps = in_target.find_path_to(source.pos(), memory, MoveOptions::default().path_age(u8::MAX)).len() as u128;
     
                 (out_steps, in_steps)
             };
@@ -349,6 +349,8 @@ pub fn hauler(
         //if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
         //    hauler_count = (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
         //}
+
+        let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
         let max = match owning_cache.rcl {
             1 => 20,

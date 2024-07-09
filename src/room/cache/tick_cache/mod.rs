@@ -78,7 +78,8 @@ impl CachedRoom {
         });
 
         let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
-        let structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let mut creeps = CreepCache::new_from_room(room, memory, &structures);
         let mut stats =  StatsCache::default();
         stats.energy.spending_spawning = 0;
 
@@ -101,7 +102,7 @@ impl CachedRoom {
             storage_center: st_center,
 
             structures,
-            creeps: CreepCache::new_from_room(room, memory),
+            creeps,
             traffic: TrafficCache::new(),
             resources,
             hauling: HaulingCache::new(),
@@ -127,7 +128,7 @@ impl CachedRoom {
         self.resources.refresh_source_cache(room, &mut self.heap_cache);
         self.structures.refresh_structure_cache(&mut self.resources, memory, room);
 
-        self.creeps.refresh_creep_cache(memory, room);
+        self.creeps.refresh_creep_cache(memory, room, &self.structures);
 
         self.traffic.intended_move = HashMap::new();
         self.traffic.movement_map = HashMap::new();

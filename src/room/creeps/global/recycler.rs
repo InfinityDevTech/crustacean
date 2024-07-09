@@ -45,7 +45,7 @@ pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 
                         return;
                     } else {
-                        creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), spawn_pos, 1, MoveOptions::default().avoid_enemies(true));
+                        creep.better_move_to(memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), spawn_pos, 1, MoveOptions::default().avoid_enemies(true));
                         return;
                     }
                 }

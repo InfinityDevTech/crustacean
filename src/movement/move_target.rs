@@ -1,11 +1,14 @@
 use log::warn;
 use screeps::{
-    find, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureProperties, StructureType
+    find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureProperties, StructureType
 };
+
+use crate::{memory::ScreepsMemory, room::creeps::global::scout, utils::get_my_username};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
     pub avoid_enemies: bool,
+    pub avoid_hostile_rooms: bool,
     pub path_age: u8,
 }
 
@@ -13,6 +16,7 @@ impl Default for MoveOptions {
     fn default() -> Self {
         MoveOptions {
             avoid_enemies: false,
+            avoid_hostile_rooms: false,
             path_age: 8,
         }
     }
@@ -22,6 +26,11 @@ impl Default for MoveOptions {
 impl MoveOptions {
     pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
         self.avoid_enemies = avoid_enemies;
+        *self
+    }
+
+    pub fn avoid_hostile_rooms(&mut self, avoid_hostile_rooms: bool) -> Self {
+        self.avoid_enemies = avoid_hostile_rooms;
         *self
     }
 
@@ -38,10 +47,10 @@ pub struct MoveTarget {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveTarget {
-    pub fn find_path_to(&mut self, from: Position, move_options: MoveOptions) -> String {
+    pub fn find_path_to(&mut self, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
         let opts = SearchOptions::new(|room_name| {
-            path_call(room_name, move_options)
+            path_call(room_name, memory, move_options)
         })
             .plain_cost(2)
             .swamp_cost(5)
@@ -100,8 +109,38 @@ impl MoveTarget {
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCostResult {
+pub fn path_call(room_name: RoomName, memory: &mut ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
+
+    if move_options.avoid_hostile_rooms {
+        if let Some(room) = game::rooms().get(room_name) {
+            let invader_owner = if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+                scouting_data.invader_core.unwrap_or(false)
+            } else {
+                false
+            };
+
+            if room.controller().is_none() || room.controller().unwrap().owner().is_some() || invader_owner {
+                for x in 0..50 {
+                    for y in 0..50 {
+                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
+                        matrix.set(xy, 255);
+                    }
+                }
+                return MultiRoomCostResult::CostMatrix(matrix.into());
+            }
+        } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+            if scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()) || scouting_data.invader_core.unwrap_or(false) {
+                for x in 0..50 {
+                    for y in 0..50 {
+                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
+                        matrix.set(xy, 255);
+                    }
+                }
+                return MultiRoomCostResult::CostMatrix(matrix.into());
+            }
+        }
+    }
 
     if let Some(room) = screeps::game::rooms().get(room_name) {
         let structures = room.find(find::STRUCTURES, None);
@@ -123,14 +162,14 @@ pub fn path_call(room_name: RoomName, move_options: MoveOptions) -> MultiRoomCos
             }
         }*/
 
-        for creep in creeps {
-            let pos = creep.pos();
-            matrix.set(pos.xy(), 3);
-        }
-
         for road in structures.iter().filter(|s| s.structure_type() == StructureType::Road) {
             let pos = road.pos();
             matrix.set(pos.xy(), 1);
+        }
+
+        for creep in creeps {
+            let pos = creep.pos();
+            matrix.set(pos.xy(), 6);
         }
 
         for structure in structures {

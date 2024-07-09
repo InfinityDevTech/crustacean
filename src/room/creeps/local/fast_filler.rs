@@ -18,19 +18,20 @@ use crate::{
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
-
-    let fastfiller_container = creep_memory.fastfiller_container;
-
     if creep.spawning() || creep.tired() {
         creep.bsay("😴", false);
         return;
     }
 
-    if check_current_position(creep, creep_memory, cached_room) {
+    let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+
+    if check_current_position(creep, memory, cached_room) {
         return;
     }
+
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
+    let fastfiller_container = creep_memory.fastfiller_container;
 
     self_renew(creep, cached_room);
 
@@ -80,7 +81,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                 let _ = creep.withdraw(&container, ResourceType::Energy, None);
             } else {
                 creep.better_move_to(
-                    creep_memory,
+                    memory,
                     cached_room,
                     container.pos(),
                     1,
@@ -108,7 +109,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
         );
     } else {
         creep.better_move_to(
-            creep_memory,
+            memory,
             cached_room,
             target.pos(),
             1,
@@ -158,7 +159,7 @@ pub fn find_possible_targets(creep: &Creep, cache: &CachedRoom) -> Vec<RawObject
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn check_current_position(
     creep: &Creep,
-    creep_memory: &mut CreepMemory,
+    memory: &mut ScreepsMemory,
     cache: &mut CachedRoom,
 ) -> bool {
     let current_pos = creep.pos().xy();
@@ -192,7 +193,7 @@ pub fn check_current_position(
 
         if pos_1_creep.is_empty() {
             creep.better_move_to(
-                creep_memory,
+                memory,
                 cache,
                 position_1.into(),
                 0,
@@ -201,7 +202,7 @@ pub fn check_current_position(
             return true;
         } else if pos_2_creep.is_empty() {
             creep.better_move_to(
-                creep_memory,
+                memory,
                 cache,
                 position_2.into(),
                 0,

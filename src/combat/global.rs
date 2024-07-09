@@ -7,4 +7,5 @@ use super::setters;
 pub fn run_global_setters(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     setters::remote_reservation::determine_reservations(memory, cache);
     setters::remote_defense::determine_remote_defense_needs(cache, memory);
+    setters::room_claim::determine_room_claim_needs(memory, cache);
 }

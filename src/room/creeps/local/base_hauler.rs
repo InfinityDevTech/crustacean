@@ -15,23 +15,24 @@ pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
         return;
     }
 
-    let room_memory = memory.creeps.get_mut(&creep.name().to_string()).unwrap();
-    let room_cache = cache.rooms.get_mut(&room_memory.owning_room).unwrap();
+    let creep_memory = memory.creeps.get_mut(&creep.name().to_string()).unwrap();
+    let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
     room_cache.stats.energy.in_base_haulers += creep.store().get_used_capacity(Some(ResourceType::Energy));
 
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         creep.bsay("📋", false);
-        find_energy(creep, room_memory, room_cache);
+        find_energy(creep, memory, room_cache);
     } else {
         creep.bsay("🔋", false);
-        deposit_energy(creep, room_memory, room_cache);
+        deposit_energy(creep, memory, room_cache);
     }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut CachedRoom) {
+pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) {
     // Sort by range.
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let link = room_cache.structures.links.storage.clone();
     let mut extensions = room_cache
         .structures
@@ -165,7 +166,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut 
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn find_energy(creep: &Creep, memory: &mut CreepMemory, room_cache: &mut CachedRoom) {
+pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) {
     if let Some(storage) = &room_cache.structures.storage {
         if storage.store().get_used_capacity(None) > 0 {
             if creep.pos().is_near_to(storage.pos()) {

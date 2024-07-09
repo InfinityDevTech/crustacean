@@ -30,17 +30,19 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     if let Some(order) = &creep_memory.hauling_task.clone() {
         creep.bsay("EXEC", false);
 
-        if execute_order(creep, creep_memory, cache, order) {
+        if execute_order(creep, memory, cache, order) {
             // Invalidate the path and the hauling task
             // Since it was mission success
-            decide_energy_need(creep, creep_memory, cache);
+            decide_energy_need(creep, memory, cache);
 
             //run_hauler(creep, memory, cache);
             return;
         }
     }
 
-    decide_energy_need(creep, creep_memory, cache);
+    decide_energy_need(creep, memory, cache);
+
+    let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
 
     if creep_memory.hauling_task.is_none() {
         if creep_memory.needs_energy.unwrap_or(false) {
@@ -86,7 +88,8 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 }
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache: &mut RoomCache) {
+pub fn decide_energy_need(creep: &Creep, memory: &mut ScreepsMemory, _cache: &mut RoomCache) {
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     if creep_memory.role == Role::Hauler {
         let half_capcaity = creep.store().get_capacity(None) as f32 * 0.5;
         if creep.store().get_used_capacity(None) as f32 > half_capcaity {
@@ -113,13 +116,15 @@ pub fn decide_energy_need(creep: &Creep, creep_memory: &mut CreepMemory, _cache:
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn execute_order(
     creep: &Creep,
-    creep_memory: &mut CreepMemory,
+    memory: &mut ScreepsMemory,
     cache: &mut RoomCache,
     order: &CreepHaulTask,
 ) -> bool {
     let pickup_target = order.target_id;
     let target = game::get_object_by_id_erased(&pickup_target);
     let position = order.get_target_position();
+
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if position.is_none() || target.is_none() {
         creep_memory.hauling_task = None;
@@ -244,7 +249,7 @@ pub fn execute_order(
 
     if !creep.pos().is_near_to(position.unwrap()) {
         creep.better_move_to(
-            creep_memory,
+            memory,
             cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
             position.unwrap(),
             1,

@@ -1,5 +1,5 @@
 use crate::{
-    heap, memory::CreepMemory, movement::{
+    heap, memory::{CreepMemory, ScreepsMemory}, movement::{
         move_target::{MoveOptions, MoveTarget},
         utils::{dir_to_coords, num_to_dir},
     }, room::cache::tick_cache::CachedRoom
@@ -7,7 +7,7 @@ use crate::{
 
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, ErrorCode, HasPosition, MaybeHasId, Position, RoomXY, Terrain
+    game, Direction, ErrorCode, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
 };
 
 pub trait CreepExtensions {
@@ -15,7 +15,7 @@ pub trait CreepExtensions {
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom);
     fn better_move_to(
         &self,
-        creep_memory: &mut CreepMemory,
+        creep_memory: &mut ScreepsMemory,
         cache: &mut CachedRoom,
         target: Position,
         range: u16,
@@ -89,7 +89,7 @@ impl CreepExtensions for screeps::Creep {
 
     fn better_move_to(
         &self,
-        creep_memory: &mut CreepMemory,
+        memory: &mut ScreepsMemory,
         cache: &mut CachedRoom,
         target: Position,
         range: u16,
@@ -101,6 +101,8 @@ impl CreepExtensions for screeps::Creep {
             return;
         }
 
+        let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
+
         match &creep_memory.path {
             Some(path) => {
                 self.better_move_by_path(path.to_string(), creep_memory, cache);
@@ -110,8 +112,9 @@ impl CreepExtensions for screeps::Creep {
                     pos: target,
                     range: range.into(),
                 }
-                .find_path_to(self.pos(), move_options);
+                .find_path_to(self.pos(), memory, move_options);
 
+                let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
                 creep_memory.path = Some(target.clone());
 
                 self.better_move_by_path(target, creep_memory, cache);

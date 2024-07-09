@@ -129,7 +129,7 @@ pub fn get_rcl_8_plan() -> Vec<(i8, i8, StructureType)> {
         (-5, -5, StructureType::Extension),
         (-6, -4, StructureType::Extension),
         (-4, 6, StructureType::Extension),
-        (0, 5, StructureType::Extension),
+        (3, 2, StructureType::Extension),
     ]
 }
 

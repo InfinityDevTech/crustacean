@@ -16,14 +16,14 @@ pub fn run_reserver(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 
         if current_room.name() != target_room {
             let position = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), target_room);
-            creep.better_move_to(creep_memory, cache.rooms.get_mut(&current_room.name()).unwrap(), position, 23, MoveOptions::default().avoid_enemies(true));
+            creep.better_move_to(memory, cache.rooms.get_mut(&current_room.name()).unwrap(), position, 23, MoveOptions::default().avoid_enemies(true));
         } else {
             let controller = current_room.controller().unwrap();
 
             if creep.pos().is_near_to(controller.pos()) {
                 let _ = creep.reserve_controller(&controller);
             } else {
-                creep.better_move_to(creep_memory, cache.rooms.get_mut(&current_room.name()).unwrap(), controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                creep.better_move_to(memory, cache.rooms.get_mut(&current_room.name()).unwrap(), controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
             }
         }
     } else {

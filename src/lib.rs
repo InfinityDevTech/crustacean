@@ -303,6 +303,13 @@ pub fn big_red_button() {
     memory.write_memory();
 }
 
+#[wasm_bindgen(js_name = toggle_creepsay)]
+pub fn toggle_creepsay() {
+    let mut heap_mem = heap().memory.lock().unwrap();
+
+    heap_mem.creep_say = !heap_mem.creep_say;
+}
+
 #[wasm_bindgen(js_name = wipe_memory)]
 pub fn wipe_memory() {
     let mut heap_mem = heap().memory.lock().unwrap();

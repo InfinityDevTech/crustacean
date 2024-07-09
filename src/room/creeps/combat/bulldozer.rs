@@ -26,7 +26,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 if creep.pos().is_near_to(flag.pos()) {
                     creep.bsay("👁️", true);
                 } else {
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(1));
                 }
                 return;
             }
@@ -36,7 +36,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     creep.bsay("JK - <3 U", true);
                 } else {
                     creep.bsay("DIE DIE DIE", true);
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(1));
                 }
                 return;
             }
@@ -48,9 +48,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
                 if creep.attack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
-                    creep.better_move_to(creep_memory, room_cache, enemy.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
-
-                    creep_memory.path = None;
+                    creep.better_move_to(memory, room_cache, enemy.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(1));
                 }
             } else {
                 let mut structure = creep.room().unwrap().find(find::HOSTILE_STRUCTURES, None);
@@ -63,13 +61,11 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                             let _ = creep.attack(attackabke);
                         }
                     } else {
-                        creep.better_move_to(creep_memory, room_cache, structure.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(3));
-
-                        creep_memory.path = None;
+                        creep.better_move_to(memory, room_cache, structure.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(1));
                     }
                 } else {
                     creep.bsay("🚚", false);
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
                     //creep_memory.role = Role::Recycler;
                 }
             }
@@ -80,7 +76,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 creep_memory.role = Role::Recycler;
             }
 
-            creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
+            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
         }
     } else {
         creep.bsay("❓", false);

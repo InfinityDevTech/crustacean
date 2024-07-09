@@ -1,12 +1,13 @@
-use screeps::{game, HasId, HasPosition, OwnedStructureProperties, Room, RoomXY};
+use log::info;
+use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Room, RoomXY, Structure, StructureObject, StructureProperties, StructureType};
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
     room::cache::tick_cache::CachedRoom, traits::room::RoomExtensions,
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
     if memory.rooms.contains_key(&room.name()) {
         return;
     }
@@ -29,6 +30,17 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cach
         }
     }
 
+    let mut invader_owned = None;
+    for structure in room.find(find::HOSTILE_STRUCTURES, None) {
+        if let StructureObject::StructureInvaderCore(invader) = structure {
+            info!("FOund invader core with level: {}", invader.level());
+            if invader.level() > 0 {
+                invader_owned = Some(true);
+                break;
+            }
+        }
+    }
+
     let mineral_id = if cached_room.resources.mineral.is_some() {
         Some(cached_room.resources.mineral.as_ref().unwrap().id())
     } else {
@@ -47,6 +59,7 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cach
         room_type: room.room_type(),
         rcl: room_rcl,
         owner: owner.clone(),
+        invader_core: invader_owned,
         reserved: reserved.clone(),
         defense_capability: 0,
         sources: sources.clone(),
@@ -107,13 +120,8 @@ pub fn rank_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cach
     if let std::collections::hash_map::Entry::Vacant(e) = memory.scouted_rooms.entry(room_name) {
         e.insert(scouted_room);
     } else {
-        let scouted = memory.scouted_rooms.get_mut(&room_name).unwrap();
-        scouted.rcl = room_rcl;
-        scouted.owner.clone_from(&owner);
-        scouted.reserved = reserved;
-        scouted.defense_capability = 0;
-        scouted.sources = sources;
-        scouted.mineral = mineral_id;
-        scouted.last_scouted = game::time();
+        let scouted = memory.scouted_rooms.remove(&room_name);
+
+        memory.scouted_rooms.insert(room_name, scouted_room);
     }
 }

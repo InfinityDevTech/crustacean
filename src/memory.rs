@@ -47,9 +47,10 @@ pub enum Role {
     Bulldozer = 12,
     Unclaimer = 13,
 
-    Reserver = 50,
-    RemoteDefender = 51,
-    InvaderCleaner = 52,
+    Claimer = 50,
+    Reserver = 51,
+    RemoteDefender = 52,
+    InvaderCleaner = 53,
 
     // Assorted junk roles, recycler just recycles itself
     Recycler = 99,
@@ -188,6 +189,8 @@ structstruck::strike! {
         pub rcl: Option<u8>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub owner: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub invader_core: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub reserved: Option<String>,
 

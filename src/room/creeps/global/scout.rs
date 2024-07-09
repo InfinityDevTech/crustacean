@@ -35,7 +35,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 run_scout(creep, memory, cache);
             } else {
                 creep.better_move_to(
-                    memory.creeps.get_mut(&creep.name()).unwrap(),
+                    memory,
                     cached_room,
                     scout_target.pos(),
                     23,
@@ -45,7 +45,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         } else {
             creep.bsay("🔍 😛", true);
             creep.better_move_to(
-                memory.creeps.get_mut(&creep.name()).unwrap(),
+                memory,
                 cached_room,
                 scout_target.pos(),
                 23,
@@ -107,7 +107,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         creep.bsay(&format!("👁️ {}", pos.room_name()), true);
 
         creep.better_move_to(
-            memory.creeps.get_mut(&creep.name()).unwrap(),
+            memory,
             cached_room,
             pos.pos(),
             23,

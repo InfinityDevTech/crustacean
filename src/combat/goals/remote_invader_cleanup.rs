@@ -9,11 +9,11 @@ pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let invader_goals = cloned_goals.keys();
 
     for goal_room in invader_goals {
-        accheive_goal(goal_room, memory, cache);
+        achieve_goal(goal_room, memory, cache);
     }
 }
 
-pub fn accheive_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let goal = memory.goals.remote_invader_cleanup.get_mut(target_room).unwrap();
 
     if goal.creeps_assigned.is_empty() {

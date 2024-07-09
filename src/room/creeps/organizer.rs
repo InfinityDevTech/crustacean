@@ -64,6 +64,8 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Bulldozer => combat::bulldozer::run_bulldozer(&creep, memory, cache),
             Role::Scout => global::scout::run_scout(&creep, memory, cache),
             Role::RemoteHarvester => remote::remote_harvester::run_remoteharvester(&creep, memory, cache),
+
+            Role::Claimer => global::claimer::run_claimer(&creep, memory, cache),
             Role::Unclaimer => global::unclaimer::run_unclaimer(&creep, memory, cache),
             Role::Recycler => global::recycler::run_recycler(&creep, memory, cache),
             Role::PhysicalObserver => global::physical_observer::run_physical_observer(&creep, memory, cache),

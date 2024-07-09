@@ -13,7 +13,7 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
         if creep.room().unwrap().name() != target_room {
             let position = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), target_room);
 
-            creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), position, 23, Default::default());
+            creep.better_move_to(memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), position, 23, Default::default());
         } else if let Some(cache) = cache.rooms.get_mut(&creep.room().unwrap().name()) {
             let hostile_creeps = &cache.creeps.enemy_creeps_with_attack;
 
@@ -21,7 +21,7 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
                 let target = hostile_creeps.first().unwrap();
 
                 if creep.pos().get_range_to(target.pos()) >= 4 {
-                    creep.better_move_to(creep_memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
+                    creep.better_move_to(memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
                 } else {
                     let range = creep.pos().get_range_to(target.pos());
 
@@ -32,7 +32,7 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
                     }
 
                     creep.bsay("🔫", false);
-                    creep.better_move_to(creep_memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
+                    creep.better_move_to(memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
                 }
             } else {
                 creep_memory.role = Role::Recycler;

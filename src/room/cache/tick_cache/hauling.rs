@@ -481,9 +481,8 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
     for (creep_name, haul_task) in saved {
         let creep = game::creeps().get(creep_name.clone()).unwrap();
-        let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
 
-        execute_order(&creep, creep_memory, room_cache, &haul_task);
+        execute_order(&creep, memory, room_cache, &haul_task);
     }
 
     info!(

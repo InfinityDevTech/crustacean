@@ -9,12 +9,11 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
     let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
     if creep_memory.needs_energy.unwrap_or(false) {
-        get_energy(creep, creep_memory, cache);
-
         if creep.store().get_free_capacity(None) == 0 {
             creep_memory.needs_energy = None;
         }
-
+        
+        get_energy(creep, memory, cache);
         return;
     }
 
@@ -54,7 +53,7 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
             room_cache.stats.energy.spending_repair += energy_spent;
         } else {
             creep.bsay("🚚", false);
-            creep.better_move_to(creep_memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), repairable_obj.pos(), 2, Default::default());
+            creep.better_move_to(memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), repairable_obj.pos(), 2, Default::default());
 
             return;
         }
@@ -115,11 +114,13 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn get_energy(creep: &Creep, memory: &mut CreepMemory, cache: &mut RoomCache) {
-    if let Some(hauling_task) = memory.hauling_task.clone() {
+pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
+    if let Some(hauling_task) = creep_memory.hauling_task.clone() {
         hauler::execute_order(creep, memory, cache, &hauling_task);
     } else {
-        let cache = cache.rooms.get_mut(&memory.owning_room).unwrap();
+        let cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
         cache.hauling.wanting_orders.push(HaulTaskRequest::default().creep_name(creep.name()).resource_type(ResourceType::Energy).haul_type(vec![HaulingType::Pickup, HaulingType::Withdraw, HaulingType::Offer]).finish());
     }
 }

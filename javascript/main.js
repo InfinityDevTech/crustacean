@@ -24,21 +24,51 @@ function console_error() {
   Game.notify(processedArgs);
 }
 
+global.help = function() {
+  return `
+  Available commands:
+  - help(): display this message
+  - toggle_creepsay(): toggle creepsay on and off
+  - clear_scouting_data(): clear the scouting data
+  - hauler_rescan(): rescan the hauler network for each room
+  - pause_exec(): pause execution of the bot
+  - wipe_memory(): wipe all memory
+  `
+}
+
+global.toggle_creepsay = function() {
+  if (wasm_module) {
+    wasm_module.toggle_creepsay()
+
+    return `[JS] Toggled creepsay.`
+  } else {
+    return `[JS] Module not loaded.`
+  }
+}
+
 global.clear_scouting_data = function() {
   if (wasm_module) {
     wasm_module.wipe_scouting_data()
+
+    return `[JS] Cleared scouting data.`
+  } else {
+    return `[JS] Module not loaded.`
   }
 }
 
 global.hauler_rescan = function() {
   if (wasm_module) {
     wasm_module.hauler_rescan()
+
+    return `[JS] Rescanned hauler network.`
+  } else {
+    return `[JS] Module not loaded.`
   }
 }
 
 global.pause_exec = function() {
   pause_exec = !pause_exec;
-  return `[JS] pause_exec: ${pause_exec}`;
+  return `[JS] Setting execution pause to: ${pause_exec}`;
 }
 
 global.wipe_memory = function() {

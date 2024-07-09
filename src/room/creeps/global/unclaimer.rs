@@ -31,7 +31,7 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 if creep.pos().is_near_to(flag.pos()) {
                     creep.bsay("👁️", true);
                 } else {
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true));
                 }
                 return;
             }
@@ -41,7 +41,7 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     creep.bsay("JK - <3 U", true);
                 } else {
                     creep.bsay("DIE DIE DIE", true);
-                    creep.better_move_to(creep_memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true));
                 }
                 return;
             }
@@ -68,12 +68,12 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                         let _ = creep.attack_controller(&controller);
                     }
                 } else {
-                    creep.better_move_to(creep_memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                    creep.better_move_to(memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
                 }
             }
         } else {
             creep.bsay("🚚", false);
-            creep.better_move_to(creep_memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
+            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
         }
     } else {
         creep.bsay("❓", false);

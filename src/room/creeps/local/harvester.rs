@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{
     game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties,
     Source, StructureContainer,
@@ -26,6 +27,10 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     let scouted_source = &mut cached_room.resources.sources[pointer_index];
     scouted_source.creeps.push(creep.try_id().unwrap());
 
+    if creep.spawning() {
+        info!("Spawning creep has registered with source.");
+    }
+
     let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
     if creep.spawning() || creep.tired() {
@@ -37,11 +42,11 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
         if !link_deposit(creep, creep_memory, cached_room) {
-            deposit_energy(creep, creep_memory, cached_room);
+            deposit_energy(creep, memory, cached_room);
         }
-        harvest_source(creep, source, creep_memory, cached_room);
+        harvest_source(creep, source, memory, cached_room);
     } else {
-        harvest_source(creep, source, creep_memory, cached_room);
+        harvest_source(creep, source, memory, cached_room);
     }
 }
 
@@ -49,13 +54,13 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 pub fn harvest_source(
     creep: &Creep,
     source: Source,
-    creep_memory: &mut CreepMemory,
+    memory: &mut ScreepsMemory,
     cache: &mut CachedRoom,
 ) -> Option<u32> {
     if !creep.pos().is_near_to(source.pos()) {
         creep.bsay("🚚 🔋", false);
 
-        creep.better_move_to(creep_memory, cache, source.pos(), 1, MoveOptions::default());
+        creep.better_move_to(memory, cache, source.pos(), 1, MoveOptions::default());
 
         None
     } else {
@@ -90,16 +95,19 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Cache
 }
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) {
+pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     creep.bsay("📦", false);
 
+    let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let source = &cache.resources.sources[creep_memory.task_id.unwrap() as usize];
 
+    let task_id = creep_memory.task_id.unwrap() as usize;
+
     if let Some(link) = source.link {
-        if let Some(container) = cache.resources.sources[creep_memory.task_id.unwrap() as usize]
+        if let Some(container) = cache.resources.sources[task_id]
             .get_container(&cache.structures)
         {
-            if repair_container(creep, creep_memory, cache, &container) {
+            if repair_container(creep, memory, cache, &container) {
                 return;
             }
         }
@@ -114,16 +122,16 @@ pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut
                     Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
                 );
             } else {
-                creep.better_move_to(creep_memory, cache, link.pos(), 1, MoveOptions::default());
+                creep.better_move_to(memory, cache, link.pos(), 1, MoveOptions::default());
             }
             return;
         }
     }
 
-    if let Some(container) = cache.resources.sources[creep_memory.task_id.unwrap() as usize]
+    if let Some(container) = cache.resources.sources[task_id]
         .get_container(&cache.structures)
     {
-        if repair_container(creep, creep_memory, cache, &container) {
+        if repair_container(creep, memory, cache, &container) {
             return;
         }
 
@@ -139,7 +147,7 @@ pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut
             let _ = creep.transfer(&container, ResourceType::Energy, None);
         } else {
             creep.better_move_to(
-                creep_memory,
+                memory,
                 cache,
                 container.pos(),
                 1,
@@ -154,7 +162,7 @@ pub fn deposit_energy(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn repair_container(
     creep: &Creep,
-    creep_memory: &mut CreepMemory,
+    memory: &mut ScreepsMemory,
     cache: &mut CachedRoom,
     container: &StructureContainer,
 ) -> bool {
@@ -166,7 +174,7 @@ pub fn repair_container(
         if container.pos().get_range_to(creep.pos()) > 1 {
             creep.bsay("🚚", false);
             creep.better_move_to(
-                creep_memory,
+                memory,
                 cache,
                 container.pos(),
                 1,

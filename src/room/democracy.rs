@@ -135,10 +135,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         if let Some(scouted_room) = memory.scouted_rooms.get(&room.name()) {
             if scouted_room.last_scouted < game::time() - 100 {
-                rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+                rank_room::scout_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
             }
         } else {
-            rank_room::rank_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
+            rank_room::scout_room(&room, memory, cache.rooms.get_mut(&room.name()).unwrap());
         }
     }
 

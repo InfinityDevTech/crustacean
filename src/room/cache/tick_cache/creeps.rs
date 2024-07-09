@@ -6,6 +6,8 @@ use crate::{
     constants::HOSTILE_PARTS, memory::{Role, ScreepsMemory}, utils::name_to_role
 };
 
+use super::structures::RoomStructureCache;
+
 #[derive(Debug, Clone)]
 pub struct CreepCache {
     pub creeps_in_room: HashMap<String, Creep>,
@@ -21,7 +23,7 @@ pub struct CreepCache {
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory) -> CreepCache {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, structures: &RoomStructureCache) -> CreepCache {
         let mut cache = CreepCache {
             creeps_in_room: HashMap::new(),
             owned_creeps: HashMap::new(),
@@ -34,11 +36,11 @@ impl CreepCache {
             creeps_at_pos: HashMap::new(),
         };
 
-        cache.refresh_creep_cache(memory, room);
+        cache.refresh_creep_cache(memory, room, structures);
         cache
     }
 
-    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room) {
+    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room, structures: &RoomStructureCache) {
         let creeps = room.find(find::CREEPS, None);
 
         for creep in creeps {
@@ -55,6 +57,15 @@ impl CreepCache {
                 }
 
                 self.enemy_creeps.push(creep);
+            }
+        }
+
+        for spawn in structures.spawns.values() {
+            let creeps = spawn.spawning();
+            if let Some(creeps) = creeps {
+                if let Some(creep) = game::creeps().get(creeps.name().into()) {
+                    self.creeps_in_room.insert(creeps.name().into(), creep);
+                }
             }
         }
 

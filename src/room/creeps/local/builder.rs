@@ -49,12 +49,16 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         site_clone
     };
 
+    if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+        creepmem.needs_energy = Some(true);
+    }
+
     if !sites.is_empty() {
         if let Some(site) = sites.first() {
             if site.pos().get_range_to(creep.pos()) > 1 {
                 creep.bsay("🚚", false);
                 creep.better_move_to(
-                    creepmem,
+                    memory,
                     cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
                     site.pos(),
                     1,
@@ -69,10 +73,6 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     } else {
         run_upgrader(creep, memory, cache);
         return;
-    }
-
-    if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
-        creepmem.needs_energy = Some(true);
     }
 }
 
@@ -110,7 +110,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                 if !creep.pos().is_near_to(container.pos()) {
                     creep.bsay("🚚", false);
                     creep.better_move_to(
-                        creepmem,
+                        memory,
                         room_cache,
                         container.pos(),
                         1,
@@ -129,7 +129,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     if let Some(task) = task {
         creep.bsay("📋", false);
 
-        execute_order(creep, creepmem, cache, task);
+        execute_order(creep, memory, cache, task);
     } else {
         creep.bsay("🔋", false);
 

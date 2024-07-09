@@ -13,7 +13,7 @@ pub fn run_physical_observer(creep: &Creep, memory: &mut ScreepsMemory, cache: &
             if creep_room.name() != target_room {
                 creep.bsay(&format!("🔍 {}", target_room), true);
                 creep.better_move_to(
-                    creep_memory,
+                    memory,
                     cache.rooms.get_mut(&creep_room.name()).unwrap(),
                     Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), target_room),
                     23,
@@ -22,7 +22,7 @@ pub fn run_physical_observer(creep: &Creep, memory: &mut ScreepsMemory, cache: &
             } else {
                 if creep.pos().get_range_to(pos) > 23 {
                     creep.better_move_to(
-                        creep_memory,
+                        memory,
                         cache.rooms.get_mut(&creep_room.name()).unwrap(),
                         Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), target_room),
                         23,

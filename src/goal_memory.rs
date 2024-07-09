@@ -4,6 +4,12 @@ use screeps::{Part, RoomName};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RoomClaimGoal {
+    pub claim_target: RoomName,
+    pub creeps_assigned: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RoomReservationGoal {
     pub reservation_target: RoomName,
     pub accessible_reservation_spots: u8,
@@ -42,6 +48,7 @@ pub struct AttackingCreep {
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone, Default)]]
     pub struct GoalMemory {
+        pub room_claim: HashMap<RoomName, RoomClaimGoal>,
         pub room_reservation: HashMap<RoomName, RoomReservationGoal>,
 
         pub remote_defense: HashMap<RoomName, RemoteDefenseGoal>,

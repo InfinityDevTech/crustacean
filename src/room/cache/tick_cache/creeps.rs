@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, Creep, HasPosition, Room, SharedCreepProperties};
+use screeps::{find, game, Creep, HasPosition, Room, RoomXY, SharedCreepProperties};
 
 use crate::{
     constants::HOSTILE_PARTS, memory::{Role, ScreepsMemory}, utils::name_to_role
@@ -18,10 +18,10 @@ pub struct CreepCache {
     pub enemy_creeps_with_attack: Vec<Creep>,
     pub allied_creeps: Vec<Creep>,
 
-    pub creeps_at_pos: HashMap<u64, Creep>,
+    pub creeps_at_pos: HashMap<RoomXY, Creep>,
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepCache {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, structures: &RoomStructureCache) -> CreepCache {
         let mut cache = CreepCache {
@@ -45,8 +45,7 @@ impl CreepCache {
 
         for creep in creeps {
             if creep.my() {
-                let pos = creep.pos().y().u8() as u64 * 50 + creep.pos().x().u8() as u64;
-                self.creeps_at_pos.insert(pos.into(), creep.clone());
+                self.creeps_at_pos.insert(creep.pos().xy(), creep.clone());
 
                 self.creeps_in_room.insert(creep.name(), creep);
             } else if memory.allies.contains(&creep.owner().username()) {

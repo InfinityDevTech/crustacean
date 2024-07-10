@@ -71,6 +71,7 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_room_visual(room: &RoomName) {
     let circle_x = RoomCoordinate::new(46).unwrap();
     let circle_y = RoomCoordinate::new(46).unwrap();

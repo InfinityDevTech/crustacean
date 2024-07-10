@@ -3,7 +3,7 @@ use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, S
 use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::creep::CreepExtensions, utils::get_rampart_repair_rcl};
 use super::hauler;
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -12,7 +12,7 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
         if creep.store().get_free_capacity(None) == 0 {
             creep_memory.needs_energy = None;
         }
-        
+
         get_energy(creep, memory, cache);
         return;
     }

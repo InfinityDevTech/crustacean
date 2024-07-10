@@ -1,9 +1,11 @@
-use log::warn;
+use log::{info, warn};
 use screeps::{
     find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureProperties, StructureType
 };
 
-use crate::{memory::ScreepsMemory, room::creeps::global::scout, utils::get_my_username};
+use crate::{heap, memory::ScreepsMemory, room::creeps::global::scout, utils::get_my_username};
+
+use super::{caching::path_cache, utils::visualise_path};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
@@ -30,7 +32,7 @@ impl MoveOptions {
     }
 
     pub fn avoid_hostile_rooms(&mut self, avoid_hostile_rooms: bool) -> Self {
-        self.avoid_enemies = avoid_hostile_rooms;
+        self.avoid_hostile_rooms = avoid_hostile_rooms;
         *self
     }
 
@@ -45,12 +47,42 @@ pub struct MoveTarget {
     pub range: u32
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
+
+        let mut path_cache = path_cache().lock().unwrap();
+
+        if memory.remote_rooms.contains_key(&self.pos.room_name()) {
+                let possible_path = path_cache.source_to_dest.get(&(from, self.pos)).cloned();
+                if let Some(possible_path) = possible_path {
+                    info!("Found path in cache matching exact source and dest.");
+                    visualise_path(possible_path.clone(), from, "#ff0000");
+                    return self.serialize_path(from, possible_path, move_options, false);
+                }
+
+                let path = path_cache.find_path_were_on(from, self.pos);
+
+                if let Some(path) = path {
+                    info!("Found path that we are on.");
+                    visualise_path(path.clone(), from, "#ff0000");
+                    return self.serialize_path(from, path, move_options, false);
+                }
+
+                let closest_path_entrance = path_cache.find_closest_path_to_dest(from, self.pos);
+                let pos_on_path = closest_path_entrance.0;
+                let path = closest_path_entrance.1;
+
+                if let Some(pos_on_path) = pos_on_path {
+                    info!("Found closest path to dest.");
+                    visualise_path(path.unwrap().clone(), from, "#ff0000");
+                    self.pos = pos_on_path;
+                }
+        }
+
         let opts = SearchOptions::new(|room_name| {
-            path_call(room_name, memory, move_options)
+            path_call(room_name, from, memory, move_options)
         })
             .plain_cost(2)
             .swamp_cost(5)
@@ -59,23 +91,26 @@ impl MoveTarget {
 
         let search = self.pathfind(from, Some(opts));
 
+        if !search.incomplete() && memory.remote_rooms.contains_key(&self.pos.room_name()) {
+            path_cache.cache_path(from, search.path());
+        }
 
-        self.serialize_path(from, search.clone().into(), move_options)
+        visualise_path(search.path().clone(), from, "#ff0000");
+        self.serialize_path(from, search.path(), move_options, false)
     }
 
     pub fn pathfind(&mut self, from: Position, opts: Option<SearchOptions<impl FnMut(RoomName) -> MultiRoomCostResult>>) -> SearchResults {
         pathfinder::search(from, self.pos, self.range, opts)
     }
 
-    pub fn serialize_path(&mut self, from: Position, search: SearchResults, move_options: MoveOptions) -> String {
+    pub fn serialize_path(&mut self, from: Position, positions: Vec<Position>, move_options: MoveOptions, path_age_override: bool) -> String {
         let mut cur_pos = from;
-        let positions = search.path();
         let mut steps = Vec::with_capacity(positions.len());
 
         let path_age = move_options.path_age as usize;
 
         for pos in positions {
-            if steps.len() >= path_age {
+            if (steps.len() >= path_age) && !path_age_override {
                 break;
             }
 
@@ -108,11 +143,16 @@ impl MoveTarget {
 
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn path_call(room_name: RoomName, memory: &mut ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn path_call(room_name: RoomName, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
-    if move_options.avoid_hostile_rooms {
+    if let Some(cached_matrix) = heap().per_tick_cost_matrixes.lock().unwrap().get(&room_name) {
+        return MultiRoomCostResult::CostMatrix(cached_matrix.clone().into());
+    }
+
+    // Avoids an issue where it makes creeps unable to move if the room they are in is suddenly hostile
+    if move_options.avoid_hostile_rooms && from.room_name() != room_name {
         if let Some(room) = game::rooms().get(room_name) {
             let invader_owner = if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
                 scouting_data.invader_core.unwrap_or(false)
@@ -120,23 +160,25 @@ pub fn path_call(room_name: RoomName, memory: &mut ScreepsMemory, move_options: 
                 false
             };
 
-            if room.controller().is_none() || room.controller().unwrap().owner().is_some() || invader_owner {
+            if room.controller().is_some() && (room.controller().unwrap().owner().is_some() && room.controller().unwrap().owner().unwrap().username() != get_my_username()) || invader_owner {
                 for x in 0..50 {
                     for y in 0..50 {
                         let xy = unsafe { RoomXY::unchecked_new(x, y) };
                         matrix.set(xy, 255);
                     }
                 }
+                heap().per_tick_cost_matrixes.lock().unwrap().insert(room_name, matrix.clone());
                 return MultiRoomCostResult::CostMatrix(matrix.into());
             }
         } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
-            if scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()) || scouting_data.invader_core.unwrap_or(false) {
+            if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username())) || scouting_data.invader_core.unwrap_or(false) {
                 for x in 0..50 {
                     for y in 0..50 {
                         let xy = unsafe { RoomXY::unchecked_new(x, y) };
                         matrix.set(xy, 255);
                     }
                 }
+                heap().per_tick_cost_matrixes.lock().unwrap().insert(room_name, matrix.clone());
                 return MultiRoomCostResult::CostMatrix(matrix.into());
             }
         }
@@ -146,7 +188,6 @@ pub fn path_call(room_name: RoomName, memory: &mut ScreepsMemory, move_options: 
         let structures = room.find(find::STRUCTURES, None);
         let constructions = room.find(find::CONSTRUCTION_SITES, None);
         let creeps = room.find(find::CREEPS, None);
-        let terrain = LocalRoomTerrain::from(room.get_terrain());
 
         // This might be redundant. I might be a dunce.
         /*for x in 0..50 {
@@ -268,5 +309,6 @@ pub fn path_call(room_name: RoomName, memory: &mut ScreepsMemory, move_options: 
     }
 
     *count += 1;*/
+    heap().per_tick_cost_matrixes.lock().unwrap().insert(room_name, matrix.clone());
     MultiRoomCostResult::CostMatrix(matrix.into())
 }

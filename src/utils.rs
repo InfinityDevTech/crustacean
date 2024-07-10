@@ -112,6 +112,7 @@ pub fn role_to_name(role: Role) -> String {
         Role::PhysicalObserver => "po",
         Role::Unclaimer => "uc",
         Role::Recycler => "rc",
+        Role::ExpansionBuilder => "eb",
 
         Role::Claimer => "cl",
         Role::Reserver => "rs",
@@ -148,6 +149,8 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "rs" => { Some(Role::Reserver) },
         "rd" => { Some(Role::RemoteDefender) },
         "ic" => { Some(Role::InvaderCleaner) },
+
+        "eb" => { Some(Role::ExpansionBuilder) }
         _ => { None },
     }
 }

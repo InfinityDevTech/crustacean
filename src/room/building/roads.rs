@@ -3,6 +3,7 @@
 use log::info;
 use screeps::{Source, StructureSpawn, HasPosition, pathfinder::{SearchOptions, MultiRoomCostResult, self}, RoomName, LocalCostMatrix, game, StructureType, find, StructureProperties, look};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
     let opts = SearchOptions::new(road_callback).max_ops(100000000).plain_cost(2).swamp_cost(5).max_rooms(1);
     let path = pathfinder::search(spawn.pos(), source.pos(), 1, Some(opts));
@@ -24,6 +25,7 @@ pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn road_callback(room_name: RoomName) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
     if let Some(room) = game::rooms().get(room_name) {

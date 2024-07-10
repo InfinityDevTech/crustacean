@@ -76,7 +76,7 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
 

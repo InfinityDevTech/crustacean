@@ -11,7 +11,7 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
     let creep_memory = memory.creeps.get_mut(&creep.name());
-    if creep_memory.is_none() {
+    if creep_memory.is_none() || creep.spawning() {
         return;
     }
     let creep_memory = creep_memory.unwrap();
@@ -31,7 +31,7 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 if creep.pos().is_near_to(flag.pos()) {
                     creep.bsay("👁️", true);
                 } else {
-                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
                 }
                 return;
             }
@@ -41,7 +41,7 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     creep.bsay("JK - <3 U", true);
                 } else {
                     creep.bsay("DIE DIE DIE", true);
-                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                    creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
                 }
                 return;
             }
@@ -64,16 +64,20 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
                     if controller.reservation().is_none() && memory.remote_rooms.contains_key(&creep.room().unwrap().name()) {
                         let _ = creep.reserve_controller(&controller);
+                    } else if controller.owner().is_none() && memory.goals.room_claim.contains_key(&creep.room().unwrap().name()) {
+                        let _ = creep.claim_controller(&controller);
                     } else {
-                        let _ = creep.attack_controller(&controller);
+                        let res = creep.attack_controller(&controller);
+                        creep.bsay(&format!("{:?}", res), true);
                     }
                 } else {
-                    creep.better_move_to(memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
+                    creep.bsay("🚚", false);
+                    creep.better_move_to(memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
                 }
             }
         } else {
             creep.bsay("🚚", false);
-            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
+            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
         }
     } else {
         creep.bsay("❓", false);

@@ -3,10 +3,10 @@ use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Room, Ro
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
-    room::cache::tick_cache::CachedRoom, traits::room::RoomExtensions,
+    room::cache::tick_cache::CachedRoom, traits::room::RoomExtensions, utils,
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
     if memory.rooms.contains_key(&room.name()) {
         return;
@@ -47,7 +47,7 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
         None
     };
 
-    let sources: Vec<RoomXY> = cached_room.resources.sources.iter().map(|x| game::get_object_by_id_typed(&x.id).unwrap().pos().xy()).collect();
+    let sources: Vec<RoomXY> = cached_room.resources.sources.iter().map(|x| x.source.pos().xy()).collect();
     let sources = if sources.is_empty() {
         None
     } else {
@@ -56,7 +56,7 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
 
     let scouted_room = ScoutedRoom {
         name: room_name,
-        room_type: room.room_type(),
+        room_type: utils::room_type(&room_name),
         rcl: room_rcl,
         owner: owner.clone(),
         invader_core: invader_owned,

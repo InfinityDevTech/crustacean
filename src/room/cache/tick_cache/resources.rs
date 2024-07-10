@@ -2,13 +2,13 @@ use std::{cmp, collections::HashMap};
 
 use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{memory::{Role, ScreepsMemory}, room::{cache::heap_cache::RoomHeapCache, creeps::local::fast_filler}, utils::scale_haul_priority};
+use crate::{memory::{Role, ScreepsMemory}, room::{cache::heap_cache::RoomHeapCache, creeps::local::{fast_filler, upgrader}}, utils::scale_haul_priority};
 
 use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
 #[derive(Debug, Clone)]
 pub struct CachedSource {
-    pub id: ObjectId<Source>,
+    pub source: Source,
     pub creeps: Vec<ObjectId<Creep>>,
 
     pub link: Option<ObjectId<StructureLink>>,
@@ -101,7 +101,7 @@ impl RoomResourceCache {
             let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 2);
 
             let constructed_source = CachedSource {
-                id: source.id(),
+                source: source,
                 creeps: Vec::new(),
 
                 link: None,
@@ -121,8 +121,7 @@ impl CachedSource {
             return Some(game::get_object_by_id_typed(&container_id).unwrap());
         }
 
-        let source = game::get_object_by_id_typed(&self.id).unwrap();
-        let pos = source.pos();
+        let pos = self.source.pos();
 
         let mut found_container = None;
 
@@ -148,8 +147,7 @@ impl CachedSource {
             return Some(game::get_object_by_id_typed(&link_id).unwrap());
         }
 
-        let source = game::get_object_by_id_typed(&self.id).unwrap();
-        let pos = source.pos();
+        let pos = self.source.pos();
 
         let mut found_link = None;
 
@@ -171,8 +169,7 @@ impl CachedSource {
     }
 
     pub fn parts_needed(&self) -> u8 {
-        let source: Source = game::get_object_by_id_typed(&self.id).unwrap();
-        let max_energy = source.energy_capacity();
+        let max_energy = self.source.energy_capacity();
 
         // Each work part equates to 2 energy per tick
         // Each source refills energy every 300 ticks.
@@ -192,10 +189,8 @@ impl CachedSource {
     }
 
     pub fn calculate_mining_spots(&self, room: &Room) -> u8 {
-        let source = game::get_object_by_id_typed(&self.id).unwrap();
-
-        let x = source.pos().x().u8();
-        let y = source.pos().y().u8();
+        let x = self.source.pos().x().u8();
+        let y = self.source.pos().y().u8();
 
         let areas = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
         let mut available_spots = 0;
@@ -233,7 +228,7 @@ impl CachedSource {
     
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote_name in memory.rooms.get(&launching_room.name()).unwrap().remotes.clone().iter() {
         let remote_room = game::rooms().get(*remote_name);
@@ -283,7 +278,8 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers.controller {
-        if controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links.controller.is_none() {
+        let upgrader_count = cached_room.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
+        if (controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links.controller.is_none()) && upgrader_count > 0 {
 
             // TODO: Fix this, its sucking up energy
             // My rooms are dying lmao.

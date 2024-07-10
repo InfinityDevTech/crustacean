@@ -2,6 +2,7 @@ use screeps::{Creep, HasPosition, Position, RoomCoordinate, RoomPosition, Shared
 
 use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 

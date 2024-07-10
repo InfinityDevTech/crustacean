@@ -5,7 +5,9 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::prelude::SliceRandom;
 use screeps::{game, look, Creep, Direction, HasPosition, Part, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
+use crate::movement::move_target::{MoveOptions, MoveTarget};
 use crate::room::cache::tick_cache::RoomCache;
+use crate::traits::position::RoomXYExtensions;
 use crate::utils::get_unique_id;
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
@@ -30,7 +32,7 @@ pub struct SpawnManager {
     pub global_spawn_queue: Vec<SpawnRequest>,
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl SpawnManager {
     pub fn new() -> Self {
         Self {
@@ -161,6 +163,182 @@ impl SpawnManager {
     }
 }
 
+pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
+    let owning_cache = cache.rooms.get(&room.name()).unwrap();
+
+    let body = crate::room::spawning::creep_sizing::hauler_body(room);
+    let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
+
+    let mut carry_requirement = 0;
+
+    if room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200 {
+        for remote in &room_memory.remotes {
+            if game::rooms().get(*remote).is_some() {
+                let room_cache = cache.rooms.get(remote).unwrap();
+
+                for source in &room_cache.resources.sources {
+                    let source_ept = (source.calculate_work_parts() * 2) as u128;
+                    let source = source.source.clone();
+
+                    let (out_steps, in_steps) = if let Some(storage) =
+                        &owning_cache.structures.storage
+                    {
+                        let mut out_target = MoveTarget {
+                            pos: source.pos(),
+                            range: 1,
+                        };
+                        let mut in_target = MoveTarget {
+                            pos: storage.pos(),
+                            range: 1,
+                        };
+
+                        let out_steps = out_target
+                            .find_path_to(
+                                storage.pos(),
+                                memory,
+                                MoveOptions::default().path_age(u8::MAX),
+                            )
+                            .len() as u128;
+                        let in_steps = in_target
+                            .find_path_to(
+                                source.pos(),
+                                memory,
+                                MoveOptions::default().path_age(u8::MAX),
+                            )
+                            .len() as u128;
+
+                        (out_steps, in_steps)
+                    } else {
+                        let spawn = owning_cache
+                            .spawn_center
+                            .unwrap()
+                            .as_position(&owning_cache.room_name);
+
+                        let mut out_target = MoveTarget {
+                            pos: source.pos(),
+                            range: 1,
+                        };
+                        let mut in_target = MoveTarget {
+                            pos: spawn,
+                            range: 1,
+                        };
+
+                        let out_steps = out_target
+                            .find_path_to(spawn, memory, MoveOptions::default().path_age(u8::MAX))
+                            .len() as u128;
+                        let in_steps = in_target
+                            .find_path_to(
+                                source.pos(),
+                                memory,
+                                MoveOptions::default().path_age(u8::MAX),
+                            )
+                            .len() as u128;
+
+                        (out_steps, in_steps)
+                    };
+
+                    carry_requirement += source_ept * (out_steps + in_steps);
+                }
+            }
+        }
+
+        for source in &owning_cache.resources.sources {
+            let source_ept = (source.calculate_work_parts() * 2) as u128;
+            let source = source.source.clone();
+
+            let (out_steps, in_steps) = if let Some(storage) = &owning_cache.structures.storage {
+                let mut out_target = MoveTarget {
+                    pos: source.pos(),
+                    range: 1,
+                };
+                let mut in_target = MoveTarget {
+                    pos: storage.pos(),
+                    range: 1,
+                };
+
+                let out_steps = out_target
+                    .find_path_to(
+                        storage.pos(),
+                        memory,
+                        MoveOptions::default().path_age(u8::MAX),
+                    )
+                    .len() as u128;
+                let in_steps = in_target
+                    .find_path_to(
+                        source.pos(),
+                        memory,
+                        MoveOptions::default().path_age(u8::MAX),
+                    )
+                    .len() as u128;
+
+                (out_steps, in_steps)
+            } else {
+                let spawn = owning_cache
+                    .spawn_center
+                    .unwrap()
+                    .as_position(&owning_cache.room_name);
+
+                let mut out_target = MoveTarget {
+                    pos: source.pos(),
+                    range: 1,
+                };
+                let mut in_target = MoveTarget {
+                    pos: spawn,
+                    range: 1,
+                };
+
+                let out_steps = out_target
+                    .find_path_to(spawn, memory, MoveOptions::default().path_age(u8::MAX))
+                    .len() as u128;
+                let in_steps = in_target
+                    .find_path_to(
+                        source.pos(),
+                        memory,
+                        MoveOptions::default().path_age(u8::MAX),
+                    )
+                    .len() as u128;
+
+                (out_steps, in_steps)
+            };
+
+            carry_requirement += source_ept * (out_steps + in_steps);
+        }
+
+        let wanted_hauler_count = (carry_requirement as f32) / (carry_count as f32 * 50.0);
+
+        let mut hauler_count = if wanted_hauler_count < 3.0 {
+            3
+        } else {
+            wanted_hauler_count.round() as u32
+        };
+
+        //if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
+        //    hauler_count = (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() as u32;
+        //}
+
+        let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
+        let max = match owning_cache.rcl {
+            1 => 20,
+            2 => 40,
+            3 => 70,
+            4 => 100,
+            5 => 100,
+            6 => 100,
+            7 => 100,
+            8 => 100,
+            _ => 100,
+        };
+
+        let clamped = hauler_count.clamp(3, max);
+        room_memory.hauler_count = clamped;
+
+        info!("[HAULER SCAN] Initiated hauler scan for room {} - hauler count: {} - carry requirement: {}", room.name(), clamped, carry_requirement);
+    }
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for room in &cache.my_rooms.clone() {
         let room = game::rooms().get(*room).unwrap();
@@ -252,6 +430,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn randomize_top_priorities(requests: Vec<SpawnRequest>) -> Vec<SpawnRequest> {
     let mut top_scorers = Vec::new();
     if requests.is_empty() {

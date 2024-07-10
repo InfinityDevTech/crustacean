@@ -2,6 +2,7 @@ use screeps::{game, Creep, Part, SharedCreepProperties};
 
 use crate::{combat::goals::determine_single_attack_power, config, constants::{self, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut ScreepsMemory) {
     let mut mark_dangerous = Vec::new();
 
@@ -65,6 +66,7 @@ pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut Screep
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn invader_only_attack(goal: &RemoteDefenseGoal) -> bool {
     for attacker in &goal.attacker_names {
         if attacker != config::INVADER_USERNAME {

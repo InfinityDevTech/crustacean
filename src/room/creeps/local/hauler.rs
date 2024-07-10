@@ -87,7 +87,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn decide_energy_need(creep: &Creep, memory: &mut ScreepsMemory, _cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     if creep_memory.role == Role::Hauler {
@@ -113,7 +113,7 @@ pub fn decide_energy_need(creep: &Creep, memory: &mut ScreepsMemory, _cache: &mu
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn execute_order(
     creep: &Creep,
     memory: &mut ScreepsMemory,
@@ -256,7 +256,7 @@ pub fn execute_order(
             MoveOptions::default().path_age(6),
         );
 
-        let _ = match order.haul_type {
+        match order.haul_type {
             HaulingType::Offer => creep.bsay("MV-OFFR", false),
             HaulingType::Withdraw => creep.bsay("MV-WTHD", false),
             HaulingType::Pickup => creep.bsay("MV-PKUP", false),
@@ -441,7 +441,7 @@ pub fn execute_order(
     false
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn release_reservation(
     creep: &Creep,
     _room_cache: &mut CachedRoom,
@@ -452,8 +452,6 @@ pub fn release_reservation(
     if let Some(reservation) = heap_hauling.reserved_orders.get_mut(&order.target_id) {
         reservation.reserved_amount -= amount_hauled;
         reservation.creeps_assigned.retain(|x| x != &creep.name());
-
-        info!("{} is releasing reservation, {:?}", creep.name(), order.haul_type);
 
         if reservation.reserved_amount <= 0 || reservation.creeps_assigned.is_empty() {
             heap_hauling.reserved_orders.remove(&order.target_id);

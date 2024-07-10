@@ -8,6 +8,7 @@ use std::{
 use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
+use movement::caching::path_cache;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::tick_cache::{hauling, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
@@ -62,7 +63,7 @@ pub fn init() {
 pub fn game_loop() {
     #[cfg(feature = "profile")]
     {
-        if game::cpu::bucket() > 1000 {
+        if game::cpu::bucket() > 200 {
             screeps_timing::start_trace(Box::new(|| {
                 (screeps::game::cpu::get_used() * 1000.0) as u64
             }));
@@ -119,6 +120,8 @@ pub fn game_loop() {
 
     for room in cache.my_rooms.clone().iter() {
         hauling::match_haulers(&mut cache, &mut memory, room);
+
+        spawn_manager::calculate_hauler_needs(&game::rooms().get(*room).unwrap(), &mut memory, &mut cache);
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
 
@@ -187,7 +190,7 @@ pub fn game_loop() {
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
-    if game::time() % 10 == 0 && game::cpu::bucket() > 3000 && game::cpu::get_used() < 300.0 {
+    if (game::time() % 10 == 0 && game::cpu::bucket() > 3000 && game::cpu::get_used() < 300.0) || game::time() % 50 == 0 {
         info!("[MEMORY] Writing memory!");
         memory.write_memory();
     } else {
@@ -201,6 +204,9 @@ pub fn game_loop() {
     }
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
+    heap().per_tick_cost_matrixes.lock().unwrap().clear();
+
+    path_cache().lock().unwrap().visualise_all_paths();
 
     let heap = game::cpu::get_heap_statistics();
     let used = ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64)
@@ -227,7 +233,7 @@ pub fn game_loop() {
 
     #[cfg(feature = "profile")]
     {
-        if game::cpu::bucket() > 1000 {
+        if game::cpu::bucket() > 200 {
             let trace = screeps_timing::stop_trace();
 
             if let Ok(trace_output) = serde_json::to_string(&trace) {

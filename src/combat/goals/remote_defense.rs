@@ -5,6 +5,7 @@ use crate::{constants::{self, part_attack_weight, HOSTILE_PARTS}, goal_memory::{
 
 use super::{determine_group_attack_power, determine_single_attack_power};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.remote_defense.clone();
     let defense_goals = cloned_goals.keys();
@@ -14,6 +15,7 @@ pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn clear_creeps(goal: &mut RemoteDefenseGoal) {
     let mut new_creeps = Vec::new();
 
@@ -28,6 +30,7 @@ pub fn clear_creeps(goal: &mut RemoteDefenseGoal) {
     goal.creeps_assigned = new_creeps;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
         remote_mem.under_attack = true;
@@ -121,6 +124,7 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn decrease_ttl(goal_room: &RoomName, memory: &mut ScreepsMemory) -> bool {
     let goal = memory.goals.remote_defense.get_mut(goal_room).unwrap();
     let mut new_creeps = Vec::new();
@@ -153,6 +157,7 @@ fn decrease_ttl(goal_room: &RoomName, memory: &mut ScreepsMemory) -> bool {
     false
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, cache: &mut RoomCache) {
     let stamp = vec![Part::RangedAttack, Part::RangedAttack, Part::Heal, Part::Move, Part::Move, Part::Move];
     let stamp_cost = stamp.iter().map(|part| part.cost()).sum::<u32>();

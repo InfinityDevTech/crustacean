@@ -8,7 +8,7 @@ pub mod structure_visuals;
 pub mod remotes;
 pub mod roads;
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     if game::cpu::bucket() < 500 {
         info!("  [PLANNER] CPU bucket is too low to plan room: {}", room.name_str());
@@ -19,18 +19,24 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
     let my_spawn = room.find(find::MY_SPAWNS, None);
     let my_storage = room.find(find::MY_STRUCTURES, None).into_iter().filter(|s| s.structure_type() == screeps::StructureType::Storage).collect::<Vec<_>>();
-    if my_spawn.is_empty() {
-        info!("[PLANNER]  No spawns in room! Skipping planning!");
-        return false;
-    }
+    let spawn_pos = if my_spawn.is_empty() {
+        info!("[PLANNER]  No spawns in room! Attempting to use construction sites!");
 
-    let mut spawn = my_spawn.first().unwrap();
+        let spawn_csite = room.find(find::CONSTRUCTION_SITES, None).into_iter().filter(|s| s.structure_type() == screeps::StructureType::Spawn).collect::<Vec<_>>();
 
-    let spawn = unsafe { RoomXY::unchecked_new(spawn.pos().x().u8(), spawn.pos().y().u8() - 1) };
+        if spawn_csite.is_empty() {
+            info!("[PLANNER]  No spawn construction sites in room! Skipping planning!");
+            return false;
+        }
+
+        unsafe { RoomXY::unchecked_new(spawn_csite.first().unwrap().pos().x().u8(), spawn_csite.first().unwrap().pos().y().u8() - 1) }
+    } else {
+        unsafe { RoomXY::unchecked_new(my_spawn.first().unwrap().pos().x().u8(), my_spawn.first().unwrap().pos().y().u8() - 1) }
+    };
 
     let store_pos = if my_storage.is_empty() {
-        let spawn_x = spawn.x.u8();
-        let spawn_y = spawn.y.u8();
+        let spawn_x = spawn_pos.x.u8();
+        let spawn_y = spawn_pos.y.u8();
 
         unsafe { RoomXY::unchecked_new(spawn_x + 1, spawn_y + 3) }
     } else {
@@ -48,7 +54,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         creeps: Vec::new(),
         remotes: Vec::new(),
 
-        spawn_center: spawn,
+        spawn_center: spawn_pos,
         storage_center: store_pos,
 
         hauler_count: 0,
@@ -63,6 +69,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
     true
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn convert_path_to_roads(room: &Room, result: SearchResults) {
     if result.incomplete() {
         return;

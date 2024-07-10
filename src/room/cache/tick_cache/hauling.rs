@@ -118,7 +118,7 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -213,10 +213,10 @@ impl HaulingCache {
             }
         }
 
-        let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
-        let room_visual = game::rooms().get(position.room_name()).unwrap().visual();
+        //let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
+        //let room_visual = game::rooms().get(position.room_name()).unwrap().visual();
 
-        room_visual.circle(
+        /*room_visual.circle(
             position.x().u8() as f32,
             position.y().u8() as f32,
             Some(
@@ -243,6 +243,8 @@ impl HaulingCache {
                 Some(TextStyle::default().color("#00ff00")),
             );
         }
+
+        */
 
         self.new_orders.insert(id, order);
     }
@@ -584,11 +586,10 @@ pub fn attempt_relay(
         .get_mut(&current_creep.room().unwrap().name())
         .unwrap();
 
-    let flattened_coord = coord.y().u8() as u64 * 50 + coord.x().u8() as u64;
     if let Some(target_creep) = current_room_cache
         .creeps
         .creeps_at_pos
-        .get(&flattened_coord)
+        .get(&coord.xy())
     {
         let [current_creep_memory, target_creep_memory] = memory
             .creeps

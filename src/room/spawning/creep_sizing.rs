@@ -7,7 +7,7 @@ use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_
 
 
 /// Returns the parts needed for a miner creep
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Part> {
     let mut parts = vec![Part::Work, Part::Carry, Part::Move];
 
@@ -85,8 +85,9 @@ pub fn hauler_body(room: &Room) -> Vec<Part> {
     body
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
-    let hauler_count = cache.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+    let hauler_count = cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).len();
 
     let max_energy = if hauler_count > 0 {
         room.energy_capacity_available()
@@ -94,8 +95,8 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         room.energy_available()
     };
 
-    let mut body = vec![Part::Move];
-    let mut cost = 50;
+    let mut body = vec![Part::Move, Part::Carry];
+    let mut cost = 100;
 
     let stamp_cost = if cache.rcl >= 4 {
         150

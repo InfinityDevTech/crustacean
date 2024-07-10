@@ -65,6 +65,8 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Scout => global::scout::run_scout(&creep, memory, cache),
             Role::RemoteHarvester => remote::remote_harvester::run_remoteharvester(&creep, memory, cache),
 
+            Role::ExpansionBuilder => global::expansion_builder::run_expansionbuilder(&creep, memory, cache),
+
             Role::Claimer => global::claimer::run_claimer(&creep, memory, cache),
             Role::Unclaimer => global::unclaimer::run_unclaimer(&creep, memory, cache),
             Role::Recycler => global::recycler::run_recycler(&creep, memory, cache),
@@ -87,6 +89,12 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
         let end_time = game::cpu::get_used();
         let cpu_used = end_time - start_time;
+
+        if cpu_used > 10.0 {
+            info!("  [CREEPS] Suiciding {} due to high CPU usage: {}", creep.name(), cpu_used);
+
+            let _ = creep.suicide();
+        }
 
         if cpu_used > highest_usage {
             highest_usage = cpu_used;

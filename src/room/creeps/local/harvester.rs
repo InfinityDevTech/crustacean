@@ -8,7 +8,7 @@ use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::cache::tick_cache::{CachedRoom, RoomCache},
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, position::PositionExtensions},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -27,11 +27,11 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     let scouted_source = &mut cached_room.resources.sources[pointer_index];
     scouted_source.creeps.push(creep.try_id().unwrap());
 
+    let source = scouted_source.source.clone();
+
     if creep.spawning() {
         info!("Spawning creep has registered with source.");
     }
-
-    let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
 
     if creep.spawning() || creep.tired() {
         creep.bsay("😴", false);
@@ -50,7 +50,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvest_source(
     creep: &Creep,
     source: Source,
@@ -60,7 +60,22 @@ pub fn harvest_source(
     if !creep.pos().is_near_to(source.pos()) {
         creep.bsay("🚚 🔋", false);
 
-        creep.better_move_to(memory, cache, source.pos(), 1, MoveOptions::default());
+        let open_pos = source.pos().get_accessible_positions_around(1);
+        let mut available_positons = Vec::new();
+
+        for pos in open_pos {
+            let xy = pos.xy();
+
+            if cache.creeps.creeps_at_pos.contains_key(&xy) {
+                continue;
+            }
+
+            available_positons.push(pos);
+        }
+
+        if let Some(pos) = available_positons.first() {
+            creep.better_move_to(memory, cache, *pos, 0, MoveOptions::default());
+        }
 
         None
     } else {
@@ -94,7 +109,7 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Cache
     false
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     creep.bsay("📦", false);
 

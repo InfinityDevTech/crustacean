@@ -2,6 +2,7 @@ use screeps::{game, HasPosition, OwnedStructureProperties, Position, Room, RoomC
 
 use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::{PositionExtensions, RoomXYExtensions}, utils::get_my_username};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote in memory.remote_rooms.values() {
         let exists = memory.goals.room_reservation.contains_key(&remote.name);
@@ -21,7 +22,7 @@ pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
             let goal = RoomReservationGoal {
                 reservation_target: remote.name,
-                accessible_reservation_spots: accessible_reservation_points,
+                accessible_reservation_spots: accessible_reservation_points.len() as u8,
                 creeps_assigned: Vec::new(),
             };
 
@@ -30,6 +31,7 @@ pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache)
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &RoomCache) -> bool {
     let remote_memory = memory.remote_rooms.get(&room.name());
     if remote_memory.is_none() {

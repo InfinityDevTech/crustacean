@@ -1,56 +1,37 @@
-use screeps::{Direction, game, RoomName, PolyStyle, RectStyle};
+use std::collections::HashMap;
 
-pub fn visualise_path(path: String, room_name: String, starting_pos: (f32, f32), incomplete: bool) {
-    let room = game::rooms()
-        .get(RoomName::new(&room_name).unwrap());
+use screeps::{game, Direction, PolyStyle, Position, RectStyle, RoomName, RoomXY};
 
-    if room.is_none() { return; }
-    let room = room.unwrap();
+pub fn visualise_path(path: Vec<Position>, from_pos: Position, color: &str) {
+    let room_name = from_pos.room_name();
 
-    let room_vis = room.visual();
-    let mut points = vec![];
-    let mut cursor = starting_pos;
+    let style = PolyStyle::default()
+    .stroke(color)
+    .line_style(screeps::LineDrawStyle::Dashed);
 
-    for step in path.split("") {
-        if step.is_empty() || step == " " {
-            continue;
+    let mut points_for_room: HashMap<RoomName, Vec<(f32, f32)>> = HashMap::new();
+
+    for step in path {
+        let points = (step.x().u8() as f32, step.y().u8() as f32);
+
+        if let Some(existing_points) = points_for_room.get_mut(&step.room_name()) {
+            existing_points.push(points);
+        } else {
+            points_for_room.insert(step.room_name(), vec![points]);
         }
-        let dir = num_to_dir(step.parse::<u8>().unwrap());
-        points.push((cursor.0, cursor.1));
-        let (x, y) = dir_to_coords(dir, cursor.0 as u8, cursor.1 as u8);
-        cursor = (x as f32, y as f32);
     }
 
-    let style = if incomplete {
-        PolyStyle::default()
-                .stroke("#ffff00")
-                .line_style(screeps::LineDrawStyle::Dashed)
-    } else {
-        PolyStyle::default()
-                .stroke("#ff0000")
-                .line_style(screeps::LineDrawStyle::Dashed)
-    };
+    for (room_name, points) in points_for_room {
+        let room = game::rooms().get(room_name);
 
+        if room.is_none() {
+            continue;
+        }
 
-    points.push((cursor.0, cursor.1));
-    room_vis.poly(
-        points,
-        Some(
-            style,
-        ),
-    );
-    room_vis.rect(
-        cursor.0 - 0.5,
-        cursor.1 - 0.5,
-        1.0,
-        1.0,
-        Some(
-            RectStyle::default()
-                .stroke("#ff0000")
-                .fill("#ff0000")
-                .opacity(0.2),
-        ),
-    );
+        let room = room.unwrap();
+
+        room.visual().poly(points, Some(style.clone()));
+    }
 }
 
 pub fn num_to_dir(num: u8) -> Direction {
@@ -63,6 +44,23 @@ pub fn num_to_dir(num: u8) -> Direction {
         6 => Direction::BottomLeft,
         7 => Direction::Left,
         8 => Direction::TopLeft,
+        _ => Direction::Top,
+    }
+}
+
+pub fn dir_to_other_coord(source: RoomXY, dest: RoomXY) -> Direction {
+    let x_diff = dest.x.u8() as i8 - source.x.u8() as i8;
+    let y_diff = dest.y.u8() as i8 - source.y.u8() as i8;
+
+    match (x_diff, y_diff) {
+        (0, -1) => Direction::Top,
+        (1, -1) => Direction::TopRight,
+        (1, 0) => Direction::Right,
+        (1, 1) => Direction::BottomRight,
+        (0, 1) => Direction::Bottom,
+        (-1, 1) => Direction::BottomLeft,
+        (-1, 0) => Direction::Left,
+        (-1, -1) => Direction::TopLeft,
         _ => Direction::Top,
     }
 }

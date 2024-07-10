@@ -8,7 +8,7 @@ use crate::{
     }, traits::{creep::CreepExtensions, room::RoomExtensions}
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
@@ -23,7 +23,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             remote_room.resources.sources[creep_memory.task_id.unwrap() as usize].creeps.push(creep.try_id().unwrap());
         }
 
-        if creep.tired() {
+        if creep.tired() || creep.spawning() {
             creep.bsay("😴", false);
             return;
         }
@@ -63,7 +63,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             let scouted_source = &mut room_cache.resources.sources[creep_memory.task_id.unwrap() as usize];
             scouted_source.creeps.push(creep.try_id().unwrap());
 
-            let source = game::get_object_by_id_typed(&scouted_source.id).unwrap();
+            let source = scouted_source.source.clone();
 
             if creep.store().get_used_capacity(None) as f32 >= (creep.store().get_capacity(None) as f32 * 0.5) {
                 deposit_enegy(creep, memory, room_cache);
@@ -97,12 +97,7 @@ pub fn build_container(
     creep_memory: &mut CreepMemory,
     cache: &mut CachedRoom,
 ) -> bool {
-    let source = game::get_object_by_id_typed(
-        &cache.resources.sources[creep_memory.task_id.unwrap() as usize]
-            .id
-            .clone(),
-    )
-    .unwrap();
+    let source = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].source;
 
     for csite in &cache.structures.construction_sites {
         if csite.structure_type() == screeps::StructureType::Container

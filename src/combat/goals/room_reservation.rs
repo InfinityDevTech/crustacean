@@ -8,6 +8,7 @@ use crate::{
     utils::{self, get_body_cost, get_unique_id, role_to_name},
 };
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.room_reservation.clone();
     let reservation_goals = cloned_goals.keys();
@@ -17,6 +18,7 @@ pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn clear_creeps(goal: &mut RoomReservationGoal) {
     let mut new_creeps = Vec::new();
 
@@ -31,6 +33,7 @@ pub fn clear_creeps(goal: &mut RoomReservationGoal) {
     goal.creeps_assigned = new_creeps;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn attain_reservation(
     target_room: &RoomName,
     memory: &mut ScreepsMemory,
@@ -67,6 +70,7 @@ pub fn attain_reservation(
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_claim_parts(goal: &RoomReservationGoal) -> u8 {
     let mut count = 0;
 
@@ -83,6 +87,7 @@ pub fn get_claim_parts(goal: &RoomReservationGoal) -> u8 {
     count
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<String> {
     let room = utils::find_closest_owned_room(&goal.reservation_target, cache, Some(4));
 

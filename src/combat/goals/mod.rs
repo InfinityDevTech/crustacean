@@ -7,6 +7,7 @@ pub mod remote_defense;
 pub mod remote_invader_cleanup;
 pub mod room_claim;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_goal_handlers(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     room_reservation::run_goal(memory, cache);
     remote_defense::run_goal(memory, cache);
@@ -14,6 +15,7 @@ pub fn run_goal_handlers(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     room_claim::run_goal(memory, cache);
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_group_attack_power(creeps: &Vec<&Creep>) -> u32 {
     let mut total_power = 0;
 
@@ -27,6 +29,7 @@ pub fn determine_group_attack_power(creeps: &Vec<&Creep>) -> u32 {
     total_power
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_single_attack_power(creep: &Creep) -> u32 {
     let body = creep.body();
     body.iter().map(|p| constants::part_attack_weight(&p.part())).sum::<u32>()

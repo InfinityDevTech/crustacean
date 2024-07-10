@@ -16,7 +16,7 @@ use super::{
         }}, visuals::visualise_room_visual
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -122,8 +122,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             if room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 5000 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
-
-                info!("Setting remotes for room: {} - {:?}", room.name(), remotes);
             }
 
             room_cache.stats.spawning_stats(&mut room_cache.structures);
@@ -187,7 +185,7 @@ pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
     MultiRoomCostResult::CostMatrix(matrix.into())
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
 
     if game::cpu::bucket() < 500 {
@@ -241,6 +239,10 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
         };
 
         for structure in structures {
+            if room_cache.structures.spawns.is_empty() {
+                return;
+            }
+
             let offset_x = room_cache
                 .structures
                 .spawns
@@ -297,10 +299,8 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
         }
 
         for source in sources {
-            let source = game::get_object_by_id_typed(&source.id).unwrap();
-
-            let x = source.pos().x().u8();
-            let y = source.pos().y().u8();
+            let x = source.source.pos().x().u8();
+            let y = source.source.pos().y().u8();
 
             let looked = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
             for pos in looked {

@@ -47,6 +47,8 @@ pub enum Role {
     Bulldozer = 12,
     Unclaimer = 13,
 
+    ExpansionBuilder = 14,
+
     Claimer = 50,
     Reserver = 51,
     RemoteDefender = 52,

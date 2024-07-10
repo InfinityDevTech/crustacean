@@ -1,9 +1,17 @@
 use std::vec;
 
-use screeps::{game, memory, OwnedStructureProperties, Part, RoomName, SharedCreepProperties};
+use log::info;
+use screeps::{find, game, memory, Flag, HasPosition, OwnedStructureProperties, Part, RoomName, SharedCreepProperties, StructureType};
 
-use crate::{goal_memory::RoomClaimGoal, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::room::RoomExtensions, utils::{self, role_to_name}};
+use crate::{
+    goal_memory::RoomClaimGoal,
+    memory::{CreepMemory, Role, ScreepsMemory},
+    room::cache::tick_cache::RoomCache,
+    traits::room::RoomExtensions,
+    utils::{self, role_to_name},
+};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.room_claim.clone();
     let invader_goals = cloned_goals.keys();
@@ -13,6 +21,7 @@ pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn clear_creeps(goal: &mut RoomClaimGoal) {
     let mut new_creeps = Vec::new();
 
@@ -27,6 +36,7 @@ pub fn clear_creeps(goal: &mut RoomClaimGoal) {
     goal.creeps_assigned = new_creeps;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let goal = memory.goals.room_claim.get_mut(goal_room).unwrap();
     let goal_game_room = game::rooms().get(*goal_room);
@@ -37,7 +47,8 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         false
     } else {
         let controller = goal_game_room.unwrap().controller().unwrap();
-        controller.owner().is_some() && controller.owner().unwrap().username() == utils::get_my_username()
+        controller.owner().is_some()
+            && controller.owner().unwrap().username() == utils::get_my_username()
     };
 
     let responsible_room = utils::find_closest_owned_room(goal_room, cache, Some(5));
@@ -59,13 +70,31 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             ..Default::default()
         };
 
-        let name = format!("{}-{}-{}", role_to_name(Role::Claimer), responsible_room.unwrap(), utils::get_unique_id());
+        let name = format!(
+            "{}-{}-{}",
+            role_to_name(Role::Claimer),
+            responsible_room.unwrap(),
+            utils::get_unique_id()
+        );
 
         goal.creeps_assigned.push(name.clone());
 
-        let spawn_request = cache.spawning.create_room_spawn_request(Role::Claimer, claimer_body, 4.0, claimer_cost, responsible_room.unwrap(), Some(creep_memory), None, Some(name));
+        let spawn_request = cache.spawning.create_room_spawn_request(
+            Role::Claimer,
+            claimer_body,
+            4.0,
+            claimer_cost,
+            responsible_room.unwrap(),
+            Some(creep_memory),
+            None,
+            Some(name),
+        );
 
-        if let Some(reqs) = cache.spawning.room_spawn_queue.get_mut(&responsible_room.unwrap()) {
+        if let Some(reqs) = cache
+            .spawning
+            .room_spawn_queue
+            .get_mut(&responsible_room.unwrap())
+        {
             reqs.push(spawn_request);
         } else {
             cache
@@ -73,9 +102,93 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                 .room_spawn_queue
                 .insert(responsible_room.unwrap(), vec![spawn_request]);
         }
+    } else if claimed {
+        if goal.creeps_assigned.len() < 3 {
+            let responsible_cache = cache.rooms.get_mut(&responsible_room.unwrap()).unwrap();
+
+            let claimer_body = get_creep_body();
+            let claimer_cost = utils::get_body_cost(&claimer_body);
+
+            let creep_memory = CreepMemory {
+                role: Role::ExpansionBuilder,
+                owning_room: responsible_room.unwrap(),
+                target_room: Some(*goal_room),
+                ..Default::default()
+            };
+
+            let name = format!(
+                "{}-{}-{}",
+                role_to_name(Role::ExpansionBuilder),
+                responsible_room.unwrap(),
+                utils::get_unique_id()
+            );
+
+            goal.creeps_assigned.push(name.clone());
+
+            info!("Spawning expansion builder for {} - {:?}", goal_room, goal.creeps_assigned);
+
+            let spawn_request = cache.spawning.create_room_spawn_request(
+                Role::ExpansionBuilder,
+                claimer_body,
+                4.0,
+                claimer_cost,
+                responsible_room.unwrap(),
+                Some(creep_memory),
+                None,
+                Some(name),
+            );
+
+            if let Some(reqs) = cache
+                .spawning
+                .room_spawn_queue
+                .get_mut(&responsible_room.unwrap())
+            {
+                reqs.push(spawn_request);
+            } else {
+                cache
+                    .spawning
+                    .room_spawn_queue
+                    .insert(responsible_room.unwrap(), vec![spawn_request]);
+            }
+        }
+
+        let expansion_cache = cache.rooms.get_mut(goal_room);
+        let expansion_game_room = game::rooms().get(*goal_room);
+
+        if expansion_cache.is_none() || expansion_game_room.is_none() {
+            return;
+        }
+
+        let expansion_cache = expansion_cache.unwrap();
+        let expansion_game_room = expansion_game_room.unwrap();
+
+        // If we built the spawn, the room can be removed from the goal list
+        // Since it can handle itself now
+        // RCL 2 since we get a safemode.
+        if !expansion_cache.structures.spawns.is_empty() && expansion_game_room.controller().unwrap().level() >= 2 {
+            memory.goals.room_claim.remove(goal_room);
+        }
+
+        let has_spawn_csite_or_spawn = !expansion_cache.structures.spawns.is_empty()
+            || expansion_cache.structures.construction_sites.iter().any(|cs| {
+                cs.structure_type() == screeps::StructureType::Spawn
+            });
+
+        if !has_spawn_csite_or_spawn {
+            let find = expansion_game_room.find(find::FLAGS, None);
+            let flag_pos = find.iter().filter(|f| f.name().starts_with("claim")).collect::<Vec<&Flag>>();
+
+            if flag_pos.is_empty() {
+                return;
+            }
+
+            let flag = flag_pos[0];
+            let _ = expansion_game_room.create_construction_site(flag.pos().x().u8(), flag.pos().y().u8(), StructureType::Spawn, None);
+        }
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn get_creep_body() -> Vec<Part> {
     let mut body = Vec::new();
 

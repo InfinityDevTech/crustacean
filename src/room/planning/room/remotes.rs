@@ -8,7 +8,7 @@ use crate::{
     goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fetch_possible_remotes(
     room: &Room,
     memory: &mut ScreepsMemory,
@@ -30,8 +30,6 @@ pub fn fetch_possible_remotes(
 
         possible_remotes.push((room_name, rank));
     }
-
-    info!("Possible remotes: {:?}", possible_remotes.len());
 
     let mut remotes = Vec::new();
 
@@ -102,7 +100,7 @@ pub fn fetch_possible_remotes(
     remotes
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn rank_remote_room(
     memory: &mut ScreepsMemory,
     room_cache: &CachedRoom,

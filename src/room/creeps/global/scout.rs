@@ -1,7 +1,9 @@
 use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
+use screeps::game::map::{RoomStatus, RoomStatusResult};
 use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
+use crate::memory::RoomStats;
 use crate::movement::move_target::MoveOptions;
 use crate::{
     memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
@@ -62,9 +64,13 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         for exit in exits.clone() {
             let existing_data = memory.scouted_rooms.get(&exit);
+            let is_normal = if let Some(status) = game::map::get_room_status(exit) {
+                status.status() == RoomStatus::Normal
+            } else {
+                false
+            };
 
-
-            if (existing_data.is_some() && existing_data.unwrap().last_scouted + 3000 < game::time()) || memory.rooms.contains_key(&exit) || memory.remote_rooms.contains_key(&exit) {
+            if ((existing_data.is_some() && existing_data.unwrap().last_scouted + 3000 < game::time()) || memory.rooms.contains_key(&exit) || memory.remote_rooms.contains_key(&exit)) || !is_normal {
                 exit_clone.retain(|x| *x != exit);
             }
         }

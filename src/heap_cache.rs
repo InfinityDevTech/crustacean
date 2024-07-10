@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use screeps::{game, RoomName};
+use screeps::{game, LocalCostMatrix, RoomName};
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::{hauling::HeapHaulingCache, RoomHeapCache}};
 
@@ -16,8 +16,9 @@ pub struct GlobalHeapCache {
 
     pub my_username: Mutex<String>,
 
-    pub creep_say: Mutex<bool>,
+    pub per_tick_cost_matrixes: Mutex<HashMap<RoomName, LocalCostMatrix>>,
 
+    pub creep_say: Mutex<bool>,
     pub heap_lifetime: Mutex<u32>,
     pub unique_id: Mutex<u128>,
 }
@@ -32,8 +33,9 @@ impl GlobalHeapCache {
 
             my_username: Mutex::new(String::new()),
 
-            creep_say: Mutex::new(true),
+            per_tick_cost_matrixes: Mutex::new(HashMap::new()),
 
+            creep_say: Mutex::new(true),
             heap_lifetime: Mutex::new(0),
             unique_id: Mutex::new(game::time() as u128),
         }

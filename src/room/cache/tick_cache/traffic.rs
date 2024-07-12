@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use super::CachedRoom;
-use crate::traits::creep::CreepExtensions;
+use crate::traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking};
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {
@@ -111,7 +111,7 @@ fn move_creeps(creep_names: &Vec<String>, room_cache: &mut CachedRoom) {
         let position = Position::new(x.unwrap(), y.unwrap(), creep.room().unwrap().name());
 
         let direction = creep.pos().get_direction_to(position).unwrap();
-        let res = creep.move_direction(direction);
+        let res = creep.ITmove_direction(direction);
 
         if res.is_err() {
             let _err = res.unwrap_err();

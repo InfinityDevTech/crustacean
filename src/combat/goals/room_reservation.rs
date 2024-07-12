@@ -49,7 +49,7 @@ pub fn attain_reservation(
         return;
     }
 
-    if current_parts < 2 {
+    if current_parts < 2 && goal.accessible_reservation_spots > 1 {
         let new_creep = spawn_creep(goal, cache);
         if let Some(new) = new_creep {
             goal.creeps_assigned.push(new);

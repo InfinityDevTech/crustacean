@@ -1,8 +1,9 @@
 use std::{cmp, collections::HashMap};
 
+use log::info;
 use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{memory::{Role, ScreepsMemory}, room::{cache::heap_cache::RoomHeapCache, creeps::local::{fast_filler, upgrader}}, utils::scale_haul_priority};
+use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
 
 use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
@@ -101,7 +102,7 @@ impl RoomResourceCache {
             let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 2);
 
             let constructed_source = CachedSource {
-                source: source,
+                source,
                 creeps: Vec::new(),
 
                 link: None,
@@ -114,7 +115,7 @@ impl RoomResourceCache {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedSource {
     pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
         if let Some(container_id) = self.container {
@@ -181,11 +182,15 @@ impl CachedSource {
         if current_work as u32 >= max_work_needed {
             //info!("Dodging underflow bug in parts_needed");
             return 0;
+        } else {
+            info!("Current work: {}, Max work needed: {}", current_work, max_work_needed);
         }
 
         let work_parts_needed = max_work_needed - current_work as u32;
 
-        cmp::max(work_parts_needed, 6) as u8
+        info!("Work parts needed: {}", work_parts_needed.clamp(0, 6));
+
+        work_parts_needed.clamp(0, 6) as u8
     }
 
     pub fn calculate_mining_spots(&self, room: &Room) -> u8 {
@@ -214,13 +219,37 @@ impl CachedSource {
         for creep in creeps {
             let creep = game::get_object_by_id_typed(creep);
             if creep.is_none() {
+                info!("Creep is none, skipping...");
                 continue;
             }
 
-            let mut body = creep.unwrap().body();
+            let creep = creep.unwrap();
+
+            let mut body = creep.body();
             body.retain(|part| part.part() == Part::Work);
 
-            work_parts += body.len() as u8
+            if creep.spawning() {
+                info!("Creep is spawning, {} - {}", body.len(), body.len() as u8);
+            }
+
+            info!("Adding {}", body.len() as u8);
+            work_parts += body.len() as u8;
+        }
+
+        info!("Updated {}", work_parts);
+
+        if creeps.len() == 0 {
+            info!("Is empty");
+        }
+
+        if work_parts > 6 {
+            info!("Work parts is greater {}", work_parts);
+            //if let Some(creep) = creeps.first() {
+            //    if let Some(gcreep) = game::get_object_by_id_typed(creep) {
+            //        // TODO: Hacky fix, but ig it works.
+            //        let _ = gcreep.suicide();
+            //    }
+            //}
         }
 
         work_parts
@@ -275,32 +304,35 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers.controller {
         let upgrader_count = cached_room.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
         if (controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links.controller.is_none()) && upgrader_count > 0 {
+            let basehauler_count = cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
 
             // TODO: Fix this, its sucking up energy
             // My rooms are dying lmao.
-            let mut priority = 25.0;
+            let mut priority = 21.0;
 
             if cached_room.structures.links.controller.is_none() {
                 priority -= 20.0;
             }
 
+            if cached_room.structures.storage.is_some() && basehauler_count == 0 {
+                priority += 10000.0;
+            }
+
             cached_room.stats.energy.in_containers = controller_container.store().get_used_capacity(None);
 
-            cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority as f32, HaulingType::Transfer);
+            cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority as f32, HaulingType::NoDistanceCalcTransfer);
         }
     }
 
     if let Some(fastfiller_containers) = &cached_room.structures.containers.fast_filler {
-        if cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).is_empty() {
-
         for fastfiller_container in fastfiller_containers {
             if fastfiller_container.store().get_free_capacity(None) > 0 {
-                let mut priority = scale_haul_priority(
+                let priority = scale_haul_priority(
                     fastfiller_container.store().get_free_capacity(None) as u32,
                     fastfiller_container.store().get_used_capacity(None),
                     HaulingPriority::FastFillerContainer,
@@ -312,7 +344,6 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
                 cached_room.hauling.create_order(fastfiller_container.id().into(), Some(fastfiller_container.structure_type()), Some(ResourceType::Energy), Some(fastfiller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
             }
         }
-    }
     }
 
     for source in &mut cached_room.resources.sources {

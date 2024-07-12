@@ -2,6 +2,8 @@ use std::cmp;
 
 use screeps::{ResourceType, Room};
 
+use crate::traits::intents_tracking::StructureLinkExtensionsTracking;
+
 use super::cache::tick_cache::CachedRoom;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

@@ -1,10 +1,11 @@
 // If I set alliance tag to null, I dont want to to be added lol
 #![allow(clippy::comparison_to_empty)]
 
+use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, OwnedStructureProperties, Part, Position, RoomCoordinate, RoomName};
 
-use crate::{config, heap, memory::Role, room::cache::tick_cache::{hauling::HaulingPriority, RoomCache}, traits::room::RoomType};
+use crate::{config, heap, memory::Role, room::cache::tick_cache::{hauling::HaulingPriority, RoomCache}, traits::room::{RoomNameExtensions, RoomType}};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
@@ -47,11 +48,21 @@ pub fn get_room_sign() -> String {
 }
 
 pub fn room_type(name: &RoomName) -> RoomType {
-    let room_x = name.x_coord();
-    let room_y = name.y_coord();
+    let (_, room_x, _, room_y) = name.split_name();
 
     let ew = room_x % 10;
     let ns = room_y % 10;
+
+    if name == "W9N15" {
+        info!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        info!("Found W9N15");
+
+        info!("Room X: {}", room_x);
+        info!("Room Y: {}", room_y);
+
+        info!("EW: {}", ew);
+        info!("NS: {}", ns);
+    }
 
     if ew == 0 && ns == 0 {
         return RoomType::Intersection
@@ -62,7 +73,7 @@ pub fn room_type(name: &RoomName) -> RoomType {
     if room_x % 5 == 0 && room_y % 5 == 0 {
         return RoomType::Center
     }
-    if (5 - ew).abs() <= 1 && (5 - ns).abs() <= 1 {
+    if 5 - ew <= 1 && 5 - ns <= 1 {
         return RoomType::SourceKeeper
     }
 

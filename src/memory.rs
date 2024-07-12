@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, Mineral, ObjectId, Position, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
+use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -146,6 +146,8 @@ pub struct RoomMemory{
     // Creeps by role
     pub creeps: Vec<String>,
     pub remotes: Vec<RoomName>,
+
+    pub rcl_times: HashMap<u8, u32>,
 
     pub spawn_center: RoomXY,
     pub storage_center: RoomXY,
@@ -297,6 +299,7 @@ structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
     pub struct ScreepsMemory {
         pub creep_say: bool,
+        pub subtract_intents_profiler: bool,
 
         pub id_index: u128,
         pub chant_index: u64,
@@ -326,6 +329,7 @@ impl ScreepsMemory {
 
             let mut memory = ScreepsMemory {
                 creep_say: true,
+                subtract_intents_profiler: true,
 
                 id_index: 0,
                 chant_index: 0,
@@ -360,6 +364,7 @@ impl ScreepsMemory {
 
                     let mut memory = ScreepsMemory {
                         creep_say: true,
+                        subtract_intents_profiler: true,
 
                         id_index: 0,
                         chant_index: 0,

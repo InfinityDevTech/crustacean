@@ -1,12 +1,12 @@
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureType, Terrain
 };
 
 use crate::{
     combat::{self, hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
         cache::tick_cache::{hauling, resources, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
-    }, traits::room::RoomExtensions
+    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
 };
 
 use super::{
@@ -16,7 +16,7 @@ use super::{
         }}, visuals::visualise_room_visual
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -120,8 +120,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-            if room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0 && game::cpu::bucket() > 5000 {
+            if (room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0) && game::cpu::bucket() > 5000 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
+                info!("  [REMOTES] Remote re-scan triggered, found {} remotes", remotes.len());
             }
 
             room_cache.stats.spawning_stats(&mut room_cache.structures);
@@ -220,13 +221,17 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                 structure.1 as u8 + offset_y.u8(),
                 room.name(),
             );
-            let _ = room.create_construction_site(pos.x(), pos.y(), structure.2, None);
+            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
         }
     }
 
     if !memory.rooms.get(&room.name()).unwrap().planned
         || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
     {
+        let level = room.controller().unwrap().level();
+
+        memory.rooms.get_mut(&room.name()).unwrap().rcl_times.insert(level, game::time());
+
         let structures = match room.controller().unwrap().level() {
             2 => get_rcl_2_plan(),
             3 => get_rcl_3_plan(),
@@ -265,7 +270,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                 structure.1 as u8 + offset_y.u8(),
                 room.name(),
             );
-            let _ = room.create_construction_site(pos.x(), pos.y(), structure.2, None);
+            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
         }
 
         // Plan container around source and controller
@@ -293,7 +298,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                 }
 
                 let _ =
-                    room.create_construction_site(pos.x(), pos.y(), StructureType::Container, None);
+                    room.ITcreate_construction_site(pos.x(), pos.y(), StructureType::Container, None);
                 break;
             }
         }
@@ -309,7 +314,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                         continue;
                     }
                     let res =
-                        room.create_construction_site(pos.x, pos.y, StructureType::Container, None);
+                        room.ITcreate_construction_site(pos.x, pos.y, StructureType::Container, None);
                     if res.is_ok() {
                         break;
                     }

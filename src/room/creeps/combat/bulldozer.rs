@@ -3,7 +3,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureProperties, StructureType};
 
 use crate::{
-    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -14,15 +14,15 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
         return;
     }
 
-    let mut owned = room_cache.creeps.owned_creeps.clone();
+    let owned = room_cache.creeps.owned_creeps.clone();
     let mut nearby_creeps = owned.values().filter(|c| c.pos().get_range_to(creep.pos()) <= 3).collect::<Vec<&Creep>>();
     // sort by lowest to highest hits
     nearby_creeps.sort_by_key(|c| c.hits());
 
     let health_percent = if nearby_creeps.first().is_some() {
         let nearby_creep = nearby_creeps.first().unwrap();
-        let health_percent = nearby_creep.hits() as f32 / nearby_creep.hits_max() as f32 * 100.0;
-        health_percent
+        
+        nearby_creep.hits() as f32 / nearby_creep.hits_max() as f32 * 100.0
     } else {
         100.0
     };
@@ -34,14 +34,14 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     if (health_percent < 100.0 || my_health_percent < 100.0) && my_health_percent > health_percent {
         if let Some(creep) = nearby_creeps.first() {
             if creep.pos().is_near_to(creep.pos()) {
-                creep.heal(*creep);
+                let _ = creep.ITheal(*creep);
             } else {
-                creep.ranged_heal(*creep);
+                let _ = creep.ITranged_heal(*creep);
                 creep.better_move_to(memory, room_cache, creep.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(1));
             }
         }
     } else if my_health_percent < 100.0 {
-        creep.heal(creep);
+        let _ = creep.ITheal(creep);
     }
 
     let creep_memory = memory.creeps.get_mut(&creep.name());
@@ -78,7 +78,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
             let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
             if let Some(enemy) = enemies {
-                if creep.attack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
+                if creep.ITattack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
                     creep.better_move_to(memory, room_cache, enemy.pos(), 1, MoveOptions::default().path_age(1));
                 }
             } else {
@@ -89,7 +89,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 if let Some(structure) = structure {
                     if creep.pos().is_near_to(structure.pos()) {
                         if let Some(attackabke) = structure.as_attackable() {
-                            let _ = creep.attack(attackabke);
+                            let _ = creep.ITattack(attackabke);
                         }
                     } else {
                         creep.better_move_to(memory, room_cache, structure.pos(), 1, MoveOptions::default().path_age(1));
@@ -103,7 +103,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     if let Some(structure) = structure {
                         if creep.pos().is_near_to(structure.pos()) {
                             if let Some(attackabke) = structure.as_attackable() {
-                                let _ = creep.attack(attackabke);
+                                let _ = creep.ITattack(attackabke);
                             }
                         } else {
                             creep.better_move_to(memory, room_cache, structure.pos(), 1, MoveOptions::default().path_age(1));

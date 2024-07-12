@@ -24,6 +24,8 @@ pub fn fetch_possible_remotes(
     for room_name in adjacent_rooms {
         let rank = rank_remote_room(memory, room_cache, &room_name);
 
+        info!("room {} has rank {}", room_name, rank);
+
         if rank == u32::MAX {
             continue;
         }
@@ -35,6 +37,8 @@ pub fn fetch_possible_remotes(
 
     // Sort the remotes by rank - ascending
     possible_remotes.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+
+    info!("  [REMOTES] Found {} possible remotes, picking...", possible_remotes.len());
 
     let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
@@ -115,6 +119,7 @@ pub fn rank_remote_room(
     let scouted = memory.scouted_rooms.get(remote_room);
     // This >= 4 check is for SK rooms, idk why, or how, but my room classification is borked.
     if scouted.is_none() || scouted.unwrap().sources.is_none() || scouted.unwrap().sources.as_ref().unwrap().len() >= 3 {
+        info!("SKipping, no scouting data or too many sources");
         return u32::MAX;
     }
 
@@ -125,9 +130,11 @@ pub fn rank_remote_room(
             // FUCK these dues. Seriously, they are so FUCKING annoying.
             // They just delay my remotes, they are easy to delete, they just SUCK ASS.
             if reservation == "Invader" {
+                info!("Fuck invaders.");
                 return u32::MAX - 2;
             }
         }
+        info!("Skipping, owned");
         return u32::MAX;
     }
 
@@ -135,6 +142,7 @@ pub fn rank_remote_room(
         || scouted.unwrap().room_type == RoomType::Highway
         || scouted.unwrap().room_type == RoomType::Center
     {
+        info!("Skipping, SK, Highway, Center");
         return u32::MAX;
     }
 
@@ -148,6 +156,11 @@ pub fn rank_remote_room(
         let options = Some(SearchOptions::new(remote_path_call).max_rooms(16));
         let path = pathfinder::search(spawn_pos, position, 1, options);
 
+        if path.incomplete() {
+            info!("Skipping, incomplete path");
+            return u32::MAX;
+        }
+
         current_avg += path.cost();
         i += 1;
     }
@@ -155,7 +168,7 @@ pub fn rank_remote_room(
     // We dont like one-source rooms, but if its
     // REALLY close, then we can pick it
     if i == 1 {
-        current_avg += 25;
+        current_avg += 15;
     }
 
     current_avg / i

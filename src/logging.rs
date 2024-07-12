@@ -1,4 +1,3 @@
-use core::panic::PanicInfo;
 use std::{fmt::Write, panic};
 use crate::logging::panic::PanicHookInfo;
 use js_sys::JsString;

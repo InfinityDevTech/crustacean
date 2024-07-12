@@ -1,6 +1,6 @@
 use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::{self, tick_cache::{hauling::{HaulTaskRequest, HaulingPriority, HaulingType}, CachedRoom, RoomCache}}, traits::{creep::CreepExtensions, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
+use crate::{memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::{self, tick_cache::{hauling::{HaulTaskRequest, HaulingPriority, HaulingType}, CachedRoom, RoomCache}}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions}, utils::{get_room_sign, scale_haul_priority}};
 
 use super::{builder::run_builder, hauler::execute_order};
 
@@ -50,7 +50,7 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             if controller_link.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
 
                 if creep.pos().is_near_to(controller_link.pos()) {
-                    let _ = creep.withdraw(controller_link, ResourceType::Energy, None);
+                    let _ = creep.ITwithdraw(controller_link, ResourceType::Energy, None);
 
                     return false;
                 } else {
@@ -67,14 +67,14 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                 creep.better_move_to(memory, cached_room, container.pos(), 1, MoveOptions::default());
                 return true;
             } else {
-                let _ = creep.withdraw(container, ResourceType::Energy, None);
+                let _ = creep.ITwithdraw(container, ResourceType::Energy, None);
 
                 // This is dumb as hell, I can harvest and transfer in the same tick.
                 // But I cant upgrade and withdraw in the same tick.
                 return false;
             }
 
-        } else {
+        } else if creep.store().get_used_capacity(None) == 0 {
             let priority = creep.store().get_free_capacity(Some(ResourceType::Energy));
 
             if cached_room.rcl <= 2 {
@@ -103,7 +103,7 @@ pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Ro
 
     if !creep.room().unwrap().is_my_sign() {
         if creep.pos().is_near_to(controller.controller.pos()) {
-            let _ = creep.sign_controller(&controller.controller, &get_room_sign());
+            let _ = creep.ITsign_controller(&controller.controller, &get_room_sign());
         } else {
             creep.better_move_to(memory, cache, controller.controller.pos(), 1, MoveOptions::default());
         }

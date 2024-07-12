@@ -135,12 +135,12 @@ dependencies = [
  "fern",
  "getrandom",
  "js-sys",
+ "lazy_static",
  "log",
  "rand",
  "regex",
  "rust_decimal",
  "screeps-game-api",
- "screeps-timing 0.1.0 (git+https://github.com/InfinityDevTech/screeps-timing)",
  "screeps-timing-annotate",
  "serde",
  "serde_json",
@@ -289,6 +289,12 @@ checksum = "29c15563dc2726973df627357ce0c9ddddbea194836909d655df6a75d2cf296d"
 dependencies = [
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
@@ -548,12 +554,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
 
 [[package]]
-name = "scopeguard"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
-
-[[package]]
 name = "screeps-game-api"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -573,32 +573,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "screeps-timing"
-version = "0.1.0"
-source = "git+https://github.com/Azaril/screeps-timing#acd8616c556f790656f6b657b62eb2604d4f8f26"
-dependencies = [
- "scopeguard",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "screeps-timing"
-version = "0.1.0"
-source = "git+https://github.com/InfinityDevTech/screeps-timing#009261b873517d3f8be0fedf9c29b72dabd1160b"
-dependencies = [
- "scopeguard",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "screeps-timing-annotate"
 version = "0.1.0"
-source = "git+https://github.com/Azaril/screeps-timing-annotate#c7816bf04b69f746b1630a8a80f303d4ee8cccd0"
+source = "git+https://github.com/InfinityDevTech/screeps-timing-annotate#d7ad2cede41c4480819a747c7fef2443611ffebc"
 dependencies = [
  "quote",
- "screeps-timing 0.1.0 (git+https://github.com/Azaril/screeps-timing)",
  "syn 1.0.109",
 ]
 

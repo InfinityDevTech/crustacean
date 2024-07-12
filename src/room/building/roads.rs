@@ -3,6 +3,8 @@
 use log::info;
 use screeps::{Source, StructureSpawn, HasPosition, pathfinder::{SearchOptions, MultiRoomCostResult, self}, RoomName, LocalCostMatrix, game, StructureType, find, StructureProperties, look};
 
+use crate::traits::intents_tracking::RoomExtensionsTracking;
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
     let opts = SearchOptions::new(road_callback).max_ops(100000000).plain_cost(2).swamp_cost(5).max_rooms(1);
@@ -12,7 +14,7 @@ pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
         for pos in path.path() {
             let room = game::rooms().get(pos.room_name()).unwrap();
             if room.look_for_at_xy(look::CONSTRUCTION_SITES, pos.x().u8(), pos.y().u8()).is_empty() {
-                match room.create_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None) {
+                match room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None) {
                     Ok(_) => {},
                     Err(e) => {
                         println!("Error creating construction site: {:?}", e);

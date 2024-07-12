@@ -1,11 +1,12 @@
+use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Creep, HasPosition, MaybeHasId, Position, ResourceType, RoomCoordinate, SharedCreepProperties};
 
 use crate::{
     memory::{CreepMemory, ScreepsMemory}, movement::move_target::MoveOptions, room::{
-        cache::tick_cache::{CachedRoom, RoomCache},
+        cache::{self, tick_cache::{CachedRoom, RoomCache}},
         creeps::local::harvester::{harvest_source, repair_container},
-    }, traits::{creep::CreepExtensions, room::RoomExtensions}
+    }, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -20,6 +21,9 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         }
 
         if let Some(remote_room) = cache.rooms.get_mut(&remote_room) {
+            if creep.spawning() {
+                info!("{} is spawning", creep.name());
+            }
             remote_room.resources.sources[creep_memory.task_id.unwrap() as usize].creeps.push(creep.try_id().unwrap());
         }
 
@@ -103,7 +107,7 @@ pub fn build_container(
         if csite.structure_type() == screeps::StructureType::Container
             && csite.pos().is_near_to(source.pos())
         {
-            let _ = creep.build(csite);
+            let _ = creep.ITbuild(csite);
             return true;
         }
     }
@@ -126,13 +130,16 @@ pub fn deposit_enegy(creep: &Creep, memory: &mut ScreepsMemory, remote_cache: &m
         }
 
         if contianer.store().get_free_capacity(Some(ResourceType::Energy)) == 0 {
-            let _ = creep.drop(ResourceType::Energy, None);
+            // Why am I wasting the CPU to drop it?
+            // It will automatically drop and not cost me the 0.2 CPU.
+            //let _ = creep.ITdrop(ResourceType::Energy, None);
         } else if creep.pos().get_range_to(contianer.pos()) > 1 {
             creep.better_move_to(memory, remote_cache, contianer.pos(), 1, MoveOptions::default());
         } else {
-            let _ = creep.transfer(contianer, ResourceType::Energy, None);
+            let _ = creep.ITtransfer(contianer, ResourceType::Energy, None);
         }
     } else {
-        let _ = creep.drop(ResourceType::Energy, None);
+        // Auto drop, save 0.2 CPU.
+        //let _ = creep.ITdrop(ResourceType::Energy, None);
     }
 }

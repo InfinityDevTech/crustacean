@@ -10,6 +10,8 @@ use screeps::{
     game, Direction, ErrorCode, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
 };
 
+use super::intents_tracking::CreepExtensionsTracking;
+
 pub trait CreepExtensions {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom);
@@ -59,7 +61,7 @@ impl CreepExtensions for screeps::Creep {
         let y = target_position.1 as u8;
 
         if x == 0 || x == 49 || y == 0 || y == 49 {
-            let _ = self.move_direction(step_dir);
+            let _ = self.ITmove_direction(step_dir);
         } else {
             self.move_request(step_dir, cache);
         }

@@ -1,7 +1,7 @@
 use screeps::{game, Creep, HasPosition, Part, SharedCreepProperties};
 
 use crate::{
-    memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions
+    memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking}}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -19,7 +19,7 @@ pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
         // to be able to recycle properly. So we just commit suicide
         // Duh...
         creep.bsay("AAHHHHHHHHH", true);
-        let _ = creep.suicide();
+        let _ = creep.ITsuicide();
     }
 
 
@@ -41,7 +41,7 @@ pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
                     let spawn_pos = spawn.pos();
 
                     if current_pos.is_near_to(spawn_pos) {
-                        let _ = spawn.recycle_creep(creep);
+                        let _ = spawn.ITrecycle_creep(creep);
 
                         return;
                     } else {
@@ -57,5 +57,5 @@ pub fn run_recycler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
     // to be able to recycle properly. So we just commit suicide
     // Duh...
     creep.bsay("AAHHHHHHHHH", true);
-    let _ = creep.suicide();
+    let _ = creep.ITsuicide();
 }

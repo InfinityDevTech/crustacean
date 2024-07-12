@@ -213,10 +213,10 @@ impl HaulingCache {
             }
         }
 
-        //let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
-        //let room_visual = game::rooms().get(position.room_name()).unwrap().visual();
+        let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
+        let room_visual = game::rooms().get(position.room_name()).unwrap().visual();
 
-        /*room_visual.circle(
+        room_visual.circle(
             position.x().u8() as f32,
             position.y().u8() as f32,
             Some(
@@ -244,7 +244,7 @@ impl HaulingCache {
             );
         }
 
-        */
+
 
         self.new_orders.insert(id, order);
     }
@@ -495,7 +495,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
     );
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
     if order.no_distance_calc {
         order.priority
@@ -814,7 +814,7 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
                 None,
                 Some(storage.store().get_free_capacity(None).try_into().unwrap()),
                 priority - fill_percent,
-                HaulingType::Transfer,
+                HaulingType::NoDistanceCalcTransfer,
             )
         }
 

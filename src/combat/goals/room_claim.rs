@@ -7,7 +7,7 @@ use crate::{
     goal_memory::RoomClaimGoal,
     memory::{CreepMemory, Role, ScreepsMemory},
     room::cache::tick_cache::RoomCache,
-    traits::room::RoomExtensions,
+    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
     utils::{self, role_to_name},
 };
 
@@ -125,8 +125,6 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
             goal.creeps_assigned.push(name.clone());
 
-            info!("Spawning expansion builder for {} - {:?}", goal_room, goal.creeps_assigned);
-
             let spawn_request = cache.spawning.create_room_spawn_request(
                 Role::ExpansionBuilder,
                 claimer_body,
@@ -183,7 +181,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             }
 
             let flag = flag_pos[0];
-            let _ = expansion_game_room.create_construction_site(flag.pos().x().u8(), flag.pos().y().u8(), StructureType::Spawn, None);
+            let _ = expansion_game_room.ITcreate_construction_site(flag.pos().x().u8(), flag.pos().y().u8(), StructureType::Spawn, None);
         }
     }
 }

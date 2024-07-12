@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use screeps::{game, RoomName, SharedCreepProperties};
 
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, utils::name_to_role};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, traits::intents_tracking::CreepExtensionsTracking, utils::name_to_role};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn recover_creeps(memory: &mut ScreepsMemory) {
@@ -23,7 +23,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
         // Past - <ROLE>-<GAME_TIME>-<ID>
         // New - <ROLE>-<ROOM>-<ID>
         if room_name.is_err() {
-            let _ = game::creeps().get(creep_name.clone()).unwrap().suicide();
+            let _ = game::creeps().get(creep_name.clone()).unwrap().ITsuicide();
 
             return;
         }
@@ -32,7 +32,7 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
         let creep = game::creeps().get(creep_name.clone()).unwrap();
 
         let Some(role) = role else {
-            let _ = creep.suicide();
+            let _ = creep.ITsuicide();
             continue;
         };
 
@@ -68,7 +68,9 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
                 memory.create_creep(&room_name, &creep.name(), cmemory);
             }
             _ => {
-                let _ = creep.suicide();
+                // TODO: Make this find the closest room to the creep and assign it to that room
+                // That way we can recycle it.
+                let _ = creep.ITsuicide();
             }
         }
     }

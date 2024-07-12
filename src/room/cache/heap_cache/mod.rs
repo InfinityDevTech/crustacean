@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use hauling::HeapHaulingCache;
 use screeps::{Creep, ObjectId, Room, Source};
 
 use crate::traits::room::RoomExtensions;

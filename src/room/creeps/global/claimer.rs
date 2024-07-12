@@ -3,7 +3,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Color, Creep, HasPosition, OwnedStructureProperties, Position, RoomCoordinate, SharedCreepProperties};
 
 use crate::{
-    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions, utils::get_my_username
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_my_username
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -43,7 +43,7 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
             creep.bsay("🏳️", true);
             return;
         } else if creep.pos().is_near_to(controller.pos()) {
-            let _ = creep.claim_controller(&controller);
+            let _ = creep.ITclaim_controller(&controller);
         } else {
             creep.better_move_to(memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
         }

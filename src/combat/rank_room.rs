@@ -33,7 +33,6 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
     let mut invader_owned = None;
     for structure in room.find(find::HOSTILE_STRUCTURES, None) {
         if let StructureObject::StructureInvaderCore(invader) = structure {
-            info!("FOund invader core with level: {}", invader.level());
             if invader.level() > 0 {
                 invader_owned = Some(true);
                 break;

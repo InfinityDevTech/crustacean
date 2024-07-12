@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use log::info;
 use screeps::{find, game, pathfinder::SearchResults, HasPosition, Room, RoomXY, StructureProperties};
 
-use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::room::RoomExtensions};
+use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}};
 
 pub mod construction;
 pub mod structure_visuals;
@@ -54,6 +56,8 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         creeps: Vec::new(),
         remotes: Vec::new(),
 
+        rcl_times: HashMap::new(),
+
         spawn_center: spawn_pos,
         storage_center: store_pos,
 
@@ -81,6 +85,6 @@ pub fn convert_path_to_roads(room: &Room, result: SearchResults) {
         let x = pos.x().u8();
         let y = pos.y().u8();
 
-        let _ = room.create_construction_site(x, y, screeps::StructureType::Road, None);
+        let _ = room.ITcreate_construction_site(x, y, screeps::StructureType::Road, None);
     }
 }

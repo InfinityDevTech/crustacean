@@ -3,7 +3,7 @@ use std::cmp;
 use log::info;
 use screeps::{game, Part, Room};
 
-use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::tick_cache::CachedRoom, utils};
+use crate::{constants::{part_costs, PartsCost}, memory::Role, room::cache::{self, tick_cache::CachedRoom}, utils};
 
 
 /// Returns the parts needed for a miner creep
@@ -179,7 +179,7 @@ pub fn repairer_body(room: &Room, parts_needed: u8, _cache: &CachedRoom) -> Vec<
 }
 
 /// Returns the parts needed for a upgrader creep
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
@@ -208,7 +208,11 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         return parts;
     }
 
-    let parts_needed_to_fill = target_work_parts - current_work_parts;
+    let mut parts_needed_to_fill = target_work_parts - current_work_parts;
+
+    if cache.structures.controller.as_ref().unwrap().controller.level() >= 8 {
+        parts_needed_to_fill = parts_needed_to_fill.clamp(0, 15);
+    }
 
     let stamp_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
     let cost_capable = room.energy_available();

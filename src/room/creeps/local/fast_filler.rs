@@ -12,7 +12,7 @@ use crate::{
         hauling::{HaulingPriority, HaulingType},
         CachedRoom, RoomCache,
     },
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking}},
     utils::scale_haul_priority,
 };
 
@@ -74,11 +74,11 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
             if container.store().get_used_capacity(None) == 0 {
                 if let Some(link) = &cached_room.structures.links.fast_filler {
                     if creep.pos().is_near_to(link.pos()) {
-                        let _ = creep.withdraw(link, ResourceType::Energy, None);
+                        let _ = creep.ITwithdraw(link, ResourceType::Energy, None);
                     }
                 }
             } else if creep.pos().is_near_to(container.pos()) {
-                let _ = creep.withdraw(&container, ResourceType::Energy, None);
+                let _ = creep.ITwithdraw(&container, ResourceType::Energy, None);
             } else {
                 creep.better_move_to(
                     memory,
@@ -102,7 +102,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     let target = game::get_object_by_id_erased(&target_id).unwrap();
 
     if creep.pos().is_near_to(target.pos()) {
-        let _ = creep.transfer(
+        let _ = creep.ITtransfer(
             target.unchecked_ref::<StructureExtension>(),
             ResourceType::Energy,
             None,
@@ -126,7 +126,7 @@ pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
         && creep.pos().is_near_to(spawn.pos())
         && spawn.spawning().is_none()
     {
-        let _ = spawn.renew_creep(creep);
+        let _ = spawn.ITrenew_creep(creep);
     }
 }
 

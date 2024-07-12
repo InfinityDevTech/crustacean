@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use screeps::{find, game, Creep, HasPosition, Room, RoomXY, SharedCreepProperties};
 
 use crate::{
-    constants::HOSTILE_PARTS, memory::{Role, ScreepsMemory}, utils::name_to_role
+    constants::HOSTILE_PARTS, memory::{Role, ScreepsMemory}, traits::intents_tracking::CreepExtensionsTracking, utils::name_to_role
 };
 
 use super::structures::RoomStructureCache;
@@ -80,7 +80,7 @@ impl CreepCache {
                     let role = name_to_role(creep_name);
                     if role.is_none() {
                         log::error!("Creep {} has no role", creep_name);
-                        let _ = creep.suicide();
+                        let _ = creep.ITsuicide();
                         continue;
                     }
 

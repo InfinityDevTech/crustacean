@@ -18,6 +18,7 @@ use super::cache::tick_cache::{CachedRoom, RoomCache};
 pub mod creep_sizing;
 pub mod spawn_manager;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
     let mut map = HashMap::new();
 
@@ -32,6 +33,13 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
         let score = match role {
             Role::Harvester => 1,
             Role::Hauler => 1,
+            Role::Builder => {
+                if controller.level() > 2 && !room_cache.structures.construction_sites.is_empty() {
+                    1
+                } else {
+                    0
+                }
+            }
             Role::Repairer => {
                 if controller.level() > 2 {
                     1
@@ -62,7 +70,7 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                 }
             }
             Role::Upgrader => {
-                if controller.ticks_to_downgrade() < Some(1500) {
+                if controller.ticks_to_downgrade() < Some(1500) && controller.level() < 8 {
                     1
                 } else {
                     0
@@ -319,14 +327,14 @@ pub fn repairer(
         .level()
         < 3
         || cache.structures.storage.is_none()
-        || cache
+        || (cache
             .structures
             .storage
             .as_ref()
             .unwrap()
             .store()
             .get_used_capacity(Some(ResourceType::Energy))
-            < 10000
+            < 10000 && repairing_work_parts >= 1)
     {
         return None;
     }
@@ -381,28 +389,31 @@ pub fn builder(
                 .count() as u32
         })
         .sum::<u32>();
+    let room_level = cache
+    .structures
+    .controller
+    .as_ref()
+    .unwrap()
+    .controller
+    .level();
 
-    if cache
-        .structures
-        .controller
-        .as_ref()
-        .unwrap()
-        .controller
-        .level()
-        < 2
-    {
+    if room_level < 2 {
+        return None;
+    }
+
+    if room_level >= 8 && cache.structures.construction_sites.is_empty() {
         return None;
     }
 
     if cache.structures.storage.is_some()
-        && cache
+        && (cache
             .structures
             .storage
             .as_ref()
             .unwrap()
             .store()
             .get_used_capacity(Some(ResourceType::Energy))
-            < 10000
+            < 10000 && building_work_parts >= 1)
     {
         return None;
     }
@@ -442,6 +453,12 @@ pub fn upgrader(
     let cost = get_body_cost(&body);
 
     if body.is_empty() {
+        return None;
+    }
+
+    // Dont need em if we are level 8 and have a lot of ticks to downgrade.
+    let controller = &cache.structures.controller.as_ref().unwrap().controller;
+    if controller.level() == 8 && controller.ticks_to_downgrade() > Some(120000) {
         return None;
     }
 
@@ -508,12 +525,12 @@ pub fn hauler(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory) -> Opt
     let prio = if hauler_count < 3 {
         400000.0
     // If we have more than half of the wanted count.
-    } else if hauler_count > (wanted_count as f32 / 2.0).ceil() as usize {
-        2.0
+    } else if hauler_count < (wanted_count as f32 / 2.0).ceil() as usize {
+        5.0
 
     // If we are at a third of the hauler count
-    } else if hauler_count > (wanted_count as f32 / 3.0).ceil() as usize {
-        3.5
+    } else if hauler_count < (wanted_count as f32 / 3.0).ceil() as usize {
+        10.0
     } else {
         // TODO
         // I might need to tweak this number a bit.
@@ -559,9 +576,9 @@ pub fn base_hauler(
         1 => 0,
         2 => 1,
         3 => 1,
-        4 => 2,
-        5 => 2,
-        6 => 2,
+        4 => 1,
+        5 => 1,
+        6 => 1,
         7 => 1,
         8 => 1,
         _ => 1,
@@ -792,6 +809,8 @@ pub fn remote_harvester(
                 {
                     continue;
                 }
+
+                info!("Remote harvester parts needed: {} in {}", parts_needed, remote);
 
                 let parts =
                     crate::room::spawning::creep_sizing::miner_body(room, room_cache, parts_needed);

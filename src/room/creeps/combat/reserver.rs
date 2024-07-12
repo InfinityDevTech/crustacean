@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasPosition, Position, RoomCoordinate, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::{cache::tick_cache::RoomCache, creeps::global::recycler::run_recycler}, traits::creep::CreepExtensions};
+use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::{cache::tick_cache::RoomCache, creeps::global::recycler::run_recycler}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_reserver(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -22,7 +22,7 @@ pub fn run_reserver(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
             let controller = current_room.controller().unwrap();
 
             if creep.pos().is_near_to(controller.pos()) {
-                let _ = creep.reserve_controller(&controller);
+                let _ = creep.ITreserve_controller(&controller);
             } else {
                 creep.better_move_to(memory, cache.rooms.get_mut(&current_room.name()).unwrap(), controller.pos(), 1, MoveOptions::default().avoid_enemies(true));
             }

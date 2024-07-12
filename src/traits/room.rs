@@ -27,7 +27,7 @@ pub trait RoomExtensions {
 
     fn is_my_sign(&self) -> bool;
 
-    fn get_adjacent(&self, radius: u32) -> Vec<RoomName>;
+    fn get_adjacent(&self, radius: i32) -> Vec<RoomName>;
 
     fn room_type(&self) -> RoomType;
     fn is_highway(&self) -> bool;
@@ -37,7 +37,7 @@ pub trait RoomExtensions {
     fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()
@@ -60,28 +60,59 @@ impl RoomExtensions for screeps::Room {
             .map_or(false, |controller| controller.my())
     }
 
-    fn get_adjacent(&self, radius: u32) -> Vec<RoomName> {
-        let split_name = self.split_name();
+    fn get_adjacent(&self, radius: i32) -> Vec<RoomName> {
+        let split = self.split_name();
+        let horizdir = split.0;
+        let horiznum = split.1 as i32;
+        let vertdir = split.2;
+        let vertnum = split.3 as i32;
 
-        let start_x = split_name.1;
-        let start_y = split_name.3;
+        let mut rooms = Vec::new();
 
-        let mut adjacent_rooms = vec![];
+        for x in horiznum - radius..=horiznum + radius {
+            for y in vertnum - radius..=vertnum + radius {
+                let newhoriznum = x;
+                let newvertnum = y;
 
-        for x in start_x - radius..=start_x + radius {
-            for y in start_y - radius..=start_y + radius {
-                if x == start_x && y == start_y {
-                    continue;
+                let mut newhorizdir = horizdir.clone();
+                let mut effectivehoriznum = newhoriznum;
+                if newhoriznum < 0 {
+                    newhorizdir = if horizdir == "E" {
+                        "W".to_owned()
+                    } else {
+                        "E".to_owned()
+                    };
+                    effectivehoriznum = newhoriznum.abs() - 1;
                 }
 
-                let room_name = format!("{}{}{}{}", split_name.0, x, split_name.2, y);
-                adjacent_rooms.push(RoomName::new(&room_name));
+                let mut newvertdir = vertdir.clone();
+                let mut effectivevertnum = newvertnum;
+                if newvertnum < 0 {
+                    newvertdir = if vertdir == "N" {
+                        "S".to_owned()
+                    } else {
+                        "N".to_owned()
+                    };
+                    effectivevertnum = newvertnum.abs() - 1;
+                }
+
+                let room_name = format!(
+                    "{}{}{}{}",
+                    newhorizdir, effectivehoriznum, newvertdir, effectivevertnum
+                );
+                rooms.push(RoomName::new(&room_name));
+                //const newRoomName = `${newHorizDir}${effectiveHorizNum}${newVertDir}${effectiveVertNum}`;
+                //rooms.push(newRoomName);
             }
         }
 
         let mut adjacent_checked = Vec::new();
-        for room in adjacent_rooms.into_iter().flatten() {
-            adjacent_checked.push(room);
+        for room in rooms.into_iter() {
+            if let Ok(res) = room {
+                if res != self.name() {
+                    adjacent_checked.push(res);
+                }
+            }
         }
 
         adjacent_checked
@@ -91,7 +122,9 @@ impl RoomExtensions for screeps::Room {
         let sources = &room_cache.resources.sources;
 
         for (i, source) in sources.iter().enumerate() {
-            if source.calculate_work_parts() < source.parts_needed() && source.creeps.len() < source.calculate_mining_spots(self).into() {
+            if source.calculate_work_parts() < source.parts_needed()
+                && source.creeps.len() < source.calculate_mining_spots(self).into()
+            {
                 return Some(i as u8);
             }
         }
@@ -115,38 +148,39 @@ impl RoomExtensions for screeps::Room {
             return false;
         }
 
-        let tag_without_alliance_marker = if config::ALLIANCE_TAG != "" && sign_text.contains(config::ALLIANCE_TAG) {
-            let alliance_marker = format!("{} ", config::ALLIANCE_TAG);
-            sign_text.replace(&alliance_marker, "")
-        } else {
-            sign_text.to_string()
-        };
+        let tag_without_alliance_marker =
+            if config::ALLIANCE_TAG != "" && sign_text.contains(config::ALLIANCE_TAG) {
+                let alliance_marker = format!("{} ", config::ALLIANCE_TAG);
+                sign_text.replace(&alliance_marker, "")
+            } else {
+                sign_text.to_string()
+            };
 
         config::ROOM_SIGNS.contains(&tag_without_alliance_marker.as_str())
     }
 
     fn room_type(&self) -> RoomType {
-            let room_x = self.name().x_coord();
-            let room_y = self.name().y_coord();
+        let room_x = self.name().x_coord();
+        let room_y = self.name().y_coord();
 
-            let ew = room_x % 10;
-            let ns = room_y % 10;
+        let ew = room_x % 10;
+        let ns = room_y % 10;
 
-            if ew == 0 && ns == 0 {
-                return RoomType::Intersection
-            }
-            if ew == 0 || ns == 0 {
-                return RoomType::Highway
-            }
-            if room_x % 5 == 0 && room_y % 5 == 0 {
-                return RoomType::Center
-            }
-            if (5 - ew).abs() <= 1 && (5 - ns).abs() <= 1 {
-                return RoomType::SourceKeeper
-            }
-
-            RoomType::Normal
+        if ew == 0 && ns == 0 {
+            return RoomType::Intersection;
         }
+        if ew == 0 || ns == 0 {
+            return RoomType::Highway;
+        }
+        if room_x % 5 == 0 && room_y % 5 == 0 {
+            return RoomType::Center;
+        }
+        if (5 - ew).abs() <= 1 && (5 - ns).abs() <= 1 {
+            return RoomType::SourceKeeper;
+        }
+
+        RoomType::Normal
+    }
 
     fn is_highway(&self) -> bool {
         let split_name = self.split_name();
@@ -232,6 +266,26 @@ impl RoomExtensions for screeps::Room {
     }
 }
 
+
+pub trait RoomNameExtensions {
+    fn split_name(&self) -> (String, u32, String, u32);
+}
+
+impl RoomNameExtensions for RoomName {
+    fn split_name(&self) -> (String, u32, String, u32) {
+        let room_regex = Regex::new("^([WE]{1})([0-9]{1,2})([NS]{1})([0-9]{1,2})$").unwrap();
+        let room_name = self.to_string();
+
+        let captures = room_regex.captures(&room_name).unwrap();
+
+        (
+            captures[1].to_string(),
+            captures[2].to_string().parse::<u32>().unwrap(),
+            captures[3].to_string(),
+            captures[4].to_string().parse::<u32>().unwrap(),
+        )
+    }
+}
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_pos_in_rect(rect: (u8, u8, u8, u8)) -> Vec<(u8, u8)> {
     let mut positions = Vec::new();

@@ -78,8 +78,8 @@ impl CachedRoom {
         });
 
         let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
-        let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
-        let mut creeps = CreepCache::new_from_room(room, memory, &structures);
+        let structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let creeps = CreepCache::new_from_room(room, memory, &structures);
         let mut stats =  StatsCache::default();
         stats.energy.spending_spawning = 0;
 

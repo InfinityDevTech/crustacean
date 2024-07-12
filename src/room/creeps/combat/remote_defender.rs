@@ -1,13 +1,13 @@
-use screeps::{Creep, HasPosition, Position, RoomCoordinate, RoomPosition, SharedCreepProperties};
+use screeps::{Creep, HasPosition, Position, RoomCoordinate, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions};
+use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     if creep.hits() < creep.hits_max() {
-        let _ = creep.heal(creep);
+        let _ = creep.ITheal(creep);
     }
 
     if let Some(target_room) = creep_memory.target_room {
@@ -27,9 +27,9 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
                     let range = creep.pos().get_range_to(target.pos());
 
                     if range > 1 && range <= 3 {
-                        let _ = creep.ranged_attack(target);
+                        let _ = creep.ITranged_attack(target);
                     } else if range <= 1 {
-                        let _ = creep.ranged_mass_attack();
+                        let _ = creep.ITranged_mass_attack();
                     }
 
                     creep.bsay("🔫", false);

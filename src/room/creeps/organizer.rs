@@ -4,7 +4,7 @@ use log::info;
 use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, traits::{creep::CreepExtensions, room::RoomExtensions}
+    combat::hate_handler::process_health_event, memory::{Role, ScreepsMemory}, room::{cache::{heap_cache::{HealthChangeType, HeapCreep}, tick_cache::RoomCache}, creeps::{global, remote}}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions}
 };
 
 use super::{combat, local};
@@ -90,10 +90,10 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         let end_time = game::cpu::get_used();
         let cpu_used = end_time - start_time;
 
-        if cpu_used > 10.0 {
+        if cpu_used > 10.0 && role != Role::Scout {
             info!("  [CREEPS] Suiciding {} due to high CPU usage: {}", creep.name(), cpu_used);
 
-            let _ = creep.suicide();
+            let _ = creep.ITsuicide();
         }
 
         if cpu_used > highest_usage {

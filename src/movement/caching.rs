@@ -19,6 +19,7 @@ pub struct PathCache {
     pub source_cache: HashMap<Position, Vec<Position>>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl PathCache {
     pub fn new() -> PathCache {
         PathCache {
@@ -157,7 +158,7 @@ impl PathCache {
 
     pub fn visualise_all_paths(&mut self) {
         for (source, dest) in &self.source_to_dest {
-            visualise_path(dest.clone(), source.0, "#00ff00");
+            //visualise_path(dest.clone(), source.0, "#00ff00");
         }
     }
 }

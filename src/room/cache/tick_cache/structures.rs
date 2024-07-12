@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{
-    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer,
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
+    OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer,
     StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver,
     StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage,
     StructureTower, StructureType, Tombstone,
@@ -170,11 +169,9 @@ impl RoomStructureCache {
         }
 
         let mut sp_center = None;
-        let mut st_center = None;
 
         if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
             sp_center = Some(room_memory.spawn_center);
-            st_center = Some(room_memory.storage_center);
         }
 
         for structure in room.find(find::STRUCTURES, None).into_iter() {

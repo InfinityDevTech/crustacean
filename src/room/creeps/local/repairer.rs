@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureType};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::creep::CreepExtensions, utils::get_rampart_repair_rcl};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
 use super::hauler;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -47,7 +47,7 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
         let repairable_struct = repairable_obj.as_repairable().unwrap();
         if creep.pos().get_range_to(repairable_obj.pos()) < 3 {
             creep.bsay("🔧", false);
-            let _ = creep.repair(repairable_struct);
+            let _ = creep.ITrepair(repairable_struct);
 
             let energy_spent = energy_spent_repairing(creep, repairable_struct);
             room_cache.stats.energy.spending_repair += energy_spent;

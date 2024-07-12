@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::prelude::SliceRandom;
-use screeps::{game, look, Creep, Direction, HasPosition, Part, Room, RoomName, SharedCreepProperties, SpawnOptions};
+use screeps::{game, look, Creep, Direction, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::movement::move_target::{MoveOptions, MoveTarget};
+use crate::room::cache::tick_cache::resources::CachedSource;
 use crate::room::cache::tick_cache::RoomCache;
+use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
 use crate::utils::get_unique_id;
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
@@ -131,7 +133,7 @@ impl SpawnManager {
         };
 
         if let Some(spawn) = available_spawn.first() {
-            let spawn_result = spawn.spawn_creep_with_options(&request.body, &name, options);
+            let spawn_result = spawn.ITspawn_creep_with_options(&request.body, &name, options);
 
             if spawn_result.is_ok() {
                 memory.create_creep(&room.name(), &name, request.creep_memory.clone());
@@ -157,7 +159,7 @@ impl SpawnManager {
         }
 
         let options = SpawnOptions::default().dry_run(true);
-        let dry_run_result = available_spawn.first().unwrap().spawn_creep_with_options(&request.body, "dry_run", &options);
+        let dry_run_result = available_spawn.first().unwrap().ITspawn_creep_with_options(&request.body, "dry_run", &options);
 
         dry_run_result.is_ok()
     }
@@ -174,18 +176,47 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 
     if room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200 {
         for remote in &room_memory.remotes {
-            if game::rooms().get(*remote).is_some() {
-                let room_cache = cache.rooms.get(remote).unwrap();
+                let sources = if let Some(cache) = cache.rooms.get(remote) {
+                    // If we can actually see the sources, we can calculate the EPT
+                    // This way its a bit more accurate.
+                    let mut sources = Vec::new();
 
-                for source in &room_cache.resources.sources {
-                    let source_ept = (source.calculate_work_parts() * 2) as u128;
-                    let source = source.source.clone();
+                    for source in &cache.resources.sources {
+                        let ept = (source.calculate_work_parts() * 2) as u128;
 
+                        sources.push((ept, source.source.pos()));
+                    }
+
+                    sources
+                } else if let Some(scouted_data) = memory.scouted_rooms.get(remote) {
+                    // If we cannot see the sources, we can only estimate the EPT
+                    // But since scouts store source positions, we know that for sure.
+                    // Current EPT estimation (5 work parts * 2 energy per part)
+                    let mut sources = Vec::new();
+
+                    if scouted_data.sources.is_none() {
+                        continue;
+                    }
+
+                    for source in scouted_data.sources.as_ref().unwrap() {
+                        let ept = (5 * 2) as u128;
+
+                        let pos = Position::new(source.x, source.y, *remote);
+
+                        sources.push((ept, pos));
+                    }
+
+                    sources
+                } else {
+                    continue;
+                };
+
+                for (source_ept, source_pos) in sources {
                     let (out_steps, in_steps) = if let Some(storage) =
                         &owning_cache.structures.storage
                     {
                         let mut out_target = MoveTarget {
-                            pos: source.pos(),
+                            pos: source_pos,
                             range: 1,
                         };
                         let mut in_target = MoveTarget {
@@ -202,7 +233,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                             .len() as u128;
                         let in_steps = in_target
                             .find_path_to(
-                                source.pos(),
+                                source_pos,
                                 memory,
                                 MoveOptions::default().path_age(u8::MAX),
                             )
@@ -216,7 +247,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                             .as_position(&owning_cache.room_name);
 
                         let mut out_target = MoveTarget {
-                            pos: source.pos(),
+                            pos: source_pos,
                             range: 1,
                         };
                         let mut in_target = MoveTarget {
@@ -229,7 +260,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                             .len() as u128;
                         let in_steps = in_target
                             .find_path_to(
-                                source.pos(),
+                                source_pos,
                                 memory,
                                 MoveOptions::default().path_age(u8::MAX),
                             )
@@ -240,7 +271,6 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 
                     carry_requirement += source_ept * (out_steps + in_steps);
                 }
-            }
         }
 
         for source in &owning_cache.resources.sources {
@@ -379,6 +409,10 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                     _ => continue,
                 };
 
+                if *required_role == Role::Repairer {
+                    info!("Got repairer, response {}", spawn_request.is_some());
+                }
+
                 if spawn_request.is_none() {
                     continue;
                 }
@@ -460,7 +494,7 @@ fn dfs_clear_spawn(creep: &Creep, dir: Direction) {
     let potential_creep = creep.room().unwrap().look_for_at_xy(look::CREEPS, position.0, position.1);
 
     if potential_creep.is_empty() {
-        let _ = creep.move_direction(dir);
+        let _ = creep.ITmove_direction(dir);
     } else {
         for creep in potential_creep {
             //let random_dir = num_to_dir(rng.gen_range(1..9) as u8);

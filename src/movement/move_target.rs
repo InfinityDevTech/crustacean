@@ -47,18 +47,18 @@ pub struct MoveTarget {
     pub range: u32
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
 
         let mut path_cache = path_cache().lock().unwrap();
 
-        if memory.remote_rooms.contains_key(&self.pos.room_name()) {
+        /*if memory.remote_rooms.contains_key(&self.pos.room_name()) {
                 let possible_path = path_cache.source_to_dest.get(&(from, self.pos)).cloned();
                 if let Some(possible_path) = possible_path {
                     info!("Found path in cache matching exact source and dest.");
-                    visualise_path(possible_path.clone(), from, "#ff0000");
+                    //visualise_path(possible_path.clone(), from, "#ff0000");
                     return self.serialize_path(from, possible_path, move_options, false);
                 }
 
@@ -66,7 +66,7 @@ impl MoveTarget {
 
                 if let Some(path) = path {
                     info!("Found path that we are on.");
-                    visualise_path(path.clone(), from, "#ff0000");
+                    //visualise_path(path.clone(), from, "#ff0000");
                     return self.serialize_path(from, path, move_options, false);
                 }
 
@@ -76,10 +76,10 @@ impl MoveTarget {
 
                 if let Some(pos_on_path) = pos_on_path {
                     info!("Found closest path to dest.");
-                    visualise_path(path.unwrap().clone(), from, "#ff0000");
+                    //visualise_path(path.unwrap().clone(), from, "#ff0000");
                     self.pos = pos_on_path;
                 }
-        }
+        }*/
 
         let opts = SearchOptions::new(|room_name| {
             path_call(room_name, from, memory, move_options)
@@ -95,7 +95,7 @@ impl MoveTarget {
             path_cache.cache_path(from, search.path());
         }
 
-        visualise_path(search.path().clone(), from, "#ff0000");
+        //visualise_path(search.path().clone(), from, "#ff0000");
         self.serialize_path(from, search.path(), move_options, false)
     }
 

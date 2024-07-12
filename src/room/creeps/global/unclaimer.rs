@@ -2,7 +2,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Color, Creep, HasPosition, OwnedStructureProperties, SharedCreepProperties};
 
 use crate::{
-    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions, utils::get_my_username
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_my_username
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -21,7 +21,7 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     if creep.hits() < creep.hits_max() {
-        let _ = creep.heal(creep);
+        let _ = creep.ITheal(creep);
     }
 
     if let Some(flag) = game::flags().get("bulldozeRoom".to_string()) {
@@ -58,16 +58,16 @@ pub fn run_unclaimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
                 if creep.pos().is_near_to(controller.pos()) {
                     if controller.reservation().is_some() && controller.reservation().unwrap().username() == get_my_username() {
-                        let _ = creep.reserve_controller(&controller);
+                        let _ = creep.ITreserve_controller(&controller);
                         return;
                     }
 
                     if controller.reservation().is_none() && memory.remote_rooms.contains_key(&creep.room().unwrap().name()) {
-                        let _ = creep.reserve_controller(&controller);
+                        let _ = creep.ITreserve_controller(&controller);
                     } else if controller.owner().is_none() && memory.goals.room_claim.contains_key(&creep.room().unwrap().name()) {
-                        let _ = creep.claim_controller(&controller);
+                        let _ = creep.ITclaim_controller(&controller);
                     } else {
-                        let res = creep.attack_controller(&controller);
+                        let res = creep.ITattack_controller(&controller);
                         creep.bsay(&format!("{:?}", res), true);
                     }
                 } else {

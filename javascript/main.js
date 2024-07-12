@@ -28,6 +28,7 @@ global.help = function() {
   return `
   Available commands:
   - help(): display this message
+  - toggle_intents_profiling(): toggle intents profiling on and off
   - toggle_creepsay(): toggle creepsay on and off
   - clear_scouting_data(): clear the scouting data
   - hauler_rescan(): rescan the hauler network for each room
@@ -41,6 +42,16 @@ global.toggle_creepsay = function() {
     wasm_module.toggle_creepsay()
 
     return `[JS] Toggled creepsay.`
+  } else {
+    return `[JS] Module not loaded.`
+  }
+}
+
+global.toggle_intents_profiling = function() {
+  if (wasm_module) {
+    wasm_module.toggle_intent_subtraction()
+
+    return `[JS] Toggled intent subtraction.`
   } else {
     return `[JS] Module not loaded.`
   }

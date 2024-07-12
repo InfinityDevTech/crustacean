@@ -9,11 +9,13 @@ use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
 use movement::caching::path_cache;
+use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::tick_cache::{hauling, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
 };
 use screeps::{find, game, OwnedStructureProperties, StructureProperties};
+use traits::intents_tracking::{ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking, StructureExtensionsTracking, StructureObjectTracking};
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -24,6 +26,7 @@ use crate::{
 mod combat;
 mod config;
 mod constants;
+mod profiling;
 mod heap_cache;
 mod logging;
 mod memory;
@@ -64,7 +67,7 @@ pub fn game_loop() {
     #[cfg(feature = "profile")]
     {
         if game::cpu::bucket() > 200 {
-            screeps_timing::start_trace(Box::new(|| {
+            profiling::timing::start_trace(Box::new(|| {
                 (screeps::game::cpu::get_used() * 1000.0) as u64
             }));
         }
@@ -85,7 +88,7 @@ pub fn game_loop() {
 
         #[cfg(feature = "profile")]
         {
-            let _ = screeps_timing::stop_trace();
+            let _ = crate::profiling::timing::stop_trace();
         }
 
         return;
@@ -102,6 +105,8 @@ pub fn game_loop() {
     {
         let mut csay = heap().creep_say.lock().unwrap();
         *csay = memory.creep_say;
+
+        *SUBTRACT_INTENTS.lock().unwrap() = memory.subtract_intents_profiler;
     }
 
     memory.stats.cpu.pathfinding = 0.0;
@@ -204,7 +209,9 @@ pub fn game_loop() {
     }
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
+    let intents_used = *INTENTS_USED.lock().unwrap();
     heap().per_tick_cost_matrixes.lock().unwrap().clear();
+    *INTENTS_USED.lock().unwrap() = 0;
 
     path_cache().lock().unwrap().visualise_all_paths();
 
@@ -224,8 +231,8 @@ pub fn game_loop() {
         percentage_to_next_gcl,
         game::gcl::level() + 1,
     );
-    info!("Used {:.2}% CPU:", cpu_usage_percent);
-    info!("  Total: {:.4}", game::cpu::get_used());
+    info!("Used {:.2}% CPU. Used {:.2}% without intents.", cpu_usage_percent, game::cpu::get_used() - (intents_used as f64 * 0.2));
+    info!("  Total: {:.4} - {} intents using {:.1} CPU. CPU without intents: {:.4}", game::cpu::get_used(), intents_used, intents_used as f32 * 0.2, game::cpu::get_used() - (intents_used as f64 * 0.2));
     info!("  Bucket: {}", game::cpu::bucket());
     info!("  Heap: {:.2}%", used);
     info!("  Time since last reset: {}", heap_lifetime);
@@ -234,7 +241,7 @@ pub fn game_loop() {
     #[cfg(feature = "profile")]
     {
         if game::cpu::bucket() > 200 {
-            let trace = screeps_timing::stop_trace();
+            let trace = profiling::timing::stop_trace();
 
             if let Ok(trace_output) = serde_json::to_string(&trace) {
                 //info!("Trace output: {}", trace_output);
@@ -290,17 +297,17 @@ pub fn set_stats(memory: &mut ScreepsMemory) {
 pub fn big_red_button() {
     for creep in game::creeps().values() {
         let _ = creep.say("WHY???", true);
-        let _ = creep.suicide();
+        let _ = creep.ITsuicide();
     }
     for room in game::rooms().values() {
         if let Some(controller) = room.controller() {
             for structure in room.find(find::MY_STRUCTURES, None) {
-                let _ = structure.destroy();
+                let _ = structure.ITdestroy();
             }
             for csite in room.find(find::MY_CONSTRUCTION_SITES, None) {
-                let _ = csite.remove();
+                let _ = csite.ITremove();
             }
-            let _ = controller.unclaim();
+            let _ = controller.ITunclaim();
         }
     }
 
@@ -314,6 +321,13 @@ pub fn toggle_creepsay() {
     let mut heap_mem = heap().memory.lock().unwrap();
 
     heap_mem.creep_say = !heap_mem.creep_say;
+}
+
+#[wasm_bindgen(js_name = toggle_intent_subtraction)]
+pub fn toggle_intent_subtraction() {
+    let mut heap_mem = heap().memory.lock().unwrap();
+
+    heap_mem.subtract_intents_profiler = !heap_mem.subtract_intents_profiler;
 }
 
 #[wasm_bindgen(js_name = wipe_memory)]

@@ -7,7 +7,7 @@ use crate::{
         self,
         tick_cache::{hauling::{HaulTaskRequest, HaulingType}, resources::CachedSource, RoomCache},
     }, creeps::local::hauler::execute_order},
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -50,7 +50,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
         let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
         if needs_energy {
-            if room_cache.creeps.creeps_of_role.get(&Role::Harvester).unwrap().len() < 2 {
+            if room_cache.creeps.creeps_of_role.get(&Role::Harvester).unwrap_or(&Vec::new()).len() < 2 {
                 let mut target = room_cache
                 .resources
                 .sources
@@ -62,7 +62,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
 
             if let Some(target) = target.first() {
                 if creep.pos().is_near_to(target.source.pos()) {
-                    let _ = creep.harvest(&target.source);
+                    let _ = creep.ITharvest(&target.source);
                 } else {
                     creep.better_move_to(
                         memory,
@@ -86,9 +86,29 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
                 creep_memory.needs_energy = Some(false);
             }
         } else if non_road_csite_count.clone().count() >= 1 {
+            if let Some(spawn) = room_cache.structures.spawns.values().next() {
+                if spawn.store().get_free_capacity(None) > 0 {
+                    if creep.pos().is_near_to(spawn.pos()) {
+                        let _ = creep.ITtransfer(spawn, ResourceType::Energy, None);
+
+                        return;
+                    } else {
+                        creep.better_move_to(
+                            memory,
+                            room_cache,
+                            spawn.pos(),
+                            1,
+                            MoveOptions::default(),
+                        );
+
+                        return;
+                    }
+                }
+            }
+
             if let Some(csite) = non_road_csite_count.next() {
                 if creep.pos().get_range_to(csite.pos()) <= 3 {
-                    let _ = creep.build(csite);
+                    let _ = creep.ITbuild(csite);
                 } else {
                     creep.better_move_to(
                         memory,
@@ -103,7 +123,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
             if let Some(spawn) = room_cache.structures.spawns.values().next() {
                 if spawn.store().get_free_capacity(None) > 0 {
                     if creep.pos().is_near_to(spawn.pos()) {
-                        let _ = creep.transfer(spawn, ResourceType::Energy, None);
+                        let _ = creep.ITtransfer(spawn, ResourceType::Energy, None);
                     } else {
                         creep.better_move_to(
                             memory,
@@ -118,7 +138,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
 
             let controller = &room_cache.structures.controller.as_ref().unwrap();
 
-            if creep.pos().is_near_to(controller.controller.pos()) {
+            if creep.pos().get_range_to(controller.controller.pos()) <= 3 {
                 let _ = creep.upgrade_controller(&controller.controller);
             } else {
                 creep.better_move_to(

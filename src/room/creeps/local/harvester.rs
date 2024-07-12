@@ -8,7 +8,7 @@ use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::cache::tick_cache::{CachedRoom, RoomCache},
-    traits::{creep::CreepExtensions, position::PositionExtensions},
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, position::PositionExtensions},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -17,7 +17,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
     if creep_memory.task_id.is_none() {
         creep.bsay("kurt kob", true);
-        let _ = creep.suicide();
+        let _ = creep.ITsuicide();
         return;
     }
 
@@ -28,10 +28,6 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     scouted_source.creeps.push(creep.try_id().unwrap());
 
     let source = scouted_source.source.clone();
-
-    if creep.spawning() {
-        info!("Spawning creep has registered with source.");
-    }
 
     if creep.spawning() || creep.tired() {
         creep.bsay("😴", false);
@@ -79,8 +75,11 @@ pub fn harvest_source(
 
         None
     } else {
+        if source.energy() == 0 {
+            return None;
+        }
         creep.bsay("⛏️", false);
-        let _ = creep.harvest(&source);
+        let _ = creep.ITharvest(&source);
 
         let amount_harvsted = get_aproximate_energy_mined(creep, &source);
         cache.stats.energy.income_energy += amount_harvsted;
@@ -97,7 +96,7 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Cache
     if let Some(link) = link_id {
         if creep.pos().is_near_to(link.pos()) {
             creep.bsay("🔗", false);
-            let _ = creep.transfer(
+            let _ = creep.ITtransfer(
                 &link,
                 ResourceType::Energy,
                 Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
@@ -131,7 +130,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
 
         if link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
             if creep.pos().is_near_to(link.pos()) {
-                let _ = creep.transfer(
+                let _ = creep.ITtransfer(
                     &link,
                     ResourceType::Energy,
                     Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
@@ -155,11 +154,13 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             .get_free_capacity(Some(ResourceType::Energy))
             == 0
         {
-            let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
+            // Why am I wasting the CPU to drop it?
+            // It will automatically drop and not cost me the 0.2 CPU.
+            //let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
 
-            let _ = creep.drop(ResourceType::Energy, Some(amount));
+            //let _ = creep.ITdrop(ResourceType::Energy, Some(amount));
         } else if creep.pos().is_near_to(container.pos()) {
-            let _ = creep.transfer(&container, ResourceType::Energy, None);
+            let _ = creep.ITtransfer(&container, ResourceType::Energy, None);
         } else {
             creep.better_move_to(
                 memory,
@@ -170,7 +171,8 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             );
         }
     } else {
-        let _ = creep.drop(ResourceType::Energy, None);
+        // Auto drop, save 0.2 CPU
+        //let _ = creep.ITdrop(ResourceType::Energy, None);
     }
 }
 
@@ -198,7 +200,7 @@ pub fn repair_container(
             return true;
         } else {
             creep.bsay("🔧", false);
-            let _ = creep.repair(container);
+            let _ = creep.ITrepair(container);
             return true;
         }
     }

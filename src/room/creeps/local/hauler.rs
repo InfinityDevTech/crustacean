@@ -14,7 +14,7 @@ use crate::{
         hauling::{HaulTaskRequest, HaulingType},
         CachedRoom, RoomCache,
     },
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -144,7 +144,7 @@ pub fn execute_order(
         let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
 
         if free_capacity > 0 {
-            let _ = creep.pickup(resource);
+            let _ = creep.ITpickup(resource);
 
             // If our free capacity is less than the resource, e.g. we can't pick it all up
             // Drop our hauling task, drop our reservation, and drop the path.
@@ -169,7 +169,7 @@ pub fn execute_order(
                     .retain(|x| x.id() != resource.id());
 
                 creep.bsay("PKUP", false);
-                let _ = creep.pickup(resource);
+                let _ = creep.ITpickup(resource);
 
                 if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
                     creep_memory.hauling_task.as_mut().unwrap().amount =
@@ -200,7 +200,7 @@ pub fn execute_order(
 
         if creep.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
             if free_capacity > amount {
-                let _ = creep.withdraw(tombstone, ResourceType::Energy, Some(amount as u32));
+                let _ = creep.ITwithdraw(tombstone, ResourceType::Energy, Some(amount as u32));
 
                 cache.creeps_moving_stuff.insert(creep.name(), true);
 
@@ -215,7 +215,7 @@ pub fn execute_order(
             } else {
                 creep.bsay("WTHDW", false);
 
-                let _ = creep.withdraw(tombstone, ResourceType::Energy, None);
+                let _ = creep.ITwithdraw(tombstone, ResourceType::Energy, None);
 
                 if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
                     creep_memory.hauling_task.as_mut().unwrap().amount =
@@ -253,7 +253,7 @@ pub fn execute_order(
             cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
             position.unwrap(),
             1,
-            MoveOptions::default().path_age(6),
+            MoveOptions::default().path_age(6).avoid_enemies(true),
         );
 
         match order.haul_type {
@@ -279,7 +279,7 @@ pub fn execute_order(
                     resource.amount().try_into().unwrap(),
                 );
 
-                let result = creep.pickup(&resource);
+                let result = creep.ITpickup(&resource);
 
                 cache.creeps_moving_stuff.insert(creep.name(), true);
 
@@ -297,7 +297,7 @@ pub fn execute_order(
                         creep.store().get_free_capacity(Some(order.resource)),
                         amount as i32,
                     );
-                    let result = creep.withdraw(
+                    let result = creep.ITwithdraw(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
                         Some(amount.try_into().unwrap()),
@@ -307,7 +307,7 @@ pub fn execute_order(
 
                     (amount, result)
                 } else {
-                    let result = creep.withdraw(
+                    let result = creep.ITwithdraw(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
                         None,
@@ -330,7 +330,7 @@ pub fn execute_order(
                         creep.store().get_used_capacity(Some(order.resource)),
                         amount,
                     );
-                    let result = creep.transfer(
+                    let result = creep.ITtransfer(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
                         Some(amount),
@@ -342,7 +342,7 @@ pub fn execute_order(
 
                     (amount as i32, result)
                 } else {
-                    let result = creep.transfer(
+                    let result = creep.ITtransfer(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
                         None,
@@ -378,7 +378,7 @@ pub fn execute_order(
                     } else {
                         cache.creeps_moving_stuff.insert(creep.name(), true);
 
-                        creep.withdraw(
+                        creep.ITwithdraw(
                             target.unchecked_ref::<StructureStorage>(),
                             order.resource,
                             Some(amount.try_into().unwrap()),
@@ -389,7 +389,7 @@ pub fn execute_order(
                 } else {
                     cache.creeps_moving_stuff.insert(creep.name(), true);
 
-                    let result = creep.withdraw(
+                    let result = creep.ITwithdraw(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
                         None,
@@ -424,7 +424,7 @@ pub fn execute_order(
             }
             ErrorCode::NoBodypart => {
                 creep.bsay("NO-BP", false);
-                let _ = creep.suicide();
+                let _ = creep.ITsuicide();
             }
             _ => {
                 creep.bsay(&format!("{:?}", result.err().unwrap()), false);

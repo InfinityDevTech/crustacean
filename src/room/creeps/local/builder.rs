@@ -9,7 +9,7 @@ use crate::{
         hauling::{HaulTaskRequest, HaulingType},
         RoomCache,
     },
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 
 use super::{hauler::execute_order, upgrader::run_upgrader};
@@ -66,7 +66,7 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                 );
             } else {
                 creep.bsay("🔨", false);
-                let _ = creep.build(site);
+                let _ = creep.ITbuild(site);
                 room_cache.stats.energy.spending_construction += energy_spent_building(creep, site);
             }
         }
@@ -118,7 +118,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                     );
                 } else {
                     creep.bsay("🔋", false);
-                    let _ = creep.withdraw(container, ResourceType::Energy, None);
+                    let _ = creep.ITwithdraw(container, ResourceType::Energy, None);
                 }
 
                 return;

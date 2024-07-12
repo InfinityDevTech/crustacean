@@ -1,10 +1,11 @@
+use log::info;
 use screeps::{HasHits, HasId, ResourceType, StructureProperties};
 
-use crate::utils::scale_haul_priority;
+use crate::{traits::intents_tracking::TowerExtensionsTracking, utils::scale_haul_priority};
 
 use super::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom};
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_towers(cached_room: &mut CachedRoom) {
     for tower in cached_room.structures.towers.values() {
         if tower.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
@@ -27,18 +28,21 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
         // Use cache here
         let enemies = &cached_room.creeps.enemy_creeps;
         if enemies.is_empty() {
-            let friendlies = &cached_room.creeps.owned_creeps;
+            let friendlies = &cached_room.creeps.creeps_in_room;
             let allies = &cached_room.creeps.allied_creeps;
 
             if !friendlies.is_empty() {
                 let damaged = friendlies
                     .iter()
-                    .filter(|c| c.1.hits() < c.1.hits_max())
+                    // I cant believe it took me this long to find.
+                    // It wond repair shit of there is a creep spawning.
+                    .filter(|c| c.1.hits() < c.1.hits_max() && !c.1.spawning())
                     .collect::<Vec<_>>();
 
                 if !damaged.is_empty() {
                     let target = damaged.first().unwrap();
-                    let _ = tower.heal(target.1);
+                    info!("Attempting to heal: {:?}", target.1);
+                    let _ = tower.ITheal(target.1);
                     continue;
                 }
             }
@@ -51,21 +55,33 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
 
                 if !damaged.is_empty() {
                     let target = damaged.first().unwrap();
-                    let _ = tower.heal(*target);
+                    info!("Attempting to heal ally: {:?}", target);
+                    let _ = tower.ITheal(*target);
                     continue;
                 }
             }
 
             let mut ramparts = cached_room.structures.ramparts.clone();
-            ramparts.sort_by_key(|rampart| rampart.hits());
-    
-            if let Some(rampart) = ramparts.first() {
-                if rampart.hits() < 1500 {
-                    let _ = tower.repair(rampart);
+            let mut lowest_hits = u32::MAX;
+            let mut lowest_rampart = None;
+
+            for rampart in ramparts {
+                if rampart.hits() > 2000 {
+                    continue;
+                }
+
+                if rampart.hits() < lowest_hits && rampart.hits() < 2000 {
+                    lowest_hits = rampart.hits();
+                    lowest_rampart = Some(rampart);
                 }
             }
+
+            if let Some(rampart) = lowest_rampart {
+                let _ = tower.ITrepair(&rampart);
+                continue;
+            }
         } else {
-            let _ = tower.attack(enemies.first().unwrap());
+            let _ = tower.ITattack(enemies.first().unwrap());
             return;
         }
     }

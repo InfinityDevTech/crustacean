@@ -8,14 +8,14 @@ use std::{
 use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use log::*;
-use movement::caching::path_cache;
+use movement::{caching::path_cache, move_target::MoveOptions, pathfinding::PathFinder, utils::visualise_path};
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::tick_cache::{hauling, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
 };
-use screeps::{find, game, OwnedStructureProperties, StructureProperties};
-use traits::intents_tracking::{ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking, StructureExtensionsTracking, StructureObjectTracking};
+use screeps::{find, game, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
+use traits::intents_tracking::{ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking, StructureObjectTracking};
 use wasm_bindgen::prelude::*;
 
 use crate::{
@@ -60,9 +60,6 @@ pub fn init() {
 // , screeps_timing_annotate::timing
 //#[cfg(feature = "profile")]
 
-// TODO: Improve logistics, or improve remoting, either or
-// Reserve remotes, we need the 3k energy from the sources. <- This is getting made, goal system.
-// Fix the hauler reserving logic? It doesnt appear to be persistent cross tick.
 pub fn game_loop() {
     #[cfg(feature = "profile")]
     {
@@ -171,14 +168,15 @@ pub fn game_loop() {
         let room = game::rooms().get(room).unwrap();
         if let Some(room_cache) = cache.rooms.get_mut(&room.name()) {
             let start = game::cpu::get_used();
-            traffic::run_movement(room_cache);
+            traffic::run_movement(room_cache, &mut memory);
 
             if room.my() {
                 info!(
-                    "[{}] Traffic took: {:.4} with {} intents",
+                    "[{}] Traffic took: {:.4} with {} intents, {:.4} without intents",
                     room.name().to_string(),
                     game::cpu::get_used() - start,
-                    room_cache.traffic.move_intents
+                    room_cache.traffic.move_intents,
+                    game::cpu::get_used() - start - (room_cache.traffic.move_intents as f64 * 0.2)
                 );
             }
 
@@ -237,6 +235,31 @@ pub fn game_loop() {
     info!("  Heap: {:.2}%", used);
     info!("  Time since last reset: {}", heap_lifetime);
     *heap_lifetime += 1;
+
+    /*if game::cpu::bucket() > 1000 {
+    let origin = Position::new(RoomCoordinate::new(37).unwrap(), RoomCoordinate::new(16).unwrap(), RoomName::new("W1N9").unwrap());
+        let dest = Position::new(RoomCoordinate::new(11).unwrap(), RoomCoordinate::new(17).unwrap(), RoomName::new("W1N9").unwrap());
+
+        let o = origin.clone();
+        let mut m = memory.clone();
+
+        let callback = Box::new(move |r: RoomName| {
+            crate::movement::move_target::lcl_call(r, origin, &m, MoveOptions::default())
+        });
+
+        let mut call = PathFinder::setup(origin, vec![dest], callback, 1, 5, 1, 10000, u32::MAX, false, 1.2);
+
+        let res = call.search();
+
+        if !res.incomplete {
+            info!("AAAAAAAAAAAAAAAAAAAAAAAA");
+            info!("Successfull: {:?}", res);
+            visualise_path(res.path, origin, "#ff0000");
+        } else {
+            info!("AAAAAAAAAAAAAAAAAAAAAAA");
+            info!("Failed!");
+        }
+    }*/
 
     #[cfg(feature = "profile")]
     {

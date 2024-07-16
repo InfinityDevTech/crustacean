@@ -1,10 +1,10 @@
 use rand::prelude::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use screeps::game::map::{RoomStatus, RoomStatusResult};
+use screeps::game::map::RoomStatus;
 use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
-use crate::memory::RoomStats;
 use crate::movement::move_target::MoveOptions;
+use crate::room::creeps::local::upgrader::sign_controller;
 use crate::{
     memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
 };
@@ -29,6 +29,13 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let scout_target = RoomPosition::new(25, 25, scout_target);
 
         if creep.room().unwrap().name() == scout_target.room_name() {
+            if sign_controller(creep, memory, cache) {
+                return;
+            }
+
+            let cached_room = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+            let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+
             if creep.pos().get_range_to(scout_target.pos()) <= 23 {
                 creep.bsay("🔍 🏠", true);
 

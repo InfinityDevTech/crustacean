@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use super::CachedRoom;
-use crate::traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking};
+use crate::{memory::ScreepsMemory, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {
@@ -31,8 +31,31 @@ impl TrafficCache {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn run_movement(room_cache: &mut CachedRoom) {
+pub fn run_movement(room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
     let pre_traffic_cpu = game::cpu::get_used();
+
+    if !memory.rooms.contains_key(&room_cache.room_name) {
+        for (creep, matched_coord) in room_cache.traffic.intended_move.clone() {
+            let creep = game::get_object_by_id_typed(&creep).unwrap();
+
+            if matched_coord == creep.pos().xy() {
+                continue;
+            }
+            let x = RoomCoordinate::new(matched_coord.x.u8());
+            let y = RoomCoordinate::new(matched_coord.y.u8());
+    
+            if x.is_err() || y.is_err() {
+                continue;
+            }
+    
+            let position = Position::new(x.unwrap(), y.unwrap(), creep.room().unwrap().name());
+
+            let direction = creep.pos().get_direction_to(position).unwrap();
+            let _ = creep.ITmove_direction(direction);
+        }
+
+        return;
+    }
 
     room_cache.traffic.movement_map.clear();
     let mut creeps_with_movement_intent = Vec::new();

@@ -1,9 +1,8 @@
-use log::info;
-use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Room, RoomXY, Structure, StructureObject, StructureProperties, StructureType};
+use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Room, RoomXY, StructureObject};
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
-    room::cache::tick_cache::CachedRoom, traits::room::RoomExtensions, utils,
+    room::cache::tick_cache::CachedRoom, utils,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

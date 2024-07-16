@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{
     game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties,
     Source, StructureContainer,
@@ -37,16 +36,15 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
-        if !link_deposit(creep, creep_memory, cached_room) {
-            deposit_energy(creep, memory, cached_room);
+        if !link_deposit(creep, creep_memory, cached_room) && !deposit_energy(creep, memory, cached_room) {
+            harvest_source(creep, source, memory, cached_room);
         }
-        harvest_source(creep, source, memory, cached_room);
     } else {
         harvest_source(creep, source, memory, cached_room);
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvest_source(
     creep: &Creep,
     source: Source,
@@ -109,7 +107,7 @@ fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut Cache
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
+pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) -> bool {
     creep.bsay("📦", false);
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
@@ -122,7 +120,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             .get_container(&cache.structures)
         {
             if repair_container(creep, memory, cache, &container) {
-                return;
+                return true;
             }
         }
 
@@ -135,10 +133,13 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
                     ResourceType::Energy,
                     Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
                 );
+
+                return false;
             } else {
                 creep.better_move_to(memory, cache, link.pos(), 1, MoveOptions::default());
+
+                return true;
             }
-            return;
         }
     }
 
@@ -146,7 +147,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
         .get_container(&cache.structures)
     {
         if repair_container(creep, memory, cache, &container) {
-            return;
+            return true;
         }
 
         if container
@@ -159,8 +160,11 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             //let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
 
             //let _ = creep.ITdrop(ResourceType::Energy, Some(amount));
+            return false;
         } else if creep.pos().is_near_to(container.pos()) {
             let _ = creep.ITtransfer(&container, ResourceType::Energy, None);
+
+            return false;
         } else {
             creep.better_move_to(
                 memory,
@@ -169,10 +173,13 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
                 1,
                 MoveOptions::default(),
             );
+
+            return true;
         }
     } else {
         // Auto drop, save 0.2 CPU
         //let _ = creep.ITdrop(ResourceType::Energy, None);
+        return false;
     }
 }
 

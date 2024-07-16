@@ -1,7 +1,6 @@
 // If I set alliance tag to null, I dont want to to be added lol
 #![allow(clippy::comparison_to_empty)]
 
-use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, OwnedStructureProperties, Part, Position, RoomCoordinate, RoomName};
 
@@ -34,11 +33,17 @@ pub fn get_my_username() -> String {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn get_room_sign() -> String {
+pub fn get_room_sign(remote: bool) -> String {
     let alliance_tag = config::ALLIANCE_TAG;
 
+    let to_use = if remote {
+        config::REMOTE_SIGNS.to_vec()
+    } else {
+        config::ROOM_SIGNS.to_vec()
+    };
+
     let mut seedable = StdRng::seed_from_u64(game::time().into());
-    let sign = config::ROOM_SIGNS[seedable.gen_range(0..config::ROOM_SIGNS.len())];
+    let sign = to_use[seedable.gen_range(0..to_use.len())];
 
     if alliance_tag != "" {
         return format!("{} {}", alliance_tag, sign);
@@ -52,17 +57,6 @@ pub fn room_type(name: &RoomName) -> RoomType {
 
     let ew = room_x % 10;
     let ns = room_y % 10;
-
-    if name == "W9N15" {
-        info!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        info!("Found W9N15");
-
-        info!("Room X: {}", room_x);
-        info!("Room Y: {}", room_y);
-
-        info!("EW: {}", ew);
-        info!("NS: {}", ns);
-    }
 
     if ew == 0 && ns == 0 {
         return RoomType::Intersection

@@ -37,7 +37,7 @@ pub trait RoomExtensions {
     fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()
@@ -122,7 +122,7 @@ impl RoomExtensions for screeps::Room {
         let sources = &room_cache.resources.sources;
 
         for (i, source) in sources.iter().enumerate() {
-            if source.calculate_work_parts() < source.parts_needed()
+            if source.calculate_work_parts(&room_cache) < source.parts_needed(&room_cache)
                 && source.creeps.len() < source.calculate_mining_spots(self).into()
             {
                 return Some(i as u8);
@@ -156,7 +156,7 @@ impl RoomExtensions for screeps::Room {
                 sign_text.to_string()
             };
 
-        config::ROOM_SIGNS.contains(&tag_without_alliance_marker.as_str())
+        config::ROOM_SIGNS.contains(&tag_without_alliance_marker.as_str()) || config::REMOTE_SIGNS.contains(&tag_without_alliance_marker.as_str())
     }
 
     fn room_type(&self) -> RoomType {

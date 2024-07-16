@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use screeps::{game, Direction, PolyStyle, Position, RectStyle, RoomName, RoomXY};
+use screeps::{game, Direction, PolyStyle, Position, RoomName, RoomXY};
 
-pub fn visualise_path(path: Vec<Position>, from_pos: Position, color: &str) {
-    let room_name = from_pos.room_name();
-
+pub fn visualise_path(path: Vec<Position>, _from_pos: Position, color: &str) {
     let style = PolyStyle::default()
     .stroke(color)
     .line_style(screeps::LineDrawStyle::Dashed);

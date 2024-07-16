@@ -6,13 +6,16 @@ use screeps::{
 use wasm_bindgen::JsCast;
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory},
+    memory::ScreepsMemory,
     movement::move_target::MoveOptions,
     room::cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType},
         CachedRoom, RoomCache,
     },
-    traits::{creep::CreepExtensions, intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking}},
+    traits::{
+        creep::CreepExtensions,
+        intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking},
+    },
     utils::scale_haul_priority,
 };
 
@@ -44,7 +47,8 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         creep.bsay("WTHD", false);
         let container_id = creep_memory.fastfiller_container;
-        if container_id.is_none() {
+        let link = &cached_room.structures.links.fast_filler;
+        if container_id.is_none() && link.is_none() {
             let priority = scale_haul_priority(
                 creep.store().get_capacity(None),
                 creep.store().get_used_capacity(None),
@@ -60,6 +64,22 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                 priority,
                 HaulingType::Transfer,
             );
+        } else if link.is_some() {
+            let link = link.as_ref().unwrap();
+
+            if link.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+                if creep.pos().is_near_to(link.pos()) {
+                    let _ = creep.ITwithdraw(link, ResourceType::Energy, None);
+                } else {
+                    creep.better_move_to(
+                        memory,
+                        cached_room,
+                        link.pos(),
+                        1,
+                        MoveOptions::default(),
+                    );
+                }
+            }
         } else {
             let container = game::get_object_by_id_typed(&container_id.unwrap());
 
@@ -108,13 +128,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
             None,
         );
     } else {
-        creep.better_move_to(
-            memory,
-            cached_room,
-            target.pos(),
-            1,
-            MoveOptions::default(),
-        );
+        creep.better_move_to(memory, cached_room, target.pos(), 1, MoveOptions::default());
     }
 }
 
@@ -192,22 +206,10 @@ pub fn check_current_position(
                 .look_for_at_xy(look::CREEPS, position_2.x(), position_2.y());
 
         if pos_1_creep.is_empty() {
-            creep.better_move_to(
-                memory,
-                cache,
-                position_1.into(),
-                0,
-                MoveOptions::default(),
-            );
+            creep.better_move_to(memory, cache, position_1.into(), 0, MoveOptions::default());
             return true;
         } else if pos_2_creep.is_empty() {
-            creep.better_move_to(
-                memory,
-                cache,
-                position_2.into(),
-                0,
-                MoveOptions::default(),
-            );
+            creep.better_move_to(memory, cache, position_2.into(), 0, MoveOptions::default());
             return true;
         }
 

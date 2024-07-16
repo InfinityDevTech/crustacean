@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Mutex};
 
-use log::info;
 use serde::*;
 
 lazy_static::lazy_static! {

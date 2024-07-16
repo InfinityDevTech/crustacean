@@ -1,4 +1,4 @@
-use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, RoomCoordinate, RoomName};
+use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, RoomCoordinate, RoomName, TextStyle};
 
 use crate::{config, memory::ScreepsMemory};
 
@@ -14,13 +14,11 @@ pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cached_room: &m
 pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: &mut CachedRoom) {
     for spawn in cache.structures.spawns.values() {
         if let Some(spawning) = spawn.spawning() {
-            let progress = (spawning.remaining_time() as f32 / spawning.need_time() as f32) * 100.0;
-
             room.visual().text(
                 spawn.pos().x().u8() as f32,
                 spawn.pos().y().u8() as f32 + 0.25,
-                format!("{:.1}", progress),
-                Default::default(),
+                format!("{:.1}", spawning.remaining_time() - 1),
+                Some(TextStyle::default().align(screeps::TextAlign::Center)),
             );
         }
     }

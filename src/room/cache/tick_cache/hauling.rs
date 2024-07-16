@@ -453,13 +453,6 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                 if let Some(reserved_order) = heap_hauling.reserved_orders.get_mut(&order.target) {
                     reserved_order.reserved_amount += carry_capacity as i32;
                     reserved_order.creeps_assigned.push(creep.name());
-
-                    if order.target_type.is_none() {
-                        info!(
-                            "Rserving dropped energy {:?}",
-                            reserved_order.creeps_assigned
-                        );
-                    }
                 } else {
                     // If the order is not reserved, we reserve it.
                     heap_hauling.reserved_orders.insert(
@@ -495,7 +488,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
     );
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
     if order.no_distance_calc {
         order.priority
@@ -679,7 +672,7 @@ impl RoomHaulingOrder {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_spawn(room_cache: &mut CachedRoom) {
     let has_ff = !room_cache
         .creeps
@@ -688,10 +681,15 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
         .unwrap_or(&Vec::new())
         .is_empty();
 
+    let has_base_hauler = !room_cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::BaseHauler)
+        .unwrap_or(&Vec::new())
+        .is_empty();
+
     for spawn in room_cache.structures.spawns.values() {
-        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0
-            || (has_ff && room_cache.structures.containers.fast_filler.is_some())
-        {
+        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || (has_ff && (room_cache.structures.containers.fast_filler.is_some() || (room_cache.structures.links.fast_filler.is_some() && room_cache.rcl >= 7) )) || has_base_hauler {
             continue;
         }
 

@@ -1,29 +1,58 @@
 use log::info;
 use screeps::{HasHits, HasId, ResourceType, StructureProperties};
 
-use crate::{traits::intents_tracking::TowerExtensionsTracking, utils::scale_haul_priority};
+use crate::{
+    memory::Role, traits::intents_tracking::TowerExtensionsTracking, utils::scale_haul_priority,
+};
 
-use super::cache::tick_cache::{hauling::{HaulingPriority, HaulingType}, CachedRoom};
+use super::cache::tick_cache::{
+        hauling::{HaulingPriority, HaulingType},
+        CachedRoom,
+    };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_towers(cached_room: &mut CachedRoom) {
     for tower in cached_room.structures.towers.values() {
         if tower.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
-            let priority = scale_haul_priority(
-                tower.store().get_capacity(Some(ResourceType::Energy)),
-                tower.store().get_used_capacity(Some(ResourceType::Energy)),
-                HaulingPriority::Combat,
-                true,
-            );
+            let base_hauler_count = cached_room
+                .creeps
+                .creeps_of_role
+                .get(&Role::BaseHauler)
+                .unwrap_or(&Vec::new())
+                .len();
 
-            cached_room.hauling.create_order(
-                tower.raw_id(),
-                Some(tower.structure_type()),
-                Some(ResourceType::Energy),
-                Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
-                priority,
-                HaulingType::Transfer,
-            );
+            if cached_room.structures.storage.is_some() && base_hauler_count >= 1 {
+                let mut priority = scale_haul_priority(
+                    tower.store().get_capacity(Some(ResourceType::Energy)),
+                    tower.store().get_used_capacity(Some(ResourceType::Energy)),
+                    HaulingPriority::Combat,
+                    true,
+                );
+
+                if tower.store().get_used_capacity(Some(ResourceType::Energy)) < 100 {
+                    priority -= 6.0;
+
+                    cached_room.hauling.create_order(
+                        tower.raw_id(),
+                        Some(tower.structure_type()),
+                        Some(ResourceType::Energy),
+                        Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
+                        priority,
+                        HaulingType::NoDistanceCalcTransfer,
+                    );
+
+                    continue;
+                } else {
+                    cached_room.hauling.create_order(
+                        tower.raw_id(),
+                        Some(tower.structure_type()),
+                        Some(ResourceType::Energy),
+                        Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
+                        priority,
+                        HaulingType::Transfer,
+                    );
+                }
+            }
         }
         // Use cache here
         let enemies = &cached_room.creeps.enemy_creeps;
@@ -61,7 +90,7 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
                 }
             }
 
-            let mut ramparts = cached_room.structures.ramparts.clone();
+            let ramparts = cached_room.structures.ramparts.clone();
             let mut lowest_hits = u32::MAX;
             let mut lowest_rampart = None;
 
@@ -82,7 +111,7 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
             }
         } else {
             let _ = tower.ITattack(enemies.first().unwrap());
-            return;
+            continue;
         }
     }
 }

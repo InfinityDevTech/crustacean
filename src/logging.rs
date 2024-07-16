@@ -79,6 +79,7 @@ fn panic_hook(info: &PanicHookInfo) {
 
     if SHOW_BACKTRACE {
         Error::stack_trace_limit(10000_f32);
+        info!("Printing backtrace (10000 frames):");
         let stack = Error::new().stack();
         // Skip all frames before the special symbol `__rust_end_short_backtrace`
         // and then skip that frame too.

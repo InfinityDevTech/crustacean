@@ -4,8 +4,24 @@ pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "";
 
+pub const ROOM_REMOTE_COUNT: u8 = 8;
+
 pub const INVADER_USERNAME: &str = "Invader";
 pub const ALLIES: [&str; 3] = ["MarvinTMB", "Shylo132", "kbharlem"];
+
+pub const REMOTE_SIGNS: [&str; 1] = [
+//"Woops. - Infinity Dev",
+//"Boo. - Infinity Dev",
+//"FREE CANDY!!! - Infinity Dev",
+//"Infinity wuz here - Infinity Dev",
+//"Personally, I think we should delete invaders. Oh! And tigga, because tiger scary. - Infinity Dev",
+//"Ourobot V2, more like, 🐍bot. Idk, im just bored at this point. - Infinity Dev",
+//"I couldnt think of any other funny names. Just pretend I did. - Infinity Dev",
+//"oOoOoOoOoh Taxes. - Infinity Dev",
+//"Dont mess with me, my mom called me handsome. - Infinity Dev",
+//"I think im a bot? - Infinity Dev",
+"liaohao isnt gone. Just ask lp136. - Infinity Dev",
+];
 
 pub const ROOM_SIGNS: [&str; 24] = [
 //"Rust programming is just crab game.",
@@ -30,7 +46,7 @@ pub const ROOM_SIGNS: [&str; 24] = [
 "Cease the Collectivization!",
 "Its not Communism, its Marvinism!",
 "Communism != Collectivization",
-"Why did the creeps cross the road. They were under Marvin's collectivized control.",
+"Why did the creeps cross the road? They were under Marvin's collectivized control.",
 "Real communism requires individual control.",
 "The top 1% dont control as much as Marvin. Stop the collectivization!",
 "Marvin is a collectivized menace.",

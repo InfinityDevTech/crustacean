@@ -1,7 +1,6 @@
-use log::info;
-use screeps::{game, Creep, Part, Room, RoomName, SharedCreepProperties};
+use screeps::{game, Part, ResourceType, Room, RoomName, SharedCreepProperties};
 
-use crate::{constants::{self, part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
+use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
 
 use super::{determine_group_attack_power, determine_single_attack_power};
 
@@ -170,6 +169,14 @@ fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, 
     let mut current_power = 0;
 
     let energy_available = responsible_room.energy_available();
+
+    if let Some(store) = cache.rooms.get(&responsible_room.name()) {
+        if let Some(store) = &store.structures.storage {
+            if store.store().get_used_capacity(Some(ResourceType::Energy)) < 10000 {
+                return;
+            }
+        }
+    }
 
     while current_cost < energy_available {
         if current_cost + stamp_cost > energy_available || current_power + stamp_power > enemy_power {

@@ -1,13 +1,12 @@
 use std::vec;
 
-use log::info;
-use screeps::{find, game, memory, Flag, HasPosition, OwnedStructureProperties, Part, RoomName, SharedCreepProperties, StructureType};
+use screeps::{find, game, Flag, HasPosition, OwnedStructureProperties, Part, RoomName, SharedCreepProperties, StructureType};
 
 use crate::{
     goal_memory::RoomClaimGoal,
     memory::{CreepMemory, Role, ScreepsMemory},
     room::cache::tick_cache::RoomCache,
-    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
+    traits::intents_tracking::RoomExtensionsTracking,
     utils::{self, role_to_name},
 };
 
@@ -58,8 +57,6 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
     // Spawn the claimer
     if !claimed && goal.creeps_assigned.len() == 0 {
-        let responsible_cache = cache.rooms.get_mut(&responsible_room.unwrap()).unwrap();
-
         let claimer_body = vec![Part::Claim, Part::Move];
         let claimer_cost = utils::get_body_cost(&claimer_body);
 
@@ -104,7 +101,6 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         }
     } else if claimed {
         if goal.creeps_assigned.len() < 3 {
-            let responsible_cache = cache.rooms.get_mut(&responsible_room.unwrap()).unwrap();
 
             let claimer_body = get_creep_body();
             let claimer_cost = utils::get_body_cost(&claimer_body);

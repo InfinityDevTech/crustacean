@@ -1,10 +1,10 @@
 use std::cmp;
 
-use screeps::{ResourceType, Room};
+use screeps::{HasId, ResourceType, Room, StructureType};
 
-use crate::traits::intents_tracking::StructureLinkExtensionsTracking;
+use crate::memory::Role;
 
-use super::cache::tick_cache::CachedRoom;
+use super::cache::tick_cache::{hauling::HaulingType, CachedRoom};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
@@ -33,6 +33,14 @@ pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
     }
 
     if let Some(storage_link) = &room_cache.structures.links.storage {
+        let base_hauler_count = room_cache.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+
+        if base_hauler_count == 0 {
+            let amount = storage_link.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy));
+
+            room_cache.hauling.create_order(storage_link.raw_id(), Some(StructureType::Extension), Some(ResourceType::Energy), Some(amount), -(amount as f32), HaulingType::Offer);
+        }
+
         if let Some(fastfill_link) = &room_cache.structures.links.fast_filler {
             let fastfill_capacity = fastfill_link.store().get_free_capacity(Some(screeps::constants::ResourceType::Energy));
             let source_capacity = storage_link.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy));

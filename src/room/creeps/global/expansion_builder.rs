@@ -3,10 +3,8 @@ use screeps::{Creep, HasPosition, Position, ResourceType, RoomCoordinate, Shared
 use crate::{
     memory::{Role, ScreepsMemory},
     movement::move_target::MoveOptions,
-    room::{cache::{
-        self,
-        tick_cache::{hauling::{HaulTaskRequest, HaulingType}, resources::CachedSource, RoomCache},
-    }, creeps::local::hauler::execute_order},
+    room::{cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, resources::CachedSource, RoomCache},
+    creeps::local::hauler::execute_order},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 

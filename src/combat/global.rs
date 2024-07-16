@@ -1,5 +1,3 @@
-use screeps::Room;
-
 use crate::{memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
 
 use super::setters;

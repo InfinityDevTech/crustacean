@@ -1,11 +1,11 @@
-use screeps::{game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CostMatrix, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, StructureProperties};
+use screeps::{pathfinder::{self, MultiRoomCostResult, SearchOptions}, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, StructureProperties};
 
 use crate::{memory::ScreepsMemory, room::cache::tick_cache::CachedRoom};
 
 use super::convert_path_to_roads;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory) {
+pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, _memory: &mut ScreepsMemory) {
     for source in &cache.resources.sources {
         let origin_position = if cache.structures.storage.is_some() {
             cache.structures.storage.as_ref().unwrap().pos()
@@ -51,7 +51,7 @@ pub fn plan_main_room_roads(room: &Room, cache: &CachedRoom, memory: &mut Screep
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn room_callback(room_name: &RoomName, room_cache: &CachedRoom) -> MultiRoomCostResult {
+fn room_callback(_room_name: &RoomName, room_cache: &CachedRoom) -> MultiRoomCostResult {
     let mut local_matrix = LocalCostMatrix::default();
 
     for road in room_cache.structures.roads.values() {

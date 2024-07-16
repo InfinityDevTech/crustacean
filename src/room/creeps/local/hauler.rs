@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{
     game, Creep, ErrorCode, HasId, HasPosition, ObjectId, Resource, ResourceType,
     SharedCreepProperties, StructureStorage,
@@ -8,7 +7,7 @@ use wasm_bindgen::JsCast;
 
 use crate::{
     heap,
-    memory::{CreepHaulTask, CreepMemory, Role, ScreepsMemory},
+    memory::{CreepHaulTask, Role, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::cache::tick_cache::{
         hauling::{HaulTaskRequest, HaulingType},

@@ -1,9 +1,8 @@
-use std::{cmp, collections::HashMap};
+use std::collections::HashMap;
 
-use log::info;
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, utils::scale_haul_priority};
+use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, traits::intents_tracking::CreepExtensionsTracking, utils::scale_haul_priority};
 
 use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
@@ -169,28 +168,34 @@ impl CachedSource {
         None
     }
 
-    pub fn parts_needed(&self) -> u8 {
+    pub fn parts_needed(&self, cache: &CachedRoom) -> u8 {
         let max_energy = self.source.energy_capacity();
 
         // Each work part equates to 2 energy per tick
         // Each source refills energy every 300 ticks.
         let max_work_needed = (max_energy / 600) + 1;
-        let current_work = self.calculate_work_parts();
+        let current_work = self.calculate_work_parts(cache);
 
         // Fixes issue where if we spawn with more parts,
         // We would integer underflow and return u32::MAX parts.
         if current_work as u32 >= max_work_needed {
             //info!("Dodging underflow bug in parts_needed");
             return 0;
-        } else {
-            info!("Current work: {}, Max work needed: {}", current_work, max_work_needed);
         }
 
         let work_parts_needed = max_work_needed - current_work as u32;
 
-        info!("Work parts needed: {}", work_parts_needed.clamp(0, 6));
+        work_parts_needed.clamp(0, u8::MAX as u32) as u8
+    }
 
-        work_parts_needed.clamp(0, 6) as u8
+    pub fn max_parts_needed(&self) -> u8 {
+        let max_energy = self.source.energy_capacity();
+
+        // Each work part equates to 2 energy per tick
+        // Each source refills energy every 300 ticks.
+        let max_work_needed = (max_energy / 600) + 1;
+
+        max_work_needed.clamp(0, u8::MAX as u32) as u8
     }
 
     pub fn calculate_mining_spots(&self, room: &Room) -> u8 {
@@ -211,7 +216,7 @@ impl CachedSource {
         available_spots
     }
 
-    pub fn calculate_work_parts(&self) -> u8 {
+    pub fn calculate_work_parts(&self, cache: &CachedRoom) -> u8 {
         let creeps = &self.creeps;
 
         let mut work_parts: u8 = 0;
@@ -219,7 +224,6 @@ impl CachedSource {
         for creep in creeps {
             let creep = game::get_object_by_id_typed(creep);
             if creep.is_none() {
-                info!("Creep is none, skipping...");
                 continue;
             }
 
@@ -228,28 +232,43 @@ impl CachedSource {
             let mut body = creep.body();
             body.retain(|part| part.part() == Part::Work);
 
-            if creep.spawning() {
-                info!("Creep is spawning, {} - {}", body.len(), body.len() as u8);
-            }
 
-            info!("Adding {}", body.len() as u8);
             work_parts += body.len() as u8;
         }
 
-        info!("Updated {}", work_parts);
-
-        if creeps.len() == 0 {
-            info!("Is empty");
-        }
-
         if work_parts > 6 {
-            info!("Work parts is greater {}", work_parts);
-            //if let Some(creep) = creeps.first() {
-            //    if let Some(gcreep) = game::get_object_by_id_typed(creep) {
-            //        // TODO: Hacky fix, but ig it works.
-            //        let _ = gcreep.suicide();
-            //    }
-            //}
+            let mut kreeps = self.creeps.clone();
+
+            let mut smallest = None;
+            let mut smallest_score = u32::MAX;
+            for creep in kreeps {
+                if let Some(game_creep) = game::creeps().get(creep.to_string()) {
+                    let score = game_creep.body().iter().filter(|p| p.part() == Part::Work).count() as u32;
+
+                    if score < smallest_score {
+                        smallest = Some(game_creep);
+                        smallest_score = score;
+                    }
+                }
+            }
+
+            if let Some(creep) = smallest {
+                if creep.spawning() {
+                    let (spawning, _not_spawning) = cache.structures.get_spawns();
+
+                    for spawn in spawning {
+                        if spawn.spawning().is_none() {
+                            continue;
+                        }
+
+                        if spawn.spawning().unwrap().name() == creep.name() {
+                            spawn.spawning().unwrap().cancel();
+                        }
+                    }
+                } else {
+                    creep.ITsuicide();
+                }
+            }
         }
 
         work_parts
@@ -304,7 +323,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers.controller {
         let upgrader_count = cached_room.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();

@@ -15,7 +15,12 @@ function console_error() {
     if (arg instanceof Error) {
       // On this version of Node, the `stack` property of errors contains
       // the message as well.
-      return arg.stack;
+      try {
+        return arg.stack;
+      } catch (e) {
+        console.log("[JS] Error while processing error:", e);
+        return arg;
+      }
     } else {
       return arg;
     }
@@ -178,6 +183,7 @@ module.exports.loop = function () {
     } else {
       console.log(`[JS] unexpected exception: ${e}`);
     }
+    console.log(`[JS] Unknown error...`)
     console.log(e.stack)
     console.log(`[JS] destroying environment...`);
 

@@ -1,11 +1,11 @@
 use log::info;
 use screeps::{
     pathfinder::{self, SearchOptions},
-    HasPosition, Position, Room, RoomCoordinate, RoomName,
+    Position, Room, RoomCoordinate, RoomName,
 };
 
 use crate::{
-    goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
+    config, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -16,15 +16,13 @@ pub fn fetch_possible_remotes(
 ) -> Vec<RoomName> {
     // Little high on CPU, but its run every 3k ticks, so its fine. I guess.
     let mut pre_existing = Vec::new();
-    let adjacent_rooms = room.get_adjacent(3);
+    let adjacent_rooms = room.get_adjacent(2);
 
     // Go through all the adjacent rooms and rank them
     let mut possible_remotes = Vec::new();
 
     for room_name in adjacent_rooms {
         let rank = rank_remote_room(memory, room_cache, &room_name);
-
-        info!("room {} has rank {}", room_name, rank);
 
         if rank == u32::MAX {
             continue;
@@ -59,7 +57,7 @@ pub fn fetch_possible_remotes(
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         // Get the top 2.
-        for (remote_name, score) in possible_remotes.iter().take(5) {
+        for (remote_name, score) in possible_remotes.iter().take(config::ROOM_REMOTE_COUNT.into()) {
             // I was too lazy to make it a string, so yk
             // u32::MAX -2 goes hard.
             if *score == u32::MAX - 2 {
@@ -119,22 +117,19 @@ pub fn rank_remote_room(
     let scouted = memory.scouted_rooms.get(remote_room);
     // This >= 4 check is for SK rooms, idk why, or how, but my room classification is borked.
     if scouted.is_none() || scouted.unwrap().sources.is_none() || scouted.unwrap().sources.as_ref().unwrap().len() >= 3 {
-        info!("SKipping, no scouting data or too many sources");
         return u32::MAX;
     }
 
-    // This should be changed to add aggression.
+    // TODO: This should be changed to add aggression.
     // As of right now, we are pacificists.
     if scouted.unwrap().owner.is_some() || scouted.unwrap().reserved.is_some() && *scouted.unwrap().reserved.as_ref().unwrap() != utils::get_my_username() {
         if let Some(reservation) = scouted.unwrap().reserved.as_ref() {
             // FUCK these dues. Seriously, they are so FUCKING annoying.
             // They just delay my remotes, they are easy to delete, they just SUCK ASS.
             if reservation == "Invader" {
-                info!("Fuck invaders.");
                 return u32::MAX - 2;
             }
         }
-        info!("Skipping, owned");
         return u32::MAX;
     }
 
@@ -142,7 +137,6 @@ pub fn rank_remote_room(
         || scouted.unwrap().room_type == RoomType::Highway
         || scouted.unwrap().room_type == RoomType::Center
     {
-        info!("Skipping, SK, Highway, Center");
         return u32::MAX;
     }
 
@@ -153,11 +147,10 @@ pub fn rank_remote_room(
             RoomCoordinate::new(source.y.u8()).unwrap(),
             *remote_room,
         );
-        let options = Some(SearchOptions::new(remote_path_call).max_rooms(16));
+        let options = Some(SearchOptions::new(remote_path_call).max_rooms(16).plain_cost(1).swamp_cost(5));
         let path = pathfinder::search(spawn_pos, position, 1, options);
 
         if path.incomplete() {
-            info!("Skipping, incomplete path");
             return u32::MAX;
         }
 

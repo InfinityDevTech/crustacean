@@ -1,8 +1,6 @@
-use std::thread::current;
-
 use screeps::{game, Part, RoomName, StructureProperties};
 
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, utils};
+use crate::{memory::ScreepsMemory, room::cache::tick_cache::RoomCache, utils};
 
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.remote_invader_cleanup.clone();

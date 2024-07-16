@@ -1,11 +1,11 @@
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureType, Terrain
 };
 
 use crate::{
-    combat::{self, hate_handler, rank_room}, heap, memory::{Role, ScreepsMemory}, room::{
-        cache::tick_cache::{hauling, resources, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes, structure_visuals::RoomVisualExt}, tower, visuals::run_full_visuals
+    combat::{hate_handler, rank_room}, config, heap, memory::{Role, ScreepsMemory}, movement::{move_target::{path_call, MoveOptions}, pathfinding::PathFinder, utils::visualise_path}, room::{
+        cache::tick_cache::{hauling, resources, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes}, tower, visuals::run_full_visuals
     }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
 };
 
@@ -27,8 +27,28 @@ use super::{
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let starting_cpu = game::cpu::get_used();
 
-    if !room.my() && game::cpu::bucket() < 1000 {
+    let pos = Position::new(RoomCoordinate::new(4).unwrap(), RoomCoordinate::new(4).unwrap(), room.name());
+    let style = MapTextStyle::default().align(screeps::TextAlign::Center).font_size(4.0);
+
+    if memory.rooms.contains_key(&room.name()) {
+        MapVisual::text(pos, "🏠".to_string(), style);
+    } else if memory.remote_rooms.contains_key(&room.name()) {
+        MapVisual::text(pos, "🔋".to_string(), style);
+    } else {
+        MapVisual::text(pos, "👁️".to_string(), style);
+    }
+
+    if !room.my() && !memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
         info!("[{}] Skipping execution, bucket is too low...", room.name());
+
+        return;
+    } else if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
+        info!("[{}] Running in low-power mode, to fix some bugs...", room.name());
+
+        // TODO: Make it so that I dont have to make a cache.
+        // Its about saving CPU.
+        cache.create_if_not_exists(&room, memory, None);
+        organizer::run_creeps(&room, memory, cache);
 
         return;
     }
@@ -120,7 +140,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-            if (room_memory.remotes.len() < 5 || game::time() % 3000 == 0 || lifetime == 0) && game::cpu::bucket() > 5000 {
+            // If we dont have enough remotes, scan every 10 ticks
+            // If its 30000 ticks, scan
+            // If we just pushed code, or the heap reset, scan.
+            if (room_memory.remotes.len() < config::ROOM_REMOTE_COUNT.into() && game::time() % 10 == 0) || game::time() % 3000 == 0 || lifetime == 0 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
                 info!("  [REMOTES] Remote re-scan triggered, found {} remotes", remotes.len());
             }
@@ -160,29 +183,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn remote_path_call(room_name: RoomName) -> MultiRoomCostResult {
-    let mut matrix = LocalCostMatrix::new();
-    let terrain = game::map::get_room_terrain(room_name);
-
-    if let Some(terrain) = terrain {
-        for x in 0..50 {
-            for y in 0..50 {
-                let tile = terrain.get(x, y);
-                let xy = unsafe { RoomXY::unchecked_new(x, y) };
-                match tile {
-                    Terrain::Plain => {
-                        matrix.set(xy, 1);
-                    }
-                    Terrain::Swamp => {
-                        matrix.set(xy, 5);
-                    }
-                    Terrain::Wall => {
-                        matrix.set(xy, 255);
-                    }
-                }
-            }
-        }
-    }
+pub fn remote_path_call(_room_name: RoomName) -> MultiRoomCostResult {
+    let matrix = LocalCostMatrix::new();
     MultiRoomCostResult::CostMatrix(matrix.into())
 }
 

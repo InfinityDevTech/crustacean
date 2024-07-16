@@ -17,9 +17,14 @@ pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache)
         }
         let room = room.unwrap();
 
-        if remote_need_reservation(&room, memory, cache) {
-            let accessible_reservation_points = room.controller().unwrap().pos().get_accessible_positions_around(1);
+        // TODO: Make this spawn a dismantler, that way we can remove the wall
+        // blocking it, and then claim it. I hate people that wall off controllers.
+        let accessible_reservation_points = room.controller().unwrap().pos().get_accessible_positions_around(1);
+        if accessible_reservation_points.is_empty() {
+            continue;
+        }
 
+        if remote_need_reservation(&room, memory, cache) {
             let goal = RoomReservationGoal {
                 reservation_target: remote.name,
                 accessible_reservation_spots: accessible_reservation_points.len() as u8,

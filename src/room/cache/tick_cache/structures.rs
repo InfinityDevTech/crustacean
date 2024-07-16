@@ -265,7 +265,7 @@ impl RoomStructureCache {
         if can_structures_be_placed {
             for link in my_links {
                 if let Some(controller) = &self.controller {
-                    if link.pos().get_range_to(controller.controller.pos()) <= 2 {
+                    if link.pos().get_range_to(controller.controller.pos()) <= 3 {
                         self.links.controller = Some(link);
                         continue;
                     }

@@ -1,10 +1,10 @@
-use screeps::{game, Creep, Part, SharedCreepProperties};
+use screeps::{game, Part, SharedCreepProperties};
 
-use crate::{combat::goals::determine_single_attack_power, config, constants::{self, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
+use crate::{combat::goals::determine_single_attack_power, config, constants::HOSTILE_PARTS, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut ScreepsMemory) {
-    let mut mark_dangerous = Vec::new();
+    let mark_dangerous = Vec::new();
 
     for remote_name in memory.remote_rooms.keys() {
         if let Some(remote_cache) = cache.rooms.get_mut(remote_name) {

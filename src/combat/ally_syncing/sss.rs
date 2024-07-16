@@ -5,7 +5,7 @@ use log::info;
 use screeps::game;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::ALLIES, memory::ScreepsMemory};
+use crate::memory::ScreepsMemory;
 
 const SYNC_SEGMENT: u8 = 99;
 const SYNC_INTERVAL: u8 = 100;
@@ -34,7 +34,7 @@ pub struct SSSAllySync {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl SSSAllySync {
-    pub fn new(memory: &mut ScreepsMemory) -> SSSAllySync {
+    pub fn new(_memory: &mut ScreepsMemory) -> SSSAllySync {
         let allies = [
             "Shylo132",
             "MerlinMan5",
@@ -61,7 +61,7 @@ impl SSSAllySync {
         }
     }
 
-    pub fn sync(&mut self, memory: &mut ScreepsMemory) {
+    pub fn sync(&mut self, _memory: &mut ScreepsMemory) {
         if game::time() < self.next_sync_time {
             return;
         }

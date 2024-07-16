@@ -6,11 +6,10 @@ use rand::prelude::SliceRandom;
 use screeps::{game, look, Creep, Direction, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::movement::move_target::{MoveOptions, MoveTarget};
-use crate::room::cache::tick_cache::resources::CachedSource;
 use crate::room::cache::tick_cache::RoomCache;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
-use crate::utils::get_unique_id;
+use crate::utils::{self, get_unique_id};
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 use super::{base_hauler, create_spawn_requests_for_room, fast_filler, get_required_role_counts, hauler, harvester, repairer, scout, upgrader};
@@ -63,9 +62,18 @@ impl SpawnManager {
         //    self.room_spawn_queue.insert(owning_room, vec![request.clone()]);
         //};
 
+        let mut cost = cost;
+
         let body = if body.len() > 50 {
             info!("Body too large for {} {}/50 parts", role, body.len());
-            body.iter().take(50).cloned().collect::<Vec<_>>() // Limit body to 50 parts
+            let new_body = body.iter().take(50).cloned().collect::<Vec<_>>(); // Limit body to 50 parts
+
+            // Fix a small bug where I would limit the size, but not fix the cost
+            // So if a BH (cough) was 270 parts, it would wait until it could make the 270
+            // part creep, even though its impossible.
+            // Woopsies!
+            cost = utils::get_body_cost(&new_body);
+            new_body
         } else {
             body
         };
@@ -169,7 +177,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
     let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
 
-    let body = crate::room::spawning::creep_sizing::hauler_body(room);
+    let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache);
     let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
 
     let mut carry_requirement = 0;
@@ -182,7 +190,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                     let mut sources = Vec::new();
 
                     for source in &cache.resources.sources {
-                        let ept = (source.calculate_work_parts() * 2) as u128;
+                        let ept = (source.calculate_work_parts(owning_cache) * 2) as u64;
 
                         sources.push((ept, source.source.pos()));
                     }
@@ -199,7 +207,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                     }
 
                     for source in scouted_data.sources.as_ref().unwrap() {
-                        let ept = (5 * 2) as u128;
+                        let ept = (5 * 2) as u64;
 
                         let pos = Position::new(source.x, source.y, *remote);
 
@@ -224,20 +232,19 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                             range: 1,
                         };
 
+
                         let out_steps = out_target
-                            .find_path_to(
+                            .hauling_pathfind(
                                 storage.pos(),
                                 memory,
                                 MoveOptions::default().path_age(u8::MAX),
-                            )
-                            .len() as u128;
+                            );
                         let in_steps = in_target
-                            .find_path_to(
+                            .hauling_pathfind(
                                 source_pos,
                                 memory,
                                 MoveOptions::default().path_age(u8::MAX),
-                            )
-                            .len() as u128;
+                            );
 
                         (out_steps, in_steps)
                     } else {
@@ -256,15 +263,13 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                         };
 
                         let out_steps = out_target
-                            .find_path_to(spawn, memory, MoveOptions::default().path_age(u8::MAX))
-                            .len() as u128;
+                            .hauling_pathfind(spawn, memory, MoveOptions::default().path_age(u8::MAX));
                         let in_steps = in_target
-                            .find_path_to(
+                            .hauling_pathfind(
                                 source_pos,
                                 memory,
                                 MoveOptions::default().path_age(u8::MAX),
-                            )
-                            .len() as u128;
+                            );
 
                         (out_steps, in_steps)
                     };
@@ -274,7 +279,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
         }
 
         for source in &owning_cache.resources.sources {
-            let source_ept = (source.calculate_work_parts() * 2) as u128;
+            let source_ept = (source.calculate_work_parts(owning_cache) * 2) as u64;
             let source = source.source.clone();
 
             let (out_steps, in_steps) = if let Some(storage) = &owning_cache.structures.storage {
@@ -288,19 +293,17 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                 };
 
                 let out_steps = out_target
-                    .find_path_to(
+                    .hauling_pathfind(
                         storage.pos(),
                         memory,
                         MoveOptions::default().path_age(u8::MAX),
-                    )
-                    .len() as u128;
+                    );
                 let in_steps = in_target
-                    .find_path_to(
+                    .hauling_pathfind(
                         source.pos(),
                         memory,
                         MoveOptions::default().path_age(u8::MAX),
-                    )
-                    .len() as u128;
+                    );
 
                 (out_steps, in_steps)
             } else {
@@ -319,15 +322,13 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                 };
 
                 let out_steps = out_target
-                    .find_path_to(spawn, memory, MoveOptions::default().path_age(u8::MAX))
-                    .len() as u128;
+                    .hauling_pathfind(spawn, memory, MoveOptions::default().path_age(u8::MAX));
                 let in_steps = in_target
-                    .find_path_to(
+                    .hauling_pathfind(
                         source.pos(),
                         memory,
                         MoveOptions::default().path_age(u8::MAX),
-                    )
-                    .len() as u128;
+                    );
 
                 (out_steps, in_steps)
             };
@@ -335,9 +336,12 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
             carry_requirement += source_ept * (out_steps + in_steps);
         }
 
-        let wanted_hauler_count = (carry_requirement as f32) / (carry_count as f32 * 50.0);
+        // So, we have the carry requirement, now we need to calculate the hauler count
+        // Which is, how many carrys we will spawn, times how much energy each of them carry
+        // Then we add 25%, because we want to have a bit of a buffer
+        let wanted_hauler_count = ((carry_requirement as f32) / (carry_count as f32 * 50.0)) * 1.25;
 
-        let mut hauler_count = if wanted_hauler_count < 3.0 {
+        let hauler_count = if wanted_hauler_count < 3.0 {
             3
         } else {
             wanted_hauler_count.round() as u32
@@ -376,6 +380,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         let (active_spawns, inactive_spawns) = room_cache.structures.get_spawns();
         let mut spawned_this_tick = false;
+        let mut waiting_on_required = false;
         if active_spawns.is_empty() { continue; }
 
         if game::time() % 10 == 0 && !inactive_spawns.is_empty() {
@@ -409,16 +414,14 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                     _ => continue,
                 };
 
-                if *required_role == Role::Repairer {
-                    info!("Got repairer, response {}", spawn_request.is_some());
-                }
-
                 if spawn_request.is_none() {
                     continue;
                 }
 
                 if let Some(spawn_request) = spawn_request {
                     let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, &spawn_request);
+
+                    info!("[SPAWNING] Room {} doesnt meet {} requirement, can spawn: {}", room.name(), required_role, can_spawn);
 
                     if can_spawn {
                         let spawned = cache.spawning.room_spawn_creep(&room, memory, room_cache, &spawn_request);
@@ -427,13 +430,14 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                             spawned_this_tick = true;
                         }
                     } else {
+                        waiting_on_required = true;
                         break;
                     }
                 }
             }
         }
 
-        if !spawned_this_tick {
+        if !spawned_this_tick && !waiting_on_required {
             let mut room_requests = create_spawn_requests_for_room(&room, cache, memory);
 
             if let Some(other_room_requests) = cache.spawning.room_spawn_queue.get_mut(&room.name()) {

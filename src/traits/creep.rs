@@ -7,7 +7,7 @@ use crate::{
 
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, ErrorCode, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
 };
 
 use super::intents_tracking::CreepExtensionsTracking;

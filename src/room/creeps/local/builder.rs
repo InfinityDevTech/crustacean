@@ -1,5 +1,5 @@
 use screeps::{
-    ConstructionSite, Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties,
+    ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties,
 };
 
 use crate::{
@@ -43,6 +43,12 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let mut site_clone = sites.clone();
     site_clone.retain(|s| s.structure_type() != screeps::StructureType::Road);
 
+    if let Some(storage) = &room_cache.structures.storage {
+        if storage.store().get_used_capacity(Some(ResourceType::Energy)) < 10000 {
+            site_clone.retain(|s| s.structure_type() != screeps::StructureType::Rampart);
+        }
+    }
+
     let sites = if site_clone.is_empty() {
         sites
     } else {
@@ -55,13 +61,13 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
     if !sites.is_empty() {
         if let Some(site) = sites.first() {
-            if site.pos().get_range_to(creep.pos()) > 1 {
+            if site.pos().get_range_to(creep.pos()) > 3 {
                 creep.bsay("🚚", false);
                 creep.better_move_to(
                     memory,
                     cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
                     site.pos(),
-                    1,
+                    3,
                     MoveOptions::default(),
                 );
             } else {
@@ -72,7 +78,6 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         }
     } else {
         run_upgrader(creep, memory, cache);
-        return;
     }
 }
 
@@ -84,9 +89,29 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
+    if let Some(storage) = &room_cache.structures.storage {
+        if storage.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+            if !creep.pos().is_near_to(storage.pos()) {
+                creep.bsay("🚚", false);
+                creep.better_move_to(
+                    memory,
+                    room_cache,
+                    storage.pos(),
+                    1,
+                    MoveOptions::default(),
+                );
+            } else {
+                creep.bsay("🔋", false);
+                let _ = creep.ITwithdraw(storage, ResourceType::Energy, None);
+            }
+
+            return;
+        }
+    }
+
     if room_cache.structures.containers.fast_filler.is_some() {
         let mut run = true;
-        if let Some((spawn, spawn_id)) = &room_cache.structures.spawns.clone().into_iter().next() {
+        if let Some((_spawn, spawn_id)) = &room_cache.structures.spawns.clone().into_iter().next() {
             if spawn_id
                 .store()
                 .get_free_capacity(Some(ResourceType::Energy))

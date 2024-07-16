@@ -1,11 +1,11 @@
-use log::{info, warn};
+use log::warn;
 use screeps::{
-    find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, LocalRoomTerrain, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureProperties, StructureType
+    find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults}, HasPosition, LocalCostMatrix, OwnedStructureProperties, Part, Position, RoomName, RoomXY, StructureObject, StructureProperties, StructureType
 };
 
-use crate::{heap, memory::ScreepsMemory, room::creeps::global::scout, utils::get_my_username};
+use crate::{heap, memory::ScreepsMemory, utils::get_my_username};
 
-use super::{caching::path_cache, utils::visualise_path};
+use super::caching::path_cache;
 
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
@@ -87,7 +87,7 @@ impl MoveTarget {
             .plain_cost(2)
             .swamp_cost(5)
             .max_rooms(15)
-            .max_ops(20000);
+            .max_ops(12000);
 
         let search = self.pathfind(from, Some(opts));
 
@@ -97,6 +97,28 @@ impl MoveTarget {
 
         //visualise_path(search.path().clone(), from, "#ff0000");
         self.serialize_path(from, search.path(), move_options, false)
+    }
+
+    pub fn hauling_pathfind(&mut self, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> u64 {
+        let opts = SearchOptions::new(|room_name| {
+            path_call(room_name, from, memory, move_options)
+        })
+            .plain_cost(2)
+            .swamp_cost(5)
+            .max_rooms(15)
+            .max_ops(200000);
+
+        let search = self.pathfind(from, Some(opts));
+
+        let res = if search.incomplete() {
+            let range = from.get_range_to(self.pos);
+
+            range as f32 * 1.75
+        } else {
+            search.path().len() as f32
+        };
+
+        res.round() as u64
     }
 
     pub fn pathfind(&mut self, from: Position, opts: Option<SearchOptions<impl FnMut(RoomName) -> MultiRoomCostResult>>) -> SearchResults {
@@ -144,7 +166,177 @@ impl MoveTarget {
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn path_call(room_name: RoomName, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
+pub fn lcl_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, move_options: MoveOptions) -> LocalCostMatrix {
+    let mut matrix = LocalCostMatrix::new();
+
+    if let Some(cached_matrix) = heap().per_tick_cost_matrixes.lock().unwrap().get(&room_name) {
+        return matrix;
+    }
+
+    // Avoids an issue where it makes creeps unable to move if the room they are in is suddenly hostile
+    if move_options.avoid_hostile_rooms && from.room_name() != room_name {
+        if let Some(room) = game::rooms().get(room_name) {
+            let invader_owner = if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+                scouting_data.invader_core.unwrap_or(false)
+            } else {
+                false
+            };
+
+            if room.controller().is_some() && (room.controller().unwrap().owner().is_some() && room.controller().unwrap().owner().unwrap().username() != get_my_username()) || invader_owner {
+                for x in 0..50 {
+                    for y in 0..50 {
+                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
+                        matrix.set(xy, 255);
+                    }
+                }
+                heap().per_tick_cost_matrixes.lock().unwrap().insert(room_name, matrix.clone());
+                return matrix;
+            }
+        } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+            if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username())) || scouting_data.invader_core.unwrap_or(false) {
+                for x in 0..50 {
+                    for y in 0..50 {
+                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
+                        matrix.set(xy, 255);
+                    }
+                }
+                heap().per_tick_cost_matrixes.lock().unwrap().insert(room_name, matrix.clone());
+                return matrix;
+            }
+        }
+    }
+
+    if let Some(room) = screeps::game::rooms().get(room_name) {
+        let structures = room.find(find::STRUCTURES, None);
+        let constructions = room.find(find::CONSTRUCTION_SITES, None);
+        let creeps = room.find(find::CREEPS, None);
+
+        // This might be redundant. I might be a dunce.
+        /*for x in 0..50 {
+            for y in 0..50 {
+                let pos = unsafe { RoomXY::unchecked_new(x, y) };
+                let tile = terrain.get_xy(pos);
+
+                match tile {
+                    screeps::Terrain::Plain => matrix.set(pos, 1),
+                    screeps::Terrain::Wall => matrix.set(pos, 255),
+                    screeps::Terrain::Swamp => matrix.set(pos, 5),
+                }
+            }
+        }*/
+
+        for road in structures.iter().filter(|s| s.structure_type() == StructureType::Road) {
+            let pos = road.pos();
+            matrix.set(pos.xy(), 1);
+        }
+
+        for creep in creeps {
+            let pos = creep.pos();
+            matrix.set(pos.xy(), 6);
+        }
+
+        for structure in structures {
+            let pos = structure.pos();
+            match structure {
+                StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 2),
+                StructureObject::StructureRampart(rampart) => {
+                    if !rampart.my() {
+                        matrix.set(pos.xy(), 255);
+                    }
+                }
+                StructureObject::StructureRoad(_) => {},
+                StructureObject::StructureWall(_) => matrix.set(pos.xy(), 255),
+                _ => {
+                    matrix.set(pos.xy(), 255);
+                }
+            }
+        }
+
+        for csite in constructions {
+            let pos = csite.pos();
+
+            if !csite.my() {
+                matrix.set(pos.xy(), 255);
+                continue;
+            }
+
+            match csite.structure_type() {
+                StructureType::Container => {},
+                StructureType::Rampart => {},
+                StructureType::Road => {},
+                _ => {
+                    matrix.set(pos.xy(), 255);
+                }
+            }
+        }
+
+        if move_options.avoid_enemies {
+            let enemies = room.find(find::HOSTILE_CREEPS, None);
+            for enemy in enemies {
+                if enemy.body().iter().filter(|p| p.part() == Part::Attack || p.part() == Part::RangedAttack && p.hits() > 0).count() == 0 {
+                    continue;
+                }
+
+                let radius = 3;
+
+                let start_x = enemy.pos().x().u8();
+                let start_y = enemy.pos().y().u8();
+
+                for x in start_x - radius..=start_x + radius {
+                    for y in start_y - radius..=start_y + radius {
+                        if x == start_x && y == start_y {
+                            continue;
+                        }
+
+                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
+
+                        matrix.set(xy, 255);
+                    }
+                }
+            }
+        }
+    }
+
+    /*let t = TEMP_COUNT;
+    let mut count = t.lock().unwrap();
+
+    if let Some(vis) = game::rooms().get(room_name) {
+        if room_name != "W3N12" && *count < 1 {
+            return MultiRoomCostResult::CostMatrix(matrix.into());
+        }
+
+        let vis = vis.visual();
+
+        for x in 0..50 {
+            for y in 0..50 {
+                let score = matrix.get(unsafe { RoomXY::unchecked_new(x, y) });
+
+                let color = if score == 2 {
+                    "green"
+                } else if score == 1 {
+                    "white"
+                } else if score == 5 {
+                    "blue"
+                } else if score == 255 {
+                    "red"
+                } else {
+                    "black"
+                };
+
+                let style = RectStyle::default().fill(color).opacity(0.2);
+                vis.rect(x as f32 - 0.5, y as f32 - 0.5, 1.0, 1.0, Some(style));
+                //vis.text(x as f32 - 0.5, y as f32 - 0.5, format!("{}", score), Some(Default::default()));
+            }
+        }
+    }
+
+    *count += 1;*/
+    heap().per_tick_cost_matrixes.lock().unwrap().insert(room_name, matrix.clone());
+    matrix
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
     if let Some(cached_matrix) = heap().per_tick_cost_matrixes.lock().unwrap().get(&room_name) {

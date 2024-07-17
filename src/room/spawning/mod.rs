@@ -782,6 +782,9 @@ pub fn fast_filler(
     ))
 }
 
+// TODO: rewrite this, its a mess.
+// Specifically, the harvester and remote harvester functions.
+
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvester(
     room: &Room,
@@ -968,7 +971,12 @@ pub fn remote_harvester(
                             return None;
                         }
                     }
-                    parts_for_max
+
+                    if cost_for_max > energy_capacity {
+                        parts_needed
+                    } else {
+                        parts_for_max
+                    }
                 } else {
                     parts_needed
                 };

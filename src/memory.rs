@@ -34,7 +34,7 @@ pub enum Role {
 
     FastFiller = 3,
     BaseHauler = 4,
-    StorageHauler = 5,
+    StorageSitter = 5,
 
     Upgrader = 6,
     Repairer = 7,
@@ -57,6 +57,14 @@ pub enum Role {
     // Assorted junk roles, recycler just recycles itself
     Recycler = 99,
     GiftBasket = 100,
+}
+
+pub fn attacking_roles() -> Vec<Role> {
+    vec![
+        Role::RemoteDefender,
+        Role::InvaderCleaner,
+        Role::Bulldozer
+    ]
 }
 
 // What each creep stores in its memory.
@@ -141,6 +149,7 @@ pub struct RoomMemory{
     // Name
     pub name: RoomName,
     pub rcl: u8,
+    pub max_rcl: u8,
     pub id: u128,
     pub planned: bool,
     // Creeps by role
@@ -227,7 +236,7 @@ structstruck::strike! {
             pub credits: f64,
             pub cpu_unlocks: u32,
             pub access_keys: u32,
-            pub pixels: u64,
+            pub pixels: u32,
         },
 
         pub memory_usage: pub struct MemoryStats {

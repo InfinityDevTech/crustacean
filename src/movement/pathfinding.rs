@@ -14,7 +14,7 @@ use super::{
         world_position, MapPosition, WorldPosition,
     },
     path_heap::{OpenClose, PathHeap},
-    utils::num_to_dir,
+    movement_utils::num_to_dir,
 };
 
 #[derive(Clone)]

@@ -2,7 +2,7 @@
 use std::sync::OnceLock;
 
 use enum_map::{enum_map, Enum, EnumMap};
-use screeps::Part;
+use screeps::{Part, ResourceType};
 
 // navigator.clipboard.writeText(`$TO_COPY`);
 pub const COPY_TEXT: &str = "
@@ -12,6 +12,73 @@ pub const COPY_TEXT: &str = "
     <button style='color: black; border-radius: 7px; margin: 0; padding: 0;' onclick='selectText()'> Copy profiler output </button>
 </div>
 ";
+
+pub const ITERABLE_RESOURCES: [ResourceType; 57] = [
+    ResourceType::Energy,
+    ResourceType::Hydrogen,
+    ResourceType::Oxygen,
+    ResourceType::Utrium,
+    ResourceType::Keanium,
+    ResourceType::Lemergium,
+    ResourceType::Zynthium,
+    ResourceType::Catalyst,
+
+    ResourceType::Hydroxide,
+    ResourceType::ZynthiumKeanite,
+    ResourceType::UtriumLemergite,
+    ResourceType::Ghodium,
+
+    ResourceType::UtriumHydride,
+    ResourceType::UtriumOxide,
+    ResourceType::KeaniumHydride,
+    ResourceType::KeaniumOxide,
+    ResourceType::LemergiumHydride,
+    ResourceType::LemergiumOxide,
+    ResourceType::ZynthiumHydride,
+    ResourceType::ZynthiumOxide,
+    ResourceType::GhodiumHydride,
+    ResourceType::GhodiumOxide,
+
+    ResourceType::UtriumAcid,
+    ResourceType::UtriumAlkalide,
+    ResourceType::KeaniumAcid,
+    ResourceType::KeaniumAlkalide,
+    ResourceType::LemergiumAcid,
+    ResourceType::LemergiumAlkalide,
+    ResourceType::ZynthiumAcid,
+    ResourceType::ZynthiumAlkalide,
+    ResourceType::GhodiumAcid,
+    ResourceType::GhodiumAlkalide,
+
+    ResourceType::CatalyzedUtriumAcid,
+    ResourceType::CatalyzedUtriumAlkalide,
+    ResourceType::CatalyzedKeaniumAcid,
+    ResourceType::CatalyzedKeaniumAlkalide,
+    ResourceType::CatalyzedLemergiumAcid,
+    ResourceType::CatalyzedLemergiumAlkalide,
+    ResourceType::CatalyzedZynthiumAcid,
+    ResourceType::CatalyzedZynthiumAlkalide,
+    ResourceType::CatalyzedGhodiumAcid,
+    ResourceType::CatalyzedGhodiumAlkalide,
+
+    ResourceType::Power,
+    ResourceType::Ops,
+
+    ResourceType::Metal,
+    ResourceType::Silicon,
+    ResourceType::Biomass,
+    ResourceType::Mist,
+
+    ResourceType::UtriumBar,
+    ResourceType::LemergiumBar,
+    ResourceType::ZynthiumBar,
+    ResourceType::KeaniumBar,
+    ResourceType::GhodiumMelt,
+    ResourceType::Oxidant,
+    ResourceType::Reductant,
+    ResourceType::Purifier,
+    ResourceType::Battery,
+];
 
 pub const PATHFINDER_MAX_ROOMS: u32 = 64;
 

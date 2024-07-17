@@ -114,7 +114,7 @@ impl RoomResourceCache {
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedSource {
     pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
         if let Some(container_id) = self.container {

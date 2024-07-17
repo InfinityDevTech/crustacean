@@ -5,7 +5,7 @@ use std::{
 
 use screeps::{pathfinder::SearchResults, Direction, Position, RoomXY};
 
-use super::utils::visualise_path;
+use super::movement_utils::visualise_path;
 
 pub fn path_cache() -> &'static Mutex<PathCache> {
     static HEAP: OnceLock<Mutex<PathCache>> = OnceLock::new();

@@ -1,8 +1,11 @@
 // If I set alliance tag to null, I dont want to to be added lol
 #![allow(clippy::comparison_to_empty)]
 
+use std::{collections::HashMap, f32::consts::E};
+
+use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{game, OwnedStructureProperties, Part, Position, RoomCoordinate, RoomName};
+use screeps::{constants, game, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Store};
 
 use crate::{config, heap, memory::Role, room::cache::tick_cache::{hauling::HaulingPriority, RoomCache}, traits::room::{RoomNameExtensions, RoomType}};
 
@@ -53,7 +56,7 @@ pub fn get_room_sign(remote: bool) -> String {
 }
 
 pub fn room_type(name: &RoomName) -> RoomType {
-    let (_, room_x, _, room_y) = name.split_name();
+    let (room_x , room_y) = get_proper_coords(name);
 
     let ew = room_x % 10;
     let ns = room_y % 10;
@@ -106,7 +109,7 @@ pub fn role_to_name(role: Role) -> String {
         Role::Hauler => "mb",
         Role::Repairer => "rb",
         Role::BaseHauler => "bh",
-        Role::StorageHauler => "sh",
+        Role::StorageSitter => "ss",
         Role::Upgrader => "ud",
         Role::Builder => "bd",
         Role::Scout => "fg",
@@ -127,6 +130,71 @@ pub fn role_to_name(role: Role) -> String {
     data.to_string()
 }
 
+pub fn get_proper_coords(room: &RoomName) -> (i32, i32) {
+    let x_coord = room.x_coord();
+    let y_coord = room.y_coord();
+
+    let x_mod = if x_coord < 0 {
+        x_coord + 1
+    } else {
+        x_coord
+    };
+
+    let y_mod = if y_coord < 0 {
+        y_coord + 1
+    } else {
+        y_coord
+    };
+
+    (x_mod, y_mod)
+}
+
+pub fn calc_terminal_cost(amount: u32, source: &RoomName, dest: &RoomName) -> u32 {
+    let dist = calc_room_distance(source, dest, true);
+
+    (amount as f32 * (1.0 - E.powf(-dist as f32 / 30.0))).ceil() as u32
+}
+
+pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -> i32 {
+    let x1 = source.x_coord();
+    let y1 = source.y_coord();
+
+    let x2 = dest.x_coord();
+    let y2 = dest.y_coord();
+
+    let mut dx = (source.x_coord() - dest.x_coord()).abs();
+    let mut dy = (source.y_coord() - dest.y_coord()).abs();
+
+    if continous {
+        let world_size = game::map::get_world_size() as i32;
+
+        dx = (world_size - dx).min(dx);
+        dy = (world_size - dy).min(dy);
+    }
+
+    dx.max(dy)
+}
+
+pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
+    let total_capacity = store.get_capacity(Some(resource));
+    let total_amount = store.get_used_capacity(Some(resource));
+
+    total_capacity != total_amount
+}
+
+pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
+    let mut map = HashMap::new();
+
+    for resource in constants::RESOURCES_ALL.iter() {
+        let amount = store.get_used_capacity(Some(*resource));
+        if amount > 0 {
+            map.insert(*resource, amount);
+        }
+    }
+
+    map
+}
+
 /// Convert a string to its respective role
 /// **Example:** sm **=** Miner
 /// **Example:** mb **=** Hauler
@@ -139,7 +207,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "md" => { Some(Role::Miner) },
         "rb" => { Some(Role::Repairer) },
         "bh" => { Some(Role::BaseHauler) },
-        "sh" => { Some(Role::StorageHauler) },
+        "ss" => { Some(Role::StorageSitter) },
         "ud" => { Some(Role::Upgrader) },
         "bd" => { Some(Role::Builder) },
         "fg" => { Some(Role::Scout) },

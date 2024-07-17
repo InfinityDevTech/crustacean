@@ -1,7 +1,7 @@
 use crate::{
     heap, memory::{CreepMemory, ScreepsMemory}, movement::{
         move_target::{MoveOptions, MoveTarget},
-        utils::{dir_to_coords, num_to_dir},
+        movement_utils::{dir_to_coords, num_to_dir},
     }, room::cache::tick_cache::CachedRoom
 };
 

@@ -335,7 +335,7 @@ pub fn lcl_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, mov
     matrix
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
@@ -381,6 +381,12 @@ pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, mo
         let constructions = room.find(find::CONSTRUCTION_SITES, None);
         let creeps = room.find(find::CREEPS, None);
 
+        let safemoded = if let Some(controller) = room.controller() {
+            controller.safe_mode().unwrap_or(0) > 0
+        } else {
+            false
+        };
+
         // This might be redundant. I might be a dunce.
         /*for x in 0..50 {
             for y in 0..50 {
@@ -401,6 +407,12 @@ pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, mo
         }
 
         for creep in creeps {
+            if safemoded {
+                let owner = creep.owner();
+                if owner.username() != get_my_username() {
+                    continue;
+                }
+            }
             let pos = creep.pos();
             matrix.set(pos.xy(), 6);
         }

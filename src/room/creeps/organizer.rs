@@ -62,13 +62,16 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         }
 
         if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
-            if role == Role::RemoteHarvester {
-                remote::remote_harvester::run_remoteharvester(&creep, memory, cache)
+            match role {
+                Role::RemoteHarvester => remote::remote_harvester::run_remoteharvester(&creep, memory, cache),
+                Role::RemoteDefender => remote::remote_defender::run_remotedefender(&creep, memory, cache),
+                Role::Bulldozer => combat::bulldozer::run_bulldozer(&creep, memory, cache),
+                _ => { continue; }
             }
 
             info!("  [CREEPS] Bucket too low to run creeps, running essential remote roles");
 
-            return 0.0;
+            continue;
         }
 
         // Fucks up harvester spawning. Should be done per-creep.
@@ -79,30 +82,25 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Hauler => local::hauler::run_hauler(&creep, memory, cache),
             Role::Repairer => local::repairer::run_repairer(&creep, memory, cache),
             Role::BaseHauler => local::base_hauler::run_basehauler(&creep, memory, cache),
+            Role::StorageSitter => local::storage_sitter::run_storagesitter(&creep, memory, cache),
             Role::Upgrader => local::upgrader::run_upgrader(&creep, memory, cache),
             Role::Builder => local::builder::run_builder(&creep, memory, cache),
             Role::FastFiller => local::fast_filler::run_fastfiller(&creep, memory, cache),
             Role::Bulldozer => combat::bulldozer::run_bulldozer(&creep, memory, cache),
             Role::Scout => global::scout::run_scout(&creep, memory, cache),
-            Role::RemoteHarvester => {
-                remote::remote_harvester::run_remoteharvester(&creep, memory, cache)
-            }
+            Role::RemoteHarvester => remote::remote_harvester::run_remoteharvester(&creep, memory, cache),
 
-            Role::ExpansionBuilder => {
-                global::expansion_builder::run_expansionbuilder(&creep, memory, cache)
-            }
+            Role::ExpansionBuilder => global::expansion_builder::run_expansionbuilder(&creep, memory, cache),
 
             Role::Claimer => global::claimer::run_claimer(&creep, memory, cache),
             Role::Unclaimer => global::unclaimer::run_unclaimer(&creep, memory, cache),
             Role::Recycler => global::recycler::run_recycler(&creep, memory, cache),
-            Role::PhysicalObserver => {
-                global::physical_observer::run_physical_observer(&creep, memory, cache)
-            }
+            Role::PhysicalObserver => global::physical_observer::run_physical_observer(&creep, memory, cache),
+
             Role::Reserver => combat::reserver::run_reserver(&creep, memory, cache),
 
-            Role::RemoteDefender => {
-                remote::remote_defender::run_remotedefender(&creep, memory, cache)
-            }
+            Role::RemoteDefender => remote::remote_defender::run_remotedefender(&creep, memory, cache),
+
             _ => {
                 creep.bsay("BAD ROLE", true);
                 global::recycler::run_recycler(&creep, memory, cache);
@@ -112,7 +110,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         let end_time = game::cpu::get_used();
         let cpu_used = end_time - start_time;
 
-        if cpu_used > 10.0 && role != Role::Scout {
+        if cpu_used > 10.0 && role != Role::Scout && role != Role::Bulldozer {
             info!(
                 "  [CREEPS] Suiciding {} due to high CPU usage: {}",
                 creep.name(),

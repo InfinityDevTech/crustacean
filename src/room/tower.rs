@@ -43,13 +43,15 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
 
                     continue;
                 } else {
+                    priority += 1.0;
+
                     cached_room.hauling.create_order(
                         tower.raw_id(),
                         Some(tower.structure_type()),
                         Some(ResourceType::Energy),
                         Some(tower.store().get_free_capacity(Some(ResourceType::Energy)) as u32),
                         priority,
-                        HaulingType::Transfer,
+                        HaulingType::NoDistanceCalcTransfer,
                     );
                 }
             }

@@ -1,18 +1,18 @@
 #![feature(map_many_mut)]
 
 use std::{
-    collections::HashMap,
-    sync::{Mutex, Once, OnceLock},
+    collections::HashMap, str::FromStr, sync::{Mutex, Once, OnceLock}
 };
 
 use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
+use js_sys::JsString;
 use log::*;
-use movement::{caching::path_cache, move_target::MoveOptions, pathfinding::PathFinder, utils::visualise_path};
+use movement::{caching::path_cache, move_target::MoveOptions, pathfinding::PathFinder, movement_utils::visualise_path};
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::tick_cache::{hauling, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
+    cache::tick_cache::{hauling, resources, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
 };
 use screeps::{find, game, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
 use traits::intents_tracking::{ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking, StructureObjectTracking};
@@ -27,6 +27,7 @@ mod combat;
 mod config;
 mod constants;
 mod profiling;
+mod allies;
 mod heap_cache;
 mod logging;
 mod memory;
@@ -292,6 +293,7 @@ pub fn set_stats(memory: &mut ScreepsMemory) {
     let stats = &mut memory.stats;
 
     let heap = game::cpu::get_heap_statistics();
+    let resources = game::resources();
 
     stats.tick = game::time();
     stats.last_reset = *last_reset();
@@ -303,7 +305,9 @@ pub fn set_stats(memory: &mut ScreepsMemory) {
     stats.gcl.progress_total = game::gcl::progress_total();
 
     stats.market.credits = game::market::credits();
-    //stats.market.cpu_unlocks = market_resources.get(IntershardResourceType::CpuUnlock);
+    stats.market.cpu_unlocks = resources.get(screeps::IntershardResourceType::CpuUnlock).unwrap_or(0);
+    stats.market.access_keys = resources.get(screeps::IntershardResourceType::AccessKey).unwrap_or(0);
+    stats.market.pixels = resources.get(screeps::IntershardResourceType::Pixel).unwrap_or(0);
 
     stats.memory_usage.total = 2 * 1000000;
     stats.memory_usage.used = get_memory_usage_bytes();

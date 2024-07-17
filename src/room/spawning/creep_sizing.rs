@@ -176,6 +176,11 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn storage_sitter_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+    vec![Part::Carry, Part::Carry, Part::Carry, Part::Carry, Part::Carry, Part::Move]
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn builder_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut parts = Vec::new();
 
@@ -317,15 +322,24 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let link_cost = part_costs()[PartsCost::Work];
 
     // If we are level 5, we have a link, so we can go ham.
+    let mut tick = 0;
     if level >= 5 {
         while current_cost < max_cost {
             if current_cost + link_cost > max_cost || current_work_count >= parts_needed_to_fill {
                 break;
             }
 
-            parts.push(Part::Work);
+            if tick % 2 == 0 {
+                parts.push(Part::Work);
+                parts.push(Part::Move);
+                current_cost += part_costs()[PartsCost::Move] + part_costs()[PartsCost::Work];
+            } else {
+                parts.push(Part::Work);
+                current_cost += link_cost;
+            }
+
+            tick += 1;
             current_work_count += 1;
-            current_cost += link_cost;
         }
     } else {
         while current_cost < cost_capable {

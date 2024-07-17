@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use screeps::{game, Room, RoomName, RoomXY};
 use stats::StatsCache;
+use terminals::TerminalCache;
 
 use crate::{heap, memory::ScreepsMemory, room::spawning::spawn_manager::SpawnManager};
 
@@ -14,6 +15,7 @@ pub mod creeps;
 pub mod hauling;
 pub mod resources;
 pub mod traffic;
+pub mod terminals;
 pub mod stats;
 
 pub struct RoomCache {
@@ -21,6 +23,7 @@ pub struct RoomCache {
     pub my_rooms: Vec<RoomName>,
 
     pub spawning: SpawnManager,
+    pub terminals: TerminalCache,
 
     pub creeps_moving_stuff: HashMap<String, bool>,
 }
@@ -31,6 +34,8 @@ impl RoomCache {
         RoomCache {
             rooms: HashMap::new(),
             my_rooms: Vec::new(),
+
+            terminals: TerminalCache::new(),
 
             spawning: spawn_manager,
             creeps_moving_stuff: HashMap::new(),

@@ -50,6 +50,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
     let room_memory = RoomMemory {
         name: room.name(),
+        max_rcl: room.controller().unwrap().level(),
         rcl: room.controller().unwrap().level(),
         planned: false,
         id: 0,

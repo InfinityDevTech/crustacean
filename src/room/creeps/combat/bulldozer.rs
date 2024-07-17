@@ -1,6 +1,6 @@
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureProperties, StructureType};
+use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureObject, StructureProperties, StructureRampart, StructureType};
 
 use crate::{
     config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
@@ -48,6 +48,11 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     if creep_memory.is_none() || creep.spawning() {
         return;
     }
+
+    let mut structure = creep.room().unwrap().find(find::HOSTILE_STRUCTURES, None);
+    let mut ramparts = creep.room().unwrap().find(find::STRUCTURES, None);
+    let mut ramparts = ramparts.iter().filter(|s| s.structure_type() == StructureType::Rampart).collect::<Vec<&StructureObject>>();
+
     let creep_memory = creep_memory.unwrap();
 
     if let Some(flag) = game::flags().get("bulldozeRoom".to_string()) {
@@ -72,17 +77,37 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 return;
             }
 
+            if let Some(spawn) = structure.iter().filter(|s| s.structure_type() == StructureType::Spawn).map(|s| (s)).next() {
+                if creep.pos().is_near_to(spawn.pos()) {
+                    let _ = creep.attack(spawn.as_attackable().unwrap());
+                    return;
+                } else {
+                    creep.better_move_to(memory, room_cache, spawn.pos(), 1, MoveOptions::default().path_age(1));
+                    return;
+                }
+            }
+
             let mut rng = StdRng::seed_from_u64(game::time() as u64);
             let to_say = config::ATTACK_SIGNS[rng.gen_range(0..config::ATTACK_SIGNS.len())];
             creep.bsay(to_say, true);
 
-            let enemies = creep.pos().find_closest_by_path(find::HOSTILE_CREEPS, None);
-            if let Some(enemy) = enemies {
-                if creep.ITattack(&enemy) == Err(screeps::ErrorCode::NotInRange) {
+            let mut enemies = creep.room().unwrap().find(find::HOSTILE_CREEPS, None);
+            enemies.sort_by_key(|c| c.pos().get_range_to(creep.pos()));
+            enemies.retain(|c| {
+                for rampart in ramparts.iter() {
+                    if c.pos().is_equal_to(rampart.pos()) {
+                        return false;
+                    }
+                }
+
+                true
+            });
+
+            if let Some(enemy) = enemies.first() {
+                if creep.ITattack(enemy) == Err(screeps::ErrorCode::NotInRange) {
                     creep.better_move_to(memory, room_cache, enemy.pos(), 1, MoveOptions::default().path_age(1));
                 }
             } else {
-                let mut structure = creep.room().unwrap().find(find::HOSTILE_STRUCTURES, None);
                 structure.retain(| structure | structure.structure_type() != StructureType::Controller);
                 structure.sort_by_key(|structure| structure.pos().get_range_to(creep.pos()));
                 let structure = structure.first();
@@ -122,7 +147,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 creep_memory.role = Role::Recycler;
             }
 
-            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_hostile_rooms(true).avoid_enemies(true));
+            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
         }
     } else {
         creep.bsay("❓", false);

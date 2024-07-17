@@ -64,7 +64,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                 priority,
                 HaulingType::Transfer,
             );
-        } else if link.is_some() {
+        } else if link.is_some() && link.as_ref().unwrap().store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
             let link = link.as_ref().unwrap();
 
             if link.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
@@ -81,6 +81,11 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                 }
             }
         } else {
+            if container_id.is_none() {
+                creep_memory.fastfiller_container = None;
+                return;
+            }
+
             let container = game::get_object_by_id_typed(&container_id.unwrap());
 
             // Container gets destroyed...

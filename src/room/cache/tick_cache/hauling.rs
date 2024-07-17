@@ -672,7 +672,7 @@ impl RoomHaulingOrder {
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_spawn(room_cache: &mut CachedRoom) {
     let has_ff = !room_cache
         .creeps

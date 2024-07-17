@@ -1,6 +1,6 @@
 use screeps::{game, Part, SharedCreepProperties};
 
-use crate::{combat::goals::determine_single_attack_power, config, constants::HOSTILE_PARTS, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
+use crate::{allies, combat::goals::determine_single_attack_power, config, constants::HOSTILE_PARTS, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut ScreepsMemory) {
@@ -14,7 +14,7 @@ pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut Screep
                 continue;
             }
 
-            let hostile_creeps = &remote_cache.creeps.enemy_creeps.iter().filter(|c| c.body().iter().any(|p| HOSTILE_PARTS.contains(&p.part()))).collect::<Vec<_>>();
+            let hostile_creeps = &remote_cache.creeps.enemy_creeps.iter().filter(|c| c.body().iter().any(|p| HOSTILE_PARTS.contains(&p.part())) && !allies::is_ally(&c.owner().username(), Some(*remote_name))).collect::<Vec<_>>();
 
             if hostile_creeps.is_empty() {
                 continue;

@@ -10,9 +10,9 @@ use crate::room::cache::tick_cache::RoomCache;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
 use crate::utils::{self, get_unique_id};
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
-use super::{base_hauler, create_spawn_requests_for_room, fast_filler, get_required_role_counts, hauler, harvester, repairer, scout, upgrader};
+use super::{base_hauler, builder, create_spawn_requests_for_room, fast_filler, get_required_role_counts, harvester, hauler, repairer, scout, storage_sitter, upgrader};
 
 pub struct SpawnRequest {
     name: Option<String>,
@@ -177,6 +177,11 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
     let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
 
+    //if room_memory.remotes.is_empty() {
+    //    info!("[HAULER SCAN] Room {} has no remotes, skipping hauler scan", room.name());
+    //    return;
+    //}
+
     let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache);
     let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
 
@@ -339,7 +344,12 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
         // So, we have the carry requirement, now we need to calculate the hauler count
         // Which is, how many carrys we will spawn, times how much energy each of them carry
         // Then we add 25%, because we want to have a bit of a buffer
-        let wanted_hauler_count = ((carry_requirement as f32) / (carry_count as f32 * 50.0)) * 1.25;
+        let mut wanted_hauler_count = (carry_requirement as f32) / (carry_count as f32 * 50.0);
+
+        // Only for developing rooms, we want to have a bit more haulers
+        if owning_cache.rcl <= 7 {
+            wanted_hauler_count *= 1.25;
+        }
 
         let hauler_count = if wanted_hauler_count < 3.0 {
             3
@@ -353,22 +363,9 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 
         let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-        let max = match owning_cache.rcl {
-            1 => 20,
-            2 => 40,
-            3 => 70,
-            4 => 100,
-            5 => 100,
-            6 => 100,
-            7 => 100,
-            8 => 100,
-            _ => 100,
-        };
+        room_memory.hauler_count = hauler_count as u32;
 
-        let clamped = hauler_count.clamp(3, max);
-        room_memory.hauler_count = clamped;
-
-        info!("[HAULER SCAN] Initiated hauler scan for room {} - hauler count: {} - carry requirement: {}", room.name(), clamped, carry_requirement);
+        info!("[HAULER SCAN] Initiated hauler scan for room {} - hauler count: {} - carry requirement: {}", room.name(), room_memory.hauler_count, carry_requirement);
     }
 }
 
@@ -402,14 +399,18 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let required_count_for_role = required_roles.get(required_role).unwrap();
             let current_count_for_role = room_cache.creeps.creeps_of_role.get(required_role).unwrap_or(&Vec::new()).len();
 
-            if current_count_for_role <= (*required_count_for_role).try_into().unwrap() && required_count_for_role > &0 {
+            info!("Checking {} requirement for room {} - current: {} - required: {}", required_role, room.name(), current_count_for_role, required_count_for_role);
+
+            if current_count_for_role < (*required_count_for_role).try_into().unwrap() && required_count_for_role > &0 {
                 let spawn_request = match required_role {
                     Role::Harvester => harvester(&room, room_cache, &mut cache.spawning),
                     Role::Hauler => hauler(&room, cache, memory),
                     Role::FastFiller => fast_filler(&room, room_cache, &mut cache.spawning),
                     Role::BaseHauler => base_hauler(&room, room_cache, &mut cache.spawning),
+                    Role::StorageSitter => storage_sitter(&room, room_cache, &mut cache.spawning),
                     Role::Upgrader => upgrader(&room, room_cache, &mut cache.spawning),
                     Role::Repairer => repairer(&room, room_cache, &mut cache.spawning),
+                    Role::Builder => builder(&room, room_cache, &mut cache.spawning),
                     Role::Scout => scout(&room, room_cache, &mut cache.spawning),
                     _ => continue,
                 };

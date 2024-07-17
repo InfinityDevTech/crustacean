@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use screeps::{
     find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer,
-    StructureController, StructureExtension, StructureLink, StructureObject, StructureObserver,
+    OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController,
+    StructureExtension, StructureLink, StructureNuker, StructureObject, StructureObserver,
     StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage,
     StructureTower, StructureType, Tombstone,
 };
@@ -16,6 +16,7 @@ use super::resources::RoomResourceCache;
 pub struct CachedController {
     pub controller: StructureController,
     pub container: Option<StructureContainer>,
+    pub link: Option<StructureLink>,
 }
 
 #[derive(Debug, Clone)]
@@ -76,6 +77,7 @@ pub struct RoomStructureCache {
     pub controller: Option<CachedController>,
     pub storage: Option<StructureStorage>,
     pub observer: Option<StructureObserver>,
+    pub nuker: Option<StructureNuker>,
 
     pub terrain: LocalRoomTerrain,
     pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
@@ -91,6 +93,8 @@ impl RoomStructureCache {
         memory: &mut ScreepsMemory,
         _heap_cache: &mut RoomHeapCache,
     ) -> RoomStructureCache {
+        let room_memory = memory.rooms.get_mut(&room.name());
+
         let mut cache = RoomStructureCache {
             all_structures: Vec::new(),
             hostile_structures: Vec::new(),
@@ -109,6 +113,7 @@ impl RoomStructureCache {
             controller: None,
             storage: None,
             observer: None,
+            nuker: None,
 
             terrain: LocalRoomTerrain::from(room.get_terrain()),
             roads: HashMap::new(),
@@ -117,28 +122,37 @@ impl RoomStructureCache {
         };
 
         if let Some(controller) = room.controller() {
-            let containers = controller.pos().find_in_range(find::STRUCTURES, 2);
-            let container = containers
-                .iter()
-                .find(|c| matches!(c, StructureObject::StructureContainer(_)));
+            if let Some(room_memory) = room_memory {
+                room_memory.rcl = controller.level();
 
-            let mut cid = None;
-
-            if let Some(StructureObject::StructureContainer(container)) = container {
-                cid = Some(container);
+                if room_memory.max_rcl < controller.level() {
+                    room_memory.max_rcl = controller.level();
+                }
             }
 
-            let cached_controller = CachedController {
+            cache.controller = Some(CachedController {
                 controller,
-                container: cid.cloned(),
-            };
-
-            cache.controller = Some(cached_controller);
+                container: None,
+                link: None,
+            });
         }
 
         cache.refresh_construction_cache(room);
         cache.refresh_ruin_cache(room);
         cache.refresh_structure_cache(resource_cache, memory, room);
+
+        if let Some(mut cc) = cache.controller {
+            if let Some(controller_container) = &cache.containers.controller {
+                cc.container = Some(controller_container.clone());
+            }
+
+            if let Some(controller_link) = &cache.links.controller {
+                cc.link = Some(controller_link.clone());
+            }
+
+            cache.controller = Some(cc);
+        }
+
         cache
     }
 
@@ -156,6 +170,7 @@ impl RoomStructureCache {
         memory: &mut ScreepsMemory,
         room: &Room,
     ) {
+        let room_memory = memory.rooms.get_mut(&room.name());
         let mut containers = Vec::new();
         let mut my_links = Vec::new();
 
@@ -170,97 +185,110 @@ impl RoomStructureCache {
 
         let mut sp_center = None;
 
-        if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+        if let Some(ref room_memory) = room_memory {
             sp_center = Some(room_memory.spawn_center);
         }
 
         for structure in room.find(find::STRUCTURES, None).into_iter() {
-                if !can_structures_be_placed && structure.structure_type() != StructureType::Container {
+            if !can_structures_be_placed && structure.structure_type() != StructureType::Container {
+                continue;
+            } else if !can_structures_be_placed {
+                if let StructureObject::StructureContainer(container) = structure {
+                    containers.push(container);
                     continue;
-                } else if !can_structures_be_placed {
-                    if let StructureObject::StructureContainer(container) = structure {
-                        containers.push(container);
-                        continue;
-                    }
-                }
-                self.all_structures.push(structure.clone());
-
-                if let Some(repairable) = structure.as_repairable() {
-                    let max = if structure.structure_type() == StructureType::Rampart {
-                        //let controller = self.controller.as_ref().unwrap().controller.clone();
-                        //get_rampart_repair_rcl(controller.level())
-                        100_000
-                    } else {
-                        repairable.hits_max()
-                    };
-
-                    if repairable.hits() < max {
-                        self.needs_repair.push(structure.clone());
-                    }
-                }
-
-                if let Some(owner) = structure.as_owned() {
-                    if !owner.my() {
-                        self.hostile_structures.push(structure.clone());
-                    }
-                }
-
-                match structure {
-                    StructureObject::StructureTower(tower) => {
-                        if !tower.my() {
-                            continue;
-                        }
-                        self.towers.insert(tower.id(), tower);
-                    }
-                    StructureObject::StructureExtension(extension) => {
-                        if !extension.my() {
-                            continue;
-                        }
-                        self.extensions.insert(extension.id(), extension);
-                    }
-                    StructureObject::StructureLink(link) => {
-                        if !link.my() {
-                            continue;
-                        }
-                        resource_cache.energy_in_storing_structures +=
-                            link.store().get_used_capacity(Some(ResourceType::Energy));
-
-                        my_links.push(link);
-                    }
-                    StructureObject::StructureRoad(road) => {
-                        self.roads.insert(road.id(), road);
-                    }
-                    StructureObject::StructureContainer(container) => {
-                        resource_cache.energy_in_storing_structures += container
-                            .store()
-                            .get_used_capacity(Some(ResourceType::Energy));
-
-                        containers.push(container);
-                    }
-                    StructureObject::StructureRampart(rampart) => {
-                        if !rampart.my() {
-                            continue;
-                        }
-                        self.ramparts.push(rampart);
-                    }
-                    StructureObject::StructureStorage(storage) => {
-                        resource_cache.energy_in_storing_structures += storage
-                            .store()
-                            .get_used_capacity(Some(ResourceType::Energy));
-
-                        self.storage = Some(storage);
-                    }
-                    StructureObject::StructureSpawn(spawn) => {
-                        if spawn.my() {
-                            self.spawns.insert(spawn.id(), spawn);
-                        }
-                    }
-                    StructureObject::StructureObserver(observer) => {
-                        self.observer = Some(observer);
-                    }
-                    _ => {}
                 }
             }
+
+            // Dont to the is_active check UNLESS we downgraded.
+            // Its very expensive from what I have heard.
+            // This information has been reported by: Gadjung
+            if let Some(ref room_memory) = room_memory {
+                if room_memory.rcl < room_memory.max_rcl && !structure.is_active() {
+                    continue;
+                }
+            }
+
+            self.all_structures.push(structure.clone());
+
+            if let Some(repairable) = structure.as_repairable() {
+                let max = if structure.structure_type() == StructureType::Rampart {
+                    //let controller = self.controller.as_ref().unwrap().controller.clone();
+                    //get_rampart_repair_rcl(controller.level())
+                    100_000
+                } else {
+                    repairable.hits_max()
+                };
+
+                if repairable.hits() < max {
+                    self.needs_repair.push(structure.clone());
+                }
+            }
+
+            if let Some(owner) = structure.as_owned() {
+                if !owner.my() {
+                    self.hostile_structures.push(structure.clone());
+                }
+            }
+
+            match structure {
+                StructureObject::StructureTower(tower) => {
+                    if !tower.my() {
+                        continue;
+                    }
+                    self.towers.insert(tower.id(), tower);
+                }
+                StructureObject::StructureExtension(extension) => {
+                    if !extension.my() {
+                        continue;
+                    }
+                    self.extensions.insert(extension.id(), extension);
+                }
+                StructureObject::StructureLink(link) => {
+                    if !link.my() {
+                        continue;
+                    }
+                    resource_cache.energy_in_storing_structures +=
+                        link.store().get_used_capacity(Some(ResourceType::Energy));
+
+                    my_links.push(link);
+                }
+                StructureObject::StructureRoad(road) => {
+                    self.roads.insert(road.id(), road);
+                }
+                StructureObject::StructureContainer(container) => {
+                    resource_cache.energy_in_storing_structures += container
+                        .store()
+                        .get_used_capacity(Some(ResourceType::Energy));
+
+                    containers.push(container);
+                }
+                StructureObject::StructureRampart(rampart) => {
+                    if !rampart.my() {
+                        continue;
+                    }
+                    self.ramparts.push(rampart);
+                }
+                StructureObject::StructureStorage(storage) => {
+                    resource_cache.energy_in_storing_structures += storage
+                        .store()
+                        .get_used_capacity(Some(ResourceType::Energy));
+
+                    self.storage = Some(storage);
+                }
+                StructureObject::StructureSpawn(spawn) => {
+                    if spawn.my() {
+                        self.spawns.insert(spawn.id(), spawn);
+                    }
+                }
+                StructureObject::StructureNuker(nuker) => {
+                    self.nuker = Some(nuker);
+                }
+                StructureObject::StructureObserver(observer) => {
+                    self.observer = Some(observer);
+                }
+                _ => {}
+            }
+        }
 
         if can_structures_be_placed {
             for link in my_links {

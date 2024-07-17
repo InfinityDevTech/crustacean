@@ -33,7 +33,6 @@ pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) {
     // Sort by range.
-    let link = room_cache.structures.links.storage.clone();
     let mut extensions = room_cache
         .structures
         .extensions
@@ -106,37 +105,6 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mu
                         }
                     }
                 }
-                // Its right next to the storage lmao.
-                if let Some(link) = link {
-                    let upgrader_count = room_cache
-                        .creeps
-                        .creeps_of_role
-                        .get(&Role::Upgrader)
-                        .unwrap_or(&Vec::new())
-                        .len();
-
-                    let has_ff_link = room_cache.structures.links.fast_filler.is_some();
-                    if link.store().get_free_capacity(Some(ResourceType::Energy)) > 0
-                        && (upgrader_count > 0 || has_ff_link)
-                    {
-                        if creep.pos().is_near_to(link.pos()) {
-                            creep.bsay("📋TFERLINK", false);
-                            let _ = creep.ITtransfer(&link, ResourceType::Energy, None);
-                        } else {
-                            creep.bsay("🚚TFERLINK", false);
-                            creep.better_move_to(
-                                memory,
-                                room_cache,
-                                link.pos(),
-                                1,
-                                Default::default(),
-                            );
-
-                            return;
-                        }
-                    }
-                }
-
                 if let Some(fastfiller_containers) = &room_cache.structures.containers.fast_filler {
                     let lowest = fastfiller_containers
                         .iter()
@@ -196,34 +164,6 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mu
             } else {
                 creep.bsay("🚚TFEREXT", false);
                 creep.better_move_to(memory, room_cache, extension.pos(), 1, Default::default())
-            }
-        }
-
-        if let Some(storage_link) = &room_cache.structures.links.storage {
-            let upgrader_count = room_cache
-                .creeps
-                .creeps_of_role
-                .get(&Role::Upgrader)
-                .map_or(0, |x| x.len());
-
-            let has_ff_link = room_cache.structures.links.fast_filler.is_some();
-            if creep.pos().is_near_to(storage_link.pos())
-                && storage_link
-                    .store()
-                    .get_free_capacity(Some(ResourceType::Energy))
-                    > 0
-                && (upgrader_count > 0 || has_ff_link)
-                && room_cache
-                    .structures
-                    .storage
-                    .as_ref()
-                    .unwrap()
-                    .store()
-                    .get_used_capacity(Some(ResourceType::Energy))
-                    > 10000
-            {
-                creep.bsay("📋TFERLINK", false);
-                let _ = creep.ITtransfer(storage_link, ResourceType::Energy, None);
             }
         }
     }

@@ -1,22 +1,45 @@
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureType, Terrain
+    game,
+    look::{self, LookResult},
+    pathfinder::MultiRoomCostResult,
+    HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate,
+    RoomName, RoomPosition, StructureType, Terrain,
 };
 
 use crate::{
-    combat::{hate_handler, rank_room}, config, heap, memory::{Role, ScreepsMemory}, movement::{move_target::{path_call, MoveOptions}, pathfinding::PathFinder, utils::visualise_path}, room::{
-        cache::tick_cache::{hauling, resources, RoomCache}, creeps::{organizer, recovery::recover_creeps}, planning::room::{plan_room, remotes}, tower, visuals::run_full_visuals
-    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
+    combat::{hate_handler, rank_room},
+    config, heap,
+    memory::{Role, ScreepsMemory},
+    movement::{
+        move_target::{path_call, MoveOptions},
+        movement_utils::visualise_path,
+        pathfinding::PathFinder,
+    },
+    room::{
+        cache::tick_cache::{hauling, resources, RoomCache},
+        creeps::{organizer, recovery::recover_creeps},
+        planning::room::{plan_room, remotes},
+        tower,
+        visuals::run_full_visuals,
+    },
+    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
 };
 
 use super::{
-    cache::tick_cache::CachedRoom, links, planning::{self, room::construction::{
-            get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan, get_rcl_6_plan,
-            get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
-        }}, visuals::visualise_room_visual
+    cache::tick_cache::CachedRoom,
+    links,
+    planning::{
+        self,
+        room::construction::{
+            get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
+            get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
+        },
+    },
+    visuals::visualise_room_visual,
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -27,8 +50,14 @@ use super::{
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let starting_cpu = game::cpu::get_used();
 
-    let pos = Position::new(RoomCoordinate::new(4).unwrap(), RoomCoordinate::new(4).unwrap(), room.name());
-    let style = MapTextStyle::default().align(screeps::TextAlign::Center).font_size(4.0);
+    let pos = Position::new(
+        RoomCoordinate::new(4).unwrap(),
+        RoomCoordinate::new(4).unwrap(),
+        room.name(),
+    );
+    let style = MapTextStyle::default()
+        .align(screeps::TextAlign::Center)
+        .font_size(4.0);
 
     if memory.rooms.contains_key(&room.name()) {
         MapVisual::text(pos, "🏠".to_string(), style);
@@ -43,7 +72,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         return;
     } else if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
-        info!("[{}] Running in low-power mode, to fix some bugs...", room.name());
+        info!(
+            "[{}] Running in low-power mode, to fix some bugs...",
+            room.name()
+        );
 
         // TODO: Make it so that I dont have to make a cache.
         // Its about saving CPU.
@@ -102,12 +134,19 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             room.stats.cpu_creeps += game::cpu::get_used() - pre_hauler_cpu;
         }
 
-        if let Some(hauler_cpu_usage) = cache.rooms.get_mut(&room.name()).unwrap().stats.cpu_usage_by_role.get_mut(&Role::Hauler) {
+        if let Some(hauler_cpu_usage) = cache
+            .rooms
+            .get_mut(&room.name())
+            .unwrap()
+            .stats
+            .cpu_usage_by_role
+            .get_mut(&Role::Hauler)
+        {
             *hauler_cpu_usage += game::cpu::get_used() - pre_hauler_cpu;
         }
 
         for flag in game::flags().values() {
-            if flag.name().starts_with("forceCenter") {
+            if flag.name().starts_with("forceSpawnCenter") {
                 let pos = flag.pos();
 
                 if flag.pos().room_name() == room.name() {
@@ -116,6 +155,16 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                     room_cache.spawn_center = Some(pos.xy());
                     room_memory.spawn_center = pos.xy();
+                }
+            } else if flag.name().starts_with("forceStorageCenter") {
+                let pos = flag.pos();
+
+                if flag.pos().room_name() == room.name() {
+                    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+                    let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
+                    room_cache.storage_center = Some(pos.xy());
+                    room_memory.storage_center = pos.xy();
                 }
             }
         }
@@ -143,9 +192,16 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             // If we dont have enough remotes, scan every 10 ticks
             // If its 30000 ticks, scan
             // If we just pushed code, or the heap reset, scan.
-            if (room_memory.remotes.len() < config::ROOM_REMOTE_COUNT.into() && game::time() % 10 == 0) || game::time() % 3000 == 0 || lifetime == 0 {
+            if (room_memory.remotes.len() < config::ROOM_REMOTE_COUNT.into()
+                && game::time() % 10 == 0)
+                || game::time() % 3000 == 0
+                || lifetime == 0
+            {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
-                info!("  [REMOTES] Remote re-scan triggered, found {} remotes", remotes.len());
+                info!(
+                    "  [REMOTES] Remote re-scan triggered, found {} remotes",
+                    remotes.len()
+                );
             }
 
             room_cache.stats.spawning_stats(&mut room_cache.structures);
@@ -178,7 +234,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         room_cache.stats.rcl_progress = controller.progress();
         room_cache.stats.rcl_progress_total = controller.progress_total();
 
-        room_cache.stats.write_to_memory(memory, room.name(), end_cpu - starting_cpu);
+        room_cache
+            .stats
+            .write_to_memory(memory, room.name(), end_cpu - starting_cpu);
     }
 }
 
@@ -190,7 +248,6 @@ pub fn remote_path_call(_room_name: RoomName) -> MultiRoomCostResult {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
-
     if game::cpu::bucket() < 500 {
         return;
     }
@@ -203,18 +260,37 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
         let offset_x = pos.x;
         let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
 
-        let should_rampart = room_cache.structures.storage.is_some() && room_cache.structures.controller.as_ref().unwrap().controller.level() >= 4;
-        let should_road = room_cache.structures.controller.as_ref().unwrap().controller.level() > 3;
+        let should_rampart = room_cache.structures.storage.is_some()
+            && room_cache
+                .rcl
+                >= 4;
+        let should_road = room_cache
+            .rcl
+            > 3;
 
-        if !should_road {
-            return;
-        } else {
+        if should_road {
             planning::room::roads::plan_main_room_roads(room, room_cache, memory);
         }
 
-        for structure in stuffs {
+        if room_cache.rcl >= 2 {
+            planning::room::construction::plan_containers_and_links(room, room_cache);
+        }
 
+        for structure in get_containers() {
+            let pos = RoomPosition::new(
+                structure.0 as u8 + offset_x.u8(),
+                structure.1 as u8 + offset_y.u8(),
+                room.name(),
+            );
+            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+        }
+
+        for structure in stuffs {
             if !should_rampart && structure.2 == StructureType::Rampart {
+                continue;
+            }
+
+            if !should_road && structure.2 == StructureType::Road {
                 continue;
             }
 
@@ -225,105 +301,118 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
             );
             let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
         }
-    }
 
-    if !memory.rooms.get(&room.name()).unwrap().planned
-        || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
-    {
-        let level = room.controller().unwrap().level();
+        if !memory.rooms.get(&room.name()).unwrap().planned
+            || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
+        {
+            let level = room.controller().unwrap().level();
 
-        memory.rooms.get_mut(&room.name()).unwrap().rcl_times.insert(level, game::time());
+            memory
+                .rooms
+                .get_mut(&room.name())
+                .unwrap()
+                .rcl_times
+                .insert(level, game::time());
 
-        let structures = match room.controller().unwrap().level() {
-            2 => get_rcl_2_plan(),
-            3 => get_rcl_3_plan(),
-            4 => get_rcl_4_plan(),
-            5 => get_rcl_5_plan(),
-            6 => get_rcl_6_plan(),
-            7 => get_rcl_7_plan(),
-            8 => get_rcl_8_plan(),
-            _ => get_roads_and_ramparts(),
-        };
+            let structures = match room.controller().unwrap().level() {
+                2 => get_rcl_2_plan(),
+                3 => get_rcl_3_plan(),
+                4 => get_rcl_4_plan(),
+                5 => get_rcl_5_plan(),
+                6 => get_rcl_6_plan(),
+                7 => get_rcl_7_plan(),
+                8 => get_rcl_8_plan(),
+                _ => get_roads_and_ramparts(),
+            };
 
-        for structure in structures {
-            if room_cache.structures.spawns.is_empty() {
-                return;
+            for structure in structures {
+                if room_cache.structures.spawns.is_empty() {
+                    return;
+                }
+
+                let offset_x = room_cache
+                    .structures
+                    .spawns
+                    .values()
+                    .next()
+                    .unwrap()
+                    .pos()
+                    .x();
+                let offset_y = room_cache
+                    .structures
+                    .spawns
+                    .values()
+                    .next()
+                    .unwrap()
+                    .pos()
+                    .y();
+
+                let pos = RoomPosition::new(
+                    structure.0 as u8 + offset_x.u8(),
+                    structure.1 as u8 + offset_y.u8(),
+                    room.name(),
+                );
+                let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
             }
 
-            let offset_x = room_cache
-                .structures
-                .spawns
-                .values()
-                .next()
-                .unwrap()
-                .pos()
-                .x();
-            let offset_y = room_cache
-                .structures
-                .spawns
-                .values()
-                .next()
-                .unwrap()
-                .pos()
-                .y();
+            // Plan container around source and controller
+            let controller = &room_cache.structures.controller;
+            let sources = &room_cache.resources.sources;
 
-            let pos = RoomPosition::new(
-                structure.0 as u8 + offset_x.u8(),
-                structure.1 as u8 + offset_y.u8(),
-                room.name(),
+            let cp = controller.as_ref().unwrap().controller.pos();
+            let controller_looked = room.look_for_at_area(
+                look::TERRAIN,
+                cp.y().u8() - 2,
+                cp.x().u8() - 2,
+                cp.y().u8() + 2,
+                cp.x().u8() + 2,
             );
-            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
-        }
 
-        // Plan container around source and controller
-        let controller = &room_cache.structures.controller;
-        let sources = &room_cache.resources.sources;
-
-        let cp = controller.as_ref().unwrap().controller.pos();
-        let controller_looked = room.look_for_at_area(
-            look::TERRAIN,
-            cp.y().u8() - 2,
-            cp.x().u8() - 2,
-            cp.y().u8() + 2,
-            cp.x().u8() + 2,
-        );
-
-        for pos in controller_looked {
-            if let LookResult::Terrain(terrain) = pos.look_result {
-                if Terrain::Plain != terrain || Terrain::Swamp != terrain {
-                    continue;
-                }
-
-                let pos = RoomPosition::new(pos.x, pos.y, room.name());
-                if pos.get_range_to_xy(cp.x().u8(), cp.y().u8()) != 2 {
-                    continue;
-                }
-
-                let _ =
-                    room.ITcreate_construction_site(pos.x(), pos.y(), StructureType::Container, None);
-                break;
-            }
-        }
-
-        for source in sources {
-            let x = source.source.pos().x().u8();
-            let y = source.source.pos().y().u8();
-
-            let looked = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
-            for pos in looked {
+            for pos in controller_looked {
                 if let LookResult::Terrain(terrain) = pos.look_result {
                     if Terrain::Plain != terrain || Terrain::Swamp != terrain {
                         continue;
                     }
-                    let res =
-                        room.ITcreate_construction_site(pos.x, pos.y, StructureType::Container, None);
-                    if res.is_ok() {
-                        break;
+
+                    let pos = RoomPosition::new(pos.x, pos.y, room.name());
+                    if pos.get_range_to_xy(cp.x().u8(), cp.y().u8()) != 2 {
+                        continue;
+                    }
+
+                    let _ = room.ITcreate_construction_site(
+                        pos.x(),
+                        pos.y(),
+                        StructureType::Container,
+                        None,
+                    );
+                    break;
+                }
+            }
+
+            for source in sources {
+                let x = source.source.pos().x().u8();
+                let y = source.source.pos().y().u8();
+
+                let looked = room.look_for_at_area(look::TERRAIN, y - 1, x - 1, y + 1, x + 1);
+                for pos in looked {
+                    if let LookResult::Terrain(terrain) = pos.look_result {
+                        if Terrain::Plain != terrain || Terrain::Swamp != terrain {
+                            continue;
+                        }
+                        let res = room.ITcreate_construction_site(
+                            pos.x,
+                            pos.y,
+                            StructureType::Container,
+                            None,
+                        );
+                        if res.is_ok() {
+                            break;
+                        }
                     }
                 }
             }
+            memory.rooms.get_mut(&room.name()).unwrap().planned = true;
+            memory.rooms.get_mut(&room.name()).unwrap().rcl = room.controller().unwrap().level();
         }
-        memory.rooms.get_mut(&room.name()).unwrap().planned = true;
-        memory.rooms.get_mut(&room.name()).unwrap().rcl = room.controller().unwrap().level();
     }
 }

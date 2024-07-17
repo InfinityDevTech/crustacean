@@ -6,7 +6,7 @@ use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
-use crate::{config, room::cache::tick_cache::CachedRoom};
+use crate::{config, room::cache::tick_cache::CachedRoom, utils};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RoomType {
@@ -139,6 +139,10 @@ impl RoomExtensions for screeps::Room {
 
         let sign = self.controller().unwrap().sign();
         if sign.is_none() {
+            return false;
+        }
+
+        if sign.unwrap().username() != utils::get_my_username() {
             return false;
         }
 

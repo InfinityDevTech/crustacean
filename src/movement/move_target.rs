@@ -422,7 +422,7 @@ pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, mo
             match structure {
                 StructureObject::StructureContainer(_) => matrix.set(pos.xy(), 2),
                 StructureObject::StructureRampart(rampart) => {
-                    if !rampart.my() {
+                    if !rampart.my() && !rampart.is_public() {
                         matrix.set(pos.xy(), 255);
                     }
                 }

@@ -8,16 +8,16 @@ pub const ROOM_REMOTE_COUNT: u8 = 8;
 
 pub const INVADER_USERNAME: &str = "Invader";
 
-pub const REMOTE_SIGNS: [&str; 1] = [
+pub const REMOTE_SIGNS: [&str; 3] = [
 //"Woops. - Infinity Dev",
 //"Boo. - Infinity Dev",
 //"FREE CANDY!!! - Infinity Dev",
 //"Infinity wuz here - Infinity Dev",
-//"Personally, I think we should delete invaders. Oh! And tigga, because tiger scary. - Infinity Dev",
+"Personally, I think we should delete invaders. Oh! And, tigga, because tiger scary. - Infinity Dev",
 //"Ourobot V2, more like, 🐍bot. Idk, im just bored at this point. - Infinity Dev",
 //"I couldnt think of any other funny names. Just pretend I did. - Infinity Dev",
 //"oOoOoOoOoh Taxes. - Infinity Dev",
-//"Dont mess with me, my mom called me handsome. - Infinity Dev",
+"Dont mess with me, my mom called me handsome. - Infinity Dev",
 //"I think im a bot? - Infinity Dev",
 "liaohao isnt gone. Just ask lp136. - Infinity Dev",
 ];

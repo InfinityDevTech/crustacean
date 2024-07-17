@@ -322,12 +322,11 @@ structstruck::strike! {
         pub enemy_players: HashMap<String, EnemyPlayer>,
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
 
-        pub allies: Vec<String>,
         pub stats: StatsData,
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl ScreepsMemory {
     pub fn init_memory() -> Self {
         let pre_memory_cpu = game::cpu::get_used();
@@ -351,7 +350,6 @@ impl ScreepsMemory {
 
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
-                allies: Vec::new(),
                 stats: StatsData::default(),
             };
 
@@ -386,7 +384,6 @@ impl ScreepsMemory {
 
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),
-                        allies: Vec::new(),
                         stats: StatsData::default(),
                     };
 
@@ -407,6 +404,15 @@ impl ScreepsMemory {
 
     pub fn activate_segments(&self) {
         screeps::raw_memory::set_active_segments(&[segment_ids()[SegmentIDs::Profiler]]);
+    }
+
+    pub fn filter_old_creeps(&mut self) {
+        for (creep_name, creep_memory) in &self.creeps.clone() {
+            let owning_room = creep_memory.owning_room;
+            if game::rooms().get(owning_room).is_none() {
+                self.creeps.remove(creep_name);
+            }
+        }
     }
 
     pub fn create_creep(&mut self, room_name: &RoomName, creep_name: &str, object: CreepMemory) {

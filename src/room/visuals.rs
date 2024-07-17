@@ -1,6 +1,6 @@
 use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, RoomCoordinate, RoomName, TextStyle};
 
-use crate::{config, memory::ScreepsMemory};
+use crate::{allies, config, memory::ScreepsMemory};
 
 use super::cache::tick_cache::CachedRoom;
 
@@ -24,10 +24,10 @@ pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: 
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     if config::VISUALISE_SCOUTING_DATA {
-        for room in memory.scouted_rooms.values() {
+        for (room_name, room) in &memory.scouted_rooms {
             let circle_x = RoomCoordinate::new(46).unwrap();
             let circle_y = RoomCoordinate::new(3).unwrap();
 
@@ -42,7 +42,7 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
                 .clone()
                 .unwrap_or_else(|| room.reserved.clone().unwrap_or("None".to_string()));
 
-            let circle_style = if memory.allies.contains(&potential_owner) {
+            let circle_style = if !allies::is_ally(&room.owner.clone().unwrap_or("".to_string()), Some(*room_name)) {
                 CircleStyle::default()
                     .fill("#00FF00")
                     .stroke_width(1.0)

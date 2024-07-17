@@ -1,6 +1,7 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, storage_sitter_body};
+use log::info;
 use screeps::{find, game, HasId, Part, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
@@ -781,7 +782,7 @@ pub fn fast_filler(
     ))
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvester(
     room: &Room,
     cache: &CachedRoom,
@@ -819,9 +820,9 @@ pub fn harvester(
 
         let parts_needed = if !source.creeps.is_empty() {
             if source.creeps.len() == 1 {
-                let creep = source.creeps.first().unwrap();
+                let creep_id = source.creeps.first().unwrap();
 
-                let gcreep = game::creeps().get(creep.to_string());
+                let gcreep = game::get_object_by_id_typed(creep_id);
                 if gcreep.is_none() {
                     continue;
                 }
@@ -833,10 +834,15 @@ pub fn harvester(
                     .count();
 
                 if work_parts >= source.max_parts_needed() as usize {
-                    return None;
+                    continue;
                 }
             }
-            parts_for_max
+
+            if cost_for_max > energy_capacity {
+                parts_needed
+            } else {
+                parts_for_max
+            }
         } else {
             parts_needed
         };
@@ -848,7 +854,7 @@ pub fn harvester(
         }
         priority += (parts_needed.len() as f64) * 1.15;
 
-        if miner_count < cache.resources.sources.len() {
+        if miner_count < cache.resources.sources.len() || source.calculate_work_parts(cache) < source.max_parts_needed() / 2 {
             priority += 50.0;
         }
 
@@ -945,9 +951,9 @@ pub fn remote_harvester(
 
                 let parts_needed = if !source.creeps.is_empty() {
                     if source.creeps.len() == 1 {
-                        let creep = source.creeps.first().unwrap();
+                        let creep_id = source.creeps.first().unwrap();
 
-                        let gcreep = game::creeps().get(creep.to_string());
+                        let gcreep = game::get_object_by_id_typed(creep_id);
                         if gcreep.is_none() {
                             continue;
                         }

@@ -53,6 +53,16 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
         _ => 0,
     };
 
+    let mut all_source_containers_placed = false;
+    for source in &room_cache.resources.sources {
+        if source.container.is_none() {
+            all_source_containers_placed = false;
+            break;
+        }
+
+        all_source_containers_placed = true;
+    }
+
     if let Some(controller) = &room_cache.structures.controller {
         if controller.container.is_some() || controller.link.is_some() {
             if controller.link.is_some() {
@@ -65,12 +75,14 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
                 find_pos_most_accessible(room, room_cache, &controller.controller.pos(), 3);
 
             if let Some(container_pos) = container_pos {
-                let _ = room.create_construction_site(
-                    container_pos.x().u8(),
-                    container_pos.y().u8(),
-                    StructureType::Container,
-                    None,
-                );
+                if all_source_containers_placed {
+                    let _ = room.create_construction_site(
+                        container_pos.x().u8(),
+                        container_pos.y().u8(),
+                        StructureType::Container,
+                        None,
+                    );
+                }
             }
 
             if let Some(link_pos) = link_pos {

@@ -1,38 +1,46 @@
 #![feature(map_many_mut)]
 
 use std::{
-    collections::HashMap, str::FromStr, sync::{Mutex, Once, OnceLock}
+    collections::HashMap,
+    str::FromStr,
+    sync::{Mutex, Once, OnceLock},
 };
 
 use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
 use heap_cache::GlobalHeapCache;
 use js_sys::JsString;
 use log::*;
-use movement::{caching::path_cache, move_target::MoveOptions, pathfinding::PathFinder, movement_utils::visualise_path};
+use movement::{
+    caching::path_cache, move_target::MoveOptions, movement_utils::visualise_path,
+    pathfinding::PathFinder,
+};
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::tick_cache::{hauling, resources, traffic, RoomCache}, democracy, spawning::spawn_manager::{self, SpawnManager}, visuals::visualise_scouted_rooms
+    cache::tick_cache::{hauling, resources, traffic, RoomCache},
+    democracy,
+    spawning::spawn_manager::{self, SpawnManager},
+    visuals::visualise_scouted_rooms,
 };
 use screeps::{find, game, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
-use traits::intents_tracking::{ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking, StructureObjectTracking};
+use traits::intents_tracking::{
+    ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
+    StructureObjectTracking,
+};
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    memory::ScreepsMemory,
-    traits::room::RoomExtensions,
-};
+use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
+mod allies;
 mod combat;
 mod config;
 mod constants;
-mod profiling;
-mod allies;
+mod goal_memory;
 mod heap_cache;
 mod logging;
 mod memory;
-mod goal_memory;
 mod movement;
+mod profiling;
 mod room;
 mod traits;
 mod utils;
@@ -119,12 +127,32 @@ pub fn game_loop() {
         democracy::start_government(game_room, &mut memory, &mut cache);
     }
 
+    if game::time() % 1500 == 0 {
+        for room in memory.rooms.clone().keys() {
+            let groom = game::rooms().get(*room);
+
+            if groom.is_none() {
+                let old_room = memory.rooms.remove(room);
+
+                if let Some(old_room) = old_room {
+                    for remote in old_room.remotes {
+                        memory.remote_rooms.remove(&remote);
+                    }
+                }
+            }
+        }
+    }
+
     combat::global::run_global_setters(&mut memory, &mut cache);
 
     for room in cache.my_rooms.clone().iter() {
         hauling::match_haulers(&mut cache, &mut memory, room);
 
-        spawn_manager::calculate_hauler_needs(&game::rooms().get(*room).unwrap(), &mut memory, &mut cache);
+        spawn_manager::calculate_hauler_needs(
+            &game::rooms().get(*room).unwrap(),
+            &mut memory,
+            &mut cache,
+        );
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
 
@@ -162,6 +190,8 @@ pub fn game_loop() {
     spawn_manager::run_spawning(&mut memory, &mut cache);
 
     if game::time() % 100 == 0 {
+        memory.filter_old_creeps();
+
         hauling::clean_heap_hauling(&mut memory);
     }
 
@@ -194,7 +224,9 @@ pub fn game_loop() {
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
     // This is done like this because its basically MemHack for you JS people.
-    if (game::time() % 10 == 0 && game::cpu::bucket() > 3000 && game::cpu::get_used() < 300.0) || game::time() % 50 == 0 {
+    if (game::time() % 10 == 0 && game::cpu::bucket() > 3000 && game::cpu::get_used() < 300.0)
+        || game::time() % 50 == 0
+    {
         info!("[MEMORY] Writing memory!");
         memory.write_memory();
     } else {
@@ -230,8 +262,18 @@ pub fn game_loop() {
         percentage_to_next_gcl,
         game::gcl::level() + 1,
     );
-    info!("Used {:.2}% CPU. Used {:.2}% without intents.", cpu_usage_percent, game::cpu::get_used() - (intents_used as f64 * 0.2));
-    info!("  Total: {:.4} - {} intents using {:.1} CPU. CPU without intents: {:.4}", game::cpu::get_used(), intents_used, intents_used as f32 * 0.2, game::cpu::get_used() - (intents_used as f64 * 0.2));
+    info!(
+        "Used {:.2}% CPU. Used {:.2}% without intents.",
+        cpu_usage_percent,
+        game::cpu::get_used() - (intents_used as f64 * 0.2)
+    );
+    info!(
+        "  Total: {:.4} - {} intents using {:.1} CPU. CPU without intents: {:.4}",
+        game::cpu::get_used(),
+        intents_used,
+        intents_used as f32 * 0.2,
+        game::cpu::get_used() - (intents_used as f64 * 0.2)
+    );
     info!("  Bucket: {}", game::cpu::bucket());
     info!("  Heap: {:.2}%", used);
     info!("  Time since last reset: {}", heap_lifetime);
@@ -305,9 +347,15 @@ pub fn set_stats(memory: &mut ScreepsMemory) {
     stats.gcl.progress_total = game::gcl::progress_total();
 
     stats.market.credits = game::market::credits();
-    stats.market.cpu_unlocks = resources.get(screeps::IntershardResourceType::CpuUnlock).unwrap_or(0);
-    stats.market.access_keys = resources.get(screeps::IntershardResourceType::AccessKey).unwrap_or(0);
-    stats.market.pixels = resources.get(screeps::IntershardResourceType::Pixel).unwrap_or(0);
+    stats.market.cpu_unlocks = resources
+        .get(screeps::IntershardResourceType::CpuUnlock)
+        .unwrap_or(0);
+    stats.market.access_keys = resources
+        .get(screeps::IntershardResourceType::AccessKey)
+        .unwrap_or(0);
+    stats.market.pixels = resources
+        .get(screeps::IntershardResourceType::Pixel)
+        .unwrap_or(0);
 
     stats.memory_usage.total = 2 * 1000000;
     stats.memory_usage.used = get_memory_usage_bytes();

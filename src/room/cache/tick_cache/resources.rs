@@ -395,7 +395,15 @@ pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
     for resource in &cached_room.resources.dropped_energy {
         let amount = resource.amount();
 
+        let mut priority = -(amount as f32);
+
+        if let Some(storage) = &cached_room.structures.storage {
+            if storage.store().get_used_capacity(Some(ResourceType::Energy)) < 1000 {
+                priority -= 999999999999.0;
+            }
+        }
+
         cached_room.stats.energy.dropped += amount;
-        cached_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(amount as f32), HaulingType::NoDistanceCalcPickup);
+        cached_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), priority, HaulingType::NoDistanceCalcPickup);
     }
 }

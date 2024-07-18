@@ -1,8 +1,7 @@
-use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Room, RoomXY, StructureObject};
+use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Position, Room, RoomXY, StructureObject};
 
 use crate::{
-    memory::{EnemyPlayer, ScoutedRoom, ScreepsMemory},
-    room::cache::tick_cache::CachedRoom, utils,
+    memory::{EnemyPlayer, ScoutedRoom, ScoutedSource, ScreepsMemory}, room::cache::tick_cache::{resources::CachedSource, CachedRoom}, traits::position::PositionExtensions, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -49,7 +48,16 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
     let sources = if sources.is_empty() {
         None
     } else {
-        Some(sources)
+        let mut cached_sources = Vec::new();
+        for source in sources {
+            let pos = Position::new(source.x, source.y, room_name);
+            cached_sources.push(ScoutedSource {
+                pos: source,
+                pos_av: pos.get_accessible_positions_around(1).len() as u8,
+            });
+        }
+
+        Some(cached_sources)
     };
 
     let scouted_room = ScoutedRoom {

@@ -174,6 +174,7 @@ structstruck::strike! {
         pub owner: RoomName,
 
         pub creeps: Vec<String>,
+        pub sources: Vec<ScoutedSource>,
 
         pub under_attack: bool,
     }
@@ -210,7 +211,10 @@ structstruck::strike! {
         pub defense_capability: u8,
 
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub sources: Option<Vec<RoomXY>>,
+        pub sources: Option<Vec<pub struct ScoutedSource {
+            pub pos: RoomXY,
+            pub pos_av: u8,
+        }>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mineral: Option<ObjectId<Mineral>>,
         pub last_scouted: u32,
@@ -326,7 +330,7 @@ structstruck::strike! {
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl ScreepsMemory {
     pub fn init_memory() -> Self {
         let pre_memory_cpu = game::cpu::get_used();

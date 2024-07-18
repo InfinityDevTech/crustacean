@@ -46,11 +46,15 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     if creep_memory.hauling_task.is_none() {
         if creep_memory.needs_energy.unwrap_or(false) {
             creep.bsay("📋", false);
+            let room_cache = cache
+            .rooms
+            .get_mut(&creep_memory.owning_room)
+            .unwrap();
 
-            cache
-                .rooms
-                .get_mut(&creep_memory.owning_room)
-                .unwrap()
+            room_cache.idle_haulers += 1;
+
+
+            room_cache
                 .hauling
                 .wanting_orders
                 .push(
@@ -70,7 +74,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             .get_mut(&creep_memory.owning_room)
             .unwrap();
 
-            //room_cache.idle_haulers += 1;
+            room_cache.idle_haulers += 1;
 
             room_cache
                 .hauling

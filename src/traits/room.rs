@@ -275,6 +275,7 @@ pub trait RoomNameExtensions {
     fn split_name(&self) -> (String, u32, String, u32);
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomNameExtensions for RoomName {
     fn split_name(&self) -> (String, u32, String, u32) {
         let room_regex = Regex::new("^([WE]{1})([0-9]{1,2})([NS]{1})([0-9]{1,2})$").unwrap();
@@ -290,6 +291,7 @@ impl RoomNameExtensions for RoomName {
         )
     }
 }
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn find_pos_in_rect(rect: (u8, u8, u8, u8)) -> Vec<(u8, u8)> {
     let mut positions = Vec::new();

@@ -3,6 +3,7 @@ use screeps::{HasId, HasPosition, Position, Room, StructureType};
 
 use crate::{room::cache::tick_cache::CachedRoom, traits::position::PositionExtensions};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn find_pos_most_accessible(
     room: &Room,
     room_cache: &CachedRoom,
@@ -42,6 +43,7 @@ fn find_pos_most_accessible(
     closest
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
     let mut links_placed = 0;
 
@@ -138,6 +140,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_containers() -> Vec<(i8, i8, StructureType)> {
     vec![
         (-2, -1, StructureType::Container),

@@ -9,6 +9,7 @@ use crate::{
     utils,
 };
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -98,6 +99,7 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
     // end nuker stuffs.
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn check_pos(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) -> bool {
     let wanted_pos = room_cache.storage_center;
     let pos = creep.pos();

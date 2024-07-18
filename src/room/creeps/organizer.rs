@@ -110,15 +110,16 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         let end_time = game::cpu::get_used();
         let cpu_used = end_time - start_time;
 
-        if cpu_used > 10.0 && role != Role::Scout && role != Role::Bulldozer {
-            info!(
-                "  [CREEPS] Suiciding {} due to high CPU usage: {}",
-                creep.name(),
-                cpu_used
-            );
-
-            let _ = creep.ITsuicide();
-        }
+        // TODO: Make this use an average, im sick of creeps randomly dieing
+        //if cpu_used > 12.0 && role != Role::Scout && role != Role::Bulldozer && role != Role::Harvester && role != Role::RemoteHarvester {
+        //    info!(
+        //        "  [CREEPS] Suiciding {} due to high CPU usage: {}",
+        //        creep.name(),
+        //        cpu_used
+        //    );
+        //
+        //    let _ = creep.ITsuicide();
+        //}
 
         if cpu_used > highest_usage {
             highest_usage = cpu_used;

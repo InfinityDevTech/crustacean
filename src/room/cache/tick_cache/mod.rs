@@ -57,6 +57,8 @@ pub struct CachedRoom {
     pub idle_haulers: u32,
     pub manager: Option<RoomName>,
 
+    pub remotes_with_harvester: Vec<RoomName>,
+
     pub remotes: Vec<RoomName>,
     pub spawn_center: Option<RoomXY>,
     pub storage_center: Option<RoomXY>,
@@ -102,6 +104,8 @@ impl CachedRoom {
             idle_haulers: 0,
             manager: remote_manager,
             remotes: Vec::new(),
+
+            remotes_with_harvester: Vec::new(),
 
             spawn_center: sp_center,
             storage_center: st_center,

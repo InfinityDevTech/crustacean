@@ -1,6 +1,5 @@
 use screeps::{
-    game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
-    RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,
+    game, look, spawn, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension
 };
 
 use wasm_bindgen::JsCast;
@@ -140,6 +139,12 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
     let spawn = cache.structures.spawns.values().next().unwrap();
+
+    // Fix issue where all creeps died and they kept spending the energy on themselves
+    // Greedy fucks...
+    if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+        return;
+    }
 
     if creep.ticks_to_live() < Some(100)
         && creep.pos().is_near_to(spawn.pos())

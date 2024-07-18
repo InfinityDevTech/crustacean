@@ -55,6 +55,7 @@ pub fn get_room_sign(remote: bool) -> String {
     sign.to_string()
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn room_type(name: &RoomName) -> RoomType {
     let (room_x , room_y) = get_proper_coords(name);
 
@@ -130,6 +131,7 @@ pub fn role_to_name(role: Role) -> String {
     data.to_string()
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_proper_coords(room: &RoomName) -> (i32, i32) {
     let x_coord = room.x_coord();
     let y_coord = room.y_coord();
@@ -149,12 +151,14 @@ pub fn get_proper_coords(room: &RoomName) -> (i32, i32) {
     (x_mod, y_mod)
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn calc_terminal_cost(amount: u32, source: &RoomName, dest: &RoomName) -> u32 {
     let dist = calc_room_distance(source, dest, true);
 
     (amount as f32 * (1.0 - E.powf(-dist as f32 / 30.0))).ceil() as u32
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -> i32 {
     let x1 = source.x_coord();
     let y1 = source.y_coord();
@@ -175,6 +179,7 @@ pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -
     dx.max(dy)
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
     let total_capacity = store.get_capacity(Some(resource));
     let total_amount = store.get_used_capacity(Some(resource));
@@ -182,6 +187,7 @@ pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
     total_capacity != total_amount
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
     let mut map = HashMap::new();
 

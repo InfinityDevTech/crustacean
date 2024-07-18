@@ -72,9 +72,13 @@ pub fn fetch_possible_remotes(
                 continue;
             }
 
+            let sroom_memory = memory.scouted_rooms.get(remote_name).unwrap();
+
             let remote = RemoteRoomMemory {
                 name: *remote_name,
                 owner: room.name(),
+
+                sources: sroom_memory.sources.as_ref().unwrap().to_vec(),
 
                 creeps: Vec::new(),
                 under_attack: false
@@ -143,8 +147,8 @@ pub fn rank_remote_room(
     // Go thorugh each source and make a path to it, then average the cost.
     for source in scouted.as_ref().unwrap().sources.as_ref().unwrap() {
         let position = Position::new(
-            RoomCoordinate::new(source.x.u8()).unwrap(),
-            RoomCoordinate::new(source.y.u8()).unwrap(),
+            RoomCoordinate::new(source.pos.x.u8()).unwrap(),
+            RoomCoordinate::new(source.pos.y.u8()).unwrap(),
             *remote_room,
         );
         let options = Some(SearchOptions::new(remote_path_call).max_rooms(16).plain_cost(1).swamp_cost(5));

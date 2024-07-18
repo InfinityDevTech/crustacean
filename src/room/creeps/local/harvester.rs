@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{
     game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties,
     Source, StructureContainer,
@@ -16,6 +17,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
     if creep_memory.task_id.is_none() {
         creep.bsay("kurt kob", true);
+        info!("Harvester {} has no task id", creep.name());
         let _ = creep.ITsuicide();
         return;
     }
@@ -69,6 +71,9 @@ pub fn harvest_source(
 
         if let Some(pos) = available_positons.first() {
             creep.better_move_to(memory, cache, *pos, 0, MoveOptions::default());
+        } else {
+            // If the source is flooded, let the traffic manager figure it out.
+            creep.better_move_to(memory, cache, source.pos(), 1, MoveOptions::default());
         }
 
         None

@@ -8,7 +8,7 @@ use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::{
-        cache::tick_cache::{CachedRoom, RoomCache},
+        cache::{self, tick_cache::{CachedRoom, RoomCache}},
         creeps::local::harvester::{harvest_source, repair_container},
     },
     traits::{
@@ -24,6 +24,12 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         if creep_memory.task_id.is_none() {
             creep.bsay("kurt kob", true);
             return;
+        }
+
+        if let Some(owning_cache) = cache.rooms.get_mut(&creep_memory.owning_room) {
+            if !owning_cache.remotes_with_harvester.contains(&remote_room) {
+                owning_cache.remotes_with_harvester.push(remote_room);
+            }
         }
 
         if let Some(remote_room) = cache.rooms.get_mut(&remote_room) {

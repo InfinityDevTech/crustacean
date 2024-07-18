@@ -335,7 +335,7 @@ pub fn lcl_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, mov
     matrix
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, move_options: MoveOptions) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
@@ -436,11 +436,6 @@ pub fn path_call(room_name: RoomName, from: Position, memory: &ScreepsMemory, mo
 
         for csite in constructions {
             let pos = csite.pos();
-
-            if !csite.my() {
-                matrix.set(pos.xy(), 255);
-                continue;
-            }
 
             match csite.structure_type() {
                 StructureType::Container => {},

@@ -173,6 +173,7 @@ impl SpawnManager {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
@@ -214,7 +215,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                     for source in scouted_data.sources.as_ref().unwrap() {
                         let ept = (5 * 2) as u64;
 
-                        let pos = Position::new(source.x, source.y, *remote);
+                        let pos = Position::new(source.pos.x, source.pos.y, *remote);
 
                         sources.push((ept, pos));
                     }
@@ -354,7 +355,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
         let hauler_count = if wanted_hauler_count < 3.0 {
             3
         } else {
-            wanted_hauler_count.round() as u32
+            wanted_hauler_count.ceil() as u32
         };
 
         //if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {

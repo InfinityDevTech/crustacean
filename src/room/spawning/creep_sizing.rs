@@ -10,12 +10,16 @@ use crate::{
 
 /// Returns the parts needed for a miner creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> Vec<Part> {
-    let mut parts = vec![Part::Work, Part::Carry, Part::Move];
+pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> (bool, Vec<Part>) {
+    let mut parts = if cache.rcl < 2 {
+        vec![Part::Work, Part::Move]
+    } else {
+        vec![Part::Work, Part::Carry, Part::Move]
+    };
 
     if source_parts_needed == 0 {
         info!("No parts needed for miner");
-        return parts; // No parts needed at all, return empty
+        return (true, parts); // No parts needed at all, return empty
     }
 
     let cost_of_stamp = 150;
@@ -60,7 +64,8 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> V
         }
     }
 
-    parts
+    // Returns if we have enough parts to fill the source, and the parts needed.
+    (current_work_count >= source_parts_needed, parts)
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -85,28 +90,29 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let tile_usage = 100;
     let mut current_energy_usage = 0;
 
-    let energy_to_use = if cache
+    let (max, energy_to_use) = if cache
         .creeps
         .creeps_of_role
         .get(&Role::Hauler)
         .unwrap_or(&Vec::new())
         .len()
         > 3
-        || !cache
+        && !cache
             .creeps
             .creeps_of_role
             .get(&Role::BaseHauler)
             .unwrap_or(&Vec::new())
             .is_empty()
     {
-        room.energy_capacity_available()
+        (false, room.energy_capacity_available())
     } else {
-        room.energy_available()
+        (true, room.energy_available())
     };
 
     let mut energy_to_use = energy_to_use.clamp(0, energy_for_haulers);
 
     if cache.structures.storage.is_some()
+        && max
         && cache
             .structures
             .storage
@@ -272,7 +278,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     let target_work_parts = match level {
         1 => 5,
-        2 => 20,
+        2 => 10,
         3 => 25,
         4 => 25,
         5 => 30,

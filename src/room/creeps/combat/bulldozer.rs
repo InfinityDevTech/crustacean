@@ -1,6 +1,6 @@
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureObject, StructureProperties, StructureRampart, StructureType};
+use screeps::{find, game, structure, Color, Creep, HasPosition, SharedCreepProperties, StructureObject, StructureProperties, StructureRampart, StructureType};
 
 use crate::{
     config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
@@ -121,8 +121,18 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     }
                 } else {
                     let mut structures = creep.room().unwrap().find(find::STRUCTURES, None);
-                    structures.retain(| structure | structure.structure_type() != StructureType::Controller);
+                    structures.retain(| structure | structure.structure_type() != StructureType::Controller || structure.structure_type() != StructureType::Rampart);
                     structures.sort_by_key(|structure| structure.pos().get_range_to(creep.pos()));
+
+                    structures.retain(|c| {
+                        for rampart in ramparts.iter() {
+                            if c.pos().is_equal_to(rampart.pos()) {
+                                return false;
+                            }
+                        }
+
+                        true
+                    });
 
                     let structure = structures.first();
                     if let Some(structure) = structure {

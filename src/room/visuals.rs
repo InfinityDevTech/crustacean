@@ -24,7 +24,7 @@ pub fn visualise_spawn_progess(room: &Room, _memory: &mut ScreepsMemory, cache: 
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
     if config::VISUALISE_SCOUTING_DATA {
         for (room_name, room) in &memory.scouted_rooms {

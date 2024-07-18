@@ -170,16 +170,14 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     false
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     let room = creep.room().unwrap();
     let cache = cache.rooms.get_mut(&room.name()).unwrap();
 
     // E46N38 is a remote of NeonCamoflauge, and I want to sign it ( Totally to not fuck with him ;) ).
-    if !memory.remote_rooms.contains_key(&room.name()) && !memory.rooms.contains_key(&creep.room().unwrap().name()) {
-        if room.name() != "E46N38" && room.name() != "E46N37" {
-            return false;
-        }
+    if !memory.remote_rooms.contains_key(&room.name()) && !memory.rooms.contains_key(&creep.room().unwrap().name()) && room.name() != "E46N38" {
+        return false;
     }
 
     if let Some(controller) = cache.structures.controller.as_ref() {

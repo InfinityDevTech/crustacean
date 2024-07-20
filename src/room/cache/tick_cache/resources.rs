@@ -338,6 +338,10 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
                 priority -= 20.0;
             }
 
+            if cached_room.rcl <= 3 {
+                priority += 5.0;
+            }
+
             if cached_room.structures.storage.is_some() && basehauler_count == 0 {
                 priority += 10000.0;
             }

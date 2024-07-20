@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 
 use crate::{
     memory::{CreepMemory, Role, ScoutedSource, ScreepsMemory},
-    utils::get_body_cost,
+    utils::{self, get_body_cost},
 };
 
 use super::{
@@ -40,9 +40,25 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
     for role in Role::iter() {
         let score = match role {
             Role::Harvester => 1,
-            Role::Hauler => 1,
+            Role::Hauler => 3,
             Role::Builder => {
-                if controller.level() >= 2 && !room_cache.structures.construction_sites.is_empty() && harvester_count >= 1 {
+                let mut storage_blocked = false;
+
+                if let Some(storage) = &room_cache.structures.storage {
+                    if storage
+                        .store()
+                        .get_used_capacity(Some(ResourceType::Energy))
+                        < 10000
+                    {
+                        storage_blocked = true;
+                    }
+                }
+
+                if controller.level() >= 2
+                    && !room_cache.structures.construction_sites.is_empty()
+                    && harvester_count >= 1
+                    && !storage_blocked
+                {
                     1
                 } else {
                     0
@@ -98,9 +114,22 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                 }
             }
             Role::Upgrader => {
+                let mut storage_blocked = false;
+
+                if let Some(storage) = &room_cache.structures.storage {
+                    if storage
+                        .store()
+                        .get_used_capacity(Some(ResourceType::Energy))
+                        < 10000
+                    {
+                        storage_blocked = true;
+                    }
+                }
+
                 if controller.level() < 8
                     || (controller.ticks_to_downgrade() < Some(1500) && controller.level() >= 8)
-                    && harvester_count >= 1
+                        && harvester_count >= 1
+                        && !storage_blocked
                 {
                     1
                 } else {
@@ -179,12 +208,16 @@ pub fn flag_attacker(
             .len();
 
         let mut should_spawn_unclaimer = false;
-        if let Some(room) = flag.room() {
-            if room.find(find::HOSTILE_CREEPS, None).is_empty()
-                && room.find(find::HOSTILE_SPAWNS, None).is_empty()
-                && room.find(find::HOSTILE_STRUCTURES, None).is_empty()
+        if let Some(target_room) = flag.room() {
+            if target_room.find(find::HOSTILE_CREEPS, None).is_empty()
+                && target_room.find(find::HOSTILE_SPAWNS, None).is_empty()
+                && target_room.find(find::HOSTILE_STRUCTURES, None).is_empty()
             {
-                should_spawn_unclaimer = true;
+                let range = utils::calc_room_distance(&target_room.name(), &room.name(), true);
+
+                if range > 600/50 {
+                    should_spawn_unclaimer = true;
+                }
             }
         }
 
@@ -507,16 +540,32 @@ pub fn upgrader(
         return None;
     }
 
-    // Dont need em if we are level 8 and have a lot of ticks to downgrade.
     let controller = &cache.structures.controller.as_ref().unwrap().controller;
+
+    let room_cache = false;
+    if let Some(storage) = &cache.structures.storage {
+        if storage
+            .store()
+            .get_used_capacity(Some(ResourceType::Energy))
+            < 10000
+            && controller.ticks_to_downgrade() > Some(5000)
+        {
+            return None;
+        }
+    }
+
+    // Dont need em if we are level 8 and have a lot of ticks to downgrade.
     if controller.level() == 8 && controller.ticks_to_downgrade() > Some(120000) {
         return None;
     }
 
+    let mut priority = 4.0;
+    priority += (body.len() as f64 / 3.0).round();
+
     Some(spawn_manager.create_room_spawn_request(
         Role::Upgrader,
         body,
-        4.0,
+        priority,
         cost,
         room.name(),
         None,
@@ -817,7 +866,7 @@ pub fn fast_filler(
 // TODO: rewrite this, its a mess.
 // Specifically, the harvester and remote harvester functions.
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvester(
     room: &Room,
     cache: &CachedRoom,
@@ -859,8 +908,33 @@ pub fn harvester(
             continue;
         }
 
-        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source);
+        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, false);
         let cost = get_body_cost(&body);
+
+        // We have a creep here, so its mining.
+        // Therefore, we can build the biggest one to try and replace it
+        // with a bigger one. CPU isnt cheap. This shit cost me $130.
+        if !source.creeps.is_empty() {
+            let (filled, body) = creep_sizing::miner_body(room, cache, max_parts_for_source, true);
+            let cost = get_body_cost(&body);
+
+            let mut priority = 4.0 * parts_needed_on_source as f64;
+
+            return Some(spawn_manager.create_room_spawn_request(
+                Role::Harvester,
+                body,
+                priority,
+                cost,
+                room.name(),
+                Some(CreepMemory {
+                    owning_room: room.name(),
+                    task_id: Some(*source_index as u128),
+                    ..Default::default()
+                }),
+                None,
+                None,
+            ));
+        }
 
         let mut priority = 4.0;
 
@@ -924,7 +998,8 @@ pub fn remote_harvester(
                 let parts_needed_on_source = source.parts_needed(remote_cache);
 
                 let current_creeps_on_source = source.creeps.len();
-                let max_mining_positions = source.calculate_mining_spots(&game::rooms().get(*remote_name).unwrap());
+                let max_mining_positions =
+                    source.calculate_mining_spots(&game::rooms().get(*remote_name).unwrap());
 
                 let source_index = &remote_cache
                     .resources
@@ -941,8 +1016,35 @@ pub fn remote_harvester(
                 }
 
                 let (filled, body) =
-                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source);
+                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, false);
                 let cost = get_body_cost(&body);
+
+                // We have a creep here, so its mining.
+                // Therefore, we can build the biggest one to try and replace it
+                // with a bigger one. CPU isnt cheap. This shit cost me $130.
+                if !source.creeps.is_empty() {
+                    let (filled, body) =
+                        creep_sizing::miner_body(room, remote_cache, max_parts_for_source, true);
+                    let cost = get_body_cost(&body);
+
+                    let mut priority = 4.0 * parts_needed_on_source as f64;
+
+                    return Some(cache.spawning.create_room_spawn_request(
+                        Role::RemoteHarvester,
+                        body,
+                        priority,
+                        cost,
+                        room.name(),
+                        Some(CreepMemory {
+                            owning_room: room.name(),
+                            owning_remote: Some(*remote_name),
+                            task_id: Some(*source_index as u128),
+                            ..Default::default()
+                        }),
+                        None,
+                        None,
+                    ));
+                }
 
                 let mut priority = 4.0;
 
@@ -955,8 +1057,6 @@ pub fn remote_harvester(
                 }
 
                 priority += parts_needed_on_source as f64;
-
-                info!("Spawning remote harvester for {} - {}", remote_name, priority);
 
                 return Some(cache.spawning.create_room_spawn_request(
                     Role::RemoteHarvester,
@@ -977,7 +1077,7 @@ pub fn remote_harvester(
         } else if !owning_cache.remotes_with_harvester.contains(remote_name) {
             if let Some(remote_memory) = memory.remote_rooms.get_mut(remote_name) {
                 if let Some(first_source) = remote_memory.sources.first() {
-                    let (finished, body) = creep_sizing::miner_body(room, owning_cache, 3);
+                    let (finished, body) = creep_sizing::miner_body(room, owning_cache, 3, false);
 
                     let priority = 50.0;
                     let cost = get_body_cost(&body);

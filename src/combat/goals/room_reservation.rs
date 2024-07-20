@@ -44,6 +44,13 @@ pub fn attain_reservation(
     clear_creeps(goal);
     let current_parts = get_claim_parts(goal);
 
+    if let Some(remote_room_memory) = memory.remote_rooms.get(target_room) {
+        if remote_room_memory.under_attack {
+            //info!("[{}] Room is under attack. Pausing reservation goal...", target_room);
+            return;
+        }
+    }
+
     if goal.accessible_reservation_spots == 0 {
         memory.goals.room_reservation.remove(target_room);
         return;

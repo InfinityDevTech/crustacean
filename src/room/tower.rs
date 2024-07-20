@@ -5,10 +5,10 @@ use crate::{
     memory::Role, traits::intents_tracking::TowerExtensionsTracking, utils::scale_haul_priority,
 };
 
-use super::cache::tick_cache::{
+use super::{cache::tick_cache::{
         hauling::{HaulingPriority, HaulingType},
         CachedRoom,
-    };
+    }, creeps::local::base_hauler};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_towers(cached_room: &mut CachedRoom) {
@@ -21,7 +21,13 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
                 .unwrap_or(&Vec::new())
                 .len();
 
-            if cached_room.structures.storage.is_some() && base_hauler_count >= 1 {
+            let mut storage_blocked = false;
+
+            if let Some(storage) = &cached_room.structures.storage {
+                storage_blocked = base_hauler_count < 1;
+            }
+
+            if !storage_blocked {
                 let mut priority = scale_haul_priority(
                     tower.store().get_capacity(Some(ResourceType::Energy)),
                     tower.store().get_used_capacity(Some(ResourceType::Energy)),

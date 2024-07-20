@@ -94,6 +94,21 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     // Caches structures and other creep things
     cache.create_if_not_exists(&room, memory, None);
 
+    // Ensure remote caches are created, just incase a remote harvester
+    // Is sitting in this room, and the remote hasnt been run yet.
+    // Should be cheap enough. (hopefully)
+    if room.my() {
+        if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+            let remotes = room_memory.remotes.clone();
+
+            for remote in remotes {
+                if let Some(game_room) = game::rooms().get(remote) {
+                    cache.create_if_not_exists(&game_room, memory, Some(room.name()));
+                }
+            }
+        }
+    }
+
     if room.my() {
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
@@ -252,7 +267,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
         return;
     }
 
-    if game::cpu::bucket() > 1000 && game::time() % 1000 == 0 {
+    if game::cpu::bucket() > 1000 && game::time() % 100 == 0 {
         let stuffs = get_roads_and_ramparts();
 
         let pos = room_cache.spawn_center.unwrap();
@@ -304,6 +319,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
 
         if !memory.rooms.get(&room.name()).unwrap().planned
             || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
+            || game::time() % 300 == 0
         {
             let level = room.controller().unwrap().level();
 

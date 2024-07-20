@@ -4,13 +4,13 @@ use screeps::{game, Part, ResourceType, Room};
 use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
-    room::cache::tick_cache::CachedRoom,
+    room::cache::{self, tick_cache::CachedRoom},
     utils::{self, get_body_cost},
 };
 
 /// Returns the parts needed for a miner creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> (bool, Vec<Part>) {
+pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool) -> (bool, Vec<Part>) {
     let mut parts = if cache.rcl < 2 {
         vec![Part::Work, Part::Move]
     } else {
@@ -39,11 +39,15 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8) -> (
     let mut current_work_count = 1;
     let mut current_cost = utils::get_body_cost(&parts);
 
-    let energy_to_use = if miner_count < 2 || base_hauler_count == 0 {
+    let mut energy_to_use = if miner_count < 2 || base_hauler_count == 0 {
         room.energy_available()
     } else {
         room.energy_capacity_available()
     };
+
+    if force_max {
+        energy_to_use = room.energy_capacity_available();
+    }
 
     while current_cost < energy_to_use {
         if current_cost + cost_of_stamp > energy_to_use || current_work_count >= source_parts_needed
@@ -148,7 +152,15 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         .unwrap_or(&Vec::new())
         .len();
 
-    let max_energy = if hauler_count > 0 {
+    let mut storage_blocked = false;
+
+    if let Some(storage) = &cache.structures.storage {
+        if storage.store().get_used_capacity(Some(ResourceType::Energy)) < 5000 {
+            storage_blocked = true;
+        }
+    }
+
+    let max_energy = if hauler_count > 0 && !storage_blocked {
         room.energy_capacity_available()
     } else {
         room.energy_available()
@@ -278,11 +290,11 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
     let target_work_parts = match level {
         1 => 5,
-        2 => 10,
-        3 => 25,
-        4 => 25,
-        5 => 30,
-        6 => 40,
+        2 => 15,
+        3 => 22,
+        4 => 30,
+        5 => 40,
+        6 => 45,
         7 => 50,
         8 => 5,
         _ => 1,

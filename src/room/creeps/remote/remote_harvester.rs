@@ -1,3 +1,4 @@
+use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
     game, Creep, HasPosition, MaybeHasId, Position, ResourceType, RoomCoordinate,
@@ -16,7 +17,7 @@ use crate::{
     },
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
@@ -28,6 +29,12 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
 
         if let Some(owning_cache) = cache.rooms.get_mut(&creep_memory.owning_room) {
             if !owning_cache.remotes_with_harvester.contains(&remote_room) {
+                info!(
+                    "[{}] Adding remote room {} to owning room {}",
+                    game::time(),
+                    remote_room,
+                    creep_memory.owning_room
+                );
                 owning_cache.remotes_with_harvester.push(remote_room);
             }
         }
@@ -36,6 +43,37 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             remote_room.resources.sources[creep_memory.task_id.unwrap() as usize]
                 .creeps
                 .push(creep.try_id().unwrap());
+        }
+
+        if let Some(remote_room_memory) = memory.remote_rooms.get(&remote_room) {
+            if remote_room_memory.under_attack {
+                creep.bsay("🚨", false);
+
+                let flee_pos = Position::new(
+                    RoomCoordinate::new(25).unwrap(),
+                    RoomCoordinate::new(25).unwrap(),
+                    creep_memory.owning_room,
+                );
+
+                if creep.pos().get_range_to(flee_pos) > 23 {
+                    let or = creep_memory.owning_room;
+                    creep.better_move_to(
+                        memory,
+                        cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+                        Position::new(
+                            RoomCoordinate::new(25).unwrap(),
+                            RoomCoordinate::new(25).unwrap(),
+                            or,
+                        ),
+                        23,
+                        MoveOptions::default(),
+                    );
+
+                    return;
+                }
+
+                return;
+            }
         }
 
         if creep.tired() || creep.spawning() || game::cpu::bucket() < 1000 {
@@ -48,32 +86,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
 
         if room_name != remote_room {
             if let Some(remote_room_memory) = memory.remote_rooms.get(&remote_room) {
-                if remote_room_memory.under_attack {
-                    creep.bsay("🚨", false);
 
-                    let flee_pos = Position::new(
-                        RoomCoordinate::new(25).unwrap(),
-                        RoomCoordinate::new(25).unwrap(),
-                        creep_memory.owning_room,
-                    );
-
-                    if creep.pos().get_range_to(flee_pos) > 24 {
-                        let or = creep_memory.owning_room;
-                        creep.better_move_to(
-                            memory,
-                            room_cache,
-                            Position::new(
-                                RoomCoordinate::new(25).unwrap(),
-                                RoomCoordinate::new(25).unwrap(),
-                                or,
-                            ),
-                            24,
-                            MoveOptions::default(),
-                        );
-    
-                        return;
-                    }
-                }
             }
 
             creep.bsay("🚚", false);

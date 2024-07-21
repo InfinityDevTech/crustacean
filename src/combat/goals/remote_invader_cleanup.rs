@@ -67,6 +67,7 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
 
             let mut body = Vec::new();
             let mut current_cost = 0;
+            let mut current_attack = 0;
 
             let responsible_room = cache.rooms.get_mut(&responsible_room).unwrap();
             let available_energy = game::rooms()
@@ -75,12 +76,13 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
                 .energy_available();
 
             while current_cost < available_energy {
-                if current_cost + available_energy < stamp_cost {
+                if current_cost + available_energy < stamp_cost || current_attack + 1 > 10 {
                     break;
                 }
 
                 body.extend(stamp.clone());
                 current_cost += stamp_cost;
+                current_attack += 1;
             }
 
             let memory = CreepMemory {

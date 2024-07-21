@@ -29,12 +29,6 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
 
         if let Some(owning_cache) = cache.rooms.get_mut(&creep_memory.owning_room) {
             if !owning_cache.remotes_with_harvester.contains(&remote_room) {
-                info!(
-                    "[{}] Adding remote room {} to owning room {}",
-                    game::time(),
-                    remote_room,
-                    creep_memory.owning_room
-                );
                 owning_cache.remotes_with_harvester.push(remote_room);
             }
         }

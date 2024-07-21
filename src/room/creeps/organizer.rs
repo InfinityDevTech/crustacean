@@ -100,10 +100,10 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
             Role::Reserver => combat::reserver::run_reserver(&creep, memory, cache),
 
             Role::RemoteDefender => remote::remote_defender::run_remotedefender(&creep, memory, cache),
+            Role::InvaderCoreCleaner => remote::invader_cleaner::run_invadercleaner(&creep, memory, cache),
 
             _ => {
                 creep.bsay("BAD ROLE", true);
-                global::recycler::run_recycler(&creep, memory, cache);
             }
         }
 

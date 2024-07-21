@@ -7,8 +7,7 @@ use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
 
 use crate::{
-    memory::{CreepMemory, Role, ScoutedSource, ScreepsMemory},
-    utils::{self, get_body_cost},
+    formation::duo::{self, duo_utils}, memory::{CreepMemory, DuoMemory, Role, ScoutedSource, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name}
 };
 
 use super::{
@@ -154,6 +153,71 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
     map
 }
 
+
+pub fn temp_duo_spawning(
+    room: &Room,
+    cache: &RoomCache,
+    memory: &mut ScreepsMemory,
+) -> Option<SpawnRequest> {
+    if memory.formations.duos.is_empty() {
+        memory.formations.duos.insert(utils::get_unique_id(), DuoMemory::default());
+    }
+
+    for (formation_id, duo_memory) in &memory.formations.duos.clone() {
+        let creeps = duo_memory.creeps.clone();
+        let mut gcreeps = Vec::new();
+
+        for creep in creeps {
+            let gcreep = game::creeps().get(creep.to_string());
+
+            if let Some(gcreep) = gcreep {
+                gcreeps.push(gcreep);
+            } else {
+                memory.formations.duos.get_mut(formation_id).unwrap().creeps.retain(|x| *x != creep);
+            }
+        }
+
+        if duo_utils::get_attacker(&gcreeps).is_none() {
+            let mut body = vec![Part::Move, Part::Move, Part::Attack];
+            let cost = get_body_cost(&body);
+
+            let creep_name = format!("{}-{}-{}", role_to_name(Role::InvaderDuoAttacker), room.name(), get_unique_id());
+
+            let creep_memory = CreepMemory {
+                role: Role::InvaderDuoAttacker,
+                owning_room: room.name(),
+                //target_room: Some("W1N1".to_string()),
+                ..Default::default()
+            };
+
+            let req = cache.spawning.create_room_spawn_request(Role::InvaderDuoAttacker, body, 4.0, cost, room.name(), Some(creep_memory), None, Some(creep_name.clone()));
+            memory.formations.duos.get_mut(formation_id).unwrap().creeps.push(creep_name);
+
+            return Some(req);
+        }
+
+        if duo_utils::get_healer(&gcreeps).is_none() {
+            let mut body = vec![Part::Move, Part::Move, Part::Heal];
+            let cost = get_body_cost(&body);
+
+            let creep_name = format!("{}-{}-{}", role_to_name(Role::InvaderDuoHealer), room.name(), get_unique_id());
+
+            let creep_memory = CreepMemory {
+                role: Role::InvaderDuoHealer,
+                owning_room: room.name(),
+                //target_room: Some("W1N1".to_string()),
+                ..Default::default()
+            };
+
+            let req = cache.spawning.create_room_spawn_request(Role::InvaderDuoHealer, body, 4.0, cost, room.name(), Some(creep_memory), None, Some(creep_name.clone()));
+            memory.formations.duos.get_mut(formation_id).unwrap().creeps.push(creep_name);
+
+            return Some(req);
+        }
+    }
+
+    None
+}
 // TODO:
 //  Add required role counts
 //  Fuck this shit man, this looks like ass

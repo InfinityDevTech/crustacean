@@ -2,6 +2,7 @@ use screeps::{game, Position, RoomCoordinate, RoomName, RoomXY, Terrain};
 
 pub trait PositionExtensions {
     fn get_accessible_positions_around(&self, range: u8) -> Vec<Position>;
+    fn is_room_edge(&self) -> bool;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -23,6 +24,10 @@ impl PositionExtensions for Position {
             }
         }
         positions
+    }
+
+    fn is_room_edge(&self) -> bool {
+        self.x().u8() == 0 || self.x().u8() == 49 || self.y().u8() == 0 || self.y().u8() == 49
     }
 }
 

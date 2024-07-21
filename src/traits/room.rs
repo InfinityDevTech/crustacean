@@ -3,7 +3,7 @@
 
 use log::info;
 use regex::Regex;
-use screeps::{CostMatrix, OwnedStructureProperties, RoomName, Terrain};
+use screeps::{CostMatrix, OwnedStructureProperties, Position, RoomCoordinate, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
 use crate::{config, room::cache::tick_cache::CachedRoom, utils};
@@ -21,6 +21,7 @@ pub enum RoomType {
 pub trait RoomExtensions {
     fn name_str(&self) -> String;
     fn split_name(&self) -> (String, u32, String, u32);
+    fn center_pos(&self) -> Position;
     fn my(&self) -> bool;
 
     fn get_target_for_miner(&self, cache: &mut CachedRoom) -> Option<u8>;
@@ -54,6 +55,9 @@ impl RoomExtensions for screeps::Room {
             captures[3].to_string(),
             captures[4].to_string().parse::<u32>().unwrap(),
         )
+    }
+    fn center_pos(&self) -> Position {
+        Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), self.name())
     }
     fn my(&self) -> bool {
         self.controller()

@@ -6,7 +6,8 @@ use std::{
     sync::{Mutex, Once, OnceLock},
 };
 
-use combat::{ally::Allies, goals::run_goal_handlers, hate_handler::decay_hate};
+use combat::{ally::Allies, global::run_global_goal_setters, goals::run_goal_handlers, hate_handler::decay_hate};
+use formation::formations::run_formations;
 use heap_cache::GlobalHeapCache;
 use js_sys::JsString;
 use log::*;
@@ -18,8 +19,8 @@ use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::tick_cache::{hauling, resources, traffic, RoomCache},
-    democracy,
-    spawning::spawn_manager::{self, SpawnManager},
+    democracy::{self, start_government},
+    spawning::spawn_manager::{self, run_spawning, SpawnManager},
     visuals::visualise_scouted_rooms,
 };
 use screeps::{find, game, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
@@ -43,6 +44,7 @@ mod movement;
 mod profiling;
 mod room;
 mod traits;
+mod formation;
 mod utils;
 
 static INITIALIZED: Once = Once::new();
@@ -117,14 +119,10 @@ pub fn game_loop() {
 
     memory.stats.cpu.pathfinding = 0.0;
 
-    //if just_reset() {
-    //
-    //}
-
     let pre_room_cpu = game::cpu::get_used();
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
-        democracy::start_government(game_room, &mut memory, &mut cache);
+        start_government(game_room, &mut memory, &mut cache);
     }
 
     if game::time() % 1500 == 0 {
@@ -142,8 +140,6 @@ pub fn game_loop() {
             }
         }
     }
-
-    combat::global::run_global_setters(&mut memory, &mut cache);
 
     for room in cache.my_rooms.clone().iter() {
         hauling::match_haulers(&mut cache, &mut memory, room);
@@ -185,9 +181,11 @@ pub fn game_loop() {
         }
     }
 
+    run_global_goal_setters(&mut memory, &mut cache);
     run_goal_handlers(&mut memory, &mut cache);
+    run_formations(&mut memory, &mut cache);
 
-    spawn_manager::run_spawning(&mut memory, &mut cache);
+    run_spawning(&mut memory, &mut cache);
 
     if game::time() % 100 == 0 {
         memory.filter_old_creeps();

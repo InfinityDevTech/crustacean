@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController,
-    StructureExtension, StructureLink, StructureNuker, StructureObject, StructureObserver,
-    StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage,
-    StructureTower, StructureType, Tombstone,
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureInvaderCore, StructureLink, StructureNuker, StructureObject, StructureObserver, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTower, StructureType, Tombstone
 };
 
 use crate::{memory::ScreepsMemory, room::cache::heap_cache::RoomHeapCache};
@@ -74,6 +70,7 @@ pub struct RoomStructureCache {
     pub containers: CachedRoomContainers,
     pub links: CachedRoomLinks,
 
+    pub invader_core: Option<StructureInvaderCore>,
     pub controller: Option<CachedController>,
     pub storage: Option<StructureStorage>,
     pub observer: Option<StructureObserver>,
@@ -110,6 +107,7 @@ impl RoomStructureCache {
             containers: CachedRoomContainers::new(),
             links: CachedRoomLinks::new(),
 
+            invader_core: None,
             controller: None,
             storage: None,
             observer: None,
@@ -190,7 +188,7 @@ impl RoomStructureCache {
         }
 
         for structure in room.find(find::STRUCTURES, None).into_iter() {
-            if !can_structures_be_placed && structure.structure_type() != StructureType::Container {
+            if !can_structures_be_placed && (structure.structure_type() != StructureType::Container && structure.structure_type() != StructureType::Road && structure.structure_type() != StructureType::InvaderCore) {
                 continue;
             } else if !can_structures_be_placed {
                 if let StructureObject::StructureContainer(container) = structure {
@@ -254,6 +252,9 @@ impl RoomStructureCache {
                 }
                 StructureObject::StructureRoad(road) => {
                     self.roads.insert(road.id(), road);
+                }
+                StructureObject::StructureInvaderCore(core) => {
+                    self.invader_core = Some(core);
                 }
                 StructureObject::StructureContainer(container) => {
                     resource_cache.energy_in_storing_structures += container

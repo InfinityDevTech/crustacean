@@ -1,5 +1,6 @@
 use screeps::{
-    game, look, spawn, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType, RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension
+    game, look, spawn, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
+    RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,
 };
 
 use wasm_bindgen::JsCast;
@@ -63,7 +64,14 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                 priority,
                 HaulingType::Transfer,
             );
-        } else if link.is_some() && link.as_ref().unwrap().store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+        } else if link.is_some()
+            && link
+                .as_ref()
+                .unwrap()
+                .store()
+                .get_used_capacity(Some(ResourceType::Energy))
+                > 0
+        {
             let link = link.as_ref().unwrap();
 
             if link.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
@@ -138,19 +146,19 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn self_renew(creep: &Creep, cache: &mut CachedRoom) {
-    let spawn = cache.structures.spawns.values().next().unwrap();
+    if let Some(spawn) = cache.structures.spawns.values().next() {
+        // Fix issue where all creeps died and they kept spending the energy on themselves
+        // Greedy fucks...
+        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+            return;
+        }
 
-    // Fix issue where all creeps died and they kept spending the energy on themselves
-    // Greedy fucks...
-    if spawn.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
-        return;
-    }
-
-    if creep.ticks_to_live() < Some(100)
-        && creep.pos().is_near_to(spawn.pos())
-        && spawn.spawning().is_none()
-    {
-        let _ = spawn.ITrenew_creep(creep);
+        if creep.ticks_to_live() < Some(100)
+            && creep.pos().is_near_to(spawn.pos())
+            && spawn.spawning().is_none()
+        {
+            let _ = spawn.ITrenew_creep(creep);
+        }
     }
 }
 

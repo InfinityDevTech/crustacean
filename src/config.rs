@@ -19,7 +19,7 @@ pub const REMOTE_SIGNS: [&str; 3] = [
 //"oOoOoOoOoh Taxes. - Infinity Dev",
 "Dont mess with me, my mom called me handsome. - Infinity Dev",
 //"I think im a bot? - Infinity Dev",
-"liaohao isnt gone. Just ask lp136. - Infinity Dev",
+"liaohuo isnt gone. Just ask lp136. - Infinity Dev",
 ];
 
 pub const ROOM_SIGNS: [&str; 24] = [

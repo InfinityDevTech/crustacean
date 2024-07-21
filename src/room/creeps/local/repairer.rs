@@ -58,7 +58,6 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
             return;
         }
     } else if !get_repair_task(creep, creep_memory, room_cache) {
-        creep.bsay("❓", false);
         return;
     } else {
         run_repairer(creep, memory, cache);
@@ -78,6 +77,7 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
     let mut lowest_rank_id = None;
 
     if cache.structures.needs_repair.is_empty() {
+        creep.bsay("NO-REPAIRS", false);
         return false;
     }
 
@@ -109,6 +109,7 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
         creep_memory.repair_target = Some(lowest_rank_id);
         true
     } else {
+        creep.bsay("NO-RANK", false);
         false
     }
 }

@@ -44,13 +44,6 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
             MoveOptions::default(),
         );
     } else {
-        if let Some(room_storage) = cached_room.structures.storage.as_ref() {
-            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= 20000 && controller.controller.ticks_to_downgrade() > Some(5000) {
-                creep.bsay("🚫", false);
-                return;
-            }
-        }
-
         creep.bsay("⚡", false);
         let _ = creep.upgrade_controller(&controller.controller);
 
@@ -83,6 +76,25 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     if (creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32)
         <= (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.75)
     {
+        if let Some(room_storage) = cached_room.structures.storage.as_ref() {
+            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= 20000 && controller.controller.ticks_to_downgrade() > Some(5000) {
+                if let Some(controller) = cached_room.structures.controller.as_ref() {
+                    if creep.pos().get_range_to(controller.controller.pos()) > 3 {
+                        creep.better_move_to(
+                            memory,
+                            cached_room,
+                            controller.controller.pos(),
+                            3,
+                            MoveOptions::default(),
+                        );
+                        return true;
+                    }
+                }
+                creep.bsay("🚫", false);
+                return true;
+            }
+        }
+
         if let Some(controller_link) = cached_room.structures.links.controller.as_ref() {
             if controller_link
                 .store()

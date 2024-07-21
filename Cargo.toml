@@ -21,7 +21,6 @@ regex = "1.9.4"
 console_error_panic_hook = "0.1.7"
 rand = "0.8.5"
 getrandom = { version = "0.2.15", features = ["js"] }
-rust_decimal = "1.35.0"
 enum-map = "2.7.3"
 #screeps-timing = { git = "https://github.com/InfinityDevTech/screeps-timing", optional = true }
 screeps-timing-annotate = { git = "https://github.com/InfinityDevTech/screeps-timing-annotate", optional = true }

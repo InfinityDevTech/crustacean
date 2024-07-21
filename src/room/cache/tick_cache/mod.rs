@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{game, Room, RoomName, RoomXY};
+use screeps::{game, OwnedStructureProperties, Room, RoomName, RoomXY};
 use stats::StatsCache;
 use terminals::TerminalCache;
 
@@ -52,7 +52,9 @@ impl RoomCache {
 #[derive(Debug, Clone)]
 pub struct CachedRoom {
     pub room_name: RoomName,
+    pub current_holder: Option<String>,
     pub rcl: u8,
+    pub reservation: u32,
 
     pub idle_haulers: u32,
     pub manager: Option<RoomName>,
@@ -100,7 +102,10 @@ impl CachedRoom {
 
         let mut cached = CachedRoom {
             room_name: room.name(),
+            current_holder: None,
             rcl: 0,
+            reservation: 0,
+
             idle_haulers: 0,
             manager: remote_manager,
             remotes: Vec::new(),
@@ -126,6 +131,15 @@ impl CachedRoom {
 
         if let Some(ref controller) = cached.structures.controller {
             cached.rcl = controller.controller.level();
+            cached.reservation = controller.controller.reservation().map_or(0, |r| r.ticks_to_end());
+
+            if let Some(ref reservation) = controller.controller.reservation() {
+                cached.current_holder = Some(reservation.username().to_string());
+            }
+
+            if let Some(ref owner) = controller.controller.owner() {
+                cached.current_holder = Some(owner.username().to_string());
+            }
         }
 
         cached.stats.cpu_cache += game::cpu::get_used() - pre_cache_cpu;

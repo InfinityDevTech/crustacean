@@ -126,7 +126,9 @@ pub fn role_to_name(role: Role) -> String {
         Role::Claimer => "cl",
         Role::Reserver => "rs",
         Role::RemoteDefender => "rd",
-        Role::InvaderCleaner => "ic",
+        Role::InvaderCoreCleaner => "ic",
+        Role::InvaderDuoAttacker => "ia",
+        Role::InvaderDuoHealer => "ih",
     };
     data.to_string()
 }
@@ -227,7 +229,9 @@ pub fn name_to_role(name: &str) -> Option<Role> {
         "cl" => { Some(Role::Claimer) },
         "rs" => { Some(Role::Reserver) },
         "rd" => { Some(Role::RemoteDefender) },
-        "ic" => { Some(Role::InvaderCleaner) },
+        "ic" => { Some(Role::InvaderCoreCleaner) },
+        "ia" => { Some(Role::InvaderDuoAttacker) },
+        "ih" => { Some(Role::InvaderDuoHealer) },
 
         "eb" => { Some(Role::ExpansionBuilder) }
         _ => { None },

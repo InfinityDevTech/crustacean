@@ -52,7 +52,10 @@ pub enum Role {
     Claimer = 50,
     Reserver = 51,
     RemoteDefender = 52,
-    InvaderCleaner = 53,
+    InvaderCoreCleaner = 53,
+
+    InvaderDuoAttacker = 54,
+    InvaderDuoHealer = 55,
 
     // Assorted junk roles, recycler just recycles itself
     Recycler = 99,
@@ -62,7 +65,7 @@ pub enum Role {
 pub fn attacking_roles() -> Vec<Role> {
     vec![
         Role::RemoteDefender,
-        Role::InvaderCleaner,
+        Role::InvaderCoreCleaner,
         Role::Bulldozer
     ]
 }
@@ -193,6 +196,15 @@ structstruck::strike! {
     }
 }
 
+structstruck::strike! {
+    #[strikethrough[derive(Serialize, Deserialize, Debug, Clone, Default)]]
+    pub struct FormationMemory {
+        pub duos: HashMap<u128, pub struct DuoMemory {
+            pub creeps: Vec<String>,
+        }>,
+    }
+}
+
 // Scouted Room Data
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
@@ -320,6 +332,7 @@ structstruck::strike! {
         pub rooms: HashMap<RoomName, RoomMemory>,
         pub remote_rooms: HashMap<RoomName, RemoteRoomMemory>,
         pub creeps: HashMap<String, CreepMemory>,
+        pub formations: FormationMemory,
 
         pub goals: GoalMemory,
 
@@ -349,7 +362,7 @@ impl ScreepsMemory {
                 rooms: HashMap::new(),
                 remote_rooms: HashMap::new(),
                 creeps: HashMap::new(),
-
+                formations: FormationMemory::default(),
                 goals: GoalMemory::default(),
 
                 enemy_players: HashMap::new(),
@@ -383,7 +396,7 @@ impl ScreepsMemory {
                         rooms: HashMap::new(),
                         remote_rooms: HashMap::new(),
                         creeps: HashMap::new(),
-
+                        formations: FormationMemory::default(),
                         goals: GoalMemory::default(),
 
                         enemy_players: HashMap::new(),

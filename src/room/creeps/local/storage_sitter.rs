@@ -48,7 +48,7 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
             .get(&Role::Upgrader)
             .unwrap_or(&Vec::new())
             .len();
-        if upgrader_count >= 1 {
+        if upgrader_count >= 1 && storage.store().get_used_capacity(Some(ResourceType::Energy)) > 20000 {
             if storage_link
                 .store()
                 .get_free_capacity(Some(ResourceType::Energy))
@@ -97,6 +97,9 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
         }
     }
     // end nuker stuffs.
+
+    // Transfer what we didnt use.
+    let _ = creep.ITtransfer(storage, ResourceType::Energy, None);
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

@@ -60,10 +60,11 @@ pub fn fetch_possible_remotes(
         for (remote_name, score) in possible_remotes.iter().take(config::ROOM_REMOTE_COUNT.into()) {
             // I was too lazy to make it a string, so yk
             // u32::MAX -2 goes hard.
-            if *score == u32::MAX - 2 {
+            if *score == u32::MAX - 2 && !memory.goals.remote_invader_cleanup.contains_key(remote_name) {
                 let goal = RemoteInvaderCleanup {
                     cleanup_target: *remote_name,
                     creeps_assigned: Vec::new(),
+                    destroyed_core: false,
                 };
 
                 memory.goals.remote_invader_cleanup.insert(*remote_name, goal);

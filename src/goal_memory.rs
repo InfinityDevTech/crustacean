@@ -34,6 +34,7 @@ pub struct RemoteDefenseGoal {
 pub struct RemoteInvaderCleanup {
     pub cleanup_target: RoomName,
     pub creeps_assigned: Vec<String>,
+    pub destroyed_core: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

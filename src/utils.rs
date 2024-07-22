@@ -162,12 +162,6 @@ pub fn calc_terminal_cost(amount: u32, source: &RoomName, dest: &RoomName) -> u3
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -> i32 {
-    let x1 = source.x_coord();
-    let y1 = source.y_coord();
-
-    let x2 = dest.x_coord();
-    let y2 = dest.y_coord();
-
     let mut dx = (source.x_coord() - dest.x_coord()).abs();
     let mut dy = (source.y_coord() - dest.y_coord()).abs();
 

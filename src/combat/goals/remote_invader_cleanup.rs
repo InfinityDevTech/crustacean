@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Part, RoomName, SharedCreepProperties, StructureProperties};
+use screeps::{game, Part, ResourceType, RoomName, SharedCreepProperties, StructureProperties};
 
 use crate::{
     goal_memory::RemoteInvaderCleanup,
@@ -23,10 +23,12 @@ pub fn clear_creeps(goal: &mut RemoteInvaderCleanup) {
     let mut new_creeps = Vec::new();
 
     for creep in &goal.creeps_assigned {
-        let creep = game::creeps().get(creep.to_string());
+        let gcreep = game::creeps().get(creep.to_string());
 
-        if let Some(creep) = creep {
-            new_creeps.push(creep.name());
+        if let Some(gcreep) = gcreep {
+            new_creeps.push(gcreep.name());
+        } else {
+            info!("Creep {} not found", creep);
         }
     }
 
@@ -40,26 +42,39 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
         .get_mut(target_room)
         .unwrap();
 
+        info!("Pre clear {:?}", goal.creeps_assigned);
     clear_creeps(goal);
+    info!("Post clear {:?}", goal.creeps_assigned);
 
     let responsible_room = utils::find_closest_owned_room(target_room, cache, Some(2));
 
     if let Some(room_cache) = cache.rooms.get_mut(target_room) {
         let invader_core = &room_cache.structures.invader_core;
 
+        if invader_core.is_none() && (room_cache.current_holder != Some("Invader".to_string()) || room_cache.current_holder.is_none()) {
+            memory.goals.remote_invader_cleanup.remove(target_room);
+            return;
+        }
+
         if invader_core.is_none() {
             info!("No invader core found in room {}", target_room);
-            memory.goals.remote_invader_cleanup.remove(target_room);
+            goal.destroyed_core = true;
             return;
         }
     }
 
-    if goal.creeps_assigned.is_empty() {
+    if goal.creeps_assigned.is_empty() && !goal.destroyed_core {
         if let Some(responsible_room) = responsible_room {
             let mut reservation = 0.0;
 
             if let Some(room_cache) = cache.rooms.get(target_room) {
                 reservation = room_cache.reservation as f32;
+
+                if let Some(storage) = room_cache.structures.storage.as_ref() {
+                    if storage.store().get_used_capacity(Some(ResourceType::Energy)) < 10000 {
+                        return;
+                    }
+                }
             }
 
             let stamp = vec![Part::Attack, Part::Move];
@@ -112,10 +127,12 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
                 responsible_room.room_name,
                 Some(memory),
                 None,
-                Some(name),
+                Some(name.clone()),
             );
 
-            info!("Spawning invader core cleaner for {} - {}", target_room, priority);
+            goal.creeps_assigned.push(name.clone());
+
+            info!("Spawning invader core cleaner in {} - {}", responsible_room.room_name, name.clone());
 
             if let Some(reqs) = cache
                 .spawning

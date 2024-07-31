@@ -13,6 +13,15 @@ pub const COPY_TEXT: &str = "
 </div>
 ";
 
+pub const WALKABLE_STRUCTURES: [screeps::StructureType; 3] = [
+    screeps::StructureType::Road,
+    screeps::StructureType::Container,
+    screeps::StructureType::Rampart,
+];
+
+pub const ROOM_AREA: usize = 2500;
+pub const ROOM_SIZE: u8 = 50;
+
 pub const ITERABLE_RESOURCES: [ResourceType; 57] = [
     ResourceType::Energy,
     ResourceType::Hydrogen,

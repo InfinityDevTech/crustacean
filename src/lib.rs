@@ -1,4 +1,5 @@
 #![feature(map_many_mut)]
+#![feature(core_intrinsics)]
 
 use std::{
     collections::HashMap,
@@ -12,7 +13,7 @@ use heap_cache::GlobalHeapCache;
 use js_sys::JsString;
 use log::*;
 use movement::{
-    caching::path_cache, move_target::MoveOptions, movement_utils::visualise_path,
+    move_target::MoveOptions, movement_utils::visualise_path,
     pathfinding::PathFinder,
 };
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
@@ -241,8 +242,6 @@ pub fn game_loop() {
     let intents_used = *INTENTS_USED.lock().unwrap();
     heap().per_tick_cost_matrixes.lock().unwrap().clear();
     *INTENTS_USED.lock().unwrap() = 0;
-
-    path_cache().lock().unwrap().visualise_all_paths();
 
     let heap = game::cpu::get_heap_statistics();
     let used = ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64)

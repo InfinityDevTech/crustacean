@@ -12,9 +12,7 @@ use crate::{
     config, heap,
     memory::{Role, ScreepsMemory},
     movement::{
-        move_target::{path_call, MoveOptions},
-        movement_utils::visualise_path,
-        pathfinding::PathFinder,
+        flow_field::visualise_field, move_target::{path_call, MoveOptions}, movement_utils::visualise_path, pathfinding::PathFinder
     },
     room::{
         cache::tick_cache::{hauling, resources, RoomCache},
@@ -39,7 +37,7 @@ use super::{
     visuals::visualise_room_visual,
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -131,6 +129,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             hauling::haul_spawn(cached_room);
 
             links::balance_links(&room, cached_room);
+
+            if let Some(heap) = heap().flow_cache.lock().unwrap().get(&cached_room.room_name) {
+                if let Some(h) = &heap.storage {
+                    visualise_field(&room, &h);
+                }
+            }
 
             // Run creeps and other structures
             // Does NOT run haulers, as they need to be done last

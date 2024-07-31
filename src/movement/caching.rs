@@ -1,164 +1,56 @@
-use std::{
-    collections::HashMap,
-    sync::{Mutex, OnceLock},
-};
+use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, StructureType, Terrain};
 
-use screeps::{pathfinder::SearchResults, Direction, Position, RoomXY};
+use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::CompressedDirectionMatrix, room::cache::{self, tick_cache::CachedRoom}};
 
-use super::movement_utils::visualise_path;
+use super::flow_field::{FlowField, FlowFieldSource};
 
-pub fn path_cache() -> &'static Mutex<PathCache> {
-    static HEAP: OnceLock<Mutex<PathCache>> = OnceLock::new();
-    HEAP.get_or_init(|| Mutex::new(PathCache::new()))
-}
+pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> CompressedDirectionMatrix {
+    let mut flow_field = FlowField::new(50, 50, true);
 
-pub struct PathCache {
-    pub source_to_dest: HashMap<(Position, Position), Vec<Position>>,
+    let callback = || {
+        let mut matrix = LocalCostMatrix::new();
+        let mut terrain = game::map::get_room_terrain(room.name()).unwrap();
 
-    pub dest_cache: HashMap<Position, Vec<Position>>,
-    pub source_cache: HashMap<Position, Vec<Position>>,
-}
+        for x in 0..50 {
+            for y in 0..50 {
+                let pos = RoomXY::new(RoomCoordinate::new(x).unwrap(), RoomCoordinate::new(y).unwrap());
+                let terrain = terrain.get(x, y);
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-impl PathCache {
-    pub fn new() -> PathCache {
-        PathCache {
-            source_to_dest: HashMap::new(),
-            dest_cache: HashMap::new(),
-            source_cache: HashMap::new(),
-        }
-    }
-
-    pub fn cache_path(&mut self, source: Position, path: Vec<Position>) {
-        let dest = path.last();
-        if dest.is_none() {
-            return;
-        }
-        let dest = *dest.unwrap();
-
-        self.source_to_dest.insert((source, dest), path.clone());
-
-        if let Some(dest_cache) = self.dest_cache.get_mut(&dest) {
-            dest_cache.push(source);
-        } else {
-            self.dest_cache.insert(dest, vec![source]);
-        }
-
-        if let Some(source_cache) = self.source_cache.get_mut(&source) {
-            source_cache.push(dest);
-        } else {
-            self.source_cache.insert(source, vec![dest]);
-        }
-    }
-
-    pub fn find_closest_entrance_to_dest(
-        &mut self,
-        current_pos: Position,
-        dest: Position,
-    ) -> Option<Position> {
-        let entrances = self.dest_cache.get(&dest);
-
-        if let Some(entrances) = entrances {
-            let mut closest = None;
-            let mut closest_distance = 0;
-
-            for entrance in entrances {
-                let distance = dest.get_range_to(current_pos);
-
-                if closest.is_none() || distance < closest_distance {
-                    closest = Some(*entrance);
-                    closest_distance = distance;
+                match terrain {
+                    Terrain::Plain => matrix.set(pos, 3),
+                    Terrain::Swamp => matrix.set(pos, 5),
+                    Terrain::Wall => matrix.set(pos, 255),
                 }
             }
-
-            closest
-        } else {
-            None
         }
-    }
 
-    pub fn find_path_were_on(
-        &mut self,
-        current_pos: Position,
-        dest: Position,
-    ) -> Option<Vec<Position>> {
-        let paths = self.dest_cache.get(&current_pos);
 
-        if let Some(paths) = paths {
-            for dest_pos in paths.clone() {
-                let steps = self.get_steps_in_path(current_pos, dest_pos);
+        for rampart in &room_cache.structures.ramparts {
+            matrix.set(rampart.pos().xy(), 1);
+        }
 
-                if let Some(steps) = steps {
-                    for step in steps.clone() {
-                        if current_pos == step {
-                            let steps = steps.clone();
+        for (road_id, road) in &room_cache.structures.roads {
+            matrix.set(road.pos().xy(), 1);
+        }
 
-                            let mut found_pos = false;
-                            let mut current_steps = Vec::new();
-
-                            for step in steps {
-                                if found_pos {
-                                    current_steps.push(step);
-                                }
-
-                                if step == dest {
-                                    found_pos = true;
-                                }
-                            }
-
-                            current_steps.reverse();
-                            return Some(current_steps);
-                        }
-                    }
-                }
+        for structure in &room_cache.structures.all_structures {
+            if !WALKABLE_STRUCTURES.contains(&structure.structure_type()) {
+                matrix.set(structure.pos().xy(), 255);
             }
-
-            None
-        } else {
-            None
         }
-    }
 
-    pub fn find_closest_path_to_dest(
-        &mut self,
-        source: Position,
-        dest: Position,
-    ) -> (Option<Position>, Option<Vec<Position>>) {
-        let paths = self.dest_cache.get(&dest);
+        matrix
+    };
 
-        let mut closest = None;
-        let mut closest_distance = u32::MAX;
+    let source = FlowFieldSource {
+        pos: room_cache.structures.storage.as_ref().unwrap().pos().xy(),
+        cost: 0,
+    };
 
-        if let Some(paths) = paths {
-            for source_pos in paths.clone() {
-                let steps = self.get_steps_in_path(source_pos, dest).unwrap();
-                for step in steps.clone() {
-                    let range_to_step = source.get_range_to(step);
+    let field = flow_field.generate(vec![source], callback, None);
 
-                    if closest_distance > range_to_step {
-                        closest = Some(source_pos);
-                        closest_distance = range_to_step;
-                    }
-                }
-            }
+    //let cache = heap().flow_cache.lock().unwrap().get_mut(&room.name()).unwrap();
+    //*cache.storage = Some(field.clone());
 
-            if let Some(closest) = closest {
-                return (Some(closest), self.get_steps_in_path(closest, dest));
-            }
-
-            (None, None)
-        } else {
-            (None, None)
-        }
-    }
-
-    pub fn get_steps_in_path(&mut self, source: Position, dest: Position) -> Option<Vec<Position>> {
-        self.source_to_dest.get(&(source, dest)).cloned()
-    }
-
-    pub fn visualise_all_paths(&mut self) {
-        for (source, dest) in &self.source_to_dest {
-            //visualise_path(dest.clone(), source.0, "#00ff00");
-        }
-    }
+    field
 }

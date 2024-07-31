@@ -163,7 +163,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
             memory,
             room_cache,
             position,
-            23,
+            22,
             MoveOptions::default()
                 .avoid_enemies(true)
                 .avoid_hostile_rooms(true),

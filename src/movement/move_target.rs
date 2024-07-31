@@ -5,8 +5,6 @@ use screeps::{
 
 use crate::{heap, memory::ScreepsMemory, utils::get_my_username};
 
-use super::caching::path_cache;
-
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
     pub avoid_enemies: bool,
@@ -52,8 +50,6 @@ impl MoveTarget {
     pub fn find_path_to(&mut self, from: Position, memory: &mut ScreepsMemory, move_options: MoveOptions) -> String {
         //info!("Finding path to {}", self.pos);
 
-        let mut path_cache = path_cache().lock().unwrap();
-
         /*if memory.remote_rooms.contains_key(&self.pos.room_name()) {
                 let possible_path = path_cache.source_to_dest.get(&(from, self.pos)).cloned();
                 if let Some(possible_path) = possible_path {
@@ -90,10 +86,6 @@ impl MoveTarget {
             .max_ops(12000);
 
         let search = self.pathfind(from, Some(opts));
-
-        if !search.incomplete() && memory.remote_rooms.contains_key(&self.pos.room_name()) {
-            path_cache.cache_path(from, search.path());
-        }
 
         //visualise_path(search.path().clone(), from, "#ff0000");
         self.serialize_path(from, search.path(), move_options, false)

@@ -59,6 +59,7 @@ dependencies = [
  "rand",
  "regex",
  "screeps-game-api",
+ "screeps-game-utils",
  "screeps-timing-annotate",
  "serde",
  "serde_json",
@@ -339,6 +340,17 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "screeps-game-utils"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80a0e190b1884d98c5d778ec2145002f0be912523418b29c37da354204d62ba3"
+dependencies = [
+ "screeps-game-api",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

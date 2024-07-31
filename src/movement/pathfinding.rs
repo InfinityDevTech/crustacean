@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Mul};
+use std::{collections::HashMap, intrinsics::size_of, ops::Mul};
 
 use log::info;
 use screeps::{

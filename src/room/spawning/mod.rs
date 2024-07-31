@@ -611,7 +611,7 @@ pub fn upgrader(
         if storage
             .store()
             .get_used_capacity(Some(ResourceType::Energy))
-            < 10000
+            < 22000
             && controller.ticks_to_downgrade() > Some(5000)
         {
             return None;

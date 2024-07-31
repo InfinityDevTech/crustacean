@@ -1,10 +1,10 @@
 use crate::{
-    heap, memory::{CreepMemory, ScreepsMemory}, movement::{
-        move_target::{MoveOptions, MoveTarget},
-        movement_utils::{dir_to_coords, num_to_dir},
+    heap, heap_cache::RoomHeapFlowCache, memory::{CreepMemory, ScreepsMemory}, movement::{
+        caching::generate_storage_path, move_target::{MoveOptions, MoveTarget}, movement_utils::{dir_to_coords, num_to_dir}
     }, room::cache::tick_cache::CachedRoom
 };
 
+use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
     game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
@@ -15,6 +15,7 @@ use super::intents_tracking::CreepExtensionsTracking;
 pub trait CreepExtensions {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom);
+    fn move_to_storage(&self, cache: &mut CachedRoom) -> bool;
     fn better_move_to(
         &self,
         creep_memory: &mut ScreepsMemory,
@@ -36,7 +37,7 @@ pub trait CreepExtensions {
 }
 
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
@@ -89,6 +90,34 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
+    fn move_to_storage(&self, cache: &mut CachedRoom) -> bool {
+            let mut flow_cache = heap().flow_cache.lock().unwrap();
+            if let Some(flow_fill) = flow_cache.get_mut(&cache.room_name) {
+                if flow_fill.storage.is_some() {
+                    let dir = num_to_dir(flow_fill.storage.as_ref().unwrap().get_xy(self.pos().x().u8(), self.pos().y().u8()));
+                    self.move_request(dir, cache);
+                    info!("Using cached storage path for room {} {} {}", self.name(), dir, cache.room_name);
+
+                    return true;
+                } else {
+                    let steps = generate_storage_path(&self.room().unwrap(), cache);
+
+                    let dat = flow_cache.get_mut(&cache.room_name).unwrap();
+                    dat.storage = Some(steps.clone());
+
+                    self.move_request(num_to_dir(steps.get_xy(self.pos().x().u8(), self.pos().y().u8())), cache);
+
+                    info!("Generated storage path for room {}", cache.room_name);
+
+                    return true;
+                }
+            } else {
+                flow_cache.insert(cache.room_name, RoomHeapFlowCache::new());
+            }
+
+        false
+    }
+
     fn better_move_to(
         &self,
         memory: &mut ScreepsMemory,
@@ -102,6 +131,12 @@ impl CreepExtensions for screeps::Creep {
         if self.tired() {
             return;
         }
+
+        /*if let Some(storage) = &cache.structures.storage {
+           if storage.pos() == target && !self.pos().xy().is_room_edge() && self.move_to_storage(cache) {
+                return;
+            }
+        }*/
 
         let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
 

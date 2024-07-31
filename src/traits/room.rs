@@ -35,7 +35,7 @@ pub trait RoomExtensions {
     fn is_intersection(&self) -> bool;
     fn is_source_keeper(&self) -> bool;
 
-    fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
+    fn terrain_flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -225,7 +225,7 @@ impl RoomExtensions for screeps::Room {
         false
     }
 
-    fn flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix {
+    fn terrain_flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix {
         let flood_cm = CostMatrix::new();
         let terrain = self.get_terrain();
         let visited_cms = CostMatrix::new();
@@ -302,7 +302,7 @@ pub fn find_pos_in_rect(rect: (u8, u8, u8, u8)) -> Vec<(u8, u8)> {
 
     for x in rect.0..=rect.2 {
         for y in rect.1..=rect.3 {
-            if x >= 50 || y >= 50 {
+            if x >= 50 || y >= 50 || x == 0 || y == 0 {
                 continue;
             }
             positions.push((x, y));

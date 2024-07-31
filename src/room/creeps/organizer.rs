@@ -1,26 +1,23 @@
 use std::collections::HashMap;
 
 use log::info;
-use screeps::{game, Room, SharedCreepProperties};
+use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, SharedCreepProperties, StructureProperties, StructureType, Terrain};
 
 use crate::{
-    combat::hate_handler::process_health_event,
-    memory::{Role, ScreepsMemory},
-    room::{
+    combat::hate_handler::process_health_event, heap, memory::{Role, ScreepsMemory}, movement::flow_field::{self, FlowFieldSource}, room::{
         cache::{
             heap_cache::{HealthChangeType, HeapCreep},
             tick_cache::RoomCache,
         },
         creeps::{global, remote},
-    },
-    traits::{
+    }, traits::{
         creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions,
-    },
+    }
 };
 
 use super::{combat, local};
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> f64 {
     let starting_cpu = game::cpu::get_used();
     let pre_creeps_cpu = game::cpu::get_used();
@@ -38,6 +35,10 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
     if room.my() {
         info!("  [CREEPS] Running {} creeps", creeps.len());
+    }
+
+    if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
+        info!("  [CREEPS] Bucket too low to run creeps, running essential remote roles");
     }
 
     let creep_count = creeps.len();
@@ -68,8 +69,6 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
                 Role::Bulldozer => combat::bulldozer::run_bulldozer(&creep, memory, cache),
                 _ => { continue; }
             }
-
-            info!("  [CREEPS] Bucket too low to run creeps, running essential remote roles");
 
             continue;
         }
@@ -141,6 +140,15 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     }
 
     let cached_room = cache.rooms.get_mut(&room.name()).unwrap();
+
+    if room.name() == "W1N9" {
+        if let Some(h) = heap().flow_cache.lock().unwrap().get(&room.name()) {
+            if let Some(f) = &h.storage {
+                flow_field::visualise_field(room, &f);
+            }
+        }
+    }
+
     let creeps = &cached_room.creeps.creeps_in_room;
 
     for creep in creeps.values() {

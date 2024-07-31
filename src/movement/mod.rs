@@ -4,3 +4,4 @@ pub mod caching;
 pub mod pathfinding;
 pub mod coord_convert;
 pub mod path_heap;
+pub mod flow_field;

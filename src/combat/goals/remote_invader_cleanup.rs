@@ -42,9 +42,7 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
         .get_mut(target_room)
         .unwrap();
 
-        info!("Pre clear {:?}", goal.creeps_assigned);
     clear_creeps(goal);
-    info!("Post clear {:?}", goal.creeps_assigned);
 
     let responsible_room = utils::find_closest_owned_room(target_room, cache, Some(2));
 

@@ -10,6 +10,7 @@ use crate::{
 // TODO: Something is telling me that there might be invaders in the room
 // at the same time, plan for that please.
 // (Potentially: Switch it to a remote_defense goal)
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.remote_invader_cleanup.clone();
 
@@ -27,14 +28,13 @@ pub fn clear_creeps(goal: &mut RemoteInvaderCleanup) {
 
         if let Some(gcreep) = gcreep {
             new_creeps.push(gcreep.name());
-        } else {
-            info!("Creep {} not found", creep);
         }
     }
 
     goal.creeps_assigned = new_creeps;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let goal = memory
         .goals
@@ -55,7 +55,6 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
         }
 
         if invader_core.is_none() {
-            info!("No invader core found in room {}", target_room);
             goal.destroyed_core = true;
             return;
         }
@@ -129,8 +128,6 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
             );
 
             goal.creeps_assigned.push(name.clone());
-
-            info!("Spawning invader core cleaner in {} - {}", responsible_room.room_name, name.clone());
 
             if let Some(reqs) = cache
                 .spawning

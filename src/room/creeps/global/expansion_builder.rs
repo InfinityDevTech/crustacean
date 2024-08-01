@@ -43,7 +43,13 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
         return;
     }
 
-    if creep.room().unwrap().name() == target_room {
+    let meet_position = Position::new(
+        unsafe { RoomCoordinate::unchecked_new(25) },
+        unsafe { RoomCoordinate::unchecked_new(25) },
+        target_room,
+    );
+
+    if creep.pos().get_range_to(meet_position) < 24 {
         let room_cache = cache.rooms.get_mut(&target_room).unwrap();
         let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
@@ -154,15 +160,10 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
             creep_memory.needs_energy = Some(true);
         }
     } else {
-        let position = Position::new(
-            unsafe { RoomCoordinate::unchecked_new(25) },
-            unsafe { RoomCoordinate::unchecked_new(25) },
-            target_room,
-        );
         creep.better_move_to(
             memory,
             room_cache,
-            position,
+            meet_position,
             22,
             MoveOptions::default()
                 .avoid_enemies(true)

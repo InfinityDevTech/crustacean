@@ -1,13 +1,22 @@
+use std::u8;
+
 use crate::{
-    heap, heap_cache::RoomHeapFlowCache, memory::{CreepMemory, ScreepsMemory}, movement::{
-        caching::generate_storage_path, move_target::{MoveOptions, MoveTarget}, movement_utils::{dir_to_coords, num_to_dir}
-    }, room::cache::tick_cache::CachedRoom
+    heap,
+    heap_cache::{CompressedDirectionMatrix, RoomHeapFlowCache},
+    memory::{CreepMemory, ScreepsMemory},
+    movement::{
+        caching::{generate_pathing_targets, generate_storage_path},
+        move_target::{MoveOptions, MoveTarget},
+        movement_utils::{dir_to_coords, num_to_dir},
+    },
+    room::cache::tick_cache::CachedRoom,
 };
 
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
+    game, pathfinder::SearchOptions, Direction, HasPosition, MaybeHasId, Position, RoomXY,
+    SharedCreepProperties, Terrain,
 };
 
 use super::intents_tracking::CreepExtensionsTracking;
@@ -36,11 +45,10 @@ pub trait CreepExtensions {
     fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
 }
 
-
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
-    fn  better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
+    fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
         let serialized_path = path;
         let serialized_vec = serialized_path
             .split("")
@@ -91,29 +99,37 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn move_to_storage(&self, cache: &mut CachedRoom) -> bool {
-            let mut flow_cache = heap().flow_cache.lock().unwrap();
-            if let Some(flow_fill) = flow_cache.get_mut(&cache.room_name) {
-                if flow_fill.storage.is_some() {
-                    let dir = num_to_dir(flow_fill.storage.as_ref().unwrap().get_xy(self.pos().x().u8(), self.pos().y().u8()));
-                    self.move_request(dir, cache);
-                    info!("Using cached storage path for room {} {} {}", self.name(), dir, cache.room_name);
+        let mut flow_cache = heap().flow_cache.lock().unwrap();
 
-                    return true;
-                } else {
-                    let steps = generate_storage_path(&self.room().unwrap(), cache);
+        let room_ff_cache = flow_cache
+            .entry(cache.room_name)
+            .or_insert_with(RoomHeapFlowCache::new);
 
-                    let dat = flow_cache.get_mut(&cache.room_name).unwrap();
-                    dat.storage = Some(steps.clone());
+        if room_ff_cache.storage.is_some() {
+            let dir = num_to_dir(
+                room_ff_cache
+                    .storage
+                    .as_ref()
+                    .unwrap()
+                    .get_xy(self.pos().x().u8(), self.pos().y().u8()),
+            );
+            self.move_request(dir, cache);
 
-                    self.move_request(num_to_dir(steps.get_xy(self.pos().x().u8(), self.pos().y().u8())), cache);
+            return true;
+        } else {
+            let steps = generate_storage_path(&self.room().unwrap(), cache);
 
-                    info!("Generated storage path for room {}", cache.room_name);
+            room_ff_cache.storage = Some(steps.clone());
 
-                    return true;
-                }
-            } else {
-                flow_cache.insert(cache.room_name, RoomHeapFlowCache::new());
-            }
+            self.move_request(
+                num_to_dir(steps.get_xy(self.pos().x().u8(), self.pos().y().u8())),
+                cache,
+            );
+
+            info!("Generated storage path for room {}", cache.room_name);
+
+            return true;
+        }
 
         false
     }
@@ -127,18 +143,103 @@ impl CreepExtensions for screeps::Creep {
         move_options: MoveOptions,
     ) {
         let pre_move_cpu = game::cpu::get_used();
+        let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
 
         if self.tired() {
             return;
         }
 
-        /*if let Some(storage) = &cache.structures.storage {
-           if storage.pos() == target && !self.pos().xy().is_room_edge() && self.move_to_storage(cache) {
+        if let Some(storage) = &cache.structures.storage {
+            if storage.pos() == target && self.move_to_storage(cache) {
+                self.bsay("MV-CACHED", false);
                 return;
             }
-        }*/
+        }
 
-        let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
+        let heap_cache = heap().cachable_positions.lock().unwrap();
+
+        // TODO:
+        // Say, were pathing to a source, but were not a 6W harvester. Another creep will join.
+        // What do you thinks gonna happen:
+        //   A. The other creep will find a spot at the source
+        //   B. The creeps are gonna fight over a spot at the source
+        //   C. The bot will break
+        // if you said, "B", you are correct! Dumbass.
+        if let Some(cachable_positions) = heap_cache.get(&target.room_name()) {
+            self.bsay("HAS", false);
+            // If we can cache to that position, then we do the funni.
+            if cachable_positions.contains(&target) {
+                let mut heap_cache = heap().flow_cache.lock().unwrap();
+
+                let flow_cache = heap_cache
+                    .entry(self.room().unwrap().name())
+                    .or_insert_with(RoomHeapFlowCache::new);
+
+                // If there is a cached path to the target, we use it.
+                let path = flow_cache
+                    .paths
+                    .entry(target)
+                    .or_insert_with(CompressedDirectionMatrix::new);
+
+                // If the direction is already cached, move there
+                if let Some(dir) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
+                    self.bsay("MV-NCACHE", false);
+
+                    self.move_request(dir, cache);
+                    return;
+                } else {
+                    // If not, we generate a path to said target, and cache it.
+                    // This is a flow fill though, so over time, it will be cached.
+                    let target = MoveTarget {
+                        pos: target,
+                        range: range.into(),
+                    }
+                    .caching_pathfind(self.pos(), memory);
+
+                    self.bsay("MV-CAPTH", false);
+
+                    if !target.incomplete() {
+                        let mut previous_position = self.pos();
+
+                        // For len 1 paths, we can just move to the target.
+                        if let Some(path_pos) = target.path().first() {
+                            if let Some(dir) = previous_position.get_direction_to(*path_pos) {
+                                path.set_xy(
+                                    previous_position.x().u8(),
+                                    previous_position.y().u8(),
+                                    dir as u8,
+                                );
+                            }
+                        }
+
+                        for step in target.path() {
+                            if let Some(dir) = previous_position.get_direction_to(step) {
+                                path.set_xy(
+                                    previous_position.x().u8(),
+                                    previous_position.y().u8(),
+                                    dir as u8,
+                                );
+                            }
+
+                            previous_position = step;
+                        }
+                    }
+
+                    if let Some(pos) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
+                        self.move_request(pos, cache);
+                    }
+
+                    return;
+                }
+            }
+        } else {
+            self.bsay("PUSHING", false);
+            let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
+
+            if !locked.contains(&target.room_name()) {
+                locked.push(target.room_name());
+            }
+        }
 
         match &creep_memory.path {
             Some(path) => {
@@ -161,11 +262,11 @@ impl CreepExtensions for screeps::Creep {
         cache.stats.global_pathfinding += game::cpu::get_used() - pre_move_cpu;
     }
 
-    fn bsay(&self, message: &str, pub_to_room: bool) {
+    fn bsay(&self, message: &str, public: bool) {
         let csay = heap().creep_say.lock().unwrap();
 
         if *csay {
-            let _ = self.say(message, pub_to_room);
+            let _ = self.say(message, public);
         }
     }
 
@@ -209,7 +310,8 @@ impl CreepExtensions for screeps::Creep {
         let Some(id) = self.try_id() else { return };
 
         let target_position = dir_to_coords(target_delta, x, y);
-        let target_position = unsafe { RoomXY::unchecked_new(target_position.0, target_position.1) };
+        let target_position =
+            unsafe { RoomXY::unchecked_new(target_position.0, target_position.1) };
 
         if target_position == self.pos().xy() {
             return;

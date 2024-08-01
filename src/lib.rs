@@ -13,8 +13,7 @@ use heap_cache::GlobalHeapCache;
 use js_sys::JsString;
 use log::*;
 use movement::{
-    move_target::MoveOptions, movement_utils::visualise_path,
-    pathfinding::PathFinder,
+    caching::generate_pathing_targets, move_target::MoveOptions, movement_utils::visualise_path, pathfinding::PathFinder
 };
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -152,6 +151,7 @@ pub fn game_loop() {
         );
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
+        let room_memory = memory.rooms.get_mut(room).unwrap();
 
         // -- Begin creep chant stuffs
         if !room_cache.creeps.creeps_in_room.is_empty() {
@@ -168,12 +168,12 @@ pub fn game_loop() {
             let chant = config::CREEP_SONG;
             let chant_count = chant.len();
 
-            let index = memory.chant_index;
+            let index = room_memory.chant_index;
 
             if index + 1 >= chant_count.try_into().unwrap() {
-                memory.chant_index = 0;
+                room_memory.chant_index = 0;
             } else {
-                memory.chant_index += 1;
+                room_memory.chant_index += 1;
             }
 
             let chant = chant[index as usize];
@@ -216,6 +216,21 @@ pub fn game_loop() {
         }
     }
 
+    if game::time() % 10000 == 0 {
+        heap().cachable_positions.lock().unwrap().clear();
+        heap().flow_cache.lock().unwrap().clear();
+    }
+
+    for room in heap().needs_cachable_position_generation.lock().unwrap().iter() {
+        if let Some(room) = game::rooms().get(*room) {
+            if memory.rooms.contains_key(&room.name()) || memory.remote_rooms.contains_key(&room.name()) {
+                if let Some(room_cache) = cache.rooms.get_mut(&room.name()) {
+                    generate_pathing_targets(&room, &memory, room_cache);
+                }
+            }
+        }
+    }
+
     memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu;
 
     set_stats(&mut memory);
@@ -241,6 +256,7 @@ pub fn game_loop() {
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
     let intents_used = *INTENTS_USED.lock().unwrap();
     heap().per_tick_cost_matrixes.lock().unwrap().clear();
+    heap().needs_cachable_position_generation.lock().unwrap().clear();
     *INTENTS_USED.lock().unwrap() = 0;
 
     let heap = game::cpu::get_heap_statistics();

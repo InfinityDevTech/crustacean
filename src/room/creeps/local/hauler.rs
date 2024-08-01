@@ -251,14 +251,6 @@ pub fn execute_order(
     }
 
     if !creep.pos().is_near_to(position.unwrap()) {
-        creep.better_move_to(
-            memory,
-            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
-            position.unwrap(),
-            1,
-            MoveOptions::default().path_age(6).avoid_enemies(true),
-        );
-
         match order.haul_type {
             HaulingType::Offer => creep.bsay("MV-OFFR", false),
             HaulingType::Withdraw => creep.bsay("MV-WTHD", false),
@@ -267,6 +259,14 @@ pub fn execute_order(
 
             _ => creep.bsay("MV-UNK", false),
         };
+        
+        creep.better_move_to(
+            memory,
+            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+            position.unwrap(),
+            1,
+            MoveOptions::default().path_age(6).avoid_enemies(true),
+        );
         return false;
     }
 

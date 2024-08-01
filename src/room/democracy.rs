@@ -1,27 +1,18 @@
 use log::info;
 use screeps::{
-    game,
-    look::{self, LookResult},
-    pathfinder::MultiRoomCostResult,
-    HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate,
-    RoomName, RoomPosition, StructureType, Terrain,
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureProperties, StructureType, Terrain
 };
 
 use crate::{
-    combat::{hate_handler, rank_room},
-    config, heap,
-    memory::{Role, ScreepsMemory},
-    movement::{
-        flow_field::visualise_field, move_target::{path_call, MoveOptions}, movement_utils::visualise_path, pathfinding::PathFinder
-    },
-    room::{
+    combat::{hate_handler, rank_room}, config, constants::WALKABLE_STRUCTURES, heap, memory::{Role, ScreepsMemory}, movement::{
+        caching::generate_storage_path, flow_field::{self, visualise_field, FlowFieldSource}, move_target::{path_call, MoveOptions}, movement_utils::visualise_path, pathfinding::PathFinder
+    }, room::{
         cache::tick_cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
         planning::room::{plan_room, remotes},
         tower,
         visuals::run_full_visuals,
-    },
-    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
+    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
 };
 
 use super::{
@@ -31,13 +22,13 @@ use super::{
         self,
         room::construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
-            get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
+            get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts, plan_remote_containers,
         },
     },
     visuals::visualise_room_visual,
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 
 // TODO:
 // Separate logic of the room types, eg
@@ -110,6 +101,14 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     if room.my() {
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
+        if memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level() || game::time() % 3000 == 0 {
+            if let Some(path_heap) = heap().flow_cache.lock().unwrap().get_mut(&room.name()) {
+                path_heap.storage = None;
+
+                path_heap.paths.clear();
+            }
+        }
+
         if !memory.rooms.contains_key(&room.name()) || !cache.rooms.contains_key(&room.name()) {
             return;
         }
@@ -130,9 +129,11 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             links::balance_links(&room, cached_room);
 
-            if let Some(heap) = heap().flow_cache.lock().unwrap().get(&cached_room.room_name) {
-                if let Some(h) = &heap.storage {
-                    visualise_field(&room, &h);
+            if let Some(heap) = heap().flow_cache.lock().unwrap().get_mut(&cached_room.room_name) {
+                // TODO: Make this take plans into consideration
+                // So we can reduce the amount of recalculations
+                if game::time() % 2000 == 0 {
+                    heap.storage = None;
                 }
             }
 
@@ -195,10 +196,16 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             recover_creeps(memory);
         }
 
+        // Place remote containers every 1k ticks, if we have remotes.
+        if game::time() % 250 == 0 && memory.remote_rooms.contains_key(&room.name()) {
+            plan_remote_containers(&room, memory, cache);
+        }
+
         {
             let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
             run_crap_planner_code(&room, memory, room_cache);
+
             run_full_visuals(&room, memory, room_cache);
 
             let mut lifetime = 0;
@@ -242,6 +249,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     hate_handler::process_room_event_log(&room, memory, cache);
 
     // Match these haulers to their tasks, that way we can run them
+    // This is top-down now, got moved to the lib.rs
     //room_cache.hauling.match_haulers(memory, &room.name());
 
     if room.my() {

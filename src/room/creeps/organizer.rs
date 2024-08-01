@@ -17,7 +17,7 @@ use crate::{
 
 use super::{combat, local};
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> f64 {
     let starting_cpu = game::cpu::get_used();
     let pre_creeps_cpu = game::cpu::get_used();
@@ -140,14 +140,6 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     }
 
     let cached_room = cache.rooms.get_mut(&room.name()).unwrap();
-
-    if room.name() == "W1N9" {
-        if let Some(h) = heap().flow_cache.lock().unwrap().get(&room.name()) {
-            if let Some(f) = &h.storage {
-                flow_field::visualise_field(room, &f);
-            }
-        }
-    }
 
     let creeps = &cached_room.creeps.creeps_in_room;
 

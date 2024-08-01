@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
@@ -35,8 +35,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
 
         if let Some(remote_room) = cache.rooms.get_mut(&remote_room) {
             remote_room.resources.sources[creep_memory.task_id.unwrap() as usize]
-                .creeps
-                .push(creep.try_id().unwrap());
+                .add_creep(creep);
         }
 
         if let Some(remote_room_memory) = memory.remote_rooms.get(&remote_room) {
@@ -132,7 +131,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
 
             let scouted_source =
                 &mut room_cache.resources.sources[creep_memory.task_id.unwrap() as usize];
-            scouted_source.creeps.push(creep.try_id().unwrap());
+            scouted_source.add_creep(creep);
 
             let source = scouted_source.source.clone();
 

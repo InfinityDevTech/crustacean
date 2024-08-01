@@ -317,7 +317,7 @@ impl RoomStructureCache {
                 let found_source_containers =
                     resource_cache.sources.iter_mut().filter_map(|source| {
                         if link.pos().get_range_to(source.source.pos()) <= 2 {
-                            source.link = Some(link.id());
+                            source.link = Some(link.clone());
                             Some(link.clone())
                         } else {
                             None

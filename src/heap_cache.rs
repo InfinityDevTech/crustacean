@@ -3,10 +3,10 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use log::info;
-use screeps::{game, LocalCostMatrix, RoomName, RoomXY};
+use screeps::{game, Direction, LocalCostMatrix, Position, RoomName, RoomXY};
 use screeps_utils::sparse_cost_matrix::SparseCostMatrix;
 
-use crate::{constants::ROOM_AREA, memory::ScreepsMemory, room::cache::heap_cache::{hauling::HeapHaulingCache, RoomHeapCache}};
+use crate::{constants::ROOM_AREA, memory::ScreepsMemory, movement::movement_utils::num_to_dir, room::cache::heap_cache::{hauling::HeapHaulingCache, RoomHeapCache}};
 
 #[derive(Debug, Clone)]
 pub struct CompressedDirectionMatrix {
@@ -26,6 +26,16 @@ impl CompressedDirectionMatrix {
             self.matrix[index as usize / 2] & 0b00001111
         } else {
             self.matrix[index as usize / 2] >> 4
+        }
+    }
+
+    pub fn get_dir(&self, x: u8, y: u8) -> Option<Direction> {
+        let dir = self.get_xy(x, y);
+
+        if dir == 0 || dir > 8 {
+            None
+        } else {
+            Some(num_to_dir(dir))
         }
     }
 
@@ -50,16 +60,38 @@ impl CompressedDirectionMatrix {
     }
 }
 
+// TODO:
+// Fully flesh this out, here are my ideas for paths to cache.
+// For owned rooms (resets every 500 ticks):
+// - Storage
+// - Controller storage (Link, container, or, default to controller)
+// - Path to every container (max 5)
+// For remotes (resets every 2000 ticks):
+// - Owning room storage (Lazy FF)
+// - Each source or its container, again, lazy FF
+// - Controller (Possibly, doesnt really matter as much)
+// Now, im considering doing it the way v1king did it, and add path entrances and exits
+// but i think it would be better to just have a list of "cacheable positions", and then
+// if that position is in the cache, use it, if not, use a pathfinder call to generate it
+// I think this would be better, as we dont need to pre-gen it, plus, over time, CPU usage would go down
+
+// TODO:
+// Figure out how to lazily reset these, im thinking of:
+// - Controller upgrade
+// - Storage or container built / destroyed
+// - Every 10k ticks, reset all paths (Just in case)
 #[derive(Debug, Clone)]
 pub struct RoomHeapFlowCache {
     pub storage: Option<CompressedDirectionMatrix>,
-    pub paths: HashMap<RoomXY, CompressedDirectionMatrix>,
+    pub controller: Option<CompressedDirectionMatrix>,
+    pub paths: HashMap<Position, CompressedDirectionMatrix>,
 }
 
 impl RoomHeapFlowCache {
     pub fn new() -> RoomHeapFlowCache {
         RoomHeapFlowCache {
             storage: None,
+            controller: None,
             paths: HashMap::new(),
         }
     }
@@ -76,6 +108,8 @@ pub struct GlobalHeapCache {
 
     pub per_tick_cost_matrixes: Mutex<HashMap<RoomName, LocalCostMatrix>>,
     pub flow_cache: Mutex<HashMap<RoomName, RoomHeapFlowCache>>,
+    pub cachable_positions: Mutex<HashMap<RoomName, Vec<Position>>>,
+    pub needs_cachable_position_generation: Mutex<Vec<RoomName>>,
 
     pub creep_say: Mutex<bool>,
     pub heap_lifetime: Mutex<u32>,
@@ -94,6 +128,8 @@ impl GlobalHeapCache {
 
             per_tick_cost_matrixes: Mutex::new(HashMap::new()),
             flow_cache: Mutex::new(HashMap::new()),
+            cachable_positions: Mutex::new(HashMap::new()),
+            needs_cachable_position_generation: Mutex::new(Vec::new()),
 
             creep_say: Mutex::new(true),
             heap_lifetime: Mutex::new(0),

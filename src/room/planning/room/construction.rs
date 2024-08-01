@@ -1,19 +1,20 @@
+use std::vec;
+
 use log::info;
 use screeps::{HasId, HasPosition, Position, Room, StructureType};
 
-use crate::{room::cache::tick_cache::CachedRoom, traits::position::PositionExtensions};
+use crate::{heap, memory::ScreepsMemory, room::cache::tick_cache::{CachedRoom, RoomCache}, traits::position::PositionExtensions};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn find_pos_most_accessible(
-    room: &Room,
-    room_cache: &CachedRoom,
     start_pos: &Position,
+    find_closest: &Position,
     range: u8,
+    ignored_positions: Vec<Position>,
 ) -> Option<Position> {
     let accessible_positions = start_pos.get_accessible_positions_around(range);
 
-    let to_score = room_cache.storage_center.unwrap();
-    let to_score_pos = Position::new(to_score.x, to_score.y, room.name());
+    let to_score_pos = find_closest;
 
     let mut closest_distance = u32::MAX;
     let mut closest = None;
@@ -21,7 +22,11 @@ fn find_pos_most_accessible(
     // This ranks positions around something that we want, and returns the position that
     // is the most accessible, while also being the closest.
     for accessible_pos in accessible_positions {
-        let mut distance = accessible_pos.get_range_to(to_score_pos);
+        let mut distance = accessible_pos.get_range_to(*to_score_pos);
+
+        if ignored_positions.contains(&accessible_pos) {
+            continue;
+        }
 
         let mut other_accessible_positions = 0;
         for pos in accessible_pos.get_accessible_positions_around(1) {
@@ -43,6 +48,40 @@ fn find_pos_most_accessible(
     closest
 }
 
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cache: &RoomCache) {
+    let remote_memory = memory.remote_rooms.get(&room.name()).unwrap();
+    let measure_pos = memory.rooms.get(&remote_memory.owner).unwrap().storage_center;
+
+    let measure_pos = Position::new(measure_pos.x, measure_pos.y, remote_memory.owner);
+    let remote_cache = room_cache.rooms.get(&remote_memory.owner).unwrap();
+
+    let mut reset_movement_cache = false;
+
+    for source in remote_cache.resources.sources.clone() {
+        if source.container.is_some() {
+            continue;
+        }
+
+        let container_pos = find_pos_most_accessible(&source.source.pos(), &measure_pos, 1, vec![]);
+
+        if let Some(container_pos) = container_pos {
+            let _ = room.create_construction_site(
+                container_pos.x().u8(),
+                container_pos.y().u8(),
+                StructureType::Container,
+                None,
+            );
+
+            reset_movement_cache = true;
+        }
+    }
+
+    if reset_movement_cache {
+        heap().cachable_positions.lock().unwrap().remove(&room.name());
+    }
+}
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
     let mut links_placed = 0;
@@ -54,6 +93,8 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
         8 => 3,
         _ => 0,
     };
+
+    let measure_pos = Position::new(room_cache.storage_center.unwrap().x, room_cache.storage_center.unwrap().y, room.name());
 
     let mut all_source_containers_placed = false;
     for source in &room_cache.resources.sources {
@@ -72,9 +113,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
             }
         } else {
             let container_pos =
-                find_pos_most_accessible(room, room_cache, &controller.controller.pos(), 2);
-            let link_pos =
-                find_pos_most_accessible(room, room_cache, &controller.controller.pos(), 3);
+                find_pos_most_accessible(&controller.controller.pos(), &measure_pos, 2, vec![]);
 
             if let Some(container_pos) = container_pos {
                 if all_source_containers_placed {
@@ -86,6 +125,12 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
                     );
                 }
             }
+
+            let link_pos = if container_pos.is_some() {
+                find_pos_most_accessible(&controller.controller.pos(), &measure_pos, 2, vec![container_pos.unwrap()])
+            } else {
+                find_pos_most_accessible(&controller.controller.pos(), &measure_pos, 2, vec![])
+            };
 
             if let Some(link_pos) = link_pos {
                 if links_placed < max_links {
@@ -112,8 +157,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
             continue;
         }
 
-        let container_pos = find_pos_most_accessible(room, room_cache, &source.source.pos(), 1);
-        let link_pos = find_pos_most_accessible(room, room_cache, &source.source.pos(), 2);
+        let container_pos = find_pos_most_accessible(&source.source.pos(), &measure_pos, 1, vec![]);
 
         if let Some(container_pos) = container_pos {
             let _ = room.create_construction_site(
@@ -123,6 +167,12 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
                 None,
             );
         }
+
+        let link_pos = if container_pos.is_some() {
+            find_pos_most_accessible(&source.source.pos(), &measure_pos, 2, vec![container_pos.unwrap()])
+        } else {
+            find_pos_most_accessible(&source.source.pos(), &measure_pos, 2, vec![])
+        };
 
         if let Some(link_pos) = link_pos {
             if links_placed >= max_links {

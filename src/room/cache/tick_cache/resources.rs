@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
 use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, traits::intents_tracking::CreepExtensionsTracking, utils::scale_haul_priority};
 
@@ -10,9 +10,10 @@ use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCa
 pub struct CachedSource {
     pub source: Source,
     pub creeps: Vec<ObjectId<Creep>>,
+    work_part_count: u8,
 
-    pub link: Option<ObjectId<StructureLink>>,
-    pub container: Option<ObjectId<StructureContainer>>,
+    pub link: Option<StructureLink>,
+    pub container: Option<StructureContainer>,
 
     pub csites: Vec<ConstructionSite>,
 }
@@ -103,6 +104,7 @@ impl RoomResourceCache {
             let constructed_source = CachedSource {
                 source,
                 creeps: Vec::new(),
+                work_part_count: 0,
 
                 link: None,
                 container: None,
@@ -114,11 +116,11 @@ impl RoomResourceCache {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedSource {
     pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
-        if let Some(container_id) = self.container {
-            return Some(game::get_object_by_id_typed(&container_id).unwrap());
+        if let Some(container) = &self.container {
+            return Some(container.clone());
         }
 
         let pos = self.source.pos();
@@ -135,7 +137,7 @@ impl CachedSource {
         }
 
         if found_container.is_some() {
-            self.container = Some(found_container.unwrap().id());
+            self.container = Some(found_container.unwrap().clone());
             return Some(found_container.unwrap().clone());
         }
 
@@ -143,8 +145,8 @@ impl CachedSource {
     }
 
     pub fn get_link(&mut self, structures: &RoomStructureCache) -> Option<StructureLink> {
-        if let Some(link_id) = self.link {
-            return Some(game::get_object_by_id_typed(&link_id).unwrap());
+        if let Some(link) = &self.link {
+            return Some(link.clone());
         }
 
         let pos = self.source.pos();
@@ -161,7 +163,7 @@ impl CachedSource {
         }
 
         if found_link.is_some() {
-            self.link = Some(found_link.unwrap().id());
+            self.link = Some(found_link.unwrap().clone());
             return Some(found_link.unwrap().clone());
         }
 
@@ -216,28 +218,16 @@ impl CachedSource {
         available_spots
     }
 
+    pub fn add_creep(&mut self, creep: &Creep) {
+        self.work_part_count += creep.body().iter().filter(|p| p.part() == Part::Work).count() as u8;
+        self.creeps.push(creep.try_id().unwrap());
+    }
+
     pub fn calculate_work_parts(&self, cache: &CachedRoom) -> u8 {
-        let creeps = &self.creeps;
-
-        let mut work_parts: u8 = 0;
-
-        for creep in creeps {
-            let creep = game::get_object_by_id_typed(creep);
-            if creep.is_none() {
-                continue;
-            }
-
-            let creep = creep.unwrap();
-
-            let mut body = creep.body();
-            body.retain(|part| part.part() == Part::Work);
-
-
-            work_parts += body.len() as u8;
-        }
+        let work_parts: u8 = self.work_part_count;
 
         if work_parts > 6 {
-            let mut kreeps = self.creeps.clone();
+            let kreeps = self.creeps.clone();
 
             let mut smallest = None;
             let mut smallest_score = u32::MAX;
@@ -280,6 +270,7 @@ impl CachedSource {
 pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote_name in memory.rooms.get(&launching_room.name()).unwrap().remotes.clone().iter() {
         let remote_room = game::rooms().get(*remote_name);
+
         if let Some(remote_room_memory) = memory.remote_rooms.get_mut(remote_name) {
             if remote_room_memory.under_attack {
                 let x = unsafe { RoomCoordinate::unchecked_new(46) };

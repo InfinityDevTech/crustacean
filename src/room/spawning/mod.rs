@@ -222,7 +222,7 @@ pub fn temp_duo_spawning(
 //  Add required role counts
 //  Fuck this shit man, this looks like ass
 //  Tweak a shit load of numbers. Spawning needs to be PERFECT.
-//  TODO!!! Fix the double remote spawning bug!! This is BAD...
+//  TODO!!! Which asshole wrote this shit, god they suck at programming.
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn create_spawn_requests_for_room(
@@ -930,7 +930,7 @@ pub fn fast_filler(
 // TODO: rewrite this, its a mess.
 // Specifically, the harvester and remote harvester functions.
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvester(
     room: &Room,
     cache: &CachedRoom,
@@ -1058,7 +1058,6 @@ pub fn remote_harvester(
         if let Some(remote_cache) = cache.rooms.get(remote_name) {
             for source in &remote_cache.resources.sources {
                 let max_parts_for_source = source.max_parts_needed();
-                let current_parts_on_source = source.calculate_work_parts(remote_cache);
                 let parts_needed_on_source = source.parts_needed(remote_cache);
 
                 let current_creeps_on_source = source.creeps.len();
@@ -1073,7 +1072,7 @@ pub fn remote_harvester(
                     .unwrap();
 
                 // If we have enough parts on the source, just skip it.
-                if current_parts_on_source >= max_parts_for_source
+                if parts_needed_on_source == 0
                     || current_creeps_on_source >= max_mining_positions as usize
                 {
                     continue;

@@ -1,9 +1,56 @@
-use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, StructureType, Terrain};
+use log::info;
+use screeps::{game, CostMatrixGet, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, StructureType, Terrain, TextStyle};
 
-use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::CompressedDirectionMatrix, room::cache::{self, tick_cache::CachedRoom}};
+use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::CompressedDirectionMatrix, memory::ScreepsMemory, movement::flow_field::visualise_field, room::cache::{self, tick_cache::CachedRoom}, traits::position::PositionExtensions};
 
 use super::flow_field::{FlowField, FlowFieldSource};
 
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache: &mut CachedRoom) {
+    let mut room_target_heap = heap().cachable_positions.lock().unwrap();
+
+    let mut positions = Vec::new();
+
+    // Controller and its containers.
+    if let Some(controller) = &room_cache.structures.controller {
+        if controller.container.is_some() {
+            positions.push(controller.container.as_ref().unwrap().pos());
+        }
+
+        positions.push(controller.controller.pos());
+    }
+
+    // Source and its containers.
+    // TODO: Actually cache source.
+    for source in &room_cache.resources.sources {
+        if source.container.is_some() {
+            positions.push(source.container.as_ref().unwrap().pos());
+        } else {
+            let ppositions = source.source.pos().get_accessible_positions_around(1);
+
+            for pos in ppositions {
+                positions.push(pos);
+            }
+        }
+
+        positions.push(source.source.pos());
+    }
+
+    if let Some(fast_filler_containers) = &room_cache.structures.containers.fast_filler {
+        for container in fast_filler_containers {
+            positions.push(container.pos());
+        }
+    }
+
+    if let Some(theap) = room_target_heap.get_mut(&room.name()) {
+        theap.clear();
+        theap.extend(positions);
+    } else {
+        room_target_heap.insert(room.name(), positions);
+    }
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> CompressedDirectionMatrix {
     let mut flow_field = FlowField::new(50, 50, true);
 

@@ -30,8 +30,8 @@ pub const ROOM_SIGNS: [&str; 24] = [
 "Marvin lies!",
 //"Kick me.",
 "Marx would be dissapointed",
-"If your name end with 'in', time to get out.",
-"How many dictators does it take to turn an empire into a union of ruinous states?",
+"If your name end with 'in' (or 'tmb'), time to get out.",
+"How many dictators does it take to turn an empire into a union of ruinous bots?",
 "Did somebody say, 'Communism'?",
 "Made a mess and the war got cold.",
 "Bourgeoisie member.",
@@ -70,7 +70,15 @@ pub const HATE_CREEP_HEAL_WEIGHT: f32 = -0.5;
 pub const HATE_DECAY_PERCENTEAGE: f32 = 0.99999;
 pub const TICKS_BEFORE_DECAY: u32 = 500;
 
-pub const CREEP_SONG: [&str; 483] = [
+pub const CREEP_SONG: [&str; 16] = [
+    "Days", "never", "finished",
+    "mastas", "got", "me", "workin",
+    "someday", "masta", "set", "me", "free",
+    ".....",
+    "Shut", "up", "cartman!",
+];
+
+/*pub const CREEP_SONG: [&str; 483] = [
 "There",
 "lived",
 "a",
@@ -554,4 +562,4 @@ pub const CREEP_SONG: [&str; 483] = [
 "Oh",
 "those",
 "Russians"
-];
+];*/

@@ -155,6 +155,7 @@ pub struct RoomMemory{
     pub max_rcl: u8,
     pub id: u128,
     pub planned: bool,
+    pub chant_index: u64,
     // Creeps by role
     pub creeps: Vec<String>,
     pub remotes: Vec<RoomName>,
@@ -327,7 +328,6 @@ structstruck::strike! {
         pub subtract_intents_profiler: bool,
 
         pub id_index: u128,
-        pub chant_index: u64,
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
         pub remote_rooms: HashMap<RoomName, RemoteRoomMemory>,
@@ -357,7 +357,6 @@ impl ScreepsMemory {
                 subtract_intents_profiler: true,
 
                 id_index: 0,
-                chant_index: 0,
                 mem_version: MEMORY_VERSION,
                 rooms: HashMap::new(),
                 remote_rooms: HashMap::new(),
@@ -391,7 +390,6 @@ impl ScreepsMemory {
                         subtract_intents_profiler: true,
 
                         id_index: 0,
-                        chant_index: 0,
                         mem_version: MEMORY_VERSION,
                         rooms: HashMap::new(),
                         remote_rooms: HashMap::new(),

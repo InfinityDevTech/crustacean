@@ -54,6 +54,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         rcl: room.controller().unwrap().level(),
         planned: false,
         id: 0,
+        chant_index: 0,
         creeps: Vec::new(),
         remotes: Vec::new(),
 

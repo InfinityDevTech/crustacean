@@ -26,7 +26,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
 
     let pointer_index = creep_memory.task_id.unwrap() as usize;
     let scouted_source = &mut cached_room.resources.sources[pointer_index];
-    scouted_source.creeps.push(creep.try_id().unwrap());
+    scouted_source.add_creep(creep);
 
     let source = scouted_source.source.clone();
 
@@ -120,7 +120,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
 
     let task_id = creep_memory.task_id.unwrap() as usize;
 
-    if let Some(link) = source.link {
+    if let Some(link) = &source.link.clone() {
         if let Some(container) = cache.resources.sources[task_id]
             .get_container(&cache.structures)
         {
@@ -129,12 +129,10 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             }
         }
 
-        let link = game::get_object_by_id_typed(&link).unwrap();
-
         if link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
             if creep.pos().is_near_to(link.pos()) {
                 let _ = creep.ITtransfer(
-                    &link,
+                    link,
                     ResourceType::Energy,
                     Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
                 );

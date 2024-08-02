@@ -7,6 +7,12 @@ use crate::traits::room::RoomExtensions;
 
 pub mod hauling;
 
+// TODO:
+// Fix this shit, why do I have two different types of heap
+// Something tells me that they arent saving properly, but I know the other heap does
+// So, im just going to move a "Heap Creep", to the heap and see what happens
+// Also, stuck detection is broken because of this shit.
+
 #[derive(PartialEq)]
 pub enum HealthChangeType {
     Damage,

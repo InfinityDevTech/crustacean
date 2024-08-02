@@ -217,6 +217,11 @@ impl CreepExtensions for screeps::Creep {
                     self.bsay(&format!("MV-CHE-{}", dir).to_string(), false);
 
                     self.move_request(dir, cache);
+
+
+                    if let Some(heap_creep) = cache.heap_cache.creeps.get_mut(&self.name()) {
+                        self.say(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
+                    }
                     return;
                 } else {
                     // If not, we generate a path to said target, and cache it.
@@ -263,6 +268,10 @@ impl CreepExtensions for screeps::Creep {
                         self.bsay(&format!("MV-CHE-{}", pos).to_string(), false);
 
                         self.move_request(pos, cache);
+                    }
+
+                    if let Some(heap_creep) = cache.heap_cache.creeps.get_mut(&self.name()) {
+                        self.say(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
                     }
 
                     return;

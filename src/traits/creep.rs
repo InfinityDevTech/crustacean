@@ -117,6 +117,8 @@ impl CreepExtensions for screeps::Creep {
             );
             self.move_request(dir, cache);
 
+            self.bsay(&format!("MV-STOR {}", dir).to_string(), false);
+
             return true;
         } else {
             let steps = generate_storage_path(&self.room().unwrap(), cache);
@@ -153,7 +155,14 @@ impl CreepExtensions for screeps::Creep {
 
         if let Some(storage) = &cache.structures.storage {
             if storage.pos() == target && self.move_to_storage(cache) {
-                self.bsay("MV-CACHED", false);
+
+                if self.is_stuck(cache) {
+                    self.bsay("STUCK", false);
+
+                    return;
+                }
+
+                //self.bsay(&format!("MV-STOR {}",).to_string(), false);
                 return;
             }
         }
@@ -184,7 +193,19 @@ impl CreepExtensions for screeps::Creep {
                     .or_insert_with(CompressedDirectionMatrix::new);
 
                 if self.is_stuck(cache) {
-                    path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 15);
+                    path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 16);
+
+                    let possible_moves = self.get_possible_moves(cache);
+
+                    if let Some(pos) = possible_moves.first() {
+                        let dir = self.pos().xy().get_direction_to(*pos);
+
+                        if let Some(dir) = dir {
+                            self.move_request(dir, cache);
+
+                            return;
+                        }
+                    }
 
                     self.bsay("FIX-STUCK", false);
 
@@ -193,7 +214,7 @@ impl CreepExtensions for screeps::Creep {
 
                 // If the direction is already cached, move there
                 if let Some(dir) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
-                    self.bsay("MV-NCACHE", false);
+                    self.bsay(&format!("MV-CHE-{}", dir).to_string(), false);
 
                     self.move_request(dir, cache);
                     return;
@@ -208,34 +229,39 @@ impl CreepExtensions for screeps::Creep {
 
                     self.bsay("MV-CAPTH", false);
 
-                    if !target.incomplete() {
-                        let mut previous_position = self.pos();
+                    if !target.incomplete() || target.path().len() > 3 {
+                        if let Some(first) = target.path().first() {
+                            let dir = self.pos().get_direction_to(*first);
 
-                        // For len 1 paths, we can just move to the target.
-                        if let Some(path_pos) = target.path().first() {
-                            if let Some(dir) = previous_position.get_direction_to(*path_pos) {
-                                path.set_xy(
-                                    previous_position.x().u8(),
-                                    previous_position.y().u8(),
-                                    dir as u8,
-                                );
+                            if let Some(dir) = dir {
+                                path.set_xy(self.pos().x().u8(), self.pos().y().u8(), dir as u8);
                             }
                         }
 
-                        for step in target.path() {
-                            if let Some(dir) = previous_position.get_direction_to(step) {
-                                path.set_xy(
-                                    previous_position.x().u8(),
-                                    previous_position.y().u8(),
-                                    dir as u8,
-                                );
+                        for (index, step) in target.path().into_iter().enumerate() {
+
+                            if target.incomplete() && index >= target.path().len() / 2 {
+                                break;
                             }
 
-                            previous_position = step;
+                            if let Some(next) = target.path().get(index + 1) {
+                                let dir = step.get_direction_to(*next);
+
+                                if let Some(dir) = dir {
+                                    path.set_xy(step.x().u8(), step.y().u8(), dir as u8);
+                                }
+                            }
                         }
+                    } else {
+                        self.bsay(
+                            &format!("INCMPLT-{}", target.path().len()).to_string(),
+                            false,
+                        );
                     }
 
                     if let Some(pos) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
+                        self.bsay(&format!("MV-CHE-{}", pos).to_string(), false);
+
                         self.move_request(pos, cache);
                     }
 
@@ -293,7 +319,9 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn is_stuck(&self, cache: &mut CachedRoom) -> bool {
-        if let Some(heap_creep) = cache.heap_cache.creeps.get(&self.name()) {
+        if let Some(heap_creep) = cache.heap_cache.creeps.get_mut(&self.name()) {
+            heap_creep.update_position(self);
+
             return heap_creep.stuck_time >= 10;
         }
 

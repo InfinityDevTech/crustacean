@@ -6,7 +6,7 @@ use screeps::{
     StructureObject, StructureProperties, StructureType,
 };
 
-use crate::{heap, memory::ScreepsMemory, utils::get_my_username};
+use crate::{constants::{SWAMP_MASK, WALL_MASK}, heap, memory::ScreepsMemory, utils::get_my_username};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
@@ -115,8 +115,6 @@ impl MoveTarget {
             .avoid_hostile_rooms(true);
 
         let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, options))
-            .plain_cost(2)
-            .swamp_cost(5)
             .max_rooms(15)
             .max_ops(200000);
 
@@ -202,7 +200,9 @@ impl MoveTarget {
 
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+// TODO:
+// GetRawTerrainBuffer possibly for perforamnce reasons.
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(
     room_name: RoomName,
     from: Position,
@@ -249,6 +249,7 @@ pub fn path_call(
         let structures = room.find(find::STRUCTURES, None);
         let constructions = room.find(find::CONSTRUCTION_SITES, None);
         let creeps = room.find(find::CREEPS, None);
+        let terrain = room.get_terrain().get_raw_buffer().to_vec();
 
         let safemoded = if let Some(controller) = room.controller() {
             controller.safe_mode().unwrap_or(0) > 0
@@ -257,18 +258,29 @@ pub fn path_call(
         };
 
         // This might be redundant. I might be a dunce.
-        /*for x in 0..50 {
+        for x in 0..50 {
             for y in 0..50 {
-                let pos = unsafe { RoomXY::unchecked_new(x, y) };
-                let tile = terrain.get_xy(pos);
+                let tile = terrain[y * 50 + x];
 
-                match tile {
-                    screeps::Terrain::Plain => matrix.set(pos, 1),
-                    screeps::Terrain::Wall => matrix.set(pos, 255),
-                    screeps::Terrain::Swamp => matrix.set(pos, 5),
+                // FUCK pservers dude, like, what the hell.
+                if tile == 1 || tile == 3 {
+                    matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
+                    continue;
+                }
+
+                if tile & WALL_MASK != 0 {
+                    matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
+                } else if tile & SWAMP_MASK != 0 {
+                    matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 5);
+                } else if tile == 0 {
+                    matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 2);
+                } else {
+                    // Pserver wackiness
+                    // Impassible.
+                    matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
                 }
             }
-        }*/
+        }
 
         for road in structures
             .iter()

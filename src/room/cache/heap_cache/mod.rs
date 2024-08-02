@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use screeps::{Creep, HasPosition, ObjectId, Position, Room, Source};
+use log::info;
+use screeps::{Creep, HasPosition, ObjectId, Position, Room, SharedCreepProperties, Source};
 
 use crate::traits::room::RoomExtensions;
 
@@ -24,7 +25,6 @@ pub struct RoomHeapCache {
 #[derive(Debug, Clone)]
 pub struct HeapCreep {
     pub health: u32,
-    pub position: Position,
     pub previous_position: Position,
     pub stuck_time: u8,
 }
@@ -41,26 +41,24 @@ impl RoomHeapCache {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HeapCreep {
     pub fn new(creep: &Creep) -> HeapCreep {
         HeapCreep {
             health: creep.hits(),
-            position: creep.pos(),
             previous_position: creep.pos(),
             stuck_time: 0,
         }
     }
 
-    pub fn update_position(&mut self, new_pos: Position) {
-        self.previous_position = self.position;
-        self.position = new_pos;
-
-        if self.position == self.previous_position {
+    pub fn update_position(&mut self, creep: &Creep) {
+        if creep.pos() == self.previous_position {
             self.stuck_time += 1;
         } else {
             self.stuck_time = 0;
         }
+
+        self.previous_position = creep.pos();
     }
 
     pub fn get_health_change(&mut self, creep: &Creep) -> HealthChangeType {

@@ -50,7 +50,7 @@ pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache:
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> CompressedDirectionMatrix {
     let mut flow_field = FlowField::new(50, 50, true);
 
@@ -71,7 +71,6 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
             }
         }
 
-
         for rampart in &room_cache.structures.ramparts {
             matrix.set(rampart.pos().xy(), 1);
         }
@@ -84,6 +83,21 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
             if !WALKABLE_STRUCTURES.contains(&structure.structure_type()) {
                 matrix.set(structure.pos().xy(), 255);
             }
+        }
+
+        // Storage sitter.
+        if let Some(storage_pos) = room_cache.storage_center {
+            matrix.set(storage_pos, 255);
+        }
+
+        // Fast fillers
+        if let Some(spawn_center) = room_cache.spawn_center {
+            let y = RoomCoordinate::new(spawn_center.y.u8()).unwrap();
+
+            let xy1 = RoomXY::new(RoomCoordinate::new(spawn_center.x.u8() + 1).unwrap(), y);
+            let xy2 = RoomXY::new(RoomCoordinate::new(spawn_center.x.u8() - 1).unwrap(), y);
+            matrix.set(xy1, 255);
+            matrix.set(xy2, 255);
         }
 
         matrix

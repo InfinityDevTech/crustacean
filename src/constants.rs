@@ -93,6 +93,9 @@ pub const PATHFINDER_MAX_ROOMS: u32 = 64;
 
 pub const WORLD_SIZE: u8 = 255;
 
+pub const WALL_MASK: u8 = 1;
+pub const SWAMP_MASK: u8 = 2;
+
 pub static HOSTILE_PARTS: [Part; 3] = [Part::Attack, Part::RangedAttack, Part::Heal];
 
 pub fn part_attack_weight(part: &Part) -> u32 {

@@ -34,7 +34,10 @@ impl TrafficCache {
 pub fn run_movement(room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
     let pre_traffic_cpu = game::cpu::get_used();
 
-    if !memory.rooms.contains_key(&room_cache.room_name) {
+    // Watch this, its a hack for some bugs. This is a temporary fix
+    // Haulers would have no task, and block the path, I might have them move a random dir.
+    // TODO: Fix this
+    if !memory.rooms.contains_key(&room_cache.room_name) && !memory.remote_rooms.contains_key(&room_cache.room_name) {
         run_non_room_traffic(room_cache);
 
         return;
@@ -85,13 +88,7 @@ fn run_non_room_traffic(room_cache: &mut CachedRoom) {
         let _ = creep.ITmove_direction(direction);
 
         if let Some(heap_creep) = room_cache.heap_cache.creeps.get_mut(&creep.name()) {
-            let (dx, dy) = dir_to_coords(direction, x.unwrap().u8(), y.unwrap().u8());
-
-            let dx = dx.clamp(0, 49);
-            let dy = dy.clamp(0, 49);
-            let new_pos = Position::new(RoomCoordinate::new(dx).unwrap(), RoomCoordinate::new(dy).unwrap(), creep.room().unwrap().name());
-
-            heap_creep.update_position(new_pos)
+            heap_creep.update_position(&creep)
         }
     }
 }
@@ -157,13 +154,7 @@ fn move_creeps(creep_names: &Vec<String>, room_cache: &mut CachedRoom) {
             room_cache.traffic.move_intents += 1;
 
             if let Some(heap_creep) = room_cache.heap_cache.creeps.get_mut(&creep.name()) {
-                let (dx, dy) = dir_to_coords(direction, x.unwrap().u8(), y.unwrap().u8());
-    
-                let dx = dx.clamp(0, 49);
-                let dy = dy.clamp(0, 49);
-                let new_pos = Position::new(RoomCoordinate::new(dx).unwrap(), RoomCoordinate::new(dy).unwrap(), creep.room().unwrap().name());
-    
-                heap_creep.update_position(new_pos)
+                heap_creep.update_position(&creep)
             }
         }
     }

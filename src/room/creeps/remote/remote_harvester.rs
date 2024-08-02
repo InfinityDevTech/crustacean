@@ -133,7 +133,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
                 &mut room_cache.resources.sources[creep_memory.task_id.unwrap() as usize];
             scouted_source.add_creep(creep);
 
-            let source = scouted_source.source.clone();
+            let mut source = scouted_source.clone();
 
             if creep.store().get_used_capacity(None) as f32
                 >= (creep.store().get_capacity(None) as f32 * 0.5)
@@ -144,7 +144,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
             let owning_room = creep_memory.owning_room;
 
-            let harvested_amount = harvest_source(creep, source, memory, room_cache);
+            let harvested_amount = harvest_source(creep, &mut source, memory, room_cache);
             if let Some(harvested_amount) = harvested_amount {
                 if let Some(remote_room) = cache.rooms.get_mut(&owning_room) {
                     remote_room.stats.energy.income_energy += harvested_amount;

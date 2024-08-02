@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, traits::intents_tracking::CreepExtensionsTracking, utils::scale_haul_priority};
+use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::scale_haul_priority};
 
 use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
@@ -116,7 +116,7 @@ impl RoomResourceCache {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedSource {
     pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
         if let Some(container) = &self.container {
@@ -142,6 +142,18 @@ impl CachedSource {
         }
 
         None
+    }
+
+    pub fn get_best_pos_to_stand(&mut self, structures: &RoomStructureCache, creep_positions: &HashMap<RoomXY, Creep>) -> Option<Position> {
+        let available_positions = self.source.pos().get_accessible_positions_around(1);
+
+        if let Some(container) = self.get_container(structures) {
+            if available_positions.contains(&container.pos()) && !creep_positions.contains_key(&container.pos().xy()) {
+                return Some(container.pos());
+            }
+        }
+
+        available_positions.into_iter().find(|&pos| !creep_positions.contains_key(&pos.xy()))
     }
 
     pub fn get_link(&mut self, structures: &RoomStructureCache) -> Option<StructureLink> {

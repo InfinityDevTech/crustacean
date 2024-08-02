@@ -7,7 +7,7 @@ use screeps::{
 use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
-    room::cache::tick_cache::{CachedRoom, RoomCache},
+    room::cache::tick_cache::{resources::CachedSource, CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, position::PositionExtensions},
 };
 
@@ -28,7 +28,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     let scouted_source = &mut cached_room.resources.sources[pointer_index];
     scouted_source.add_creep(creep);
 
-    let source = scouted_source.source.clone();
+    let mut source = scouted_source.clone();
 
     if creep.spawning() || creep.tired() {
         creep.bsay("😴", false);
@@ -39,52 +39,41 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
         if !link_deposit(creep, creep_memory, cached_room) && !deposit_energy(creep, memory, cached_room) {
-            harvest_source(creep, source, memory, cached_room);
+            harvest_source(creep, &mut source, memory, cached_room);
         }
     } else {
-        harvest_source(creep, source, memory, cached_room);
+        harvest_source(creep, &mut source, memory, cached_room);
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvest_source(
     creep: &Creep,
-    source: Source,
+    source: &mut CachedSource,
     memory: &mut ScreepsMemory,
     cache: &mut CachedRoom,
 ) -> Option<u32> {
-    if !creep.pos().is_near_to(source.pos()) {
+    if !creep.pos().is_near_to(source.source.pos()) {
         creep.bsay("🚚 🔋", false);
 
-        let open_pos = source.pos().get_accessible_positions_around(1);
-        let mut available_positons = Vec::new();
+        let open_pos = source.get_best_pos_to_stand(&cache.structures, &cache.creeps.creeps_at_pos);
 
-        for pos in open_pos {
-            let xy = pos.xy();
-
-            if cache.creeps.creeps_at_pos.contains_key(&xy) {
-                continue;
-            }
-
-            available_positons.push(pos);
-        }
-
-        if let Some(pos) = available_positons.first() {
-            creep.better_move_to(memory, cache, *pos, 0, MoveOptions::default());
+        if let Some(pos) = open_pos {
+            creep.better_move_to(memory, cache, pos, 0, MoveOptions::default());
         } else {
             // If the source is flooded, let the traffic manager figure it out.
-            creep.better_move_to(memory, cache, source.pos(), 1, MoveOptions::default());
+            //creep.better_move_to(memory, cache, source.pos(), 1, MoveOptions::default());
         }
 
         None
     } else {
-        if source.energy() == 0 {
+        if source.source.energy() == 0 {
             return None;
         }
         creep.bsay("⛏️", false);
-        let _ = creep.ITharvest(&source);
+        let _ = creep.ITharvest(&source.source);
 
-        let amount_harvsted = get_aproximate_energy_mined(creep, &source);
+        let amount_harvsted = get_aproximate_energy_mined(creep, &source.source);
         cache.stats.energy.income_energy += amount_harvsted;
 
         Some(amount_harvsted)

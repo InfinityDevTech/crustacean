@@ -4,7 +4,7 @@ pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "";
 
-pub const ROOM_REMOTE_COUNT: u8 = 8;
+pub const ROOM_REMOTE_COUNT: u8 = 4;
 
 pub const INVADER_USERNAME: &str = "Invader";
 

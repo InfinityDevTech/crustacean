@@ -9,7 +9,7 @@ use crate::{
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::tick_cache::CachedRoom,
+    room::cache::tick_cache::{CachedRoom, RoomCache},
 };
 
 use log::info;
@@ -34,6 +34,8 @@ pub trait CreepExtensions {
         avoid_enemies: MoveOptions,
     );
 
+    fn is_stuck(&self, cache: &mut CachedRoom) -> bool;
+
     fn bsay(&self, message: &str, pub_to_room: bool);
 
     fn parts_of_type(&self, part: screeps::Part) -> u32;
@@ -45,7 +47,7 @@ pub trait CreepExtensions {
     fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
@@ -181,6 +183,14 @@ impl CreepExtensions for screeps::Creep {
                     .entry(target)
                     .or_insert_with(CompressedDirectionMatrix::new);
 
+                if self.is_stuck(cache) {
+                    path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 15);
+
+                    self.bsay("FIX-STUCK", false);
+
+                    return;
+                }
+
                 // If the direction is already cached, move there
                 if let Some(dir) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
                     self.bsay("MV-NCACHE", false);
@@ -234,10 +244,30 @@ impl CreepExtensions for screeps::Creep {
             }
         } else {
             self.bsay("PUSHING", false);
+
+            if self.is_stuck(cache) {
+                self.bsay("CSTUCK", false);
+            }
             let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
 
             if !locked.contains(&target.room_name()) {
                 locked.push(target.room_name());
+            }
+        }
+
+        if self.is_stuck(cache) {
+            self.bsay("CSTUCK", false);
+
+            let possible_moves = self.get_possible_moves(cache);
+
+            if let Some(pos) = possible_moves.first() {
+                let dir = self.pos().xy().get_direction_to(*pos);
+
+                if let Some(dir) = dir {
+                    self.move_request(dir, cache);
+
+                    return;
+                }
             }
         }
 
@@ -260,6 +290,14 @@ impl CreepExtensions for screeps::Creep {
         }
 
         cache.stats.global_pathfinding += game::cpu::get_used() - pre_move_cpu;
+    }
+
+    fn is_stuck(&self, cache: &mut CachedRoom) -> bool {
+        if let Some(heap_creep) = cache.heap_cache.creeps.get(&self.name()) {
+            return heap_creep.stuck_time >= 10;
+        }
+
+        false
     }
 
     fn bsay(&self, message: &str, public: bool) {

@@ -48,7 +48,7 @@ fn find_pos_most_accessible(
     closest
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cache: &RoomCache) {
     let remote_memory = memory.remote_rooms.get(&room.name()).unwrap();
     let measure_pos = memory.rooms.get(&remote_memory.owner).unwrap().storage_center;

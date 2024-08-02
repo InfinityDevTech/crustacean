@@ -1060,6 +1060,10 @@ pub fn remote_harvester(
                 let max_parts_for_source = source.max_parts_needed();
                 let parts_needed_on_source = source.parts_needed(remote_cache);
 
+                if parts_needed_on_source == 0 {
+                    continue;
+                }
+
                 let current_creeps_on_source = source.creeps.len();
                 let max_mining_positions =
                     source.calculate_mining_spots(&game::rooms().get(*remote_name).unwrap());

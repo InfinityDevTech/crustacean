@@ -3,6 +3,7 @@ use screeps::{Attackable, Color, ConstructionSite, Creep, Direction, Dismantleab
 
 use crate::profiling::timing::INTENTS_USED;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn track_intent() {
     let mut count = INTENTS_USED.lock().unwrap();
 
@@ -13,6 +14,7 @@ pub trait ConstructionExtensionsTracking {
     fn ITremove(&self) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl ConstructionExtensionsTracking for ConstructionSite {
     fn ITremove(&self) -> Result<(), ErrorCode> {
         track_intent();
@@ -26,6 +28,7 @@ pub trait FlagExtensionsTracking {
     fn ITset_position(&self, position: RoomPosition);
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl FlagExtensionsTracking for screeps::Flag {
     fn ITremove(&self) {
         track_intent();
@@ -67,6 +70,7 @@ pub trait CreepExtensionsTracking {
     fn ITwithdraw(&self, target: &dyn Withdrawable, resource_type: ResourceType, amount: Option<u32>) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensionsTracking for Creep {
     fn ITmove_direction(&self, dir: Direction) -> Result<(), ErrorCode> {
         track_intent();
@@ -179,6 +183,7 @@ pub trait RoomExtensionsTracking {
     fn ITcreate_flag(&self, x: u8, y: u8, name: Option<&js_sys::JsString>, color: Option<Color>, secondary_color: Option<Color>) -> Result<JsString, ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensionsTracking for Room {
     fn ITcreate_construction_site(&self, x: u8, y: u8, structure_type: StructureType, name: Option<&js_sys::JsString>) -> Result<(), ErrorCode> {
         track_intent();
@@ -196,6 +201,7 @@ pub trait RoomPositionExtensionsTracking {
     fn ITcreate_flag(&self, name: Option<&js_sys::JsString>, color: Option<Color>, secondary_color: Option<Color>) -> Result<JsString, ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomPositionExtensionsTracking for RoomPosition {
     fn ITcreate_construction_site(&self, structure_type: StructureType, name: Option<&js_sys::JsString>) -> Result<(), ErrorCode> {
         track_intent();
@@ -213,6 +219,7 @@ pub trait StructureExtensionsTracking {
     fn ITnotify_when_attacked(&self, enabled: bool) -> i8;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureExtensionsTracking for Structure {
     fn ITdestroy(&self) -> i8 {
         track_intent();
@@ -230,6 +237,7 @@ pub trait StructureObjectTracking {
     fn ITnotify_when_attacked(&self, enabled: bool) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureObjectTracking for StructureObject {
     fn ITdestroy(&self) -> Result<(), ErrorCode> {
         track_intent();
@@ -247,6 +255,7 @@ pub trait StructureControllerExtensionsTracking {
     fn ITunclaim(&self) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureControllerExtensionsTracking for StructureController {
     fn ITactivate_safe_mode(&self) -> Result<(), ErrorCode> {
         track_intent();
@@ -263,6 +272,7 @@ pub trait StructureFactoryExtensionsTracking {
     fn ITproduce(&self, resource_type: ResourceType) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureFactoryExtensionsTracking for StructureFactory {
     fn ITproduce(&self, resource_type: ResourceType) -> Result<(), ErrorCode> {
         track_intent();
@@ -277,6 +287,7 @@ pub trait StructureLabExtensionsTracking {
     fn ITunboost_creep(&self, target: &Creep) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureLabExtensionsTracking for StructureLab {
     fn ITboost_creep(&self, target: &Creep, body_parts_count: Option<u32>) -> Result<(), ErrorCode> {
         track_intent();
@@ -303,6 +314,7 @@ pub trait StructureLinkExtensionsTracking {
     fn ITtransfer_energy(&self, target: &StructureLink, amount: Option<u32>) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureLinkExtensionsTracking for StructureLink {
     fn ITtransfer_energy(&self, target: &StructureLink, amount: Option<u32>) -> Result<(), ErrorCode> {
         track_intent();
@@ -314,6 +326,7 @@ pub trait StructureNukerExtensionsTracking {
     fn ITlaunch_nuke(&self, target: &RoomPosition) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureNukerExtensionsTracking for StructureNuker {
     fn ITlaunch_nuke(&self, target: &RoomPosition) -> Result<(), ErrorCode> {
         track_intent();
@@ -325,6 +338,7 @@ pub trait StructureObserverExtensionsTracking {
     fn ITobserve_room(&self, room: RoomName) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureObserverExtensionsTracking for StructureObserver {
     fn ITobserve_room(&self, room: RoomName) -> Result<(), ErrorCode> {
         track_intent();
@@ -336,6 +350,7 @@ pub trait StructurePowerSpawnExtensionsTracking {
     fn ITprocess_power(&self) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructurePowerSpawnExtensionsTracking for StructurePowerSpawn {
     fn ITprocess_power(&self) -> Result<(), ErrorCode> {
         track_intent();
@@ -347,6 +362,7 @@ pub trait StructureRampartExtensionsTracking {
     fn ITset_public(&self, is_public: bool) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureRampartExtensionsTracking for StructureRampart {
     fn ITset_public(&self, is_public: bool) -> Result<(), ErrorCode> {
         track_intent();
@@ -361,6 +377,7 @@ pub trait StructureSpawnExtensionsTracking {
     fn ITrecycle_creep(&self, target: &Creep) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureSpawnExtensionsTracking for screeps::StructureSpawn {
     fn ITspawn_creep(&self, body: &[screeps::Part], name: &str) -> Result<(), ErrorCode> {
         track_intent();
@@ -388,6 +405,7 @@ pub trait SpawningExtensionsTracking {
     fn ITset_directions(&self, directions: &Array) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl SpawningExtensionsTracking for screeps::Spawning {
     fn ITcancel(&self) -> Result<(), ErrorCode> {
         track_intent();
@@ -404,6 +422,7 @@ pub trait StructureTerminalExtensionsTracking {
     fn ITsend(&self, resource_type: ResourceType, amount: u32, destination: RoomName, description: Option<&str>) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl StructureTerminalExtensionsTracking for screeps::StructureTerminal {
     fn ITsend(&self, resource_type: ResourceType, amount: u32, destination: RoomName, description: Option<&str>) -> Result<(), ErrorCode> {
         track_intent();
@@ -417,6 +436,7 @@ pub trait TowerExtensionsTracking {
     fn ITrepair(&self, target: &dyn Repairable) -> Result<(), ErrorCode>;
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl TowerExtensionsTracking for StructureTower {
     fn ITattack(&self, target: &dyn Attackable) -> Result<(), ErrorCode> {
         track_intent();

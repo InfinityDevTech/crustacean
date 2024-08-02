@@ -5,7 +5,7 @@ use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::CompressedDirectio
 
 use super::flow_field::{FlowField, FlowFieldSource};
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache: &mut CachedRoom) {
     let mut room_target_heap = heap().cachable_positions.lock().unwrap();
 

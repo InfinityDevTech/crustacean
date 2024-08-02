@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]use std::collections::HashMap;
 
 use screeps::{
-    game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY
+    game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY, SharedCreepProperties
 };
 
 use super::CachedRoom;
-use crate::{memory::ScreepsMemory, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
+use crate::{memory::ScreepsMemory, movement::movement_utils::dir_to_coords, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {
@@ -35,24 +35,7 @@ pub fn run_movement(room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
     let pre_traffic_cpu = game::cpu::get_used();
 
     if !memory.rooms.contains_key(&room_cache.room_name) {
-        for (creep, matched_coord) in room_cache.traffic.intended_move.clone() {
-            let creep = game::get_object_by_id_typed(&creep).unwrap();
-
-            if matched_coord == creep.pos().xy() {
-                continue;
-            }
-            let x = RoomCoordinate::new(matched_coord.x.u8());
-            let y = RoomCoordinate::new(matched_coord.y.u8());
-    
-            if x.is_err() || y.is_err() {
-                continue;
-            }
-    
-            let position = Position::new(x.unwrap(), y.unwrap(), creep.room().unwrap().name());
-
-            let direction = creep.pos().get_direction_to(position).unwrap();
-            let _ = creep.ITmove_direction(direction);
-        }
+        run_non_room_traffic(room_cache);
 
         return;
     }
@@ -79,6 +62,38 @@ pub fn run_movement(room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
 
     let post_traffic_cpu = game::cpu::get_used();
     room_cache.stats.cpu_traffic = post_traffic_cpu - pre_traffic_cpu;
+}
+
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+fn run_non_room_traffic(room_cache: &mut CachedRoom) {
+    for (creep, matched_coord) in room_cache.traffic.intended_move.clone() {
+        let creep = game::get_object_by_id_typed(&creep).unwrap();
+
+        if matched_coord == creep.pos().xy() {
+            continue;
+        }
+        let x = RoomCoordinate::new(matched_coord.x.u8());
+        let y = RoomCoordinate::new(matched_coord.y.u8());
+
+        if x.is_err() || y.is_err() {
+            continue;
+        }
+
+        let position = Position::new(x.unwrap(), y.unwrap(), creep.room().unwrap().name());
+
+        let direction = creep.pos().get_direction_to(position).unwrap();
+        let _ = creep.ITmove_direction(direction);
+
+        if let Some(heap_creep) = room_cache.heap_cache.creeps.get_mut(&creep.name()) {
+            let (dx, dy) = dir_to_coords(direction, x.unwrap().u8(), y.unwrap().u8());
+
+            let dx = dx.clamp(0, 49);
+            let dy = dy.clamp(0, 49);
+            let new_pos = Position::new(RoomCoordinate::new(dx).unwrap(), RoomCoordinate::new(dy).unwrap(), creep.room().unwrap().name());
+
+            heap_creep.update_position(new_pos)
+        }
+    }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -140,6 +155,16 @@ fn move_creeps(creep_names: &Vec<String>, room_cache: &mut CachedRoom) {
             let _err = res.unwrap_err();
         } else {
             room_cache.traffic.move_intents += 1;
+
+            if let Some(heap_creep) = room_cache.heap_cache.creeps.get_mut(&creep.name()) {
+                let (dx, dy) = dir_to_coords(direction, x.unwrap().u8(), y.unwrap().u8());
+    
+                let dx = dx.clamp(0, 49);
+                let dy = dy.clamp(0, 49);
+                let new_pos = Position::new(RoomCoordinate::new(dx).unwrap(), RoomCoordinate::new(dy).unwrap(), creep.room().unwrap().name());
+    
+                heap_creep.update_position(new_pos)
+            }
         }
     }
 }

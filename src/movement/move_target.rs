@@ -234,35 +234,13 @@ pub fn path_call(
                     && room.controller().unwrap().owner().unwrap().username() != get_my_username())
                 || invader_owner
             {
-                for x in 0..50 {
-                    for y in 0..50 {
-                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
-                        matrix.set(xy, 255);
-                    }
-                }
-                heap()
-                    .per_tick_cost_matrixes
-                    .lock()
-                    .unwrap()
-                    .insert(room_name, matrix.clone());
-                return MultiRoomCostResult::CostMatrix(matrix.into());
+                return MultiRoomCostResult::Impassable
             }
         } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
             if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()))
                 || scouting_data.invader_core.unwrap_or(false)
             {
-                for x in 0..50 {
-                    for y in 0..50 {
-                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
-                        matrix.set(xy, 255);
-                    }
-                }
-                heap()
-                    .per_tick_cost_matrixes
-                    .lock()
-                    .unwrap()
-                    .insert(room_name, matrix.clone());
-                return MultiRoomCostResult::CostMatrix(matrix.into());
+                return MultiRoomCostResult::Impassable
             }
         }
     }

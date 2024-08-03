@@ -1,6 +1,6 @@
 use screeps::{game, HasPosition, OwnedStructureProperties};
 
-use crate::{goal_memory::RoomClaimGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::intents_tracking::FlagExtensionsTracking};
+use crate::{goal_memory::RoomClaimGoal, memory::ScreepsMemory, room::cache::RoomCache, traits::intents_tracking::FlagExtensionsTracking};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_room_claim_needs(memory: &mut ScreepsMemory, _cache: &mut RoomCache) {

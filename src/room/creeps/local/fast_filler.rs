@@ -8,7 +8,7 @@ use wasm_bindgen::JsCast;
 use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
-    room::cache::tick_cache::{
+    room::cache::{
         hauling::{HaulingPriority, HaulingType},
         CachedRoom, RoomCache,
     },
@@ -47,7 +47,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
     if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
         creep.bsay("WTHD", false);
         let container_id = creep_memory.fastfiller_container;
-        let link = &cached_room.structures.links.fast_filler;
+        let link = &cached_room.structures.links().fast_filler;
         if container_id.is_none() && link.is_none() {
             let priority = scale_haul_priority(
                 creep.store().get_capacity(None),
@@ -78,10 +78,12 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                 if creep.pos().is_near_to(link.pos()) {
                     let _ = creep.ITwithdraw(link, ResourceType::Energy, None);
                 } else {
+                    let pos = link.pos();
+
                     creep.better_move_to(
                         memory,
                         cached_room,
-                        link.pos(),
+                        pos,
                         1,
                         MoveOptions::default(),
                     );
@@ -104,7 +106,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
             let container = container.unwrap();
 
             if container.store().get_used_capacity(None) == 0 {
-                if let Some(link) = &cached_room.structures.links.fast_filler {
+                if let Some(link) = &cached_room.structures.links().fast_filler {
                     if creep.pos().is_near_to(link.pos()) {
                         let _ = creep.ITwithdraw(link, ResourceType::Energy, None);
                     }
@@ -242,7 +244,7 @@ pub fn find_container(
     creep: &Creep,
     cache: &mut CachedRoom,
 ) -> Option<ObjectId<StructureContainer>> {
-    if let Some(fastfiller_containers) = &cache.structures.containers.fast_filler {
+    if let Some(fastfiller_containers) = &cache.structures.containers().fast_filler {
         for container in fastfiller_containers {
             if container.pos().get_range_to(creep.pos()) <= 1 {
                 return Some(container.id());

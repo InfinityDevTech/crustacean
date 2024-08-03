@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use super::CachedRoom;
-use crate::{memory::ScreepsMemory, movement::movement_utils::dir_to_coords, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
+use crate::{heap, memory::ScreepsMemory, movement::movement_utils::dir_to_coords, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {
@@ -67,7 +67,7 @@ pub fn run_movement(room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
     room_cache.stats.cpu_traffic = post_traffic_cpu - pre_traffic_cpu;
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn run_non_room_traffic(room_cache: &mut CachedRoom) {
     for (creep, matched_coord) in room_cache.traffic.intended_move.clone() {
         let creep = game::get_object_by_id_typed(&creep).unwrap();
@@ -87,7 +87,7 @@ fn run_non_room_traffic(room_cache: &mut CachedRoom) {
         let direction = creep.pos().get_direction_to(position).unwrap();
         let _ = creep.ITmove_direction(direction);
 
-        if let Some(heap_creep) = room_cache.heap_cache.creeps.get_mut(&creep.name()) {
+        if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&creep.name()) {
             heap_creep.update_position(&creep)
         }
     }
@@ -153,7 +153,7 @@ fn move_creeps(creep_names: &Vec<String>, room_cache: &mut CachedRoom) {
         } else {
             room_cache.traffic.move_intents += 1;
 
-            if let Some(heap_creep) = room_cache.heap_cache.creeps.get_mut(&creep.name()) {
+            if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&creep.name()) {
                 heap_creep.update_position(&creep)
             }
         }

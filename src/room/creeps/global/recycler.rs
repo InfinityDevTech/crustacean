@@ -1,7 +1,7 @@
 use screeps::{game, Creep, HasPosition, Part, SharedCreepProperties};
 
 use crate::{
-    memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking}}
+    memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking}}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

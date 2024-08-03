@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use js_sys::JsString;
 use strum::{Display, EnumIter};
 
-use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::tick_cache::hauling::HaulingType, traits::room::RoomType};
+use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::hauling::HaulingType, traits::room::RoomType};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Enum)]
 pub enum SegmentIDs {

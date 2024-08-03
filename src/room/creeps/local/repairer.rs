@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureType};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
 use super::hauler;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -30,7 +30,7 @@ pub fn run_repairer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 
         let max = if repairable.structure_type() == StructureType::Rampart {
             let controller = room_cache.structures.controller.as_ref().unwrap();
-            get_rampart_repair_rcl(controller.controller.level())
+            get_rampart_repair_rcl(controller.level())
         } else {
             repairable.hits_max()
         };

@@ -2,7 +2,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{game, Color, Creep, HasPosition, OwnedStructureProperties, SharedCreepProperties};
 
 use crate::{
-    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_my_username
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_my_username
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

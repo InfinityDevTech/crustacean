@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{memory::{Role, ScreepsMemory}, room::cache::heap_cache::RoomHeapCache, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::scale_haul_priority};
+use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::scale_haul_priority};
 
 use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
 
@@ -34,7 +34,7 @@ pub struct RoomResourceCache {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomResourceCache {
-    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory, heap_cache: &mut RoomHeapCache) -> RoomResourceCache {
+    pub fn new_from_room(room: &Room, _memory: &mut ScreepsMemory, heap_cache: &mut HeapRoom) -> RoomResourceCache {
         let mut cache = RoomResourceCache {
             sources: Vec::new(),
             mineral: None,
@@ -78,7 +78,7 @@ impl RoomResourceCache {
         }
     }
 
-    pub fn refresh_source_cache(&mut self, room: &Room, cache: &mut RoomHeapCache) {
+    pub fn refresh_source_cache(&mut self, room: &Room, cache: &mut HeapRoom) {
         // Fetch from heap, if not available, fetch from game.
         // Then push to heap ofc.
         let sources = if cache.sources.is_empty() {
@@ -116,70 +116,18 @@ impl RoomResourceCache {
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedSource {
-    pub fn get_container(&mut self, structures: &RoomStructureCache) -> Option<StructureContainer> {
-        if let Some(container) = &self.container {
-            return Some(container.clone());
-        }
-
-        let pos = self.source.pos();
-
-        let mut found_container = None;
-
-        if let Some(containers) = &structures.containers.source_container {
-            for container in containers {
-                if container.pos().is_near_to(pos) {
-                    found_container = Some(container);
-                    break;
-                }
-            }
-        }
-
-        if found_container.is_some() {
-            self.container = Some(found_container.unwrap().clone());
-            return Some(found_container.unwrap().clone());
-        }
-
-        None
-    }
-
-    pub fn get_best_pos_to_stand(&mut self, structures: &RoomStructureCache, creep_positions: &HashMap<RoomXY, Creep>) -> Option<Position> {
+    pub fn get_best_pos_to_stand(&mut self, creep_positions: &HashMap<RoomXY, Creep>) -> Option<Position> {
         let available_positions = self.source.pos().get_accessible_positions_around(1);
 
-        if let Some(container) = self.get_container(structures) {
+        if let Some(container) = self.container.as_ref() {
             if available_positions.contains(&container.pos()) && !creep_positions.contains_key(&container.pos().xy()) {
                 return Some(container.pos());
             }
         }
 
         available_positions.into_iter().find(|&pos| !creep_positions.contains_key(&pos.xy()))
-    }
-
-    pub fn get_link(&mut self, structures: &RoomStructureCache) -> Option<StructureLink> {
-        if let Some(link) = &self.link {
-            return Some(link.clone());
-        }
-
-        let pos = self.source.pos();
-
-        let mut found_link = None;
-
-        if let Some(links) = &structures.links.source {
-            for link in links {
-                if link.pos().is_near_to(pos) {
-                    found_link = Some(link);
-                    break;
-                }
-            }
-        }
-
-        if found_link.is_some() {
-            self.link = Some(found_link.unwrap().clone());
-            return Some(found_link.unwrap().clone());
-        }
-
-        None
     }
 
     pub fn parts_needed(&self, cache: &CachedRoom) -> u8 {
@@ -303,7 +251,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
 
         cache.create_if_not_exists(&remote_room, memory, Some(remote_room.name()));
 
-        let cached_room = cache.rooms.get_mut(remote_name).unwrap().clone();
+        let mut cached_room = cache.rooms.get_mut(remote_name).unwrap().clone();
         let owning_room = cache.rooms.get_mut(&launching_room.name()).unwrap();
 
         for resource in &cached_room.resources.dropped_energy {
@@ -313,11 +261,11 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
             owning_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(amount as f32), HaulingType::NoDistanceCalcPickup);
         }
 
-        if cached_room.structures.containers.source_container.is_none() {
+        if cached_room.structures.containers().source_container.is_none() {
             continue;
         }
 
-        for container in &cached_room.structures.containers.source_container.unwrap() {
+        for container in cached_room.structures.containers().source_container.as_ref().unwrap() {
             owning_room.resources.total_energy += container.store().get_used_capacity(None);
             owning_room.resources.energy_in_storing_structures += container.store().get_used_capacity(None);
 
@@ -328,16 +276,16 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
-    if let Some(controller_container) = &cached_room.structures.containers.controller {
+    if let Some(controller_container) = &cached_room.structures.containers().controller {
         let upgrader_count = cached_room.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
-        if (controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links.controller.is_none()) && upgrader_count > 0 {
+        if (controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links().controller.is_none()) && upgrader_count > 0 {
             let basehauler_count = cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
 
             // TODO: Fix this, its sucking up energy
             // My rooms are dying lmao.
             let mut priority = 21.0;
 
-            if cached_room.structures.links.controller.is_none() {
+            if cached_room.structures.links().controller.is_none() {
                 priority -= 20.0;
             }
 
@@ -355,7 +303,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
         }
     }
 
-    if let Some(fastfiller_containers) = &cached_room.structures.containers.fast_filler {
+    if let Some(fastfiller_containers) = &cached_room.structures.containers().fast_filler {
         for fastfiller_container in fastfiller_containers {
             if fastfiller_container.store().get_free_capacity(None) > 0 {
                 let priority = scale_haul_priority(
@@ -373,7 +321,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
     }
 
     for source in &mut cached_room.resources.sources {
-        let container = source.get_container(&cached_room.structures);
+        let container = &source.container.as_ref();
 
         if container.is_none() {
             continue;

@@ -4,7 +4,7 @@ use screeps::{game, Part, RoomName, SharedCreepProperties};
 use crate::{
     goal_memory::RoomReservationGoal,
     memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::tick_cache::RoomCache,
+    room::cache::RoomCache,
     utils::{self, get_body_cost, get_unique_id, role_to_name},
 };
 

@@ -2,14 +2,14 @@ use std::u8;
 
 use crate::{
     heap,
-    heap_cache::{CompressedDirectionMatrix, RoomHeapFlowCache},
+    heap_cache::{compressed_matrix::CompressedMatrix, RoomHeapFlowCache},
     memory::{CreepMemory, ScreepsMemory},
     movement::{
         caching::{generate_pathing_targets, generate_storage_path},
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::tick_cache::{CachedRoom, RoomCache},
+    room::cache::{CachedRoom, RoomCache},
 };
 
 use log::info;
@@ -47,7 +47,7 @@ pub trait CreepExtensions {
     fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
@@ -157,7 +157,18 @@ impl CreepExtensions for screeps::Creep {
             if storage.pos() == target && self.move_to_storage(cache) {
 
                 if self.is_stuck(cache) {
-                    self.bsay("STUCK", false);
+                    self.bsay("CSTUCK", false);
+
+                    let possible_moves = self.get_possible_moves(cache);
+                    if let Some(pos) = possible_moves.first() {
+                        let dir = self.pos().xy().get_direction_to(*pos);
+
+                        if let Some(dir) = dir {
+                            self.move_request(dir, cache);
+
+                            return;
+                        }
+                    }
 
                     return;
                 }
@@ -190,7 +201,7 @@ impl CreepExtensions for screeps::Creep {
                 let path = flow_cache
                     .paths
                     .entry(target)
-                    .or_insert_with(CompressedDirectionMatrix::new);
+                    .or_insert_with(CompressedMatrix::new);
 
                 if self.is_stuck(cache) {
                     path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 16);
@@ -219,8 +230,8 @@ impl CreepExtensions for screeps::Creep {
                     self.move_request(dir, cache);
 
 
-                    if let Some(heap_creep) = cache.heap_cache.creeps.get_mut(&self.name()) {
-                        self.say(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
+                    if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
+                        self.bsay(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
                     }
                     return;
                 } else {
@@ -270,8 +281,8 @@ impl CreepExtensions for screeps::Creep {
                         self.move_request(pos, cache);
                     }
 
-                    if let Some(heap_creep) = cache.heap_cache.creeps.get_mut(&self.name()) {
-                        self.say(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
+                    if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
+                        self.bsay(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
                     }
 
                     return;
@@ -328,7 +339,7 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn is_stuck(&self, cache: &mut CachedRoom) -> bool {
-        if let Some(heap_creep) = cache.heap_cache.creeps.get_mut(&self.name()) {
+        if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
             heap_creep.update_position(self);
 
             return heap_creep.stuck_time >= 10;
@@ -338,11 +349,7 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn bsay(&self, message: &str, public: bool) {
-        let csay = heap().creep_say.lock().unwrap();
-
-        if *csay {
-            let _ = self.say(message, public);
-        }
+        heap().per_tick_creep_says.lock().unwrap().insert(self.name().to_string(), (public, message.to_string()));
     }
 
     fn parts_of_type(&self, part: screeps::Part) -> u32 {

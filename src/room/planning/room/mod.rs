@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::info;
 use screeps::{find, game, pathfinder::SearchResults, HasPosition, Room, RoomXY, StructureProperties};
 
-use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::tick_cache::RoomCache, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}};
+use crate::{memory::{RoomMemory, ScreepsMemory}, room::cache::RoomCache, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}};
 
 pub mod construction;
 pub mod structure_visuals;

@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    cache::tick_cache::{CachedRoom, RoomCache},
+    cache::{CachedRoom, RoomCache},
     planning::room::construction,
 };
 
@@ -19,15 +19,22 @@ pub mod creep_sizing;
 pub mod spawn_manager;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
+pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u32> {
     let mut map = HashMap::new();
 
-    let controller = &room_cache
+    let controller_level = &room_cache
         .structures
         .controller
         .as_ref()
         .unwrap()
-        .controller;
+        .level();
+
+    let ttdowngrade = &room_cache
+        .structures
+        .controller
+        .as_ref()
+        .unwrap()
+        .ticks_to_downgrade();
 
     let harvester_count = room_cache
         .creeps
@@ -53,8 +60,8 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                     }
                 }
 
-                if controller.level() >= 2
-                    && !room_cache.structures.construction_sites.is_empty()
+                if *controller_level >= 2
+                    && !room_cache.structures.construction_sites().is_empty()
                     && harvester_count >= 1
                     && !storage_blocked
                 {
@@ -76,7 +83,7 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                     }
                 }
 
-                if controller.level() > 2 && !storage_blocked && harvester_count >= 1 {
+                if *controller_level > 2 && !storage_blocked && harvester_count >= 1 {
                     1
                 } else {
                     0
@@ -97,10 +104,10 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                 }
             }
             Role::FastFiller => {
-                if room_cache.structures.containers.fast_filler.is_some()
+                if room_cache.structures.containers().fast_filler.is_some()
                     && !room_cache
                         .structures
-                        .containers
+                        .containers()
                         .fast_filler
                         .as_ref()
                         .unwrap()
@@ -125,8 +132,8 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                     }
                 }
 
-                if controller.level() < 8
-                    || (controller.ticks_to_downgrade() < Some(1500) && controller.level() >= 8)
+                if *controller_level < 8
+                    || (*ttdowngrade < Some(1500) && *controller_level >= 8)
                         && harvester_count >= 1
                         && !storage_blocked
                 {
@@ -136,7 +143,7 @@ pub fn get_required_role_counts(room_cache: &CachedRoom) -> HashMap<Role, u32> {
                 }
             }
             Role::Scout => {
-                if controller.level() > 2 {
+                if *controller_level > 2 {
                     1
                 } else {
                     0
@@ -230,7 +237,7 @@ pub fn create_spawn_requests_for_room(
     cache: &mut RoomCache,
     memory: &mut ScreepsMemory,
 ) -> Vec<SpawnRequest> {
-    let room_cache = cache.rooms.get(&room.name()).unwrap();
+    let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
     let requests = vec![
         harvester(room, room_cache, &mut cache.spawning),
@@ -242,9 +249,9 @@ pub fn create_spawn_requests_for_room(
         repairer(room, room_cache, &mut cache.spawning),
         upgrader(room, room_cache, &mut cache.spawning),
         scout(room, room_cache, &mut cache.spawning),
+        hauler(room, room_cache, memory, &mut cache.spawning),
         // More inter-room creeps that require the WHOLE cache.
         remote_harvester(room, cache, memory),
-        hauler(room, cache, memory),
     ];
 
     requests.into_iter().flatten().collect()
@@ -452,7 +459,6 @@ pub fn repairer(
         .controller
         .as_ref()
         .unwrap()
-        .controller
         .level()
         < 3
         || cache.structures.storage.is_none()
@@ -515,7 +521,7 @@ pub fn repairer(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn builder(
     room: &Room,
-    cache: &CachedRoom,
+    cache: &mut CachedRoom,
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
     let building_work_parts = cache
@@ -539,14 +545,13 @@ pub fn builder(
         .controller
         .as_ref()
         .unwrap()
-        .controller
         .level();
 
     if room_level < 2 {
         return None;
     }
 
-    if room_level >= 8 && cache.structures.construction_sites.is_empty() {
+    if room_level >= 8 && cache.structures.construction_sites().is_empty() {
         return None;
     }
 
@@ -564,7 +569,7 @@ pub fn builder(
         return None;
     }
 
-    let construction_sites = cache.structures.construction_sites.len();
+    let construction_sites = cache.structures.construction_sites().len();
 
     let desired_work_parts = (construction_sites as f32 * 1.5).round().clamp(3.0, 20.0);
 
@@ -604,7 +609,7 @@ pub fn upgrader(
         return None;
     }
 
-    let controller = &cache.structures.controller.as_ref().unwrap().controller;
+    let controller = &cache.structures.controller.as_ref().unwrap();
 
     let room_cache = false;
     if let Some(storage) = &cache.structures.storage {
@@ -640,17 +645,16 @@ pub fn upgrader(
 
 // TODO: Math this shit! Make it better!
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn hauler(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory) -> Option<SpawnRequest> {
+pub fn hauler(room: &Room, cache: &mut CachedRoom, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
     let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
-    let owning_cache = cache.rooms.get(&room.name()).unwrap();
 
-    let harvester_count = owning_cache
+    let harvester_count = cache
         .creeps
         .creeps_of_role
         .get(&Role::Harvester)
         .unwrap_or(&Vec::new())
         .len();
-    let remote_harvester_count = owning_cache
+    let remote_harvester_count = cache
         .creeps
         .creeps_of_role
         .get(&Role::RemoteHarvester)
@@ -661,7 +665,7 @@ pub fn hauler(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory) -> Opt
 
     let wanted_count = room_memory.hauler_count;
 
-    let hauler_count = owning_cache
+    let hauler_count = cache
         .creeps
         .creeps_of_role
         .get(&Role::Hauler)
@@ -678,7 +682,7 @@ pub fn hauler(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory) -> Opt
 
     let body = crate::room::spawning::creep_sizing::hauler_body(
         room,
-        cache.rooms.get(&room.name()).unwrap(),
+        cache,
     );
     let cost = get_body_cost(&body);
 
@@ -707,11 +711,11 @@ pub fn hauler(room: &Room, cache: &RoomCache, memory: &mut ScreepsMemory) -> Opt
     // TODO
     // Patchwork fix to stop idle haulers from clogging space.
     // But hey, it works, somewhat.
-    if owning_cache.idle_haulers >= 3 {
+    if cache.idle_haulers >= 3 {
         return None;
     }
 
-    Some(cache.spawning.create_room_spawn_request(
+    Some(spawn_manager.create_room_spawn_request(
         Role::Hauler,
         body,
         prio,
@@ -861,7 +865,7 @@ pub fn storage_sitter(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fast_filler(
     room: &Room,
-    cache: &CachedRoom,
+    cache: &mut CachedRoom,
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
     let fast_filler_count = cache
@@ -887,10 +891,9 @@ pub fn fast_filler(
         .controller
         .as_ref()
         .unwrap()
-        .controller
         .level();
-    if cache.structures.containers.fast_filler.is_none()
-        && cache.structures.links.fast_filler.is_none()
+    if cache.structures.containers().fast_filler.is_none()
+        && cache.structures.links().fast_filler.is_none()
     {
         return None;
     }

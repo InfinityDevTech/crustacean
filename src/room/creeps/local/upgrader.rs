@@ -5,7 +5,7 @@ use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
     room::cache::
-        tick_cache::{
+        {
             hauling::{HaulTaskRequest, HaulingType},
             RoomCache,
         }
@@ -34,18 +34,18 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 
     let controller = cached_room.structures.controller.as_ref().unwrap();
 
-    if controller.controller.pos().get_range_to(creep.pos()) > 3 {
+    if controller.pos().get_range_to(creep.pos()) > 3 {
         creep.bsay("🚚 CTRL", false);
         creep.better_move_to(
             memory,
             cached_room,
-            controller.controller.pos(),
+            controller.pos(),
             3,
             MoveOptions::default(),
         );
     } else {
         creep.bsay("⚡", false);
-        let _ = creep.upgrade_controller(&controller.controller);
+        let _ = creep.upgrade_controller(&controller);
 
         cached_room.stats.energy.spending_upgrading += energy_spent_upgrading(creep);
     }
@@ -61,7 +61,7 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
         if let Some(task) = creep_memory.hauling_task.clone() {
             execute_order(creep, memory, cache, &task);
         } else {
-            let pos = controller.controller.pos();
+            let pos = controller.pos();
             creep.better_move_to(
                 memory,
                 cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
@@ -77,13 +77,13 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
         <= (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.75)
     {
         if let Some(room_storage) = cached_room.structures.storage.as_ref() {
-            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= 20000 && controller.controller.ticks_to_downgrade() > Some(5000) {
+            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= 20000 && controller.ticks_to_downgrade() > Some(5000) {
                 if let Some(controller) = cached_room.structures.controller.as_ref() {
-                    if creep.pos().get_range_to(controller.controller.pos()) > 3 {
+                    if creep.pos().get_range_to(controller.pos()) > 3 {
                         creep.better_move_to(
                             memory,
                             cached_room,
-                            controller.controller.pos(),
+                            controller.pos(),
                             3,
                             MoveOptions::default(),
                         );
@@ -95,7 +95,7 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             }
         }
 
-        if let Some(controller_link) = cached_room.structures.links.controller.as_ref() {
+        if let Some(controller_link) = cached_room.structures.links().controller.as_ref() {
             if controller_link
                 .store()
                 .get_used_capacity(Some(ResourceType::Energy))
@@ -106,10 +106,12 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
                     return false;
                 } else {
+                    let pos = controller_link.pos();
+
                     creep.better_move_to(
                         memory,
                         cached_room,
-                        controller_link.pos(),
+                        pos,
                         1,
                         MoveOptions::default(),
                     );
@@ -119,13 +121,15 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             }
             return false;
         }
-        let container = &controller.container;
+        let container = &cached_room.structures.containers().controller;
         if let Some(container) = container {
             if creep.pos().get_range_to(container.pos()) > 1 {
+                let pos = container.pos();
+
                 creep.better_move_to(
                     memory,
                     cached_room,
-                    container.pos(),
+                    pos,
                     1,
                     MoveOptions::default(),
                 );
@@ -194,20 +198,20 @@ pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Ro
 
     if let Some(controller) = cache.structures.controller.as_ref() {
         if !creep.room().unwrap().is_my_sign() {
-            if creep.pos().is_near_to(controller.controller.pos()) {
+            if creep.pos().is_near_to(controller.pos()) {
                 if memory
                     .remote_rooms
                     .contains_key(&creep.room().unwrap().name())
                 {
-                    let _ = creep.ITsign_controller(&controller.controller, &get_room_sign(true));
+                    let _ = creep.ITsign_controller(&controller, &get_room_sign(true));
                 } else {
-                    let _ = creep.ITsign_controller(&controller.controller, &get_room_sign(false));
+                    let _ = creep.ITsign_controller(&controller, &get_room_sign(false));
                 }
             } else {
                 creep.better_move_to(
                     memory,
                     cache,
-                    controller.controller.pos(),
+                    controller.pos(),
                     1,
                     MoveOptions::default(),
                 );

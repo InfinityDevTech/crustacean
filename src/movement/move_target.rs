@@ -202,7 +202,7 @@ impl MoveTarget {
 
 // TODO:
 // GetRawTerrainBuffer possibly for perforamnce reasons.
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(
     room_name: RoomName,
     from: Position,

@@ -4,7 +4,7 @@ use screeps::{game, Part, ResourceType, RoomName, SharedCreepProperties, Structu
 use crate::{
     goal_memory::RemoteInvaderCleanup,
     memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::tick_cache::RoomCache,
+    room::cache::RoomCache,
     utils,
 };
 // TODO: Something is telling me that there might be invaders in the room

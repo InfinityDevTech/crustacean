@@ -1,6 +1,6 @@
 use screeps::{game, HasPosition};
 
-use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache};
+use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::RoomCache};
 
 use super::movement::move_duo;
 

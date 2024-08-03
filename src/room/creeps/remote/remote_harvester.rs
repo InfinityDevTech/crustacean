@@ -9,7 +9,7 @@ use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::{
-        cache::{self, tick_cache::{CachedRoom, RoomCache}},
+        cache::{self, {CachedRoom, RoomCache}},
         creeps::local::harvester::{harvest_source, repair_container},
     },
     traits::{
@@ -176,7 +176,7 @@ pub fn build_container(
 ) -> bool {
     let source = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].source;
 
-    for csite in &cache.structures.construction_sites {
+    for csite in cache.structures.construction_sites() {
         if csite.structure_type() == screeps::StructureType::Container
             && csite.pos().is_near_to(source.pos())
         {
@@ -191,8 +191,7 @@ pub fn build_container(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_enegy(creep: &Creep, memory: &mut ScreepsMemory, remote_cache: &mut CachedRoom) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize]
-        .get_container(&remote_cache.structures);
+    let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize].container.clone();
 
     if build_container(creep, creep_memory, remote_cache) {
         return;

@@ -8,9 +8,7 @@ use screeps::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    heap, memory::{CreepHaulTask, Role, ScreepsMemory}, room::{
-        cache::heap_cache::hauling::HeapHaulingReservation, creeps::local::hauler::execute_order,
-    }, traits::creep::CreepExtensions, utils::{name_to_role, scale_haul_priority}
+    heap, heap_cache::hauling::HeapHaulingReservation, memory::{CreepHaulTask, Role, ScreepsMemory}, room::creeps::local::hauler::execute_order, traits::creep::CreepExtensions, utils::{name_to_role, scale_haul_priority}
 };
 
 use super::{CachedRoom, RoomCache};
@@ -258,6 +256,10 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
     let cache = &mut room_cache.rooms.get_mut(room_name).unwrap();
     let count = cache.hauling.new_orders.len();
     let mut saved = Vec::new();
+
+    if cache.hauling.wanting_orders.is_empty() {
+        return;
+    }
 
     // This is wrapped because we want to drop the lock when were done with it.
     // This also highlights where we actually select the haulers.
@@ -689,7 +691,7 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
         .is_empty();
 
     for spawn in room_cache.structures.spawns.values() {
-        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || (has_ff && (room_cache.structures.containers.fast_filler.is_some() || (room_cache.structures.links.fast_filler.is_some() && room_cache.rcl >= 7) )) || has_base_hauler {
+        if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || (has_ff && (room_cache.structures.containers().fast_filler.is_some() || (room_cache.structures.links().fast_filler.is_some() && room_cache.rcl >= 7) )) || has_base_hauler {
             continue;
         }
 
@@ -733,7 +735,7 @@ pub fn haul_ruins(room_cache: &mut CachedRoom) {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_tombstones(room_cache: &mut CachedRoom) {
-    let tombstones = &room_cache.structures.tombstones;
+    let tombstones = &room_cache.structures.tombstones();
 
     for tombstone in tombstones.values() {
         let energy_amount = tombstone

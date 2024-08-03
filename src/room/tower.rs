@@ -5,7 +5,7 @@ use crate::{
     memory::Role, traits::intents_tracking::TowerExtensionsTracking, utils::scale_haul_priority,
 };
 
-use super::{cache::tick_cache::{
+use super::{cache::{
         hauling::{HaulingPriority, HaulingType},
         CachedRoom,
     }, creeps::local::base_hauler};

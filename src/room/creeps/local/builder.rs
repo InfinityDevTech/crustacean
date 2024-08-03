@@ -5,7 +5,7 @@ use screeps::{
 use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
-    room::cache::tick_cache::{
+    room::cache::{
         hauling::{HaulTaskRequest, HaulingType},
         RoomCache,
     },
@@ -38,7 +38,7 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
-    let sites = room_cache.structures.construction_sites.clone();
+    let sites = room_cache.structures.construction_sites().clone();
 
     let mut site_clone = sites.clone();
     site_clone.retain(|s| s.structure_type() != screeps::StructureType::Road);
@@ -109,7 +109,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         }
     }
 
-    if room_cache.structures.containers.fast_filler.is_some() {
+    if room_cache.structures.containers().fast_filler.is_some() {
         let mut run = true;
         if let Some((_spawn, spawn_id)) = &room_cache.structures.spawns.clone().into_iter().next() {
             if spawn_id
@@ -124,7 +124,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         if run {
             let mut containers = room_cache
                 .structures
-                .containers
+                .containers()
                 .fast_filler
                 .as_ref()
                 .unwrap()

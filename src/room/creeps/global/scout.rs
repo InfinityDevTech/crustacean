@@ -6,7 +6,7 @@ use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 use crate::movement::move_target::MoveOptions;
 use crate::room::creeps::local::upgrader::sign_controller;
 use crate::{
-    memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions,
+    memory::ScreepsMemory, room::cache::RoomCache, traits::creep::CreepExtensions,
 };
 
 // TODO: Make these guys more top down.

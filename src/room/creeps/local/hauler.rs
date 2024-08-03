@@ -9,7 +9,7 @@ use crate::{
     heap,
     memory::{CreepHaulTask, Role, ScreepsMemory},
     movement::move_target::MoveOptions,
-    room::cache::tick_cache::{
+    room::cache::{
         hauling::{HaulTaskRequest, HaulingType},
         CachedRoom, RoomCache,
     },
@@ -188,7 +188,9 @@ pub fn execute_order(
         }
     }
 
-    let mut tombstones = current_room_cache.structures.tombstones.values().filter(|t| {
+    // TODO: Make this a funciton
+    // also, only run it if we have free capacity
+    let mut tombstones = current_room_cache.structures.tombstones().values().filter(|t| {
         t.store().get_used_capacity(Some(ResourceType::Energy)) > 0
             && t.pos().is_near_to(creep.pos())
     });
@@ -225,8 +227,6 @@ pub fn execute_order(
                         Some(haul_task - amount as u32);
                 }
 
-                current_room_cache.structures.tombstones.remove(&tombstone.id());
-
                 cache.creeps_moving_stuff.insert(creep.name(), true);
 
                 release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, amount);
@@ -259,7 +259,7 @@ pub fn execute_order(
 
             _ => creep.bsay("MV-UNK", false),
         };
-        
+
         creep.better_move_to(
             memory,
             cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),

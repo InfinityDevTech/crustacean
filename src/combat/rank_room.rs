@@ -1,7 +1,7 @@
 use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Position, Room, RoomXY, StructureObject};
 
 use crate::{
-    memory::{EnemyPlayer, ScoutedRoom, ScoutedSource, ScreepsMemory}, room::cache::tick_cache::{resources::CachedSource, CachedRoom}, traits::position::PositionExtensions, utils
+    memory::{EnemyPlayer, ScoutedRoom, ScoutedSource, ScreepsMemory}, room::cache::{resources::CachedSource, CachedRoom}, traits::position::PositionExtensions, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

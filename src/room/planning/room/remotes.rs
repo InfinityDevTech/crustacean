@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use crate::{
-    config, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::tick_cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
+    config, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

@@ -7,7 +7,7 @@ use screeps::{
 use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
-    room::cache::tick_cache::{resources::CachedSource, CachedRoom, RoomCache},
+    room::cache::{resources::CachedSource, CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, position::PositionExtensions},
 };
 
@@ -46,7 +46,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn harvest_source(
     creep: &Creep,
     source: &mut CachedSource,
@@ -56,7 +56,7 @@ pub fn harvest_source(
     if !creep.pos().is_near_to(source.source.pos()) {
         creep.bsay("🚚 🔋", false);
 
-        let open_pos = source.get_best_pos_to_stand(&cache.structures, &cache.creeps.creeps_at_pos);
+        let open_pos = source.get_best_pos_to_stand(&cache.creeps.creeps_at_pos);
 
         if let Some(pos) = open_pos {
             creep.better_move_to(memory, cache, pos, 0, MoveOptions::default());
@@ -82,14 +82,13 @@ pub fn harvest_source(
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
-    let link_id =
-        cache.resources.sources[creep_memory.task_id.unwrap() as usize].get_link(&cache.structures);
+    let link_id = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].link;
 
     if let Some(link) = link_id {
         if creep.pos().is_near_to(link.pos()) {
             creep.bsay("🔗", false);
             let _ = creep.ITtransfer(
-                &link,
+                link,
                 ResourceType::Energy,
                 Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
             );
@@ -110,8 +109,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
     let task_id = creep_memory.task_id.unwrap() as usize;
 
     if let Some(link) = &source.link.clone() {
-        if let Some(container) = cache.resources.sources[task_id]
-            .get_container(&cache.structures)
+        if let Some(container) = &cache.resources.sources[task_id].container.clone()
         {
             if repair_container(creep, memory, cache, &container) {
                 return true;
@@ -135,8 +133,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
         }
     }
 
-    if let Some(container) = cache.resources.sources[task_id]
-        .get_container(&cache.structures)
+    if let Some(container) = &cache.resources.sources[task_id].container.clone()
     {
         if repair_container(creep, memory, cache, &container) {
             return true;
@@ -154,7 +151,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             //let _ = creep.ITdrop(ResourceType::Energy, Some(amount));
             return false;
         } else if creep.pos().is_near_to(container.pos()) {
-            let _ = creep.ITtransfer(&container, ResourceType::Energy, None);
+            let _ = creep.ITtransfer(container, ResourceType::Energy, None);
 
             return false;
         } else {

@@ -4,7 +4,7 @@ use screeps::{Creep, HasPosition, Position, ResourceType, SharedCreepProperties}
 use crate::{
     memory::{Role, ScreepsMemory},
     movement::{move_target::MoveOptions, movement_utils},
-    room::cache::tick_cache::{CachedRoom, RoomCache},
+    room::cache::{CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
     utils,
 };
@@ -41,7 +41,7 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
 
     // Storage link stuff, if we have upgraders, dump energy into storage link.
     // If we don't have upgraders, dump energy from storage link into storage.
-    if let Some(storage_link) = &room_cache.structures.links.storage {
+    if let Some(storage_link) = &room_cache.structures.links().storage {
         let upgrader_count = room_cache
             .creeps
             .creeps_of_role

@@ -6,7 +6,7 @@ use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Position, RoomCoordinate, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
-use crate::{config, room::cache::tick_cache::CachedRoom, utils};
+use crate::{config, room::cache::CachedRoom, utils};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RoomType {

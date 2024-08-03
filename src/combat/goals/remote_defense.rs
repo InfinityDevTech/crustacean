@@ -1,6 +1,6 @@
 use screeps::{game, Part, ResourceType, Room, RoomName, SharedCreepProperties};
 
-use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::tick_cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
+use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
 
 use super::{determine_group_attack_power, determine_single_attack_power};
 

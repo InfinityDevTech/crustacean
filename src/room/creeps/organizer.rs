@@ -4,11 +4,8 @@ use log::info;
 use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, SharedCreepProperties, StructureProperties, StructureType, Terrain};
 
 use crate::{
-    combat::hate_handler::process_health_event, heap, memory::{Role, ScreepsMemory}, movement::flow_field::{self, FlowFieldSource}, room::{
-        cache::{
-            heap_cache::{HealthChangeType, HeapCreep},
-            tick_cache::RoomCache,
-        },
+    combat::hate_handler::process_health_event, heap, heap_cache::heap_creep::{HealthChangeType, HeapCreep}, memory::{Role, ScreepsMemory}, movement::flow_field::{self, FlowFieldSource}, room::{
+        cache::RoomCache,
         creeps::{global, remote},
     }, traits::{
         creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions,
@@ -143,10 +140,9 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
     let creeps = &cached_room.creeps.creeps_in_room;
 
+    let mut heap_creeps = heap().creeps.lock().unwrap();
     for creep in creeps.values() {
-            let heap_creep = cached_room
-            .heap_cache
-            .creeps
+            let heap_creep = heap_creeps
             .entry(creep.name())
             .or_insert_with(|| HeapCreep::new(creep));
 

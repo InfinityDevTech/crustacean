@@ -2,64 +2,18 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use log::info;
-use screeps::{game, Direction, LocalCostMatrix, Position, RoomName, RoomXY};
-use screeps_utils::sparse_cost_matrix::SparseCostMatrix;
+use compressed_matrix::CompressedMatrix;
+use hauling::HeapHaulingCache;
+use heap_creep::HeapCreep;
+use heap_room::HeapRoom;
+use screeps::{game, Direction, LocalCostMatrix, Position, RoomName};
 
-use crate::{constants::ROOM_AREA, memory::ScreepsMemory, movement::movement_utils::num_to_dir, room::cache::heap_cache::{hauling::HeapHaulingCache, RoomHeapCache}};
+use crate::{constants::ROOM_AREA, memory::ScreepsMemory, movement::movement_utils::num_to_dir};
 
-#[derive(Debug, Clone)]
-pub struct CompressedDirectionMatrix {
-    pub matrix: [u8; ROOM_AREA / 2]
-}
-
-impl CompressedDirectionMatrix {
-    pub fn new() -> CompressedDirectionMatrix {
-        CompressedDirectionMatrix {
-            matrix: [0; ROOM_AREA / 2]
-        }
-    }
-
-    pub fn get_xy(&self, x: u8, y: u8) -> u8 {
-        let index = y as u16 * 50 + x as u16;
-        if index & 1 == 0 {
-            self.matrix[index as usize / 2] & 0b00001111
-        } else {
-            self.matrix[index as usize / 2] >> 4
-        }
-    }
-
-    pub fn get_dir(&self, x: u8, y: u8) -> Option<Direction> {
-        let dir = self.get_xy(x, y);
-
-        if dir == 0 || dir > 8 {
-            None
-        } else {
-            Some(num_to_dir(dir))
-        }
-    }
-
-    pub fn set_xy(&mut self, x: u8, y: u8, value: u8) {
-        let index = y as u16 * 50 + x as u16;
-
-        let value = if value > 15 {
-            0
-        } else {
-            value
-        };
-
-        if index & 1 == 0 {
-            let previous_other_half = self.matrix[index as usize / 2] >> 4;
-
-            self.matrix[index as usize / 2] = (previous_other_half << 4) | value;
-        } else {
-            let previous_other_half = self.matrix[index as usize / 2] & 0b00001111;
-
-            self.matrix[index as usize / 2] = (value << 4) | previous_other_half;
-        }
-    }
-}
-
+pub mod heap_creep;
+pub mod hauling;
+pub mod compressed_matrix;
+pub mod heap_room;
 // TODO:
 // Fully flesh this out, here are my ideas for paths to cache.
 // For owned rooms (resets every 500 ticks):
@@ -82,9 +36,9 @@ impl CompressedDirectionMatrix {
 // - Every 10k ticks, reset all paths (Just in case)
 #[derive(Debug, Clone)]
 pub struct RoomHeapFlowCache {
-    pub storage: Option<CompressedDirectionMatrix>,
-    pub controller: Option<CompressedDirectionMatrix>,
-    pub paths: HashMap<Position, CompressedDirectionMatrix>,
+    pub storage: Option<CompressedMatrix>,
+    pub controller: Option<CompressedMatrix>,
+    pub paths: HashMap<Position, CompressedMatrix>,
 }
 
 impl RoomHeapFlowCache {
@@ -100,13 +54,16 @@ impl RoomHeapFlowCache {
 // This is the Top level heap, if its mutable, its a mutex.
 // The room fetches itself at the beginning of its execution
 pub struct GlobalHeapCache {
-    pub rooms: Mutex<HashMap<RoomName, RoomHeapCache>>,
+    pub rooms: Mutex<HashMap<RoomName, HeapRoom>>,
+    pub creeps: Mutex<HashMap<String, HeapCreep>>,
     pub hauling: Mutex<HeapHaulingCache>,
     pub memory: Mutex<ScreepsMemory>,
 
     pub my_username: Mutex<String>,
 
     pub per_tick_cost_matrixes: Mutex<HashMap<RoomName, LocalCostMatrix>>,
+    pub per_tick_creep_says: Mutex<HashMap<String, (bool, String)>>,
+
     pub flow_cache: Mutex<HashMap<RoomName, RoomHeapFlowCache>>,
     pub cachable_positions: Mutex<HashMap<RoomName, Vec<Position>>>,
     pub needs_cachable_position_generation: Mutex<Vec<RoomName>>,
@@ -121,12 +78,15 @@ impl GlobalHeapCache {
     pub fn new() -> GlobalHeapCache {
         GlobalHeapCache {
             rooms: Mutex::new(HashMap::new()),
+            creeps: Mutex::new(HashMap::new()),
             memory: Mutex::new(ScreepsMemory::init_memory()),
             hauling: Mutex::new(HeapHaulingCache::default()),
 
             my_username: Mutex::new(String::new()),
 
             per_tick_cost_matrixes: Mutex::new(HashMap::new()),
+            per_tick_creep_says: Mutex::new(HashMap::new()),
+
             flow_cache: Mutex::new(HashMap::new()),
             cachable_positions: Mutex::new(HashMap::new()),
             needs_cachable_position_generation: Mutex::new(Vec::new()),

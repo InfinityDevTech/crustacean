@@ -3,7 +3,7 @@ use std::vec;
 use log::info;
 use screeps::{HasId, HasPosition, Position, Room, StructureType};
 
-use crate::{heap, memory::ScreepsMemory, room::cache::tick_cache::{CachedRoom, RoomCache}, traits::position::PositionExtensions};
+use crate::{heap, memory::ScreepsMemory, room::cache::{CachedRoom, RoomCache}, traits::position::PositionExtensions};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn find_pos_most_accessible(
@@ -83,7 +83,7 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
+pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
     let mut links_placed = 0;
 
     let max_links = match room_cache.rcl {
@@ -106,14 +106,15 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
         all_source_containers_placed = true;
     }
 
-    if let Some(controller) = &room_cache.structures.controller {
-        if controller.container.is_some() || controller.link.is_some() {
-            if controller.link.is_some() {
+
+    if let Some(controller) = &room_cache.structures.controller.clone() {
+        if room_cache.structures.containers().controller.is_some() || room_cache.structures.links().controller.is_some() {
+            if room_cache.structures.links().controller.is_some() {
                 links_placed += 1;
             }
         } else {
             let container_pos =
-                find_pos_most_accessible(&controller.controller.pos(), &measure_pos, 2, vec![]);
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![]);
 
             if let Some(container_pos) = container_pos {
                 if all_source_containers_placed {
@@ -127,9 +128,9 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
             }
 
             let link_pos = if container_pos.is_some() {
-                find_pos_most_accessible(&controller.controller.pos(), &measure_pos, 2, vec![container_pos.unwrap()])
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![container_pos.unwrap()])
             } else {
-                find_pos_most_accessible(&controller.controller.pos(), &measure_pos, 2, vec![])
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![])
             };
 
             if let Some(link_pos) = link_pos {

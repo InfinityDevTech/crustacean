@@ -3,7 +3,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{find, game, structure, Color, Creep, HasPosition, SharedCreepProperties, StructureObject, StructureProperties, StructureRampart, StructureType};
 
 use crate::{
-    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
+    config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

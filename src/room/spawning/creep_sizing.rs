@@ -4,7 +4,7 @@ use screeps::{game, Part, ResourceType, Room};
 use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
-    room::cache::{self, tick_cache::CachedRoom},
+    room::cache::{self, CachedRoom},
     utils::{self, get_body_cost},
 };
 
@@ -285,7 +285,6 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     .controller
     .as_ref()
     .unwrap()
-    .controller
     .level();
 
     let target_work_parts = match level {

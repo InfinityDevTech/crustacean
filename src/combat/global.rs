@@ -1,4 +1,4 @@
-use crate::{memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
+use crate::{memory::ScreepsMemory, room::cache::RoomCache};
 
 use super::setters;
 

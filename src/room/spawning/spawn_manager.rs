@@ -6,11 +6,11 @@ use rand::prelude::SliceRandom;
 use screeps::{game, look, Creep, Direction, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::movement::move_target::{MoveOptions, MoveTarget};
-use crate::room::cache::tick_cache::RoomCache;
+use crate::room::cache::RoomCache;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
 use crate::utils::{self, get_unique_id};
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::{dir_to_coords, num_to_dir}, room::cache::tick_cache::CachedRoom, utils::{name_to_role, role_to_name}};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::{dir_to_coords, num_to_dir}, room::cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 use super::{base_hauler, builder, create_spawn_requests_for_room, fast_filler, get_required_role_counts, harvester, hauler, repairer, scout, storage_sitter, upgrader};
 
@@ -374,7 +374,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for room in &cache.my_rooms.clone() {
         let room = game::rooms().get(*room).unwrap();
-        let room_cache = cache.rooms.get(&room.name()).unwrap();
+        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
         let (active_spawns, inactive_spawns) = room_cache.structures.get_spawns();
         let mut spawned_this_tick = false;
@@ -405,7 +405,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             if current_count_for_role < (*required_count_for_role).try_into().unwrap() && required_count_for_role > &0 {
                 let spawn_request = match required_role {
                     Role::Harvester => harvester(&room, room_cache, &mut cache.spawning),
-                    Role::Hauler => hauler(&room, cache, memory),
+                    Role::Hauler => hauler(&room, room_cache, memory, &mut cache.spawning),
                     Role::FastFiller => fast_filler(&room, room_cache, &mut cache.spawning),
                     Role::BaseHauler => base_hauler(&room, room_cache, &mut cache.spawning),
                     Role::StorageSitter => storage_sitter(&room, room_cache, &mut cache.spawning),

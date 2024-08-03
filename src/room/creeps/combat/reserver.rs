@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasPosition, Position, RoomCoordinate, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::{cache::tick_cache::RoomCache, creeps::global::recycler::run_recycler}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
+use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::{cache::RoomCache, creeps::global::recycler::run_recycler}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_reserver(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {

@@ -2,7 +2,7 @@ use screeps::{game, CircleStyle, HasPosition, MapTextStyle, Position, Room, Room
 
 use crate::{allies, config, memory::ScreepsMemory};
 
-use super::cache::tick_cache::CachedRoom;
+use super::cache::CachedRoom;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_full_visuals(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut CachedRoom) {
@@ -90,7 +90,7 @@ pub fn visualise_controller_progress(
     _memory: &mut ScreepsMemory,
     cache: &mut CachedRoom,
 ) {
-    let controller = &cache.structures.controller.as_ref().unwrap().controller;
+    let controller = &cache.structures.controller.as_ref().unwrap();
 
     if controller.level() == 8 {
         return;

@@ -2,7 +2,7 @@ use log::info;
 use screeps::{Creep, HasPosition, OwnedStructureProperties, Position, RoomCoordinate, SharedCreepProperties};
 
 use crate::{
-    memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
+    memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

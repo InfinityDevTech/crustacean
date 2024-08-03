@@ -5,7 +5,7 @@ use screeps::{find, game, Flag, HasPosition, OwnedStructureProperties, Part, Roo
 use crate::{
     goal_memory::RoomClaimGoal,
     memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::tick_cache::RoomCache,
+    room::cache::RoomCache,
     traits::intents_tracking::RoomExtensionsTracking,
     utils::{self, role_to_name},
 };
@@ -164,7 +164,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         }
 
         let has_spawn_csite_or_spawn = !expansion_cache.structures.spawns.is_empty()
-            || expansion_cache.structures.construction_sites.iter().any(|cs| {
+            || expansion_cache.structures.construction_sites().iter().any(|cs| {
                 cs.structure_type() == screeps::StructureType::Spawn
             });
 

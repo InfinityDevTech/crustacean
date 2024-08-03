@@ -7,7 +7,7 @@ use crate::{
     combat::{hate_handler, rank_room}, config, constants::WALKABLE_STRUCTURES, heap, memory::{Role, ScreepsMemory}, movement::{
         caching::generate_storage_path, flow_field::{self, visualise_field, FlowFieldSource}, move_target::{path_call, MoveOptions}, movement_utils::visualise_path, pathfinding::PathFinder
     }, room::{
-        cache::tick_cache::{hauling, resources, RoomCache},
+        cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
         planning::room::{plan_room, remotes},
         tower,
@@ -16,7 +16,7 @@ use crate::{
 };
 
 use super::{
-    cache::tick_cache::CachedRoom,
+    cache::CachedRoom,
     links,
     planning::{
         self,
@@ -274,7 +274,7 @@ pub fn remote_path_call(_room_name: RoomName) -> MultiRoomCostResult {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &CachedRoom) {
+pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) {
     if game::cpu::bucket() < 500 {
         return;
     }
@@ -387,7 +387,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
             let controller = &room_cache.structures.controller;
             let sources = &room_cache.resources.sources;
 
-            let cp = controller.as_ref().unwrap().controller.pos();
+            let cp = controller.as_ref().unwrap().pos();
             let controller_looked = room.look_for_at_area(
                 look::TERRAIN,
                 cp.y().u8() - 2,

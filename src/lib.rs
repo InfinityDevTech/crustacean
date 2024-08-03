@@ -18,16 +18,16 @@ use movement::{
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::tick_cache::{hauling, resources, traffic, RoomCache},
+    cache::{hauling, resources, traffic, RoomCache},
     democracy::{self, start_government},
     spawning::spawn_manager::{self, run_spawning, SpawnManager},
     visuals::visualise_scouted_rooms,
 };
 use screeps::{find, game, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
-use traits::intents_tracking::{
+use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,
-};
+}};
 use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
@@ -177,7 +177,7 @@ pub fn game_loop() {
             }
 
             let chant = chant[index as usize];
-            let _ = random_creep.say(chant, true);
+            let _ = random_creep.bsay(chant, true);
             // -- End creep chant stuffs
         }
     }
@@ -257,6 +257,7 @@ pub fn game_loop() {
     let intents_used = *INTENTS_USED.lock().unwrap();
     heap().per_tick_cost_matrixes.lock().unwrap().clear();
     heap().needs_cachable_position_generation.lock().unwrap().clear();
+    run_creep_says();
     *INTENTS_USED.lock().unwrap() = 0;
 
     let heap = game::cpu::get_heap_statistics();
@@ -379,6 +380,23 @@ pub fn set_stats(memory: &mut ScreepsMemory) {
     stats.cpu.used = game::cpu::get_used();
     stats.cpu.bucket = game::cpu::bucket();
     stats.cpu.limit = game::cpu::limit();
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+fn run_creep_says() {
+    let do_says = heap().creep_say.lock().unwrap();
+
+    if *do_says {
+        let says = heap().per_tick_creep_says.lock().unwrap();
+
+        for (creep_name, (public, say)) in says.clone() {
+            if let Some(game_creep) = game::creeps().get(creep_name) {
+                let _ = game_creep.say(&say, public);
+            }
+        }
+    }
+
+    heap().per_tick_creep_says.lock().unwrap().clear();
 }
 
 #[wasm_bindgen(js_name = red_button)]

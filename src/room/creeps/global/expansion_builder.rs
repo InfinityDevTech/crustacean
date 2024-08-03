@@ -3,7 +3,7 @@ use screeps::{Creep, HasPosition, Position, ResourceType, RoomCoordinate, Shared
 use crate::{
     memory::{Role, ScreepsMemory},
     movement::move_target::MoveOptions,
-    room::{cache::tick_cache::{hauling::{HaulTaskRequest, HaulingType}, resources::CachedSource, RoomCache},
+    room::{cache::{hauling::{HaulTaskRequest, HaulingType}, resources::CachedSource, RoomCache},
     creeps::local::hauler::execute_order},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
@@ -31,7 +31,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
 
     let cloned_csites = room_cache
     .structures
-    .construction_sites
+    .construction_sites()
     .clone();
     let mut non_road_csite_count = cloned_csites
         .iter()
@@ -142,13 +142,13 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
 
             let controller = &room_cache.structures.controller.as_ref().unwrap();
 
-            if creep.pos().get_range_to(controller.controller.pos()) <= 3 {
-                let _ = creep.upgrade_controller(&controller.controller);
+            if creep.pos().get_range_to(controller.pos()) <= 3 {
+                let _ = creep.upgrade_controller(&controller);
             } else {
                 creep.better_move_to(
                     memory,
                     room_cache,
-                    controller.controller.pos(),
+                    controller.pos(),
                     1,
                     MoveOptions::default(),
                 );

@@ -3,9 +3,7 @@ use std::str::FromStr;
 use screeps::{find, game, Creep, HasPosition, ObjectId, Room, SharedCreepProperties};
 
 use crate::{
-    config,
-    memory::{EnemyPlayer, Role, ScreepsMemory},
-    room::cache::{heap_cache::HealthChangeType, tick_cache::RoomCache}, utils::{self, name_to_role},
+    config, heap_cache::heap_creep::HealthChangeType, memory::{EnemyPlayer, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, name_to_role}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

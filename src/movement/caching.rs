@@ -1,7 +1,7 @@
 use log::info;
 use screeps::{game, CostMatrixGet, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, StructureType, Terrain, TextStyle};
 
-use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::CompressedDirectionMatrix, memory::ScreepsMemory, movement::flow_field::visualise_field, room::cache::{self, tick_cache::CachedRoom}, traits::position::PositionExtensions};
+use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::compressed_matrix::CompressedMatrix, memory::ScreepsMemory, movement::flow_field::visualise_field, room::cache::{self, CachedRoom}, traits::position::PositionExtensions};
 
 use super::flow_field::{FlowField, FlowFieldSource};
 
@@ -12,12 +12,12 @@ pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache:
     let mut positions = Vec::new();
 
     // Controller and its containers.
-    if let Some(controller) = &room_cache.structures.controller {
-        if controller.container.is_some() {
-            positions.push(controller.container.as_ref().unwrap().pos());
+    if room_cache.structures.controller.is_some() {
+        if room_cache.structures.containers().controller.is_some() {
+            positions.push(room_cache.structures.containers().controller.as_ref().unwrap().pos());
         }
 
-        positions.push(controller.controller.pos());
+        positions.push(room_cache.structures.controller.as_ref().unwrap().pos());
     }
 
     // Source and its containers.
@@ -36,7 +36,7 @@ pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache:
         positions.push(source.source.pos());
     }
 
-    if let Some(fast_filler_containers) = &room_cache.structures.containers.fast_filler {
+    if let Some(fast_filler_containers) = &room_cache.structures.containers().fast_filler {
         for container in fast_filler_containers {
             positions.push(container.pos());
         }
@@ -50,9 +50,11 @@ pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache:
     }
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> CompressedDirectionMatrix {
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> CompressedMatrix {
     let mut flow_field = FlowField::new(50, 50, true);
+
+    let all_structures = room_cache.structures.all_structures();
 
     let callback = || {
         let mut matrix = LocalCostMatrix::new();
@@ -79,7 +81,7 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
             matrix.set(road.pos().xy(), 1);
         }
 
-        for structure in &room_cache.structures.all_structures {
+        for structure in &all_structures {
             if !WALKABLE_STRUCTURES.contains(&structure.structure_type()) {
                 matrix.set(structure.pos().xy(), 255);
             }

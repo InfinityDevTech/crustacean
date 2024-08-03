@@ -1,4 +1,4 @@
-use crate::{goal_memory::RemoteInvaderCleanup, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
+use crate::{goal_memory::RemoteInvaderCleanup, memory::ScreepsMemory, room::cache::RoomCache};
 
 pub fn determine_cleanup(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for (remote_name, remote_memory) in memory.remote_rooms.clone() {

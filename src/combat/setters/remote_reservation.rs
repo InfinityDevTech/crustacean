@@ -1,6 +1,6 @@
 use screeps::{game, HasPosition, OwnedStructureProperties, Position, Room, RoomCoordinate};
 
-use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::tick_cache::RoomCache, traits::position::{PositionExtensions, RoomXYExtensions}, utils::get_my_username};
+use crate::{goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::RoomCache, traits::position::{PositionExtensions, RoomXYExtensions}, utils::get_my_username};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache) {

@@ -3,7 +3,7 @@ use std::u8;
 use log::info;
 use screeps::{Direction, LineStyle, LocalCostMatrix, Position, Room, RoomCoordinate, RoomXY, Terrain, TextStyle};
 
-use crate::heap_cache::CompressedDirectionMatrix;
+use crate::heap_cache::compressed_matrix::CompressedMatrix;
 
 use super::movement_utils::{dir_to_coords, num_to_dir};
 
@@ -40,7 +40,7 @@ impl FlowField {
         }
     }
 
-    pub fn generate(&mut self, sources: Vec<FlowFieldSource>, cost_callback: impl Fn() -> LocalCostMatrix, max_cost: Option<u8>) -> CompressedDirectionMatrix {
+    pub fn generate(&mut self, sources: Vec<FlowFieldSource>, cost_callback: impl Fn() -> LocalCostMatrix, max_cost: Option<u8>) -> CompressedMatrix {
         let distance_max_cost = max_cost.unwrap_or(u8::MAX);
         let mut cm = cost_callback();
 
@@ -94,7 +94,7 @@ impl FlowField {
             queue.drain(0..len);
         }
 
-        let mut cdm = CompressedDirectionMatrix::new();
+        let mut cdm = CompressedMatrix::new();
 
         for x in 0..self.width {
             for y in 0..self.height {
@@ -141,7 +141,7 @@ impl FlowField {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn visualise_field(room: &Room, field: &CompressedDirectionMatrix) {
+pub fn visualise_field(room: &Room, field: &CompressedMatrix) {
     let vis = room.visual();
 
     info!("Bisualsign");

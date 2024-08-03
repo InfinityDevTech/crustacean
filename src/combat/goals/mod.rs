@@ -1,6 +1,6 @@
 use screeps::Creep;
 
-use crate::{constants, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
+use crate::{constants, memory::ScreepsMemory, room::cache::RoomCache};
 
 pub mod room_reservation;
 pub mod remote_defense;

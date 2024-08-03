@@ -1,6 +1,6 @@
 use screeps::{Creep, HasPosition, Part, Position, SharedCreepProperties};
 
-use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::tick_cache::RoomCache, traits::creep::CreepExtensions};
+use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::RoomCache, traits::creep::CreepExtensions};
 
 use super::duo_utils::{get_attacker, get_healer};
 

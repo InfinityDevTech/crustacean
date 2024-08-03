@@ -5,7 +5,7 @@ use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties, Structure
 
 use crate::{
     memory::{Role, ScreepsMemory},
-    room::cache::tick_cache::{CachedRoom, RoomCache},
+    room::cache::{CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 
@@ -80,7 +80,7 @@ pub fn withdraw_nearby_storage_or_link(creep: &Creep, room_cache: &mut CachedRoo
         creep.bsay("📋WTHDWSTORE", false);
 
         let _ = creep.ITwithdraw(storage, ResourceType::Energy, None);
-    } else if let Some(storage_link) = &room_cache.structures.links.storage {
+    } else if let Some(storage_link) = &room_cache.structures.links().storage {
         if creep.pos().is_near_to(storage_link.pos())
             && storage_link
                 .store()
@@ -125,7 +125,7 @@ pub fn transfer_spawns(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &m
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn transfer_fastfiller_containers(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) -> bool {
-    if let Some(fastfiller_containers) = &room_cache.structures.containers.fast_filler {
+    if let Some(fastfiller_containers) = &room_cache.structures.containers().fast_filler {
         let lowest = fastfiller_containers
             .iter()
             .min_by_key(|x| x.store().get_used_capacity(None))
@@ -139,7 +139,8 @@ pub fn transfer_fastfiller_containers(creep: &Creep, memory: &mut ScreepsMemory,
                 return true;
             } else {
                 creep.bsay("🚚TFERFASTFILL", false);
-                creep.better_move_to(memory, room_cache, lowest.pos(), 1, Default::default());
+                let pos = lowest.pos();
+                creep.better_move_to(memory, room_cache, pos, 1, Default::default());
 
                 return true;
             }
@@ -222,7 +223,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut C
                 creep.better_move_to(memory, room_cache, storage.pos(), 1, Default::default());
                 return;
             }
-        } else if let Some(storage_link) = &room_cache.structures.links.storage {
+        } else if let Some(storage_link) = &room_cache.structures.links().storage {
             if storage_link
                 .store()
                 .get_used_capacity(Some(ResourceType::Energy))
@@ -233,10 +234,12 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut C
                     let _ = creep.ITwithdraw(storage_link, ResourceType::Energy, None);
                 } else {
                     creep.bsay("🚚WTHDWLINK", false);
+
+                    let pos = storage_link.pos();
                     creep.better_move_to(
                         memory,
                         room_cache,
-                        storage_link.pos(),
+                        pos,
                         1,
                         Default::default(),
                     );
@@ -246,7 +249,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut C
         }
     }
 
-    if let Some(fastfill_containers) = &room_cache.structures.containers.fast_filler {
+    if let Some(fastfill_containers) = &room_cache.structures.containers().fast_filler {
         let most_filled = fastfill_containers
             .iter()
             .max_by_key(|x| x.store().get_used_capacity(None));

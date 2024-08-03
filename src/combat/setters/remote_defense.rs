@@ -1,6 +1,6 @@
 use screeps::{game, Part, SharedCreepProperties};
 
-use crate::{allies, combat::goals::determine_single_attack_power, config, constants::HOSTILE_PARTS, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::tick_cache::RoomCache};
+use crate::{allies, combat::goals::determine_single_attack_power, config, constants::HOSTILE_PARTS, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::RoomCache};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut ScreepsMemory) {

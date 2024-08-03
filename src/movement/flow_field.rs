@@ -1,16 +1,8 @@
-use std::u8;
-
-use log::info;
-use screeps::{Direction, LineStyle, LocalCostMatrix, Position, Room, RoomCoordinate, RoomXY, Terrain, TextStyle};
+use screeps::{LocalCostMatrix, Position, Room, RoomCoordinate, RoomXY, TextStyle};
 
 use crate::heap_cache::compressed_matrix::CompressedMatrix;
 
 use super::movement_utils::{dir_to_coords, num_to_dir};
-
-pub struct FlowFieldSource {
-    pub pos: RoomXY,
-    pub cost: u8,
-}
 
 pub struct FlowField {
     pub data: Vec<u8>,
@@ -40,17 +32,17 @@ impl FlowField {
         }
     }
 
-    pub fn generate(&mut self, sources: Vec<FlowFieldSource>, cost_callback: impl Fn() -> LocalCostMatrix, max_cost: Option<u8>) -> CompressedMatrix {
+    pub fn generate(&mut self, sources: Vec<RoomXY>, cost_callback: impl Fn() -> LocalCostMatrix, max_cost: Option<u8>) -> CompressedMatrix {
         let distance_max_cost = max_cost.unwrap_or(u8::MAX);
-        let mut cm = cost_callback();
+        let cm = cost_callback();
 
         let mut queue = Vec::new();
         for source in sources {
-            self.data[(source.pos.y.u8() as u16 * self.width as u16 + source.pos.x.u8() as u16) as usize] = 0;
+            self.data[(source.y.u8() as u16 * self.width as u16 + source.x.u8() as u16) as usize] = 0;
 
             // score used to be cm.get(source.pos), but if the CM score was greater than 0, it would integer
             // overflow when doing distance math. Hooplah.
-            queue.push((source.pos, 0));
+            queue.push((source, 0));
         }
 
         while !queue.is_empty() {
@@ -59,8 +51,6 @@ impl FlowField {
                 let queue_pos = queue[pos].0;
                 let score = queue[pos].1;
 
-                let pos_is_exit = is_exit(queue_pos.x.u8(), queue_pos.y.u8());
-                let next_to_exit = is_next_to_exit(queue_pos.x.u8(), queue_pos.y.u8());
                 let distance = self.data[(queue_pos.y.u8() as u16 * self.width as u16 + queue_pos.x.u8() as u16) as usize] as u16 + score as u16;
 
                 for dir in 1..=8 {
@@ -143,8 +133,6 @@ impl FlowField {
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_field(room: &Room, field: &CompressedMatrix) {
     let vis = room.visual();
-
-    info!("Bisualsign");
 
     for x in 0..50 {
         for y in 0..50 {

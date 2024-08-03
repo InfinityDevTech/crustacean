@@ -2,8 +2,8 @@ use std::{cmp, collections::HashMap};
 
 use log::info;
 use screeps::{
-    game, CircleStyle, Creep, HasId, HasPosition, Part, Position, RawObjectId, ResourceType,
-    RoomName, SharedCreepProperties, StructureProperties, StructureType, TextStyle,
+    game, Creep, HasId, HasPosition, Part, Position, RawObjectId, ResourceType,
+    RoomName, SharedCreepProperties, StructureProperties, StructureType,
 };
 use serde::{Deserialize, Serialize};
 

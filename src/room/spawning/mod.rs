@@ -1,19 +1,15 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, storage_sitter_body};
-use log::info;
 use screeps::{find, game, HasId, Part, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
 
 use crate::{
-    formation::duo::{self, duo_utils}, memory::{CreepMemory, DuoMemory, Role, ScoutedSource, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name}
+    formation::duo::{duo_utils}, memory::{CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name}
 };
 
-use super::{
-    cache::{CachedRoom, RoomCache},
-    planning::room::construction,
-};
+use super::cache::{CachedRoom, RoomCache};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
@@ -185,7 +181,7 @@ pub fn temp_duo_spawning(
         }
 
         if duo_utils::get_attacker(&gcreeps).is_none() {
-            let mut body = vec![Part::Move, Part::Move, Part::Attack];
+            let body = vec![Part::Move, Part::Move, Part::Attack];
             let cost = get_body_cost(&body);
 
             let creep_name = format!("{}-{}-{}", role_to_name(Role::InvaderDuoAttacker), room.name(), get_unique_id());
@@ -204,7 +200,7 @@ pub fn temp_duo_spawning(
         }
 
         if duo_utils::get_healer(&gcreeps).is_none() {
-            let mut body = vec![Part::Move, Part::Move, Part::Heal];
+            let body = vec![Part::Move, Part::Move, Part::Heal];
             let cost = get_body_cost(&body);
 
             let creep_name = format!("{}-{}-{}", role_to_name(Role::InvaderDuoHealer), room.name(), get_unique_id());
@@ -985,7 +981,7 @@ pub fn harvester(
             let (filled, body) = creep_sizing::miner_body(room, cache, max_parts_for_source, true);
             let cost = get_body_cost(&body);
 
-            let mut priority = 4.0 * parts_needed_on_source as f64;
+            let priority = 4.0 * parts_needed_on_source as f64;
 
             return Some(spawn_manager.create_room_spawn_request(
                 Role::Harvester,
@@ -1097,7 +1093,7 @@ pub fn remote_harvester(
                         creep_sizing::miner_body(room, remote_cache, max_parts_for_source, true);
                     let cost = get_body_cost(&body);
 
-                    let mut priority = 4.0 * parts_needed_on_source as f64;
+                    let priority = 4.0 * parts_needed_on_source as f64;
 
                     return Some(cache.spawning.create_room_spawn_request(
                         Role::RemoteHarvester,

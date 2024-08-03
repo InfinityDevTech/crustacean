@@ -62,14 +62,6 @@ pub enum Role {
     GiftBasket = 100,
 }
 
-pub fn attacking_roles() -> Vec<Role> {
-    vec![
-        Role::RemoteDefender,
-        Role::InvaderCoreCleaner,
-        Role::Bulldozer
-    ]
-}
-
 // What each creep stores in its memory.
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]

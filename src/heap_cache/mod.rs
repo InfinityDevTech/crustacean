@@ -6,9 +6,9 @@ use compressed_matrix::CompressedMatrix;
 use hauling::HeapHaulingCache;
 use heap_creep::HeapCreep;
 use heap_room::HeapRoom;
-use screeps::{game, Direction, LocalCostMatrix, Position, RoomName};
+use screeps::{game, LocalCostMatrix, Position, RoomName};
 
-use crate::{constants::ROOM_AREA, memory::ScreepsMemory, movement::movement_utils::num_to_dir};
+use crate::memory::ScreepsMemory;
 
 pub mod heap_creep;
 pub mod hauling;

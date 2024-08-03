@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
 
 use crate::{

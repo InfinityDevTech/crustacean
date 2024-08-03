@@ -2,7 +2,7 @@ use screeps::{ResourceType, Room};
 
 use crate::memory::ScreepsMemory;
 
-use super::cache::{self, RoomCache};
+use super::cache::{RoomCache};
 
 pub fn run_terminal_stage1(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();

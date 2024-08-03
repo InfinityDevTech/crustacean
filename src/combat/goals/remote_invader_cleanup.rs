@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Part, ResourceType, RoomName, SharedCreepProperties, StructureProperties};
+use screeps::{game, Part, ResourceType, RoomName, SharedCreepProperties};
 
 use crate::{
     goal_memory::RemoteInvaderCleanup,
@@ -14,8 +14,8 @@ use crate::{
 pub fn run_goal(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let cloned_goals = memory.goals.remote_invader_cleanup.clone();
 
-    for (goal_room, goal_mem) in cloned_goals {
-        achieve_goal(&goal_room, memory, cache);
+    for goal_room in cloned_goals.keys() {
+        achieve_goal(goal_room, memory, cache);
     }
 }
 

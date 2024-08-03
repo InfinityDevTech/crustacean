@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasPosition, Position, RoomCoordinate, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, room::RoomExtensions}};
+use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::creep::CreepExtensions};
 
 pub fn run_invadercleaner(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();

@@ -3,11 +3,10 @@
 
 use std::{collections::HashMap, f32::consts::E};
 
-use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{constants, game, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Store};
 
-use crate::{config, heap, memory::Role, room::cache::{hauling::HaulingPriority, RoomCache}, traits::room::{RoomNameExtensions, RoomType}};
+use crate::{config, heap, memory::Role, room::cache::{hauling::HaulingPriority, RoomCache}, traits::room::RoomType};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {

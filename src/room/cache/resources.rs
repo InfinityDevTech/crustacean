@@ -4,7 +4,7 @@ use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, Has
 
 use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::scale_haul_priority};
 
-use super::{hauling::{HaulingPriority, HaulingType}, structures::RoomStructureCache, CachedRoom, RoomCache};
+use super::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache};
 
 #[derive(Debug, Clone)]
 pub struct CachedSource {
@@ -251,7 +251,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
 
         cache.create_if_not_exists(&remote_room, memory, Some(remote_room.name()));
 
-        let mut cached_room = cache.rooms.get_mut(remote_name).unwrap().clone();
+        let cached_room = cache.rooms.get_mut(remote_name).unwrap().clone();
         let owning_room = cache.rooms.get_mut(&launching_room.name()).unwrap();
 
         for resource in &cached_room.resources.dropped_energy {

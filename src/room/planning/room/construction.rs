@@ -1,7 +1,6 @@
 use std::vec;
 
-use log::info;
-use screeps::{HasId, HasPosition, Position, Room, StructureType};
+use screeps::{HasPosition, Position, Room, StructureType};
 
 use crate::{
     heap,

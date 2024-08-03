@@ -5,17 +5,17 @@ use crate::{
     heap_cache::{compressed_matrix::CompressedMatrix, RoomHeapFlowCache},
     memory::{CreepMemory, ScreepsMemory},
     movement::{
-        caching::{generate_pathing_targets, generate_storage_path},
+        caching::generate_storage_path,
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::{CachedRoom, RoomCache},
+    room::cache::CachedRoom,
 };
 
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, pathfinder::SearchOptions, Direction, HasPosition, MaybeHasId, Position, RoomXY,
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY,
     SharedCreepProperties, Terrain,
 };
 

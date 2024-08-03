@@ -1,4 +1,4 @@
-use screeps::{Creep, HasPosition, Part, Position, SharedCreepProperties};
+use screeps::{Creep, HasPosition, Position};
 
 use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::RoomCache, traits::creep::CreepExtensions};
 

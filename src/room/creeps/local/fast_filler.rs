@@ -1,5 +1,5 @@
 use screeps::{
-    game, look, spawn, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
+    game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
     RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,
 };
 

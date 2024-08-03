@@ -1,7 +1,4 @@
-use std::collections::HashMap;
 
-use log::info;
-use screeps::Position;
 
 use crate::constants::PATHFINDER_MAX_ROOMS;
 
@@ -29,24 +26,22 @@ impl PathHeap {
     }
 
     pub fn pop(&mut self) -> (u32, u32) {
-        let mut ret = (self.heap[1], self.priorities[self.heap[1] as usize]);
+        let ret = (self.heap[1], self.priorities[self.heap[1] as usize]);
         self.heap[1] = self.heap[self.size];
         self.size -= 1;
         let mut vv = 1;
         loop {
-            let mut uu = vv;
+            let uu = vv;
 
-            if (uu << 1) + 1 <= self.size {
+            if (uu << 1) < self.size {
                 if self.priorities[self.heap[uu] as usize] >= self.priorities[self.heap[uu << 1] as usize] {
                     vv = uu << 1;
                 }
                 if self.priorities[self.heap[vv] as usize] >= self.priorities[self.heap[(uu << 1) + 1] as usize] {
                     vv = (uu << 1) + 1;
                 }
-            } else if uu << 1 <= self.size {
-                if self.priorities[self.heap[uu] as usize] >= self.priorities[self.heap[uu << 1] as usize] {
-                    vv = uu << 1;
-                }
+            } else if uu << 1 <= self.size && self.priorities[self.heap[uu] as usize] >= self.priorities[self.heap[uu << 1] as usize] {
+                vv = uu << 1;
             }
 
             if uu != vv {
@@ -56,11 +51,11 @@ impl PathHeap {
             }
         }
 
-        return ret;
+        ret
     }
 
     pub fn insert(&mut self, index: u32, priority: u32) {
-        self.priorities[index as usize] = priority as u32;
+        self.priorities[index as usize] = priority;
         self.size += 1;
         self.heap[self.size] = index;
         self.bubble_up(self.size);

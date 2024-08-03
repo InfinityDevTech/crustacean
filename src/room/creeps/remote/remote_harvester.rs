@@ -1,7 +1,6 @@
-use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
-    game, Creep, HasPosition, MaybeHasId, Position, ResourceType, RoomCoordinate,
+    game, Creep, HasPosition, Position, ResourceType, RoomCoordinate,
     SharedCreepProperties,
 };
 
@@ -9,7 +8,7 @@ use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::{
-        cache::{self, {CachedRoom, RoomCache}},
+        cache::{{CachedRoom, RoomCache}},
         creeps::local::harvester::{harvest_source, repair_container},
     },
     traits::{

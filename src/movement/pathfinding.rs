@@ -1,16 +1,16 @@
-use std::{collections::HashMap, intrinsics::size_of, ops::Mul};
+use std::{collections::HashMap, intrinsics::size_of};
 
 use log::info;
 use screeps::{
-    game, pathfinder::MultiRoomCostResult, CostMatrixGet, Direction, LocalCostMatrix,
-    LocalRoomTerrain, Position, RoomCoordinate, RoomName, RoomTerrain, RoomXY, Terrain,
+    game, CostMatrixGet, Direction, LocalCostMatrix,
+    LocalRoomTerrain, Position, RoomCoordinate, RoomName, RoomXY, Terrain,
 };
 
-use crate::{constants::PATHFINDER_MAX_ROOMS, room};
+use crate::constants::PATHFINDER_MAX_ROOMS;
 
 use super::{
     coord_convert::{
-        generate_room_name, null_world_pos, parse_room_name, position_to_world_position,
+        generate_room_name, null_world_pos, position_to_world_position,
         world_position, MapPosition, WorldPosition,
     },
     path_heap::{OpenClose, PathHeap},
@@ -75,7 +75,7 @@ impl PathFinder {
     pub fn setup(
         origin: Position,
         goals: Vec<Position>,
-        mut room_callback: Box<dyn FnMut(RoomName) -> LocalCostMatrix>,
+        room_callback: Box<dyn FnMut(RoomName) -> LocalCostMatrix>,
         plain_cost: u8,
         swamp_cost: u8,
         max_rooms: u8,
@@ -187,7 +187,7 @@ impl PathFinder {
         }
 
         let mut path: Vec<Position> = Vec::new();
-        let mut index = min_node;
+        let index = min_node;
         let mut pos = self.pos_from_index(index);
         let mut ii = 0;
 
@@ -672,7 +672,7 @@ impl PathFinder {
     pub fn jump_xy(
         &mut self,
         cost: u32,
-        mut pos: &mut WorldPosition,
+        pos: &mut WorldPosition,
         dx: i32,
         dy: i32,
     ) -> WorldPosition {

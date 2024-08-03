@@ -5,10 +5,10 @@ use crate::{
     memory::Role, traits::intents_tracking::TowerExtensionsTracking, utils::scale_haul_priority,
 };
 
-use super::{cache::{
+use super::cache::{
         hauling::{HaulingPriority, HaulingType},
         CachedRoom,
-    }, creeps::local::base_hauler};
+    };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_towers(cached_room: &mut CachedRoom) {

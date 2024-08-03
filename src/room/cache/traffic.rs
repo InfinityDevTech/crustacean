@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use super::CachedRoom;
-use crate::{heap, memory::ScreepsMemory, movement::movement_utils::dir_to_coords, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
+use crate::{heap, memory::ScreepsMemory, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
 
 #[derive(Debug, Clone)]
 pub struct TrafficCache {

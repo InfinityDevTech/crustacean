@@ -1,6 +1,6 @@
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{find, game, structure, Color, Creep, HasPosition, SharedCreepProperties, StructureObject, StructureProperties, StructureRampart, StructureType};
+use screeps::{find, game, Color, Creep, HasPosition, SharedCreepProperties, StructureObject, StructureProperties, StructureType};
 
 use crate::{
     config, memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
@@ -50,8 +50,8 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     let mut structure = creep.room().unwrap().find(find::HOSTILE_STRUCTURES, None);
-    let mut ramparts = creep.room().unwrap().find(find::STRUCTURES, None);
-    let mut ramparts = ramparts.iter().filter(|s| s.structure_type() == StructureType::Rampart).collect::<Vec<&StructureObject>>();
+    let ramparts = creep.room().unwrap().find(find::STRUCTURES, None);
+    let ramparts = ramparts.iter().filter(|s| s.structure_type() == StructureType::Rampart).collect::<Vec<&StructureObject>>();
 
     let creep_memory = creep_memory.unwrap();
 

@@ -1,12 +1,11 @@
-use log::info;
-use screeps::{game, CostMatrixGet, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, StructureType, Terrain, TextStyle};
+use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, Terrain};
 
-use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::compressed_matrix::CompressedMatrix, memory::ScreepsMemory, movement::flow_field::visualise_field, room::cache::{self, CachedRoom}, traits::position::PositionExtensions};
+use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::compressed_matrix::CompressedMatrix, memory::ScreepsMemory, room::cache::CachedRoom, traits::position::PositionExtensions};
 
-use super::flow_field::{FlowField, FlowFieldSource};
+use super::flow_field::FlowField;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache: &mut CachedRoom) {
+pub fn generate_pathing_targets(room: &Room, _memory: &ScreepsMemory, room_cache: &mut CachedRoom) {
     let mut room_target_heap = heap().cachable_positions.lock().unwrap();
 
     let mut positions = Vec::new();
@@ -62,7 +61,7 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
 
     let callback = || {
         let mut matrix = LocalCostMatrix::new();
-        let mut terrain = game::map::get_room_terrain(room.name()).unwrap();
+        let terrain = game::map::get_room_terrain(room.name()).unwrap();
 
         for x in 0..50 {
             for y in 0..50 {
@@ -81,7 +80,7 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
             matrix.set(rampart.pos().xy(), 1);
         }
 
-        for (road_id, road) in &room_cache.structures.roads {
+        for road in room_cache.structures.roads.values() {
             matrix.set(road.pos().xy(), 1);
         }
 
@@ -109,15 +108,8 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
         matrix
     };
 
-    let source = FlowFieldSource {
-        pos: room_cache.structures.storage.as_ref().unwrap().pos().xy(),
-        cost: 0,
-    };
-
-    let field = flow_field.generate(vec![source], callback, None);
-
     //let cache = heap().flow_cache.lock().unwrap().get_mut(&room.name()).unwrap();
     //*cache.storage = Some(field.clone());
 
-    field
+    flow_field.generate(vec![room_cache.structures.storage.as_ref().unwrap().pos().xy()], callback, None)
 }

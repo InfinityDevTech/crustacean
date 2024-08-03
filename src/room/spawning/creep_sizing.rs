@@ -4,7 +4,7 @@ use screeps::{game, Part, ResourceType, Room};
 use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
-    room::cache::{self, CachedRoom},
+    room::cache::{CachedRoom},
     utils::{self, get_body_cost},
 };
 

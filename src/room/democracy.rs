@@ -1,12 +1,10 @@
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, RoomXY, StructureProperties, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureType, Terrain
 };
 
 use crate::{
-    combat::{hate_handler, rank_room}, config, constants::WALKABLE_STRUCTURES, heap, memory::{Role, ScreepsMemory}, movement::{
-        caching::generate_storage_path, flow_field::{self, visualise_field, FlowFieldSource}, move_target::{path_call, MoveOptions}, movement_utils::visualise_path, pathfinding::PathFinder
-    }, room::{
+    combat::{hate_handler, rank_room}, config, heap, memory::{Role, ScreepsMemory}, room::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
         planning::room::{plan_room, remotes},

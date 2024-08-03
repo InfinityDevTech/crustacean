@@ -1,29 +1,26 @@
+#![allow(internal_features)]
 #![feature(map_many_mut)]
 #![feature(core_intrinsics)]
 
 use std::{
     collections::HashMap,
-    str::FromStr,
     sync::{Mutex, Once, OnceLock},
 };
 
 use combat::{ally::Allies, global::run_global_goal_setters, goals::run_goal_handlers, hate_handler::decay_hate};
 use formation::formations::run_formations;
 use heap_cache::GlobalHeapCache;
-use js_sys::JsString;
 use log::*;
-use movement::{
-    caching::generate_pathing_targets, move_target::MoveOptions, movement_utils::visualise_path, pathfinding::PathFinder
-};
+use movement::caching::generate_pathing_targets;
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::{hauling, resources, traffic, RoomCache},
-    democracy::{self, start_government},
+    cache::{hauling, traffic, RoomCache},
+    democracy::start_government,
     spawning::spawn_manager::{self, run_spawning, SpawnManager},
     visuals::visualise_scouted_rooms,
 };
-use screeps::{find, game, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
+use screeps::{find, game, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,
@@ -177,7 +174,7 @@ pub fn game_loop() {
             }
 
             let chant = chant[index as usize];
-            let _ = random_creep.bsay(chant, true);
+            random_creep.bsay(chant, true);
             // -- End creep chant stuffs
         }
     }

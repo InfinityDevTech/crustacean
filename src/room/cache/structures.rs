@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{
-    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomName, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, Tombstone
 };
 
-use crate::{constants::NO_RCL_PLACEABLES, heap, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
+use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
 
 use super::resources::RoomResourceCache;
 

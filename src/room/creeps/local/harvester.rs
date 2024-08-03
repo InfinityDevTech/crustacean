@@ -1,6 +1,6 @@
 use log::info;
 use screeps::{
-    game, Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties,
+    Creep, HasHits, HasPosition, Part, ResourceType, SharedCreepProperties,
     Source, StructureContainer,
 };
 
@@ -8,7 +8,7 @@ use crate::{
     memory::{CreepMemory, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::cache::{resources::CachedSource, CachedRoom, RoomCache},
-    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, position::PositionExtensions},
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

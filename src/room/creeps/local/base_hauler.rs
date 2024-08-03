@@ -1,10 +1,9 @@
 use std::cmp;
 
-use log::info;
 use screeps::{Creep, HasPosition, ResourceType, SharedCreepProperties, StructureExtension};
 
 use crate::{
-    memory::{Role, ScreepsMemory},
+    memory::ScreepsMemory,
     room::cache::{CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
@@ -153,7 +152,7 @@ pub fn transfer_fastfiller_containers(creep: &Creep, memory: &mut ScreepsMemory,
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) {
     // Sort by range.
-    let mut extensions = get_closest_extensions_by_distance(creep, room_cache);
+    let extensions = get_closest_extensions_by_distance(creep, room_cache);
 
     if room_cache.structures.storage.is_none() {
         creep.bsay("NO STORE", false);

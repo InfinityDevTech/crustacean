@@ -1,9 +1,8 @@
-use log::info;
 use screeps::{Creep, HasPosition, Position, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::{Role, ScreepsMemory},
-    movement::{move_target::MoveOptions, movement_utils},
+    movement::move_target::MoveOptions,
     room::cache::{CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
     utils,

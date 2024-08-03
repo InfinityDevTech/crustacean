@@ -1,7 +1,7 @@
 use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Position, Room, RoomXY, StructureObject};
 
 use crate::{
-    memory::{EnemyPlayer, ScoutedRoom, ScoutedSource, ScreepsMemory}, room::cache::{resources::CachedSource, CachedRoom}, traits::position::PositionExtensions, utils
+    memory::{EnemyPlayer, ScoutedRoom, ScoutedSource, ScreepsMemory}, room::cache::CachedRoom, traits::position::PositionExtensions, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -126,7 +126,7 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
     if let std::collections::hash_map::Entry::Vacant(e) = memory.scouted_rooms.entry(room_name) {
         e.insert(scouted_room);
     } else {
-        let scouted = memory.scouted_rooms.remove(&room_name);
+        let _scouted = memory.scouted_rooms.remove(&room_name);
 
         memory.scouted_rooms.insert(room_name, scouted_room);
     }

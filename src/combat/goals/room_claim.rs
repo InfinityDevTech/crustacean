@@ -56,7 +56,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
     }
 
     // Spawn the claimer
-    if !claimed && goal.creeps_assigned.len() == 0 {
+    if !claimed && goal.creeps_assigned.is_empty() {
         let claimer_body = vec![Part::Claim, Part::Move];
         let claimer_cost = utils::get_body_cost(&claimer_body);
 

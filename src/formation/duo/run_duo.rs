@@ -4,13 +4,13 @@ use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cac
 
 use super::movement::move_duo;
 
-pub fn filter_dead_creeps(creeps: Vec<String>) -> Vec<String> {
+pub fn _filter_dead_creeps(creeps: Vec<String>) -> Vec<String> {
     let mut new_creeps = Vec::new();
 
     for creep in creeps {
         let gcreep = game::creeps().get(creep.to_string());
 
-        if let Some(gcreep) = gcreep {
+        if let Some(_gcreep) = gcreep {
             new_creeps.push(creep);
         }
     }

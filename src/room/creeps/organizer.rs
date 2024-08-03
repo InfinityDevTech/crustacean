@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use log::info;
-use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, SharedCreepProperties, StructureProperties, StructureType, Terrain};
+use screeps::{game, Room, SharedCreepProperties};
 
 use crate::{
-    combat::hate_handler::process_health_event, heap, heap_cache::heap_creep::{HealthChangeType, HeapCreep}, memory::{Role, ScreepsMemory}, movement::flow_field::{self, FlowFieldSource}, room::{
+    combat::hate_handler::process_health_event, heap, heap_cache::heap_creep::{HealthChangeType, HeapCreep}, memory::{Role, ScreepsMemory}, room::{
         cache::RoomCache,
         creeps::{global, remote},
     }, traits::{
-        creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions,
+        creep::CreepExtensions, room::RoomExtensions,
     }
 };
 

@@ -400,8 +400,6 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let required_count_for_role = required_roles.get(required_role).unwrap();
             let current_count_for_role = room_cache.creeps.creeps_of_role.get(required_role).unwrap_or(&Vec::new()).len();
 
-            info!("Checking {} requirement for room {} - current: {} - required: {}", required_role, room.name(), current_count_for_role, required_count_for_role);
-
             if current_count_for_role < (*required_count_for_role).try_into().unwrap() && required_count_for_role > &0 {
                 let spawn_request = match required_role {
                     Role::Harvester => harvester(&room, room_cache, &mut cache.spawning),

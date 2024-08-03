@@ -19,6 +19,13 @@ pub const WALKABLE_STRUCTURES: [screeps::StructureType; 3] = [
     screeps::StructureType::Rampart,
 ];
 
+pub const NO_RCL_PLACEABLES: [screeps::StructureType; 4] = [
+    screeps::StructureType::Road,
+    screeps::StructureType::Container,
+    screeps::StructureType::Rampart,
+    screeps::StructureType::InvaderCore,
+];
+
 pub const ROOM_AREA: usize = 2500;
 pub const ROOM_SIZE: u8 = 50;
 

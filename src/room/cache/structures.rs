@@ -5,7 +5,7 @@ use screeps::{
     find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomName, Ruin, Source, StructureContainer, StructureController, StructureExtension, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
 };
 
-use crate::{heap, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
+use crate::{constants::NO_RCL_PLACEABLES, heap, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
 
 use super::resources::RoomResourceCache;
 
@@ -195,24 +195,18 @@ impl RoomStructureCache {
         self.room.find(find::STRUCTURES, None)
     }
 
-    fn repairable_check(&mut self, structure: &StructureObject) {
-        if let Some(repairable) = structure.as_repairable() {
-            let max = if structure.structure_type() == StructureType::Rampart {
-                //let controller = self.controller.as_ref().unwrap().controller.clone();
-                //get_rampart_repair_rcl(controller.level())
-                100_000
-            } else {
-                repairable.hits_max()
-            };
-
-            if repairable.hits() < max {
-                self.needs_repair.push(structure.clone());
+    fn repairables(&mut self) {
+        for structure in self.all_structures().into_iter() {
+            if let Some(damagable) = structure.as_attackable() {
+                if damagable.hits() < damagable.hits_max() {
+                    self.needs_repair.push(structure);
+                }
             }
         }
     }
 
     fn skip_check(&mut self, can_be_placed: bool, structure: &StructureObject) -> bool {
-        if !can_be_placed && (structure.structure_type() != StructureType::Container && structure.structure_type() != StructureType::Road && structure.structure_type() != StructureType::InvaderCore) {
+        if !can_be_placed && !NO_RCL_PLACEABLES.contains(&structure.structure_type()) {
             return true;
         } else if !can_be_placed {
             if let StructureObject::StructureContainer(container) = structure {
@@ -295,16 +289,17 @@ impl RoomStructureCache {
     ) {
         let room_memory = memory.rooms.get_mut(&self.room.name());
 
+        /*
         let mut can_structures_be_placed = true;
-        let mut check_ownable = false;
         if let Some(controller) = self.room.controller() {
             if !controller.my() {
                 can_structures_be_placed = false;
             }
         } else {
             can_structures_be_placed = false;
-        }
+        }*/
 
+        let mut check_ownable = false;
         if let Some(room_memory) = room_memory {
             if room_memory.rcl < room_memory.max_rcl {
                 check_ownable = true;
@@ -315,9 +310,9 @@ impl RoomStructureCache {
         let mut has_links = false;
 
         for structure in self.run_structure_find().into_iter() {
-            if self.skip_check(can_structures_be_placed, &structure) {
-                continue;
-            }
+            //if self.skip_check(can_structures_be_placed, &structure) {
+            //    continue;
+            //}
 
             // Dont to the is_active check UNLESS we downgraded.
             // Its very expensive from what I have heard.
@@ -326,8 +321,7 @@ impl RoomStructureCache {
                 continue;
             }
 
-            self.repairable_check(&structure);
-
+            // TODO: Improve this code...
             if let Some(ownable) = structure.as_owned() {
                 if !ownable.my() {
                     continue;
@@ -336,6 +330,8 @@ impl RoomStructureCache {
 
             self.classify_structure(resource_cache, structure, &mut has_links, &mut has_containers);
         }
+
+        self.repairables();
 
         if has_containers {
             self.process_containers(resource_cache);

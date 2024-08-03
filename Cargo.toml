@@ -52,7 +52,7 @@ wasm-opt = ["-O4", "--disable-sign-ext"]
 #wasm-opt = ["-g", "--disable-sign-ext"]
 
 [features]
-default = ["profile"]
-profile = ["screeps-timing-annotate"]
+#default = ["profile"]
+#profile = ["screeps-timing-annotate"]
 
 sim = ["screeps-game-api/sim"]

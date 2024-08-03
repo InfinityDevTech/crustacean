@@ -3,7 +3,12 @@ use std::vec;
 use log::info;
 use screeps::{HasId, HasPosition, Position, Room, StructureType};
 
-use crate::{heap, memory::ScreepsMemory, room::cache::{CachedRoom, RoomCache}, traits::position::PositionExtensions};
+use crate::{
+    heap,
+    memory::ScreepsMemory,
+    room::cache::{CachedRoom, RoomCache},
+    traits::position::PositionExtensions,
+};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn find_pos_most_accessible(
@@ -51,7 +56,11 @@ fn find_pos_most_accessible(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cache: &RoomCache) {
     let remote_memory = memory.remote_rooms.get(&room.name()).unwrap();
-    let measure_pos = memory.rooms.get(&remote_memory.owner).unwrap().storage_center;
+    let measure_pos = memory
+        .rooms
+        .get(&remote_memory.owner)
+        .unwrap()
+        .storage_center;
 
     let measure_pos = Position::new(measure_pos.x, measure_pos.y, remote_memory.owner);
     let remote_cache = room_cache.rooms.get(&remote_memory.owner).unwrap();
@@ -78,7 +87,11 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
     }
 
     if reset_movement_cache {
-        heap().cachable_positions.lock().unwrap().remove(&room.name());
+        heap()
+            .cachable_positions
+            .lock()
+            .unwrap()
+            .remove(&room.name());
     }
 }
 
@@ -94,7 +107,11 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
         _ => 0,
     };
 
-    let measure_pos = Position::new(room_cache.storage_center.unwrap().x, room_cache.storage_center.unwrap().y, room.name());
+    let measure_pos = Position::new(
+        room_cache.storage_center.unwrap().x,
+        room_cache.storage_center.unwrap().y,
+        room.name(),
+    );
 
     let mut all_source_containers_placed = false;
     for source in &room_cache.resources.sources {
@@ -106,9 +123,10 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
         all_source_containers_placed = true;
     }
 
-
     if let Some(controller) = &room_cache.structures.controller.clone() {
-        if room_cache.structures.containers().controller.is_some() || room_cache.structures.links().controller.is_some() {
+        if room_cache.structures.containers().controller.is_some()
+            || room_cache.structures.links().controller.is_some()
+        {
             if room_cache.structures.links().controller.is_some() {
                 links_placed += 1;
             }
@@ -128,9 +146,14 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
             }
 
             let link_pos = if container_pos.is_some() {
-                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![container_pos.unwrap()])
+                find_pos_most_accessible(
+                    &controller.pos(),
+                    &measure_pos,
+                    1,
+                    vec![container_pos.unwrap()],
+                )
             } else {
-                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![])
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 1, vec![])
             };
 
             if let Some(link_pos) = link_pos {
@@ -160,33 +183,37 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
 
         let container_pos = find_pos_most_accessible(&source.source.pos(), &measure_pos, 1, vec![]);
 
-        if let Some(container_pos) = container_pos {
-            let _ = room.create_construction_site(
-                container_pos.x().u8(),
-                container_pos.y().u8(),
-                StructureType::Container,
-                None,
-            );
+        if source.container.is_none() {
+            if let Some(container_pos) = container_pos {
+                let _ = room.create_construction_site(
+                    container_pos.x().u8(),
+                    container_pos.y().u8(),
+                    StructureType::Container,
+                    None,
+                );
+            }
         }
 
-        let link_pos = if container_pos.is_some() {
-            find_pos_most_accessible(&source.source.pos(), &measure_pos, 2, vec![container_pos.unwrap()])
+        let link_pos = if let Some(container_pos) = container_pos {
+            find_pos_most_accessible(&container_pos, &measure_pos, 1, vec![container_pos])
         } else {
             find_pos_most_accessible(&source.source.pos(), &measure_pos, 2, vec![])
         };
 
-        if let Some(link_pos) = link_pos {
-            if links_placed >= max_links {
-                continue;
-            }
+        if source.link.is_none() {
+            if let Some(link_pos) = link_pos {
+                if links_placed >= max_links {
+                    continue;
+                }
 
-            links_placed += 1;
-            let _ = room.create_construction_site(
-                link_pos.x().u8(),
-                link_pos.y().u8(),
-                StructureType::Link,
-                None,
-            );
+                links_placed += 1;
+                let _ = room.create_construction_site(
+                    link_pos.x().u8(),
+                    link_pos.y().u8(),
+                    StructureType::Link,
+                    None,
+                );
+            }
         }
     }
 }

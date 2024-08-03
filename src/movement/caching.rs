@@ -36,6 +36,10 @@ pub fn generate_pathing_targets(room: &Room, memory: &ScreepsMemory, room_cache:
         positions.push(source.source.pos());
     }
 
+    if let Some(storage) = &room_cache.structures.storage {
+        positions.push(storage.pos());
+    }
+
     if let Some(fast_filler_containers) = &room_cache.structures.containers().fast_filler {
         for container in fast_filler_containers {
             positions.push(container.pos());

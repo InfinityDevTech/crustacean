@@ -188,9 +188,12 @@ impl CreepExtensions for screeps::Creep {
         //   C. The bot will break
         // if you said, "B", you are correct! Dumbass.
         if let Some(cachable_positions) = heap_cache.get(&target.room_name()) {
-            self.bsay("HAS", false);
+            // TODO:
+            // They arent saying anything other than HAS, I dont think its caching it...
+            //self.bsay("HAS", false);
             // If we can cache to that position, then we do the funni.
             if cachable_positions.contains(&target) {
+                self.bsay("HAS", false);
                 let mut heap_cache = heap().flow_cache.lock().unwrap();
 
                 let flow_cache = heap_cache

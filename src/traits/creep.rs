@@ -15,8 +15,7 @@ use crate::{
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY,
-    SharedCreepProperties, Terrain,
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain,
 };
 
 use super::intents_tracking::CreepExtensionsTracking;
@@ -121,16 +120,18 @@ impl CreepExtensions for screeps::Creep {
 
             return true;
         } else {
-            let steps = generate_storage_path(&self.room().unwrap(), cache);
+            if game::cpu::bucket() > 500 {
+                let steps = generate_storage_path(&self.room().unwrap(), cache);
 
-            room_ff_cache.storage = Some(steps.clone());
+                room_ff_cache.storage = Some(steps.clone());
 
-            self.move_request(
-                num_to_dir(steps.get_xy(self.pos().x().u8(), self.pos().y().u8())),
-                cache,
-            );
+                self.move_request(
+                    num_to_dir(steps.get_xy(self.pos().x().u8(), self.pos().y().u8())),
+                    cache,
+                );
 
-            info!("Generated storage path for room {}", cache.room_name);
+                info!("Generated storage path for room {}", cache.room_name);
+            }
 
             return true;
         }
@@ -155,7 +156,6 @@ impl CreepExtensions for screeps::Creep {
 
         if let Some(storage) = &cache.structures.storage {
             if storage.pos() == target && self.move_to_storage(cache) {
-
                 if self.is_stuck(cache) {
                     self.bsay("CSTUCK", false);
 
@@ -232,9 +232,11 @@ impl CreepExtensions for screeps::Creep {
 
                     self.move_request(dir, cache);
 
-
                     if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
-                        self.bsay(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
+                        self.bsay(
+                            &format!("STUCK={}", heap_creep.stuck_time).to_string(),
+                            false,
+                        );
                     }
                     return;
                 } else {
@@ -258,7 +260,6 @@ impl CreepExtensions for screeps::Creep {
                         }
 
                         for (index, step) in target.path().into_iter().enumerate() {
-
                             if target.incomplete() && index >= target.path().len() / 2 {
                                 break;
                             }
@@ -285,7 +286,10 @@ impl CreepExtensions for screeps::Creep {
                     }
 
                     if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
-                        self.bsay(&format!("STUCK={}", heap_creep.stuck_time).to_string(), false);
+                        self.bsay(
+                            &format!("STUCK={}", heap_creep.stuck_time).to_string(),
+                            false,
+                        );
                     }
 
                     return;
@@ -352,7 +356,11 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn bsay(&self, message: &str, public: bool) {
-        heap().per_tick_creep_says.lock().unwrap().insert(self.name().to_string(), (public, message.to_string()));
+        heap()
+            .per_tick_creep_says
+            .lock()
+            .unwrap()
+            .insert(self.name().to_string(), (public, message.to_string()));
     }
 
     fn parts_of_type(&self, part: screeps::Part) -> u32 {

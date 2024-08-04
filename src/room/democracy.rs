@@ -1,16 +1,24 @@
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureType, Terrain
+    game,
+    look::{self, LookResult},
+    pathfinder::MultiRoomCostResult,
+    HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate,
+    RoomName, RoomPosition, StructureType, Terrain,
 };
 
 use crate::{
-    combat::{hate_handler, rank_room}, config, heap, memory::{Role, ScreepsMemory}, room::{
+    combat::{hate_handler, rank_room},
+    config, heap,
+    memory::{Role, ScreepsMemory},
+    room::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
         planning::room::{plan_room, remotes},
         tower,
         visuals::run_full_visuals,
-    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
+    },
+    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
 };
 
 use super::{
@@ -20,7 +28,8 @@ use super::{
         self,
         room::construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
-            get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts, plan_remote_containers,
+            get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
+            plan_remote_containers,
         },
     },
     visuals::visualise_room_visual,
@@ -35,6 +44,10 @@ use super::{
 // Potentially attempt to estimate where the spawn battery is by:
 //  Averaging the positions of all the spawns, get the base center
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    if game::cpu::bucket() < 500 && !room.my() {
+        return;
+    }
+
     let starting_cpu = game::cpu::get_used();
 
     let pos = Position::new(
@@ -99,7 +112,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     if room.my() {
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
 
-        if memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level() || game::time() % 3000 == 0 {
+        if memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level()
+            || game::time() % 3000 == 0
+        {
             if let Some(path_heap) = heap().flow_cache.lock().unwrap().get_mut(&room.name()) {
                 path_heap.storage = None;
 
@@ -127,7 +142,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             links::balance_links(&room, cached_room);
 
-            if let Some(heap) = heap().flow_cache.lock().unwrap().get_mut(&cached_room.room_name) {
+            if let Some(heap) = heap()
+                .flow_cache
+                .lock()
+                .unwrap()
+                .get_mut(&cached_room.room_name)
+            {
                 // TODO: Make this take plans into consideration
                 // So we can reduce the amount of recalculations
                 if game::time() % 2000 == 0 {
@@ -194,11 +214,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             recover_creeps(memory);
         }
 
-        // Place remote containers every 1k ticks, if we have remotes.
-        if game::time() % 250 == 0 && memory.remote_rooms.contains_key(&room.name()) {
-            plan_remote_containers(&room, memory, cache);
-        }
-
         {
             let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
@@ -216,11 +231,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             // If we dont have enough remotes, scan every 10 ticks
             // If its 30000 ticks, scan
             // If we just pushed code, or the heap reset, scan.
-            if (room_memory.remotes.len() < config::ROOM_REMOTE_COUNT.into()
+            if ((room_memory.remotes.len() < config::ROOM_REMOTE_COUNT.into()
                 && game::time() % 10 == 0)
-                || game::time() % 3000 == 0
-                || lifetime == 0
-            {
+                || game::time() % 3000 == 0 || lifetime == 0) && game::cpu::bucket() > 500 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
                 info!(
                     "  [REMOTES] Remote re-scan triggered, found {} remotes",
@@ -234,6 +247,11 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         // Room is NOT mine, therefore we should run creeps
         // Traffic is run on every room, so no need to put it here
         organizer::run_creeps(&room, memory, cache);
+
+        // Place remote containers every 250 ticks, if we have remotes.
+        if game::time() % 250 == 0 && memory.remote_rooms.contains_key(&room.name()) {
+            plan_remote_containers(&room, memory, cache);
+        }
 
         if let Some(scouted_room) = memory.scouted_rooms.get(&room.name()) {
             if scouted_room.last_scouted < game::time() - 100 {
@@ -285,13 +303,8 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
         let offset_x = pos.x;
         let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
 
-        let should_rampart = room_cache.structures.storage.is_some()
-            && room_cache
-                .rcl
-                >= 4;
-        let should_road = room_cache
-            .rcl
-            > 3;
+        let should_rampart = room_cache.structures.storage.is_some() && room_cache.rcl >= 4;
+        let should_road = room_cache.rcl > 3;
 
         if should_road {
             planning::room::roads::plan_main_room_roads(room, room_cache, memory);

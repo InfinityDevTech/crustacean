@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, Tombstone
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
 };
 
 use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
@@ -322,7 +322,7 @@ impl RoomStructureCache {
 
             // TODO: Improve this code...
             if let Some(ownable) = structure.as_owned() {
-                if !ownable.my() {
+                if !ownable.my() && structure.structure_type() != StructureType::InvaderCore {
                     continue;
                 }
             }

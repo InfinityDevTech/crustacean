@@ -8,6 +8,7 @@ use std::{
 };
 
 use combat::{ally::Allies, global::run_global_goal_setters, goals::run_goal_handlers, hate_handler::decay_hate};
+use constants::{MAX_BUCKET, MMO_SHARD_NAMES};
 use formation::formations::run_formations;
 use heap_cache::GlobalHeapCache;
 use log::*;
@@ -88,15 +89,13 @@ pub fn game_loop() {
     );
 
     if game::cpu::bucket() < 500 {
-        info!("Bucket is too low, skipping tick");
+        info!("Bucket is too low, not profiling...");
         info!("Bucket: {}/500", game::cpu::bucket());
 
         #[cfg(feature = "profile")]
         {
             let _ = crate::profiling::timing::stop_trace();
         }
-
-        return;
     }
 
     let mut memory = heap().memory.lock().unwrap();
@@ -183,7 +182,9 @@ pub fn game_loop() {
     run_goal_handlers(&mut memory, &mut cache);
     run_formations(&mut memory, &mut cache);
 
-    run_spawning(&mut memory, &mut cache);
+    if game::cpu::bucket() > 100 {
+        run_spawning(&mut memory, &mut cache);
+    }
 
     if game::time() % 100 == 0 {
         memory.filter_old_creeps();
@@ -289,6 +290,19 @@ pub fn game_loop() {
     info!("  Heap: {:.2}%", used);
     info!("  Time since last reset: {}", heap_lifetime);
     *heap_lifetime += 1;
+
+    // TODO:
+    // Make it so we check if we arent in combat either, or we arent going to do anything
+    // High CPU, (like base building) then we can generate pixels.
+    if MMO_SHARD_NAMES.contains(&game::shard::name().as_str()) {
+        let cpu_usage = game::cpu::get_used();
+        let bucket = game::cpu::bucket();
+
+        if cpu_usage < 500.0 && bucket == MAX_BUCKET {
+            info!("[PIXELS] We have enough CPU, generating pixel!");
+            let _ = game::cpu::generate_pixel();
+        }
+    }
 
     /*if game::cpu::bucket() > 1000 {
     let origin = Position::new(RoomCoordinate::new(37).unwrap(), RoomCoordinate::new(16).unwrap(), RoomName::new("W1N9").unwrap());

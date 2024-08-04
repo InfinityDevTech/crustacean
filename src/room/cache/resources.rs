@@ -258,7 +258,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
             let amount = resource.amount();
 
             owning_room.stats.energy.dropped += amount;
-            owning_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(amount as f32), HaulingType::NoDistanceCalcPickup);
+            owning_room.hauling.create_order(resource.id().into(), None, Some(resource.resource_type()), Some(resource.amount()), -(amount as f32), HaulingType::Pickup);
         }
 
         if cached_room.structures.containers().source_container.is_none() {
@@ -269,7 +269,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
             owning_room.resources.total_energy += container.store().get_used_capacity(None);
             owning_room.resources.energy_in_storing_structures += container.store().get_used_capacity(None);
 
-            owning_room.hauling.create_order(container.id().into(), Some(container.structure_type()), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), -(container.store().get_used_capacity(Some(ResourceType::Energy)) as f32), HaulingType::NoDistanceCalcOffer);
+            owning_room.hauling.create_order(container.id().into(), Some(container.structure_type()), Some(ResourceType::Energy), Some(container.store().get_used_capacity(Some(ResourceType::Energy))), -(container.store().get_used_capacity(Some(ResourceType::Energy)) as f32), HaulingType::Offer);
         }
     }
 }
@@ -297,6 +297,12 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
                 priority += 10000.0;
             }
 
+            if cached_room.structures.storage.is_none() && cached_room.rcl >= 4 {
+                priority += 500.0;
+            }
+
+            priority += controller_container.store().get_used_capacity(Some(ResourceType::Energy)) as f32 / 100.0;
+
             cached_room.stats.energy.in_containers = controller_container.store().get_used_capacity(None);
 
             cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority as f32, HaulingType::NoDistanceCalcTransfer);
@@ -315,7 +321,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
                 cached_room.stats.energy.in_containers = fastfiller_container.store().get_used_capacity(None);
 
-                cached_room.hauling.create_order(fastfiller_container.id().into(), Some(fastfiller_container.structure_type()), Some(ResourceType::Energy), Some(fastfiller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::Transfer);
+                cached_room.hauling.create_order(fastfiller_container.id().into(), Some(fastfiller_container.structure_type()), Some(ResourceType::Energy), Some(fastfiller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::NoDistanceCalcTransfer);
             }
         }
     }

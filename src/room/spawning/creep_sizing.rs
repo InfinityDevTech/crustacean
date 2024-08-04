@@ -10,12 +10,13 @@ use crate::{
 
 /// Returns the parts needed for a miner creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool) -> (bool, Vec<Part>) {
-    let mut parts = if cache.rcl < 2 {
-        vec![Part::Work, Part::Move]
-    } else {
-        vec![Part::Work, Part::Carry, Part::Move]
-    };
+pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool, has_container: bool) -> (bool, Vec<Part>) {
+    //let mut parts = if has_container && cache.rcl <= 4 {
+    //    vec![Part::Work, Part::Move]
+    //} else {
+    //    vec![Part::Work, Part::Carry, Part::Move]
+    //};
+    let mut parts = vec![Part::Work, Part::Move, Part::Carry];
 
     if source_parts_needed == 0 {
         info!("No parts needed for miner");
@@ -73,7 +74,7 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, forc
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Part> {
     let mut body = Vec::new();
 
     // Every hundo = 1C 1M
@@ -94,7 +95,7 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let tile_usage = 100;
     let mut current_energy_usage = 0;
 
-    let (max, energy_to_use) = if cache
+    let (max, mut energy_to_use) = if cache
         .creeps
         .creeps_of_role
         .get(&Role::Hauler)
@@ -112,6 +113,10 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     } else {
         (true, room.energy_available())
     };
+
+    if scan_check {
+        energy_to_use = room.energy_capacity_available();
+    }
 
     let mut energy_to_use = energy_to_use.clamp(0, energy_for_haulers);
 
@@ -131,7 +136,7 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     }
 
     while current_energy_usage < energy_to_use {
-        if current_energy_usage + tile_usage > energy_to_use {
+        if current_energy_usage + tile_usage >= energy_to_use || body.len() >= 50 {
             break;
         }
 
@@ -271,6 +276,10 @@ pub fn repairer_body(room: &Room, parts_needed: u8, cache: &CachedRoom) -> Vec<P
         parts.push(Part::Carry);
         current_cost += stamp_cost;
         work_count += 1;
+    }
+
+    if work_count == 0 {
+        return Vec::new();
     }
 
     parts

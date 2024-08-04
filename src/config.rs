@@ -6,8 +6,6 @@ pub const ALLIANCE_TAG: &str = "";
 
 pub const ROOM_REMOTE_COUNT: u8 = 4;
 
-pub const INVADER_USERNAME: &str = "Invader";
-
 pub const REMOTE_SIGNS: [&str; 3] = [
 //"Woops. - Infinity Dev",
 //"Boo. - Infinity Dev",

@@ -1,5 +1,6 @@
 use std::vec;
 
+use log::info;
 use screeps::{HasPosition, Position, Room, StructureType};
 
 use crate::{
@@ -62,7 +63,7 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
         .storage_center;
 
     let measure_pos = Position::new(measure_pos.x, measure_pos.y, remote_memory.owner);
-    let remote_cache = room_cache.rooms.get(&remote_memory.owner).unwrap();
+    let remote_cache = room_cache.rooms.get(&room.name()).unwrap();
 
     let mut reset_movement_cache = false;
 

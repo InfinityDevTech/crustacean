@@ -19,6 +19,10 @@ pub const WALKABLE_STRUCTURES: [screeps::StructureType; 3] = [
     screeps::StructureType::Rampart,
 ];
 
+pub const INVADER_USERNAME: &str = "Invader";
+pub const MMO_SHARD_NAMES: [&str; 4] = ["shard0", "shard1", "shard2", "shard3"];
+pub const MAX_BUCKET: i32 = 10000;
+
 pub const NO_RCL_PLACEABLES: [screeps::StructureType; 4] = [
     screeps::StructureType::Road,
     screeps::StructureType::Container,

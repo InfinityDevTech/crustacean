@@ -1,7 +1,6 @@
 use log::info;
 use screeps::{
-    pathfinder::{self, SearchOptions},
-    Position, Room, RoomCoordinate, RoomName,
+    game, pathfinder::{self, SearchOptions}, Position, Room, RoomCoordinate, RoomName
 };
 
 use crate::{
@@ -14,6 +13,7 @@ pub fn fetch_possible_remotes(
     memory: &mut ScreepsMemory,
     room_cache: &mut CachedRoom,
 ) -> Vec<RoomName> {
+
     // Little high on CPU, but its run every 3k ticks, so its fine. I guess.
     let mut pre_existing = Vec::new();
     let adjacent_rooms = room.get_adjacent(2);

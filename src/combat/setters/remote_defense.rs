@@ -1,6 +1,6 @@
 use screeps::{game, Part, SharedCreepProperties};
 
-use crate::{allies, combat::goals::determine_single_attack_power, config, constants::HOSTILE_PARTS, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::RoomCache};
+use crate::{allies, combat::goals::determine_single_attack_power, constants::{self, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::RoomCache};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut ScreepsMemory) {
@@ -69,7 +69,7 @@ pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut Screep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn invader_only_attack(goal: &RemoteDefenseGoal) -> bool {
     for attacker in &goal.attacker_names {
-        if attacker != config::INVADER_USERNAME {
+        if attacker != constants::INVADER_USERNAME {
             return false;
         }
     }

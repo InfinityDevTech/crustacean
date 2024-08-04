@@ -9,7 +9,7 @@ use crate::movement::move_target::{MoveOptions, MoveTarget};
 use crate::room::cache::RoomCache;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
-use crate::utils::{self, get_unique_id};
+use crate::utils::{self, get_body_cost, get_unique_id};
 use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::{dir_to_coords, num_to_dir}, room::cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 use super::{base_hauler, builder, create_spawn_requests_for_room, fast_filler, get_required_role_counts, harvester, hauler, repairer, scout, storage_sitter, upgrader};
@@ -183,12 +183,17 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
     //    return;
     //}
 
-    let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache);
+    let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache, true);
     let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
+
+    if carry_count == 0 {
+        info!("  [HAULER SCAN] Room {} has no carry parts, skipping hauler scan", room.name());
+        return;
+    }
 
     let mut carry_requirement = 0;
 
-    if room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200 {
+    if game::cpu::bucket() > 250 && (room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200) {
         for remote in &room_memory.remotes {
                 let sources = if let Some(cache) = cache.rooms.get(remote) {
                     // If we can actually see the sources, we can calculate the EPT
@@ -366,7 +371,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 
         room_memory.hauler_count = hauler_count as u32;
 
-        info!("[HAULER SCAN] Initiated hauler scan for room {} - hauler count: {} - carry requirement: {}", room.name(), room_memory.hauler_count, carry_requirement);
+        info!("  [HAULER SCAN] Initiated hauler scan for room {} - hauler count: {} - carry requirement: {}", room.name(), room_memory.hauler_count, carry_requirement);
     }
 }
 
@@ -448,10 +453,10 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
             room_requests.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap());
 
-            let room_requests = randomize_top_priorities(room_requests);
+            let room_requests = randomize_top_priorities(&room, room_requests);
 
             if let Some(request) = room_requests.first() {
-                info!("[{}] Highest spawn scorer role: {} - score: {}", room.name(), request.role, request.priority);
+                info!("[SPAWNING] Room {} highest spawn scorer role: {} - score: {}", room.name(), request.role, request.priority);
                 let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, request);
 
                 if can_spawn {
@@ -469,13 +474,28 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn randomize_top_priorities(requests: Vec<SpawnRequest>) -> Vec<SpawnRequest> {
+fn randomize_top_priorities(room: &Room, requests: Vec<SpawnRequest>) -> Vec<SpawnRequest> {
     let mut top_scorers = Vec::new();
     if requests.is_empty() {
         return top_scorers;
     }
 
-    let top_scorer = requests.first().unwrap().priority;
+    let top_scorer = if get_body_cost(&requests.first().unwrap().body) > room.energy_capacity_available() {
+        let mut top_scorer = requests.first().unwrap().priority;
+
+        info!("[SPAWNING] Room {} has a spawn request for {} that is larger than the room can handle... Fix!", room.name(), requests.first().unwrap().role);
+
+        for request in &requests {
+            if get_body_cost(&request.body) <= room.energy_capacity_available() {
+                top_scorer = request.priority;
+                break;
+            }
+        }
+
+        top_scorer
+    } else {
+        requests.first().unwrap().priority
+    };
 
     for request in requests {
         if request.priority == top_scorer {

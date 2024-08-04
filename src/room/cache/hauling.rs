@@ -2,8 +2,7 @@ use std::{cmp, collections::HashMap};
 
 use log::info;
 use screeps::{
-    game, Creep, HasId, HasPosition, Part, Position, RawObjectId, ResourceType,
-    RoomName, SharedCreepProperties, StructureProperties, StructureType,
+    game, CircleStyle, Creep, HasId, HasPosition, Part, Position, RawObjectId, ResourceType, RoomName, SharedCreepProperties, StructureProperties, StructureType, TextStyle
 };
 use serde::{Deserialize, Serialize};
 
@@ -211,7 +210,7 @@ impl HaulingCache {
             }
         }
 
-        /*let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
+        let position = game::get_object_by_id_erased(&order.target).unwrap().pos();
         let room_visual = game::rooms().get(position.room_name()).unwrap().visual();
 
         room_visual.circle(
@@ -240,7 +239,7 @@ impl HaulingCache {
                 format!("P {:.2}", order.priority),
                 Some(TextStyle::default().color("#00ff00")),
             );
-        }*/
+        }
 
 
 

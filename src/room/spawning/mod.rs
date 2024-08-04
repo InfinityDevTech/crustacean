@@ -679,6 +679,7 @@ pub fn hauler(room: &Room, cache: &mut CachedRoom, memory: &mut ScreepsMemory, s
     let body = crate::room::spawning::creep_sizing::hauler_body(
         room,
         cache,
+        false,
     );
     let cost = get_body_cost(&body);
 
@@ -949,7 +950,7 @@ pub fn harvester(
         .unwrap_or(&Vec::new())
         .len();
 
-    for source in &cache.resources.sources {
+    for mut source in &cache.resources.sources {
         let max_parts_for_source = source.max_parts_needed();
         let current_parts_on_source = source.calculate_work_parts(cache);
         let parts_needed_on_source = source.parts_needed(cache);
@@ -971,14 +972,14 @@ pub fn harvester(
             continue;
         }
 
-        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, false);
+        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, false, source.container.is_some());
         let cost = get_body_cost(&body);
 
         // We have a creep here, so its mining.
         // Therefore, we can build the biggest one to try and replace it
         // with a bigger one. CPU isnt cheap. This shit cost me $130.
         if !source.creeps.is_empty() {
-            let (filled, body) = creep_sizing::miner_body(room, cache, max_parts_for_source, true);
+            let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, true, source.container.is_some());
             let cost = get_body_cost(&body);
 
             let priority = 4.0 * parts_needed_on_source as f64;
@@ -1082,7 +1083,7 @@ pub fn remote_harvester(
                 }
 
                 let (filled, body) =
-                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, false);
+                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, false, source.container.is_some());
                 let cost = get_body_cost(&body);
 
                 // We have a creep here, so its mining.
@@ -1090,7 +1091,7 @@ pub fn remote_harvester(
                 // with a bigger one. CPU isnt cheap. This shit cost me $130.
                 if !source.creeps.is_empty() {
                     let (filled, body) =
-                        creep_sizing::miner_body(room, remote_cache, max_parts_for_source, true);
+                        creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, true, source.container.is_some());
                     let cost = get_body_cost(&body);
 
                     let priority = 4.0 * parts_needed_on_source as f64;
@@ -1143,7 +1144,7 @@ pub fn remote_harvester(
         } else if !owning_cache.remotes_with_harvester.contains(remote_name) {
             if let Some(remote_memory) = memory.remote_rooms.get_mut(remote_name) {
                 if let Some(first_source) = remote_memory.sources.first() {
-                    let (finished, body) = creep_sizing::miner_body(room, owning_cache, 3, false);
+                    let (finished, body) = creep_sizing::miner_body(room, owning_cache, 3, false, false);
 
                     let priority = 50.0;
                     let cost = get_body_cost(&body);

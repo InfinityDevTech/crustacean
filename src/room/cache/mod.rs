@@ -191,7 +191,7 @@ fn storage_status(room: &Room, structures: &mut RoomStructureCache) -> StorageSt
     if let Some(storage) = &structures.storage {
         stored_energy = storage.store().get_used_capacity(Some(ResourceType::Energy));
 
-        let needed = economy::get_required_energy_storage(&room);
+        let needed = economy::get_required_energy_storage(room);
 
         if needed >= stored_energy {
             needed_energy = needed - stored_energy;

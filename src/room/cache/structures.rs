@@ -141,11 +141,11 @@ impl RoomStructureCache {
     }
 
     pub fn links(&self) -> &CachedRoomLinks {
-        return &self.classified_links.as_ref().unwrap();
+        return self.classified_links.as_ref().unwrap();
     }
 
     pub fn containers(&self) -> &CachedRoomContainers {
-        return &self.classified_containers.as_ref().unwrap();
+        return self.classified_containers.as_ref().unwrap();
     }
 
     // This is all to avoid a clone.
@@ -411,7 +411,7 @@ impl RoomStructureCache {
         // TODO:
         // Do I use a find call?
         // I mean, its only called once, and I think passing the resource cache would get fucky.
-        let sources = self.room.find(find::SOURCES, None);
+        //let sources = self.room.find(find::SOURCES, None);
         //let room_heap = &heap().rooms.lock().unwrap();
         //let sources = &room_heap.get(&self.room.name()).unwrap().sources;
 
@@ -465,7 +465,7 @@ impl RoomStructureCache {
 
     pub fn tombstones(&mut self) -> &HashMap<ObjectId<Tombstone>, Tombstone> {
         if self.tombstones.is_some() {
-            return &self.tombstones.as_ref().unwrap();
+            return self.tombstones.as_ref().unwrap();
         }
 
         let found_tombstones = self.room.find(find::TOMBSTONES, None).into_iter();
@@ -477,7 +477,7 @@ impl RoomStructureCache {
 
         self.tombstones = Some(tombstones);
 
-        return &self.tombstones.as_ref().unwrap();
+        return self.tombstones.as_ref().unwrap();
     }
 
     pub fn get_spawns(&self) -> (Vec<StructureSpawn>, Vec<StructureSpawn>) {
@@ -497,10 +497,10 @@ impl RoomStructureCache {
 
     pub fn construction_sites(&mut self) -> &Vec<ConstructionSite> {
         if self.construction_sites.is_some() {
-            return &self.construction_sites.as_ref().unwrap();
+            return self.construction_sites.as_ref().unwrap();
         }
         self.construction_sites = Some(self.room.find(find::CONSTRUCTION_SITES, None));
 
-        return &self.construction_sites.as_ref().unwrap();
+        return self.construction_sites.as_ref().unwrap();
     }
 }

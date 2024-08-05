@@ -1,6 +1,6 @@
 use screeps::Room;
 
-use crate::{config, room::cache::CachedRoom};
+use crate::config;
 
 pub fn get_required_energy_storage(room: &Room) -> u32 {
     let mut base_stock = config::ROOM_ENERGY_STOCKPILE;

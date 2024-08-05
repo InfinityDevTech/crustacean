@@ -1,7 +1,6 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, storage_sitter_body};
-use log::info;
 use screeps::{find, game, HasId, Part, Position, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
@@ -129,11 +128,7 @@ pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u3
                     }
                 }
 
-                if *controller_level < 8
-                    || (*ttdowngrade < Some(1500) && *controller_level >= 8)
-                        && harvester_count >= 1
-                        && !storage_blocked
-                {
+                if *controller_level < 8 || *ttdowngrade < Some(1500) && harvester_count >= 1 && !storage_blocked {
                     1
                 } else {
                     0
@@ -986,14 +981,14 @@ pub fn harvester(
             parts_needed_on_source = max_parts_for_source;
         }
 
-        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, can_replace, source.container.is_some());
+        let (_filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, can_replace, source.container.is_some());
         let cost = get_body_cost(&body);
 
         // We have a creep here, so its mining.
         // Therefore, we can build the biggest one to try and replace it
         // with a bigger one. CPU isnt cheap. This shit cost me $130.
         if !source.creeps.is_empty() {
-            let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, true, source.container.is_some());
+            let (_filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, true, source.container.is_some());
             let cost = get_body_cost(&body);
 
             let mut priority = 4.0 * parts_needed_on_source as f64;

@@ -2,7 +2,7 @@ pub const MEMORY_VERSION: u8 = 1;
 
 pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
-pub const ALLIANCE_TAG: &str = "";
+pub const ALLIANCE_TAG: &str = "[CAT]";
 
 pub const ROOM_ENERGY_STOCKPILE: u32 = 20000;
 

@@ -1,6 +1,6 @@
 use log::info;
 use screeps::{
-    game, pathfinder::{self, SearchOptions}, Position, Room, RoomCoordinate, RoomName
+    pathfinder::{self, SearchOptions}, Position, Room, RoomCoordinate, RoomName
 };
 
 use crate::{

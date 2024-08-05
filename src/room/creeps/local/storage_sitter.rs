@@ -47,7 +47,7 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
             .get(&Role::Upgrader)
             .unwrap_or(&Vec::new())
             .len();
-        if (upgrader_count >= 1 && room_cache.structures.links().controller.is_some()) && storage.store().get_used_capacity(Some(ResourceType::Energy)) > 20000 {
+        if (upgrader_count >= 1 && room_cache.structures.links().controller.is_some()) && !utils::under_storage_gate(room_cache, 0.8) {
             if storage_link
                 .store()
                 .get_free_capacity(Some(ResourceType::Energy))

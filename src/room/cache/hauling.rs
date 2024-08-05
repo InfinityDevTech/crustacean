@@ -796,7 +796,7 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
                         .store()
                         .get_used_capacity(Some(ResourceType::Energy)),
                 ),
-                -3000.0,
+                -1000.0,
                 HaulingType::Offer,
             )
         }

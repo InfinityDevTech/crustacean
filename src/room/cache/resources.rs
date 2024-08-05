@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use log::info;
-use screeps::{constants, find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::{self, scale_haul_priority}};
+use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::position::PositionExtensions, utils::{self, scale_haul_priority}};
 
 use super::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache};
 
@@ -19,7 +18,6 @@ pub struct CachedSource {
 
     pub csites: Vec<ConstructionSite>,
 
-    did_6_check: bool,
     lowest_ttl: u32,
 }
 
@@ -117,7 +115,6 @@ impl RoomResourceCache {
                 container: None,
                 csites,
 
-                did_6_check: false,
                 lowest_ttl: u32::MAX,
             };
 
@@ -166,7 +163,7 @@ impl CachedSource {
         let spawn_time = 3 * max_parts as u32;
         let lowest_ttl = self.lowest_ttl;
 
-        if range_to_source + spawn_time > lowest_ttl {
+        if (range_to_source + spawn_time > lowest_ttl) && self.work_part_count <= max_parts{
             return true;
         }
 
@@ -202,7 +199,7 @@ impl CachedSource {
         }
     }
 
-    pub fn calculate_work_parts(&self, cache: &CachedRoom) -> u8 {
+    pub fn calculate_work_parts(&self, _cache: &CachedRoom) -> u8 {
         let work_parts: u8 = self.work_part_count;
 
         /*
@@ -326,7 +323,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
             cached_room.stats.energy.in_containers = controller_container.store().get_used_capacity(None);
 
-            cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority as f32, HaulingType::NoDistanceCalcTransfer);
+            cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(ResourceType::Energy), Some(controller_container.store().get_free_capacity(Some(ResourceType::Energy)).try_into().unwrap()), priority, HaulingType::NoDistanceCalcTransfer);
         }
     }
 

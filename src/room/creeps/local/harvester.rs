@@ -5,7 +5,7 @@ use screeps::{
 };
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory},
+    memory::ScreepsMemory,
     movement::move_target::MoveOptions,
     room::cache::{resources::CachedSource, CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
@@ -60,9 +60,9 @@ pub fn harvest_source(
 
         if let Some(pos) = open_pos {
             creep.better_move_to(memory, cache, pos, 0, MoveOptions::default());
-        } else {
+        } else{
             // If the source is flooded, let the traffic manager figure it out.
-            //creep.better_move_to(memory, cache, source.pos(), 1, MoveOptions::default());
+            //creep.better_move_to(memory, cache, source.source.pos(), 1, MoveOptions::default());
         }
 
         None
@@ -131,7 +131,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
 
     if let Some(container) = &cache.resources.sources[task_id].container.clone()
     {
-        if repair_container(creep, memory, cache, &container) {
+        if repair_container(creep, memory, cache, container) {
             return true;
         }
 
@@ -142,7 +142,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             //let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
 
             //let _ = creep.ITdrop(ResourceType::Energy, Some(amount));
-            return false;
+            false
         } else if creep.pos().is_near_to(container.pos()) {
             let _ = creep.ITtransfer(container, ResourceType::Energy, None);
 
@@ -161,7 +161,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
     } else {
         // Auto drop, save 0.2 CPU
         //let _ = creep.ITdrop(ResourceType::Energy, None);
-        return false;
+        false
     }
 }
 

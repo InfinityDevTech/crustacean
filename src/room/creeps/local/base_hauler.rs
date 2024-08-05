@@ -187,8 +187,6 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mu
                 }
             } else {
                 creep.better_move_to(memory, room_cache, extension.pos(), 1, Default::default());
-
-                return;
             }
         }
     } else {

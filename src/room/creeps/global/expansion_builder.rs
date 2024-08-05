@@ -78,7 +78,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
                 }
             }
             } else if let Some(task) = &creep_memory.hauling_task.clone() {
-                execute_order(creep, memory, cache, &task);
+                execute_order(creep, memory, cache, task);
 
                 return;
             } else {
@@ -143,7 +143,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
             let controller = &room_cache.structures.controller.as_ref().unwrap();
 
             if creep.pos().get_range_to(controller.pos()) <= 3 {
-                let _ = creep.upgrade_controller(&controller);
+                let _ = creep.upgrade_controller(controller);
             } else {
                 creep.better_move_to(
                     memory,

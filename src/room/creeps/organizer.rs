@@ -26,7 +26,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     // and this is the only way I could think of to fix it
     let creeps = &cache.rooms.get_mut(&room.name()).unwrap().creeps.creeps_in_room.clone();
 
-    if creeps.len() == 0 {
+    if creeps.is_empty() {
         return game::cpu::get_used() - starting_cpu;
     }
 

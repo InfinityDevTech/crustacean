@@ -1,5 +1,6 @@
 use std::vec;
 
+use log::info;
 use screeps::{find, game, Flag, HasPosition, OwnedStructureProperties, Part, RoomName, SharedCreepProperties, StructureType};
 
 use crate::{
@@ -152,15 +153,15 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             }
         }
 
+        let expansion_game_room = game::rooms().get(*goal_room).unwrap();
+        cache.create_if_not_exists(&expansion_game_room, memory, None);
         let expansion_cache = cache.rooms.get_mut(goal_room);
-        let expansion_game_room = game::rooms().get(*goal_room);
 
-        if expansion_cache.is_none() || expansion_game_room.is_none() {
+        if expansion_cache.is_none() {
             return;
         }
 
         let expansion_cache = expansion_cache.unwrap();
-        let expansion_game_room = expansion_game_room.unwrap();
 
         // If we built the spawn, the room can be removed from the goal list
         // Since it can handle itself now
@@ -183,7 +184,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             }
 
             let flag = flag_pos[0];
-            let _ = expansion_game_room.ITcreate_construction_site(flag.pos().x().u8(), flag.pos().y().u8(), StructureType::Spawn, None);
+            let res = expansion_game_room.ITcreate_construction_site(flag.pos().x().u8(), flag.pos().y().u8(), StructureType::Spawn, None);
         }
     }
 }

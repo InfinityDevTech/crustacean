@@ -1,13 +1,13 @@
 use std::vec;
 
 use log::info;
-use screeps::{HasPosition, Position, Room, StructureType};
+use screeps::{HasId, HasPosition, Position, Room, StructureType};
 
 use crate::{
     heap,
     memory::ScreepsMemory,
     room::cache::{CachedRoom, RoomCache},
-    traits::position::PositionExtensions,
+    traits::{creep::CreepExtensions, position::PositionExtensions},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -62,6 +62,12 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
         .unwrap()
         .storage_center;
 
+    if let Some(owner_cache) = memory.rooms.get(&remote_memory.owner) {
+        if owner_cache.rcl < 4 {
+            return;
+        }
+    }
+
     let measure_pos = Position::new(measure_pos.x, measure_pos.y, remote_memory.owner);
     let remote_cache = room_cache.rooms.get(&room.name()).unwrap();
 
@@ -95,14 +101,22 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
     }
 }
 
+// Links should be placed in this order
+// RCL 5 - Storage link and one Source link (try and do the furthest one)
+// RCL 6 - Add the controller link
+// RCL 7 - Add the second source link
+// RCL 8 - Throw on the Fast Filler link
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
+    let mut source_links_placed = 0;
     let mut links_placed = 0;
+
+    let only_one_source_link = room_cache.rcl <= 6;
 
     let max_links = match room_cache.rcl {
         5 => 1,
-        6 => 1,
-        7 => 2,
+        6 => 2,
+        7 => 3,
         8 => 3,
         _ => 0,
     };
@@ -114,23 +128,33 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
     );
 
     let mut all_source_containers_placed = false;
+    let mut furthest_source_from_storage = None;
+    let mut furthest_source_distance = 0;
     for source in &room_cache.resources.sources {
         if source.container.is_none() {
             all_source_containers_placed = false;
             break;
         }
 
+        if source.link.is_some() {
+            source_links_placed += 1;
+            links_placed += 1;
+        }
+
+        if let Some(storage_center) = room_cache.storage_center {
+            if source.source.pos().xy().get_range_to(storage_center) > furthest_source_distance {
+                furthest_source_distance = source.source.pos().xy().get_range_to(storage_center);
+                furthest_source_from_storage = Some(source.source.id());
+            }
+        }
+
         all_source_containers_placed = true;
     }
 
     if let Some(controller) = &room_cache.structures.controller.clone() {
-        if room_cache.structures.containers().controller.is_some()
-            || room_cache.structures.links().controller.is_some()
+        if room_cache.structures.containers().controller.is_none()
+            || room_cache.structures.links().controller.is_none()
         {
-            if room_cache.structures.links().controller.is_some() {
-                links_placed += 1;
-            }
-        } else {
             let container_pos =
                 find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![]);
 
@@ -149,30 +173,31 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
                 find_pos_most_accessible(
                     &controller.pos(),
                     &measure_pos,
-                    1,
+                    3,
                     vec![container_pos.unwrap()],
                 )
             } else {
-                find_pos_most_accessible(&controller.pos(), &measure_pos, 1, vec![])
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 3, vec![])
             };
 
             if let Some(link_pos) = link_pos {
-                if links_placed < max_links {
+                if links_placed < max_links && room_cache.rcl >= 6 {
                     links_placed += 1;
-                    let _ = room.create_construction_site(
+
+                    let res = room.create_construction_site(
                         link_pos.x().u8(),
                         link_pos.y().u8(),
                         StructureType::Link,
                         None,
                     );
-                }
-            }
-        }
-    }
 
-    for source in &room_cache.resources.sources {
-        if source.link.is_some() {
-            links_placed += 1;
+                    info!("Creating controller link: {:?}", res);
+                } else {
+                    info!("Links placed {} / {}", links_placed, max_links);
+                }
+            } else {
+                info!("No link pos found for controller");
+            }
         }
     }
 
@@ -202,17 +227,29 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
 
         if source.link.is_none() {
             if let Some(link_pos) = link_pos {
-                if links_placed >= max_links {
-                    continue;
+                if room_cache.rcl <= 5 && source_links_placed < 1 && only_one_source_link {
+                    if let Some(furthest) = furthest_source_from_storage {
+                        if source.source.id() == furthest {
+                            source_links_placed += 1;
+                            links_placed += 1;
+                            let _ = room.create_construction_site(
+                                link_pos.x().u8(),
+                                link_pos.y().u8(),
+                                StructureType::Link,
+                                None,
+                            );
+                        }
+                    }
+                } else if room_cache.rcl >= 7 && source_links_placed < 2 {
+                    source_links_placed += 1;
+                    links_placed += 1;
+                    let _ = room.create_construction_site(
+                        link_pos.x().u8(),
+                        link_pos.y().u8(),
+                        StructureType::Link,
+                        None,
+                    );
                 }
-
-                links_placed += 1;
-                let _ = room.create_construction_site(
-                    link_pos.x().u8(),
-                    link_pos.y().u8(),
-                    StructureType::Link,
-                    None,
-                );
             }
         }
     }
@@ -284,7 +321,6 @@ pub fn get_rcl_5_plan() -> Vec<(i8, i8, StructureType)> {
 
 pub fn get_rcl_6_plan() -> Vec<(i8, i8, StructureType)> {
     vec![
-        (0, -1, StructureType::Link),
         (2, -4, StructureType::Extension),
         (3, -4, StructureType::Extension),
         (4, -4, StructureType::Extension),
@@ -326,6 +362,7 @@ pub fn get_rcl_7_plan() -> Vec<(i8, i8, StructureType)> {
 
 pub fn get_rcl_8_plan() -> Vec<(i8, i8, StructureType)> {
     vec![
+        (0, -1, StructureType::Link),
         (0, 0, StructureType::Spawn),
         (0, -3, StructureType::Observer),
         (0, 3, StructureType::Nuker),

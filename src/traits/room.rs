@@ -111,11 +111,9 @@ impl RoomExtensions for screeps::Room {
         }
 
         let mut adjacent_checked = Vec::new();
-        for room in rooms.into_iter() {
-            if let Ok(res) = room {
-                if res != self.name() {
-                    adjacent_checked.push(res);
-                }
+        for room in rooms.into_iter().flatten() {
+            if room != self.name() {
+                adjacent_checked.push(room);
             }
         }
 

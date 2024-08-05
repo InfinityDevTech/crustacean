@@ -44,7 +44,7 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
         );
     } else {
         creep.bsay("⚡", false);
-        let _ = creep.upgrade_controller(&controller);
+        let _ = creep.upgrade_controller(controller);
 
         cached_room.stats.energy.spending_upgrading += energy_spent_upgrading(creep);
     }
@@ -204,9 +204,9 @@ pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Ro
                     .remote_rooms
                     .contains_key(&creep.room().unwrap().name())
                 {
-                    let _ = creep.ITsign_controller(&controller, &get_room_sign(true));
+                    let _ = creep.ITsign_controller(controller, &get_room_sign(true));
                 } else {
-                    let _ = creep.ITsign_controller(&controller, &get_room_sign(false));
+                    let _ = creep.ITsign_controller(controller, &get_room_sign(false));
                 }
             } else {
                 creep.better_move_to(

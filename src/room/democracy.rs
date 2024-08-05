@@ -344,6 +344,9 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
             || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
             || game::time() % 300 == 0
         {
+            heap().cachable_positions.lock().unwrap().remove(&room.name());
+            heap().flow_cache.lock().unwrap().remove(&room.name());
+
             let level = room.controller().unwrap().level();
 
             memory

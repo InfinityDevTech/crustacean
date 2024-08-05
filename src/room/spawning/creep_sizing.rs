@@ -4,13 +4,13 @@ use screeps::{game, Part, ResourceType, Room};
 use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
-    room::cache::{CachedRoom},
+    room::cache::CachedRoom,
     utils::{self, get_body_cost},
 };
 
 /// Returns the parts needed for a miner creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool, has_container: bool) -> (bool, Vec<Part>) {
+pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool, _has_container: bool) -> (bool, Vec<Part>) {
     //let mut parts = if has_container && cache.rcl <= 4 {
     //    vec![Part::Work, Part::Move]
     //} else {
@@ -337,6 +337,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 
 
     parts.push(Part::Carry);
+    parts.push(Part::Move);
     parts.push(Part::Move);
     let mut current_cost = get_body_cost(&parts);
     let cost_capable = room.energy_available();

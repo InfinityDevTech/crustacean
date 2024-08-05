@@ -40,7 +40,6 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
         if controller.my() {
             creep.bsay("🏳️", true);
-            return;
         } else if creep.pos().is_near_to(controller.pos()) {
             let _ = creep.ITclaim_controller(&controller);
         } else {

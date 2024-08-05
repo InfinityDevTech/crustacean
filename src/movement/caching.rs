@@ -57,7 +57,8 @@ pub fn generate_pathing_targets(room: &Room, _memory: &ScreepsMemory, room_cache
 pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> CompressedMatrix {
     let mut flow_field = FlowField::new(50, 50, true);
 
-    let all_structures = room_cache.structures.all_structures();
+    let all_structures = room_cache.structures.all_structures().clone();
+    let construction_sites = room_cache.structures.construction_sites().clone();
 
     let callback = || {
         let mut matrix = LocalCostMatrix::new();
@@ -87,6 +88,12 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
         for structure in &all_structures {
             if !WALKABLE_STRUCTURES.contains(&structure.structure_type()) {
                 matrix.set(structure.pos().xy(), 255);
+            }
+        }
+
+        for construction_site in &construction_sites {
+            if !WALKABLE_STRUCTURES.contains(&construction_site.structure_type()) {
+                matrix.set(construction_site.pos().xy(), 255);
             }
         }
 

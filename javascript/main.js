@@ -109,6 +109,8 @@ let pause_exec = false;
 
 let wasm_module;
 module.exports.loop = function () {
+  //memhack.run_mem_hack();
+
   if (pause_exec) {
     console.log("[JS] Skipping execution on tick: " + Game.time);
     return;
@@ -231,3 +233,19 @@ function roomNameToXY(name) {
   }
   return [xx, yy];
 };
+
+class MemHack {
+  register_mem_hack() {
+    this.memory = Memory;
+    this.memory = RawMemory._parsed;
+  }
+
+  run_mem_hack() {
+    delete global.Memory;
+    global.Memory = this.memory;
+    RawMemory._parsed = this.memory;
+  }
+}
+
+//const memhack = new MemHack();
+//memhack.register_mem_hack();

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use log::info;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, SeedableRng};
 use rand::prelude::SliceRandom;
 use screeps::{game, look, Creep, Direction, ErrorCode, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
@@ -12,7 +12,7 @@ use crate::traits::creep::CreepExtensions;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
 use crate::utils::{self, get_body_cost, get_unique_id};
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::{dir_to_coords, num_to_dir}, room::cache::CachedRoom, utils::{name_to_role, role_to_name}};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::dir_to_coords, room::cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 use super::{base_hauler, builder, create_spawn_requests_for_room, fast_filler, get_required_role_counts, harvester, hauler, repairer, scout, storage_sitter, upgrader};
 

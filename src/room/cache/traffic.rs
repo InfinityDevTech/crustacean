@@ -37,7 +37,7 @@ pub fn run_movement(room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) {
     // Watch this, its a hack for some bugs. This is a temporary fix
     // Haulers would have no task, and block the path, I might have them move a random dir.
     // TODO: Fix this
-    if !memory.rooms.contains_key(&room_cache.room_name) && !memory.remote_rooms.contains_key(&room_cache.room_name) {
+    if !memory.rooms.contains_key(&room_cache.room.name()) && !memory.remote_rooms.contains_key(&room_cache.room.name()) {
         run_non_room_traffic(room_cache);
 
         return;

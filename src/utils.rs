@@ -4,9 +4,9 @@
 use std::{collections::HashMap, f32::consts::E};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{constants, game, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Store};
+use screeps::{constants, game, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Source, Store};
 
-use crate::{config, heap, memory::Role, room::cache::{hauling::HaulingPriority, RoomCache}, traits::room::RoomType};
+use crate::{config, heap, memory::Role, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
@@ -150,6 +150,34 @@ pub fn get_proper_coords(room: &RoomName) -> (i32, i32) {
     };
 
     (x_mod, y_mod)
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn source_max_parts(source: &Source) -> u8 {
+    let max_energy = source.energy_capacity();
+
+    // Each work part equates to 2 energy per tick
+    // Each source refills energy every 300 ticks.
+    let max_work_needed = (max_energy / 600) + 1;
+
+    max_work_needed.clamp(0, u8::MAX as u32) as u8
+}
+
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+pub fn under_storage_gate(room_cache: &CachedRoom, gate: f32) -> bool {
+    let storage_gate = room_cache.storage_status.wanted_energy as f32 * gate;
+
+    if let Some(storage) = &room_cache.structures.storage {
+        if storage
+            .store()
+            .get_used_capacity(Some(ResourceType::Energy))
+            < storage_gate.round() as u32
+        {
+            return true;
+        }
+    }
+
+    false
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

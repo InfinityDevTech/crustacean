@@ -54,13 +54,13 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
-    let controller = cached_room.structures.controller.as_ref().unwrap();
+    let controller_downgrade = cached_room.structures.controller.as_ref().unwrap().ticks_to_downgrade();
 
     if creep.room().unwrap().name() != creep_memory.owning_room {
         if let Some(task) = creep_memory.hauling_task.clone() {
             execute_order(creep, memory, cache, &task);
         } else {
-            let pos = controller.pos();
+            let pos = cached_room.structures.controller.as_ref().unwrap().pos();
             creep.better_move_to(
                 memory,
                 cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
@@ -76,7 +76,9 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
         <= (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.75)
     {
         if let Some(room_storage) = cached_room.structures.storage.as_ref() {
-            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= 20000 && controller.ticks_to_downgrade() > Some(5000) {
+            let energy_gate = cached_room.storage_status.wanted_energy as f32 * 0.5;
+
+            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= energy_gate.round() as u32 && controller_downgrade > Some(5000) {
                 if let Some(controller) = cached_room.structures.controller.as_ref() {
                     if creep.pos().get_range_to(controller.pos()) > 3 {
                         creep.better_move_to(

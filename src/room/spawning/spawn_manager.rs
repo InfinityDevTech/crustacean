@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::prelude::SliceRandom;
-use screeps::{game, look, Creep, Direction, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
+use screeps::{game, look, Creep, Direction, ErrorCode, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::movement::move_target::{MoveOptions, MoveTarget};
+use crate::movement::movement_utils::dir_to_other_coord;
 use crate::room::cache::RoomCache;
+use crate::traits::creep::CreepExtensions;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
 use crate::utils::{self, get_body_cost, get_unique_id};
@@ -108,14 +110,16 @@ impl SpawnManager {
                 }
             }
 
-            let mut rng = StdRng::seed_from_u64(game::time() as u64);
             for creep in creeps_in_range {
                 let name = creep.name();
                 let role = name_to_role(&name);
 
                 if role != Some(Role::FastFiller) {
-                    let dir = num_to_dir(rng.gen_range(1..9) as u8);
-                    dfs_clear_spawn(creep, dir);
+                    let dir = creep.get_possible_moves(room_cache);
+
+                    if let Some(dir) = dir.first() {
+                        let _ = creep.ITmove_direction(dir_to_other_coord(creep.pos().xy(), *dir));
+                    }
                 }
             }
         }
@@ -154,22 +158,24 @@ impl SpawnManager {
         false
     }
 
-    pub fn can_room_spawn_creep(&self, room: &Room, room_cache: &CachedRoom, request: &SpawnRequest) -> bool {
+    pub fn can_room_spawn_creep(&self, room: &Room, room_cache: &CachedRoom, request: &SpawnRequest) -> Result<(), ErrorCode> {
         let cost = request.cost;
 
+        info!("  [SPAWNING] Room {} trying to spawn {} with cost: {} (Available: {}, capacity: {})", room.name(), request.role, cost, room.energy_available(), room.energy_capacity_available());
+
         if room.energy_available() < cost {
-            return false;
+            return Err(ErrorCode::NotEnough);
         }
 
         let (available_spawn, _unavailable_spawns) = room_cache.structures.get_spawns();
         if available_spawn.is_empty() {
-            return false;
+            return Err(ErrorCode::Full);
         }
 
         let options = SpawnOptions::default().dry_run(true);
         let dry_run_result = available_spawn.first().unwrap().ITspawn_creep_with_options(&request.body, "dry_run", &options);
 
-        dry_run_result.is_ok()
+        dry_run_result
     }
 }
 
@@ -262,7 +268,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                         let spawn = owning_cache
                             .spawn_center
                             .unwrap()
-                            .as_position(&owning_cache.room_name);
+                            .as_position(&owning_cache.room.name());
 
                         let mut out_target = MoveTarget {
                             pos: source_pos,
@@ -321,7 +327,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
                 let spawn = owning_cache
                     .spawn_center
                     .unwrap()
-                    .as_position(&owning_cache.room_name);
+                    .as_position(&owning_cache.room.name());
 
                 let mut out_target = MoveTarget {
                     pos: source.pos(),
@@ -381,14 +387,15 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         let room = game::rooms().get(*room).unwrap();
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
-        let (active_spawns, inactive_spawns) = room_cache.structures.get_spawns();
-        let mut spawned_this_tick = false;
-        let mut waiting_on_required = false;
-        if active_spawns.is_empty() { continue; }
+        let (available_spawns, unavailable_spawns) = room_cache.structures.get_spawns();
 
-        if game::time() % 10 == 0 && !inactive_spawns.is_empty() {
+        if game::time() % 10 == 0 && !unavailable_spawns.is_empty() {
             cache.spawning.clear_out_spawn_area(room_cache);
         }
+
+        let mut spawned_this_tick = false;
+        let mut waiting_on_required = false;
+        if available_spawns.is_empty() { continue; }
 
         let required_roles = get_required_role_counts(room_cache);
         let mut required_role_keys = required_roles.keys().collect::<Vec<_>>();
@@ -426,9 +433,9 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                 if let Some(spawn_request) = spawn_request {
                     let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, &spawn_request);
 
-                    info!("[SPAWNING] Room {} doesnt meet {} requirement, can spawn: {}", room.name(), required_role, can_spawn);
+                    info!("[SPAWNING] Room {} doesnt meet {} requirement, can spawn: {:?}", room.name(), required_role, can_spawn);
 
-                    if can_spawn {
+                    if can_spawn.is_ok() {
                         let spawned = cache.spawning.room_spawn_creep(&room, memory, room_cache, &spawn_request);
 
                         if spawned {
@@ -459,7 +466,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                 info!("[SPAWNING] Room {} highest spawn scorer role: {} - score: {}", room.name(), request.role, request.priority);
                 let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, request);
 
-                if can_spawn {
+                if can_spawn.is_ok() {
                     let spawned = cache.spawning.room_spawn_creep(&room, memory, room_cache, request);
 
                     if spawned {

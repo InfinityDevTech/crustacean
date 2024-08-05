@@ -351,7 +351,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut tick = 0;
     if level >= 5 {
         while current_cost < max_cost {
-            if current_cost + link_cost > max_cost || current_work_count >= parts_needed_to_fill {
+            if current_cost + link_cost >= max_cost || current_work_count >= parts_needed_to_fill {
                 break;
             }
 
@@ -369,7 +369,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         }
     } else {
         while current_cost < cost_capable {
-            if current_cost + no_link_cost > cost_capable || current_work_count >= parts_needed_to_fill {
+            if current_cost + no_link_cost >= cost_capable || current_work_count >= parts_needed_to_fill {
                 break;
             }
 

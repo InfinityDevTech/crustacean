@@ -38,7 +38,7 @@ pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     if creep.store().get_free_capacity(None) as f32
         <= (creep.store().get_capacity(None) as f32 * 0.5)
     {
-        if !link_deposit(creep, creep_memory, cached_room) && !deposit_energy(creep, memory, cached_room) {
+        if !deposit_energy(creep, memory, cached_room) {
             harvest_source(creep, &mut source, memory, cached_room);
         }
     } else {
@@ -81,55 +81,51 @@ pub fn harvest_source(
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn link_deposit(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mut CachedRoom) -> bool {
-    let link_id = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].link;
-
-    if let Some(link) = link_id {
-        if creep.pos().is_near_to(link.pos()) {
-            creep.bsay("🔗", false);
-            let _ = creep.ITtransfer(
-                link,
-                ResourceType::Energy,
-                Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
-            );
-        } else {
-            return false;
-        }
-    }
-    false
-}
-
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut CachedRoom) -> bool {
+    if creep.store().get_used_capacity(None) == 0 {
+        return false;
+    }
+
     creep.bsay("📦", false);
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let source = &cache.resources.sources[creep_memory.task_id.unwrap() as usize];
 
-    let task_id = creep_memory.task_id.unwrap() as usize;
-
-    if let Some(link) = &source.link.clone() {
-        if let Some(container) = &cache.resources.sources[task_id].container.clone()
-        {
-            if repair_container(creep, memory, cache, &container) {
+    if let Some(container) = &source.container {
+        if (cache.rcl < 4 || source.link.is_none()) && container.hits() < container.hits_max() {
+            if container.pos().get_range_to(creep.pos()) > 1 {
+                creep.bsay("🚚", false);
+                creep.better_move_to(
+                    memory,
+                    cache,
+                    container.pos(),
+                    1,
+                    MoveOptions::default(),
+                );
+                return true;
+            } else {
+                creep.bsay("🔧", false);
+                let _ = creep.ITrepair(container);
                 return true;
             }
         }
+    }
 
-        if link.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
-            if creep.pos().is_near_to(link.pos()) {
-                let _ = creep.ITtransfer(
-                    link,
-                    ResourceType::Energy,
-                    Some(creep.store().get_used_capacity(Some(ResourceType::Energy))),
-                );
+    let task_id = creep_memory.task_id.unwrap() as usize;
 
-                return false;
-            } else {
-                creep.better_move_to(memory, cache, link.pos(), 1, MoveOptions::default());
-
-                return true;
-            }
+    if let Some(link) = &source.link.clone() {
+        if creep.pos().is_near_to(link.pos()) {
+            let _ = creep.ITtransfer(link, ResourceType::Energy, None);
+            return false;
+        } else {
+            creep.better_move_to(
+                memory,
+                cache,
+                link.pos(),
+                1,
+                MoveOptions::default(),
+            );
+            return true;
         }
     }
 
@@ -139,10 +135,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             return true;
         }
 
-        if container
-            .store()
-            .get_free_capacity(Some(ResourceType::Energy))
-            == 0
+        if creep.pos() == container.pos()
         {
             // Why am I wasting the CPU to drop it?
             // It will automatically drop and not cost me the 0.2 CPU.
@@ -180,6 +173,10 @@ pub fn repair_container(
     container: &StructureContainer,
 ) -> bool {
     if creep.store().get_used_capacity(None) == 0 {
+        return false;
+    }
+
+    if cache.rcl >= 4 {
         return false;
     }
 

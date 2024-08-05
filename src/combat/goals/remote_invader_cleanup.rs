@@ -83,7 +83,7 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
 
             let responsible_room = cache.rooms.get_mut(&responsible_room).unwrap();
             let available_energy = game::rooms()
-                .get(responsible_room.room_name)
+                .get(responsible_room.room.name())
                 .unwrap()
                 .energy_available();
 
@@ -99,7 +99,7 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
 
             let memory = CreepMemory {
                 role: Role::InvaderCoreCleaner,
-                owning_room: responsible_room.room_name,
+                owning_room: responsible_room.room.name(),
                 target_room: Some(*target_room),
                 ..CreepMemory::default()
             };
@@ -107,7 +107,7 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
             let name = format!(
                 "{}-{}-{}",
                 utils::role_to_name(Role::InvaderCoreCleaner),
-                responsible_room.room_name,
+                responsible_room.room.name(),
                 utils::get_unique_id()
             );
 
@@ -121,7 +121,7 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
                 body,
                 priority,
                 current_cost,
-                responsible_room.room_name,
+                responsible_room.room.name(),
                 Some(memory),
                 None,
                 Some(name.clone()),
@@ -132,14 +132,14 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
             if let Some(reqs) = cache
                 .spawning
                 .room_spawn_queue
-                .get_mut(&responsible_room.room_name)
+                .get_mut(&responsible_room.room.name())
             {
                 reqs.push(req);
             } else {
                 cache
                     .spawning
                     .room_spawn_queue
-                    .insert(responsible_room.room_name, vec![req]);
+                    .insert(responsible_room.room.name(), vec![req]);
             }
         } else {
             info!("No responsible room found for {}", target_room);

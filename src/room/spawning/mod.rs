@@ -1,12 +1,13 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, storage_sitter_body};
-use screeps::{find, game, HasId, Part, ResourceType, Room, SharedCreepProperties};
+use log::info;
+use screeps::{find, game, HasId, Part, Position, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
 
 use crate::{
-    formation::duo::{duo_utils}, memory::{CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name}
+    formation::duo::duo_utils, memory::{CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
 };
 
 use super::cache::{CachedRoom, RoomCache};
@@ -433,6 +434,10 @@ pub fn repairer(
     cache: &CachedRoom,
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
+    if under_storage_gate(cache, 0.2) {
+        return None;
+    }
+
     let repairing_work_parts = cache
         .creeps
         .creeps_of_role
@@ -520,6 +525,10 @@ pub fn builder(
     cache: &mut CachedRoom,
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
+    if under_storage_gate(cache, 0.5) {
+        return None;
+    }
+
     let building_work_parts = cache
         .creeps
         .creeps_of_role
@@ -609,11 +618,7 @@ pub fn upgrader(
 
     let room_cache = false;
     if let Some(storage) = &cache.structures.storage {
-        if storage
-            .store()
-            .get_used_capacity(Some(ResourceType::Energy))
-            < 22000
-            && controller.ticks_to_downgrade() > Some(5000)
+        if under_storage_gate(cache, 0.5) && controller.ticks_to_downgrade() > Some(5000)
         {
             return None;
         }
@@ -950,10 +955,13 @@ pub fn harvester(
         .unwrap_or(&Vec::new())
         .len();
 
-    for mut source in &cache.resources.sources {
-        let max_parts_for_source = source.max_parts_needed();
+    let measure_pos = Position::new(cache.spawn_center.unwrap().x, cache.spawn_center.unwrap().y, cache.room.name());
+
+    for source in &cache.resources.sources {
+        let max_parts_for_source = source.max_work_parts;
         let current_parts_on_source = source.calculate_work_parts(cache);
-        let parts_needed_on_source = source.parts_needed(cache);
+        let mut parts_needed_on_source = source.parts_needed(cache);
+        let can_replace = source.can_replace_creep(measure_pos);
 
         let current_creeps_on_source = source.creeps.len();
         let max_mining_positions = source.calculate_mining_spots(room);
@@ -966,13 +974,19 @@ pub fn harvester(
             .unwrap();
 
         // If we have enough parts on the source, just skip it.
-        if current_parts_on_source >= max_parts_for_source
-            || current_creeps_on_source >= max_mining_positions as usize
+        if (current_parts_on_source >= max_parts_for_source
+            || current_creeps_on_source >= max_mining_positions as usize)
+            && !can_replace
         {
+            //info!("[SPAWNING] Room {} Skipping source Parts: {} Max: {} | Creeps: {} Max: {} | Can Replace: {}", room.name(), current_parts_on_source, max_parts_for_source, current_creeps_on_source, max_mining_positions, can_replace);
             continue;
         }
 
-        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, false, source.container.is_some());
+        if can_replace {
+            parts_needed_on_source = max_parts_for_source;
+        }
+
+        let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, can_replace, source.container.is_some());
         let cost = get_body_cost(&body);
 
         // We have a creep here, so its mining.
@@ -982,7 +996,11 @@ pub fn harvester(
             let (filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, true, source.container.is_some());
             let cost = get_body_cost(&body);
 
-            let priority = 4.0 * parts_needed_on_source as f64;
+            let mut priority = 4.0 * parts_needed_on_source as f64;
+
+            if can_replace {
+                priority *= 2.1
+            }
 
             return Some(spawn_manager.create_room_spawn_request(
                 Role::Harvester,
@@ -1008,6 +1026,10 @@ pub fn harvester(
 
         if current_creeps_on_source == 0 {
             priority = 400000.0;
+        }
+
+        if can_replace {
+            priority *= 2.0;
         }
 
         priority += parts_needed_on_source as f64;
@@ -1040,6 +1062,8 @@ pub fn remote_harvester(
     let owning_room_memory = memory.rooms.get(&room.name()).unwrap();
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
 
+    let measure_pos = Position::new(owning_cache.spawn_center.unwrap().x, owning_cache.spawn_center.unwrap().y, owning_cache.room.name());
+
     let harvester_count = owning_cache
         .creeps
         .creeps_of_role
@@ -1057,10 +1081,11 @@ pub fn remote_harvester(
     for remote_name in &owning_room_memory.remotes {
         if let Some(remote_cache) = cache.rooms.get(remote_name) {
             for source in &remote_cache.resources.sources {
-                let max_parts_for_source = source.max_parts_needed();
-                let parts_needed_on_source = source.parts_needed(remote_cache);
+                let max_parts_for_source = source.max_work_parts;
+                let mut parts_needed_on_source = source.parts_needed(remote_cache);
+                let can_replace = source.can_replace_creep(measure_pos);
 
-                if parts_needed_on_source == 0 {
+                if parts_needed_on_source == 0 && !can_replace {
                     continue;
                 }
 
@@ -1076,14 +1101,19 @@ pub fn remote_harvester(
                     .unwrap();
 
                 // If we have enough parts on the source, just skip it.
-                if parts_needed_on_source == 0
-                    || current_creeps_on_source >= max_mining_positions as usize
+                if (parts_needed_on_source == 0
+                    || current_creeps_on_source >= max_mining_positions as usize)
+                    && !can_replace
                 {
                     continue;
                 }
 
+                if can_replace {
+                    parts_needed_on_source = max_parts_for_source;
+                }
+
                 let (filled, body) =
-                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, false, source.container.is_some());
+                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, can_replace, source.container.is_some());
                 let cost = get_body_cost(&body);
 
                 // We have a creep here, so its mining.

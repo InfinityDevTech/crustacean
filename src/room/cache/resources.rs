@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use log::info;
+use screeps::{constants, find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
 
-use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::scale_haul_priority};
+use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::{intents_tracking::CreepExtensionsTracking, position::PositionExtensions}, utils::{self, scale_haul_priority}};
 
 use super::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache};
 
@@ -10,12 +11,16 @@ use super::{hauling::{HaulingPriority, HaulingType}, CachedRoom, RoomCache};
 pub struct CachedSource {
     pub source: Source,
     pub creeps: Vec<ObjectId<Creep>>,
+    pub max_work_parts: u8,
     work_part_count: u8,
 
     pub link: Option<StructureLink>,
     pub container: Option<StructureContainer>,
 
     pub csites: Vec<ConstructionSite>,
+
+    did_6_check: bool,
+    lowest_ttl: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -100,15 +105,20 @@ impl RoomResourceCache {
 
         for source in sources {
             let csites = source.pos().find_in_range(find::CONSTRUCTION_SITES, 2);
+            let max_parts = utils::source_max_parts(&source);
 
             let constructed_source = CachedSource {
                 source,
                 creeps: Vec::new(),
+                max_work_parts: max_parts,
                 work_part_count: 0,
 
                 link: None,
                 container: None,
                 csites,
+
+                did_6_check: false,
+                lowest_ttl: u32::MAX,
             };
 
             self.sources.push(constructed_source);
@@ -150,14 +160,17 @@ impl CachedSource {
         work_parts_needed.clamp(0, u8::MAX as u32) as u8
     }
 
-    pub fn max_parts_needed(&self) -> u8 {
-        let max_energy = self.source.energy_capacity();
+    pub fn can_replace_creep(&self, dist: Position) -> bool {
+        let range_to_source = self.source.pos().get_range_to(dist);
+        let max_parts = self.max_work_parts;
+        let spawn_time = 3 * max_parts as u32;
+        let lowest_ttl = self.lowest_ttl;
 
-        // Each work part equates to 2 energy per tick
-        // Each source refills energy every 300 ticks.
-        let max_work_needed = (max_energy / 600) + 1;
+        if range_to_source + spawn_time > lowest_ttl {
+            return true;
+        }
 
-        max_work_needed.clamp(0, u8::MAX as u32) as u8
+        false
     }
 
     pub fn calculate_mining_spots(&self, room: &Room) -> u8 {
@@ -181,11 +194,18 @@ impl CachedSource {
     pub fn add_creep(&mut self, creep: &Creep) {
         self.work_part_count += creep.body().iter().filter(|p| p.part() == Part::Work).count() as u8;
         self.creeps.push(creep.try_id().unwrap());
+
+        if let Some(ttl) = creep.ticks_to_live() {
+            if ttl < self.lowest_ttl {
+                self.lowest_ttl = ttl;
+            }
+        }
     }
 
     pub fn calculate_work_parts(&self, cache: &CachedRoom) -> u8 {
         let work_parts: u8 = self.work_part_count;
 
+        /*
         if work_parts > 6 {
             let kreeps = self.creeps.clone();
 
@@ -220,6 +240,7 @@ impl CachedSource {
                 }
             }
         }
+        */
 
         work_parts
     }

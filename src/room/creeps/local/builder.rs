@@ -9,7 +9,7 @@ use crate::{
         hauling::{HaulTaskRequest, HaulingType},
         RoomCache,
     },
-    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::under_storage_gate,
 };
 
 use super::{hauler::execute_order, upgrader::run_upgrader};
@@ -90,7 +90,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
     if let Some(storage) = &room_cache.structures.storage {
-        if storage.store().get_used_capacity(Some(ResourceType::Energy)) > 0 {
+        if !under_storage_gate(room_cache, 0.7) {
             if !creep.pos().is_near_to(storage.pos()) {
                 creep.bsay("🚚", false);
                 creep.better_move_to(

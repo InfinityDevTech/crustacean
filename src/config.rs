@@ -4,7 +4,21 @@ pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "";
 
-pub const ROOM_REMOTE_COUNT: u8 = 4;
+pub const ROOM_ENERGY_STOCKPILE: u32 = 20000;
+
+pub fn REMOTES_FOR_RCL(rcl: u8) -> u8 {
+    match rcl {
+        1 => 3,
+        2 => 4,
+        3 => 5,
+        4 => 5,
+        5 => 6,
+        6 => 6,
+        7 => 4,
+        8 => 2,
+        _ => 0,
+    }
+}
 
 pub const REMOTE_SIGNS: [&str; 3] = [
 //"Woops. - Infinity Dev",

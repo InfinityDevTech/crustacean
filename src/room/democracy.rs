@@ -146,7 +146,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
                 .flow_cache
                 .lock()
                 .unwrap()
-                .get_mut(&cached_room.room_name)
+                .get_mut(&cached_room.room.name())
             {
                 // TODO: Make this take plans into consideration
                 // So we can reduce the amount of recalculations
@@ -231,7 +231,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             // If we dont have enough remotes, scan every 10 ticks
             // If its 30000 ticks, scan
             // If we just pushed code, or the heap reset, scan.
-            if ((room_memory.remotes.len() < config::ROOM_REMOTE_COUNT.into()
+            if ((room_memory.remotes.len() < config::REMOTES_FOR_RCL(room_cache.rcl).into()
                 && game::time() % 10 == 0)
                 || game::time() % 3000 == 0 || lifetime == 0) && game::cpu::bucket() > 500 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);

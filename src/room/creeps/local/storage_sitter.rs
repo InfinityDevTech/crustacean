@@ -107,7 +107,7 @@ pub fn check_pos(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut Cac
     let pos = creep.pos();
 
     if let Some(wanted_pos) = wanted_pos {
-        let wanted_pos = Position::new(wanted_pos.x, wanted_pos.y, room_cache.room_name);
+        let wanted_pos = Position::new(wanted_pos.x, wanted_pos.y, room_cache.room.name());
         if pos != wanted_pos {
             creep.bsay("🚚 POS", false);
 

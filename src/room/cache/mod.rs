@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use screeps::{game, OwnedStructureProperties, Room, RoomName, RoomXY};
+use screeps::{game, OwnedStructureProperties, ResourceType, Room, RoomName, RoomXY};
 use stats::StatsCache;
 use terminals::TerminalCache;
 
 use crate::{heap, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory, room::spawning::spawn_manager::SpawnManager};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
+
+use super::planning::room::economy;
 
 pub mod structures;
 pub mod creeps;
@@ -24,6 +26,16 @@ pub struct RoomCache {
     pub terminals: TerminalCache,
 
     pub creeps_moving_stuff: HashMap<String, bool>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StorageStatus {
+    pub has_storage: bool,
+    pub stored_energy: u32,
+    pub wanted_energy: u32,
+
+    pub energy_needed: u32,
+    pub needs_energy: bool,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -49,7 +61,7 @@ impl RoomCache {
 
 #[derive(Debug, Clone)]
 pub struct CachedRoom {
-    pub room_name: RoomName,
+    pub room: Room,
     pub current_holder: Option<String>,
     pub rcl: u8,
     pub reservation: u32,
@@ -63,6 +75,8 @@ pub struct CachedRoom {
     pub spawn_center: Option<RoomXY>,
     pub storage_center: Option<RoomXY>,
 
+
+    pub storage_status: StorageStatus,
     pub structures: RoomStructureCache,
     pub creeps: CreepCache,
     pub traffic: TrafficCache,
@@ -70,7 +84,7 @@ pub struct CachedRoom {
     //pub hauling: RefCell<HaulingCache>,
     pub hauling: HaulingCache,
     pub room_heap_cache: HeapRoom,
-    pub stats: StatsCache
+    pub stats: StatsCache,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -80,11 +94,13 @@ impl CachedRoom {
 
         let mut room_cache = heap().rooms.lock().unwrap();
 
-        let mut room_heap = room_cache.remove(&room.name()).unwrap_or_else(HeapRoom::default);
+        let mut room_heap = room_cache.remove(&room.name()).unwrap_or_default();
 
         let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
-        let structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
         let creeps = CreepCache::new_from_room(room, memory, &structures);
+
+        let storage_status = storage_status(room, &mut structures);
         let mut stats =  StatsCache::default();
         stats.energy.spending_spawning = 0;
 
@@ -97,7 +113,7 @@ impl CachedRoom {
         }
 
         let mut cached = CachedRoom {
-            room_name: room.name(),
+            room: room.clone(),
             current_holder: None,
             rcl: 0,
             reservation: 0,
@@ -118,7 +134,8 @@ impl CachedRoom {
             hauling: HaulingCache::new(),
             room_heap_cache: room_heap,
             stats,
-            //hauling: RefCell::new(HaulingCache::new()),
+
+            storage_status,
         };
 
         if let Some(room_memory) = memory.rooms.get(&room.name()) {
@@ -155,9 +172,48 @@ impl CachedRoom {
         self.traffic.move_intents = 0;
     }
 
+
     pub fn write_cache_to_heap(&self, room: &Room) {
         let mut heap_cache = heap().rooms.lock().unwrap();
 
         heap_cache.insert(room.name(), self.room_heap_cache.clone());
+    }
+}
+
+// TODO:
+// For lower RCL's, make this take into account fast filler containers,
+// Those actually count as a form of storage.
+fn storage_status(room: &Room, structures: &mut RoomStructureCache) -> StorageStatus{
+    let mut needs_energy = false;
+    let mut stored_energy = 0;
+    let mut needed_energy = 0;
+
+    if let Some(storage) = &structures.storage {
+        stored_energy = storage.store().get_used_capacity(Some(ResourceType::Energy));
+
+        let needed = economy::get_required_energy_storage(&room);
+
+        if needed >= stored_energy {
+            needed_energy = needed - stored_energy;
+            needs_energy = true;
+        }
+
+        StorageStatus {
+            has_storage: true,
+            stored_energy,
+            wanted_energy: needed,
+
+            energy_needed: needed_energy,
+            needs_energy,
+        }
+    } else {
+        StorageStatus {
+            has_storage: false,
+            stored_energy,
+            wanted_energy: 0,
+
+            energy_needed: needed_energy,
+            needs_energy,
+        }
     }
 }

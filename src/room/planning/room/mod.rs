@@ -9,6 +9,7 @@ pub mod construction;
 pub mod structure_visuals;
 pub mod remotes;
 pub mod roads;
+pub mod economy;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
@@ -40,7 +41,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         let spawn_x = spawn_pos.x.u8();
         let spawn_y = spawn_pos.y.u8();
 
-        unsafe { RoomXY::unchecked_new(spawn_x + 1, spawn_y + 3) }
+        unsafe { RoomXY::unchecked_new(spawn_x + 1, spawn_y + 4) }
     } else {
         let storage_x = my_storage.first().unwrap().pos().x().u8();
         let storage_y = my_storage.first().unwrap().pos().y().u8();

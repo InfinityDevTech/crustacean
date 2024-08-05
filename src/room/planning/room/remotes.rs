@@ -57,7 +57,7 @@ pub fn fetch_possible_remotes(
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         // Get the top 2.
-        for (remote_name, score) in possible_remotes.iter().take(config::ROOM_REMOTE_COUNT.into()) {
+        for (remote_name, score) in possible_remotes.iter().take(config::REMOTES_FOR_RCL(room_cache.rcl).into()) {
             // I was too lazy to make it a string, so yk
             // u32::MAX -2 goes hard.
             if *score == u32::MAX - 2 && !memory.goals.remote_invader_cleanup.contains_key(remote_name) {
@@ -114,7 +114,7 @@ pub fn rank_remote_room(
     remote_room: &RoomName,
 ) -> u32 {
     // If our room doesnt have a spawn placed yet.
-    let spawn_pos = room_cache.spawn_center.unwrap().as_position(&room_cache.room_name);
+    let spawn_pos = room_cache.spawn_center.unwrap().as_position(&room_cache.room.name());
     let mut i = 0;
     let mut current_avg = 0;
 

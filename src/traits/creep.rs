@@ -43,7 +43,7 @@ pub trait CreepExtensions {
     fn near_age_death(&self) -> bool;
 
     fn move_request(&self, target_delta: Direction, room_cache: &mut CachedRoom);
-    fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
+    fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<RoomXY>;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -103,7 +103,7 @@ impl CreepExtensions for screeps::Creep {
         let mut flow_cache = heap().flow_cache.lock().unwrap();
 
         let room_ff_cache = flow_cache
-            .entry(cache.room_name)
+            .entry(cache.room.name())
             .or_insert_with(RoomHeapFlowCache::new);
 
         if room_ff_cache.storage.is_some() {
@@ -130,7 +130,7 @@ impl CreepExtensions for screeps::Creep {
                     cache,
                 );
 
-                info!("Generated storage path for room {}", cache.room_name);
+                info!("Generated storage path for room {}", cache.room.name());
             }
 
             return true;
@@ -420,7 +420,7 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
-    fn get_possible_moves(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY> {
+    fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<RoomXY> {
         if room_cache
             .traffic
             .cached_ops

@@ -2,10 +2,7 @@ use log::info;
 use screeps::{game, Part, RoomName, SharedCreepProperties};
 
 use crate::{
-    goal_memory::RoomReservationGoal,
-    memory::{CreepMemory, Role, ScreepsMemory},
-    room::cache::RoomCache,
-    utils::{self, get_body_cost, get_unique_id, role_to_name},
+    config, goal_memory::RoomReservationGoal, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -56,7 +53,7 @@ pub fn attain_reservation(
         return;
     }
 
-    if current_parts < 2 && goal.accessible_reservation_spots > 1 {
+    if (current_parts < 2 && goal.accessible_reservation_spots > 1) && goal.creeps_assigned.len() < goal.accessible_reservation_spots as usize {
         let new_creep = spawn_creep(goal, cache);
         if let Some(new) = new_creep {
             goal.creeps_assigned.push(new);
@@ -68,7 +65,7 @@ pub fn attain_reservation(
         if let Some(reservation) = reservation_status {
             // Basically, we completed the goal. Soooo, we can remove it
             if reservation.username() == utils::get_my_username()
-                && reservation.ticks_to_end() > 1200
+                && reservation.ticks_to_end() > config::RESERVATION_GOAL_THRESHOLD.into()
             {
                 info!("[{}] Successfully reserved remote to satisfactory levels. Removing goal", target_room);
                 memory.goals.room_reservation.remove(target_room);

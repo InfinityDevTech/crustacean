@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, Terrain};
+use screeps::{find, game, look::{self, LookResult}, ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, StructureType, Terrain};
 
 use crate::{heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, traits::position::PositionExtensions, utils::{self, scale_haul_priority}};
 
@@ -296,6 +296,17 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers().controller {
         let upgrader_count = cached_room.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
+
+        if utils::contains_other_than(&controller_container.store(), ResourceType::Energy) {
+            let hashed_store = utils::store_to_hashmap(&controller_container.store());
+
+            for (resource, amount) in hashed_store.iter() {
+                if *resource != ResourceType::Energy {
+                    cached_room.hauling.create_order(controller_container.id().into(), Some(controller_container.structure_type()), Some(*resource), Some(*amount), *amount as f32, HaulingType::NoDistanceCalcWithdraw);
+                }
+            }
+        }
+
         if (controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links().controller.is_none()) && upgrader_count > 0 {
             let basehauler_count = cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
 
@@ -329,6 +340,16 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
     if let Some(fastfiller_containers) = &cached_room.structures.containers().fast_filler {
         for fastfiller_container in fastfiller_containers {
+            if utils::contains_other_than(&fastfiller_container.store(), ResourceType::Energy) {
+                let hashed_store = utils::store_to_hashmap(&fastfiller_container.store());
+    
+                for (resource, amount) in hashed_store.iter() {
+                    if *resource != ResourceType::Energy {
+                        cached_room.hauling.create_order(fastfiller_container.id().into(), Some(fastfiller_container.structure_type()), Some(*resource), Some(*amount), *amount as f32, HaulingType::NoDistanceCalcWithdraw);
+                    }
+                }
+            }
+
             if fastfiller_container.store().get_free_capacity(None) > 0 {
                 let priority = scale_haul_priority(
                     fastfiller_container.store().get_free_capacity(None) as u32,
@@ -344,6 +365,13 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
         }
     }
 
+    if let Some(mineral_container) = &cached_room.structures.containers().mineral {
+        if let Some(mineral) = &cached_room.resources.mineral {
+            let amount = mineral_container.store().get_used_capacity(Some(mineral.mineral_type()));
+            cached_room.hauling.create_order(mineral_container.raw_id(), Some(StructureType::Container), Some(mineral.mineral_type()), Some(amount), -(amount as f32), HaulingType::NoDistanceCalcWithdraw);
+        }
+    }
+
     for source in &mut cached_room.resources.sources {
         let container = &source.container.as_ref();
 
@@ -355,6 +383,16 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
         if container.store().get_used_capacity(None) == 0 {
             continue;
+        }
+
+        if utils::contains_other_than(&container.store(), ResourceType::Energy) {
+            let hashed_store = utils::store_to_hashmap(&container.store());
+
+            for (resource, amount) in hashed_store.iter() {
+                if *resource != ResourceType::Energy {
+                    cached_room.hauling.create_order(container.id().into(), Some(container.structure_type()), Some(*resource), Some(*amount), *amount as f32, HaulingType::NoDistanceCalcWithdraw);
+                }
+            }
         }
 
         cached_room.stats.energy.in_containers = container.store().get_used_capacity(None);

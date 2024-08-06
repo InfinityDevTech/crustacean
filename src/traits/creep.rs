@@ -187,124 +187,138 @@ impl CreepExtensions for screeps::Creep {
         //   B. The creeps are gonna fight over a spot at the source
         //   C. The bot will break
         // if you said, "B", you are correct! Dumbass.
-        if let Some(cachable_positions) = heap_cache.get(&target.room_name()) {
-            // TODO:
-            // They arent saying anything other than HAS, I dont think its caching it...
-            //self.bsay("HAS", false);
-            // If we can cache to that position, then we do the funni.
-            if cachable_positions.contains(&target) {
-                self.bsay("HAS", false);
-                let mut heap_cache = heap().flow_cache.lock().unwrap();
+        if memory.rooms.contains_key(&self.room().unwrap().name())
+            || memory
+                .remote_rooms
+                .contains_key(&self.room().unwrap().name())
+        {
+            if let Some(cachable_positions) = heap_cache.get(&target.room_name()) {
+                // TODO:
+                // They arent saying anything other than HAS, I dont think its caching it...
+                //self.bsay("HAS", false);
+                // If we can cache to that position, then we do the funni.
+                if cachable_positions.contains(&target) {
+                    self.bsay("HAS", false);
+                    let mut heap_cache = heap().flow_cache.lock().unwrap();
 
-                let flow_cache = heap_cache
-                    .entry(self.room().unwrap().name())
-                    .or_insert_with(RoomHeapFlowCache::new);
+                    let flow_cache = heap_cache
+                        .entry(self.room().unwrap().name())
+                        .or_insert_with(RoomHeapFlowCache::new);
 
-                // If there is a cached path to the target, we use it.
-                let path = flow_cache
-                    .paths
-                    .entry(target)
-                    .or_insert_with(CompressedMatrix::new);
+                    // If there is a cached path to the target, we use it.
+                    let path = flow_cache
+                        .paths
+                        .entry(target)
+                        .or_insert_with(CompressedMatrix::new);
 
-                if self.is_stuck(cache) {
-                    path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 16);
+                    if self.is_stuck(cache) {
+                        path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 16);
 
-                    let possible_moves = self.get_possible_moves(cache);
+                        let possible_moves = self.get_possible_moves(cache);
 
-                    if let Some(pos) = possible_moves.first() {
-                        let dir = self.pos().xy().get_direction_to(*pos);
-
-                        if let Some(dir) = dir {
-                            self.move_request(dir, cache);
-
-                            return;
-                        }
-                    }
-
-                    self.bsay("FIX-STUCK", false);
-
-                    return;
-                }
-
-                // If the direction is already cached, move there
-                if let Some(dir) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
-                    self.bsay(&format!("MV-CHE-{}", dir).to_string(), false);
-
-                    self.move_request(dir, cache);
-
-                    if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
-                        self.bsay(
-                            &format!("STUCK={}", heap_creep.stuck_time).to_string(),
-                            false,
-                        );
-                    }
-                    return;
-                } else {
-                    // If not, we generate a path to said target, and cache it.
-                    // This is a flow fill though, so over time, it will be cached.
-                    let target = MoveTarget {
-                        pos: target,
-                        range: range.into(),
-                    }
-                    .caching_pathfind(self.pos(), memory);
-
-                    self.bsay("MV-CAPTH", false);
-
-                    if !target.incomplete() || target.path().len() > 3 {
-                        if let Some(first) = target.path().first() {
-                            let dir = self.pos().get_direction_to(*first);
+                        if let Some(pos) = possible_moves.first() {
+                            let dir = self.pos().xy().get_direction_to(*pos);
 
                             if let Some(dir) = dir {
-                                path.set_xy(self.pos().x().u8(), self.pos().y().u8(), dir as u8);
+                                self.move_request(dir, cache);
+
+                                return;
                             }
                         }
 
-                        for (index, step) in target.path().into_iter().enumerate() {
-                            if target.incomplete() && index >= target.path().len() / 2 {
-                                break;
-                            }
+                        self.bsay("FIX-STUCK", false);
 
-                            if let Some(next) = target.path().get(index + 1) {
-                                let dir = step.get_direction_to(*next);
+                        return;
+                    }
+
+                    // If the direction is already cached, move there
+                    if let Some(dir) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
+                        self.bsay(&format!("MV-CHE-{}", dir).to_string(), false);
+
+                        self.move_request(dir, cache);
+
+                        if let Some(heap_creep) =
+                            heap().creeps.lock().unwrap().get_mut(&self.name())
+                        {
+                            self.bsay(
+                                &format!("STUCK={}", heap_creep.stuck_time).to_string(),
+                                false,
+                            );
+                        }
+                        return;
+                    } else {
+                        // If not, we generate a path to said target, and cache it.
+                        // This is a flow fill though, so over time, it will be cached.
+                        let target = MoveTarget {
+                            pos: target,
+                            range: range.into(),
+                        }
+                        .caching_pathfind(self.pos(), memory);
+
+                        self.bsay("MV-CAPTH", false);
+
+                        if !target.incomplete() || target.path().len() > 3 {
+                            if let Some(first) = target.path().first() {
+                                let dir = self.pos().get_direction_to(*first);
 
                                 if let Some(dir) = dir {
-                                    path.set_xy(step.x().u8(), step.y().u8(), dir as u8);
+                                    path.set_xy(
+                                        self.pos().x().u8(),
+                                        self.pos().y().u8(),
+                                        dir as u8,
+                                    );
                                 }
                             }
+
+                            for (index, step) in target.path().into_iter().enumerate() {
+                                if target.incomplete() && index >= target.path().len() / 2 {
+                                    break;
+                                }
+
+                                if let Some(next) = target.path().get(index + 1) {
+                                    let dir = step.get_direction_to(*next);
+
+                                    if let Some(dir) = dir {
+                                        path.set_xy(step.x().u8(), step.y().u8(), dir as u8);
+                                    }
+                                }
+                            }
+                        } else {
+                            self.bsay(
+                                &format!("INCMPLT-{}", target.path().len()).to_string(),
+                                false,
+                            );
                         }
-                    } else {
-                        self.bsay(
-                            &format!("INCMPLT-{}", target.path().len()).to_string(),
-                            false,
-                        );
+
+                        if let Some(pos) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
+                            self.bsay(&format!("MV-CHE-{}", pos).to_string(), false);
+
+                            self.move_request(pos, cache);
+                        }
+
+                        if let Some(heap_creep) =
+                            heap().creeps.lock().unwrap().get_mut(&self.name())
+                        {
+                            self.bsay(
+                                &format!("STUCK={}", heap_creep.stuck_time).to_string(),
+                                false,
+                            );
+                        }
+
+                        return;
                     }
-
-                    if let Some(pos) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
-                        self.bsay(&format!("MV-CHE-{}", pos).to_string(), false);
-
-                        self.move_request(pos, cache);
-                    }
-
-                    if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
-                        self.bsay(
-                            &format!("STUCK={}", heap_creep.stuck_time).to_string(),
-                            false,
-                        );
-                    }
-
-                    return;
                 }
-            }
-        } else {
-            self.bsay("PUSHING", false);
+            } else {
+                self.bsay("PUSHING", false);
 
-            if self.is_stuck(cache) {
-                self.bsay("CSTUCK", false);
-            }
-            let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
+                if self.is_stuck(cache) {
+                    self.bsay("CSTUCK", false);
+                }
+                let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
 
-            if !locked.contains(&target.room_name()) {
-                locked.push(target.room_name());
+                if !locked.contains(&target.room_name()) {
+                    locked.push(target.room_name());
+                }
             }
         }
 
@@ -349,7 +363,7 @@ impl CreepExtensions for screeps::Creep {
         if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
             heap_creep.update_position(self);
 
-            return heap_creep.stuck_time >= 10;
+            return heap_creep.stuck_time >= 5;
         }
 
         false

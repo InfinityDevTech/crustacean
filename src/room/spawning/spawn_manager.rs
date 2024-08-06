@@ -161,7 +161,7 @@ impl SpawnManager {
     pub fn can_room_spawn_creep(&self, room: &Room, room_cache: &CachedRoom, request: &SpawnRequest) -> Result<(), ErrorCode> {
         let cost = request.cost;
 
-        info!("  [SPAWNING] Room {} trying to spawn {} with cost: {} (Available: {}, capacity: {})", room.name(), request.role, cost, room.energy_available(), room.energy_capacity_available());
+        info!("  [SPAWNING] Room {} trying to spawn {} with cost: {} (Available: {}, capacity: {}) - {:?}", room.name(), request.role, cost, room.energy_available(), room.energy_capacity_available(), request.body);
 
         if room.energy_available() < cost {
             return Err(ErrorCode::NotEnough);
@@ -463,7 +463,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let room_requests = randomize_top_priorities(&room, room_requests);
 
             if let Some(request) = room_requests.first() {
-                info!("[SPAWNING] Room {} highest spawn scorer role: {} - score: {}", room.name(), request.role, request.priority);
+                info!("[SPAWNING] Room {} highest spawn scorer role: {} - score: {}" , room.name(), request.role, request.priority);
                 let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, request);
 
                 if can_spawn.is_ok() {

@@ -13,7 +13,7 @@ use crate::{
         hauling::{HaulTaskRequest, HaulingType},
         CachedRoom, RoomCache,
     },
-    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -76,13 +76,33 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
             room_cache.idle_haulers += 1;
 
+            let resource = if utils::contains_other_than(&creep.store(), ResourceType::Energy) {
+                let mut most_used = ResourceType::Energy;
+                let mut most_used_amount = 0;
+
+                for (resource, amount) in utils::store_to_hashmap(&creep.store()) {
+                    if resource == ResourceType::Energy {
+                        continue;
+                    }
+
+                    if amount > most_used_amount {
+                        most_used = resource;
+                        most_used_amount = amount;
+                    }
+                }
+
+                most_used
+            } else {
+                ResourceType::Energy
+            };
+
             room_cache
                 .hauling
                 .wanting_orders
                 .push(
                     HaulTaskRequest::default()
                         .creep_name(creep.name())
-                        .resource_type(ResourceType::Energy)
+                        .resource_type(resource)
                         .haul_type(vec![HaulingType::Transfer])
                         .finish(),
                 );
@@ -95,7 +115,9 @@ pub fn decide_energy_need(creep: &Creep, memory: &mut ScreepsMemory, _cache: &mu
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     if creep_memory.role == Role::Hauler {
         let half_capcaity = creep.store().get_capacity(None) as f32 * 0.5;
-        if creep.store().get_used_capacity(None) as f32 > half_capcaity {
+        let has_other_than_energy = utils::contains_other_than(&creep.store(), ResourceType::Energy);
+
+        if creep.store().get_used_capacity(None) as f32 > half_capcaity || has_other_than_energy {
             if creep_memory.needs_energy.is_none() {
                 return;
             }
@@ -105,7 +127,7 @@ pub fn decide_energy_need(creep: &Creep, memory: &mut ScreepsMemory, _cache: &mu
             creep_memory.hauling_task = None;
         }
 
-        if creep.store().get_used_capacity(None) as f32 <= half_capcaity {
+        if creep.store().get_used_capacity(None) as f32 <= half_capcaity && !has_other_than_energy {
             if creep_memory.needs_energy.is_some() {
                 return;
             }

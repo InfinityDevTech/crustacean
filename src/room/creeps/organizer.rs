@@ -75,6 +75,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
         match role {
             Role::Harvester => local::harvester::run_harvester(&creep, memory, cache),
+            Role::MineralMiner => local::mineral_miner::run_mineralminer(&creep, memory, cache),
             Role::Hauler => local::hauler::run_hauler(&creep, memory, cache),
             Role::Repairer => local::repairer::run_repairer(&creep, memory, cache),
             Role::BaseHauler => local::base_hauler::run_basehauler(&creep, memory, cache),

@@ -105,7 +105,7 @@ pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority
 pub fn role_to_name(role: Role) -> String {
     let data = match role {
         Role::Harvester => "sm",
-        Role::Miner => "md",
+        Role::MineralMiner => "mm",
         Role::Hauler => "mb",
         Role::Repairer => "rb",
         Role::BaseHauler => "bh",
@@ -207,6 +207,10 @@ pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
     let total_capacity = store.get_capacity(Some(resource));
     let total_amount = store.get_used_capacity(Some(resource));
 
+    if store.get_used_capacity(None) == 0 {
+        return false;
+    }
+
     total_capacity != total_amount
 }
 
@@ -233,7 +237,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     match role_tag {
         "sm" => { Some(Role::Harvester) },
         "mb" => { Some(Role::Hauler) },
-        "md" => { Some(Role::Miner) },
+        "mm" => { Some(Role::MineralMiner) },
         "rb" => { Some(Role::Repairer) },
         "bh" => { Some(Role::BaseHauler) },
         "ss" => { Some(Role::StorageSitter) },

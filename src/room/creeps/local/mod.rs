@@ -1,4 +1,5 @@
 pub mod builder;
+pub mod mineral_miner;
 pub mod harvester;
 pub mod upgrader;
 pub mod hauler;

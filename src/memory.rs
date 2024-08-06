@@ -29,7 +29,7 @@ pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
 pub enum Role {
     // Mining industry
     Harvester = 0,
-    Miner = 1,
+    MineralMiner = 1,
     Hauler = 2,
 
     FastFiller = 3,

@@ -1,6 +1,6 @@
-use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureType};
+use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureProperties, StructureSpawn, StructureType};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::{cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, spawning::spawn_manager}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
 use super::hauler;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -76,6 +76,15 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
     let mut lowest_rank = f32::MAX;
     let mut lowest_rank_id = None;
 
+    let spawn_needs_repair = cache.structures.needs_repair.iter().filter(|s| s.structure_type() == StructureType::Spawn).collect::<Vec<&StructureObject>>();
+
+    if !spawn_needs_repair.is_empty() {
+        if let Some(spawn) = spawn_needs_repair.first() {
+            creep_memory.repair_target = Some(spawn.as_structure().id());
+            return true;
+        }
+    }
+
     if cache.structures.needs_repair.is_empty() {
         creep.bsay("NO-REPAIRS", false);
         return false;
@@ -85,7 +94,11 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
         let structure = repairable_structure.as_structure();
         if let Some(repairable) = repairable_structure.as_repairable() {
             let max_hits = if structure.structure_type() == StructureType::Rampart {
-                100_000
+                if cache.rcl >= 8 {
+                    10_000_000
+                } else {
+                    100_000
+                }
             } else {
                 repairable.hits_max()
             };

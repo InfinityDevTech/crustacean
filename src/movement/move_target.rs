@@ -236,6 +236,10 @@ pub fn path_call(
             {
                 return MultiRoomCostResult::Impassable
             }
+        } else if let Some(remote_memory) = memory.remote_rooms.get(&room_name) {
+            if remote_memory.owner != get_my_username() || remote_memory.under_attack {
+                return MultiRoomCostResult::Impassable
+            }
         } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
             if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()))
                 || scouting_data.invader_core.unwrap_or(false)

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
 };
 
 use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
@@ -13,6 +13,7 @@ pub struct CachedRoomContainers {
     pub controller: Option<StructureContainer>,
     pub fast_filler: Option<Vec<StructureContainer>>,
     pub source_container: Option<Vec<StructureContainer>>,
+    pub mineral: Option<StructureContainer>,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -22,6 +23,7 @@ impl CachedRoomContainers {
             controller: None,
             fast_filler: None,
             source_container: None,
+            mineral: None,
         }
     }
 }
@@ -67,6 +69,7 @@ pub struct RoomStructureCache {
     pub terminal: Option<StructureTerminal>,
     pub factory: Option<StructureFactory>,
     pub power_spawn: Option<StructurePowerSpawn>,
+    pub extractor: Option<StructureExtractor>,
     pub labs: HashMap<ObjectId<StructureLab>, StructureLab>,
 
     pub terrain: LocalRoomTerrain,
@@ -110,6 +113,7 @@ impl RoomStructureCache {
             terminal: None,
             factory: None,
             power_spawn: None,
+            extractor: None,
             labs: HashMap::new(),
 
             terrain: LocalRoomTerrain::from(room.get_terrain()),
@@ -181,6 +185,8 @@ impl RoomStructureCache {
         if let Some(factory) = &self.factory { vec.push(StructureObject::from(factory.clone())); }
         // Power Spawn
         if let Some(power_spawn) = &self.power_spawn { vec.push(StructureObject::from(power_spawn.clone())); }
+        // Extractor
+        if let Some(extractor) = &self.extractor { vec.push(StructureObject::from(extractor.clone())); }
         // Roads
         vec.extend(self.roads.values().map(|road| StructureObject::from(road.clone())));
 
@@ -276,6 +282,9 @@ impl RoomStructureCache {
             }
             StructureObject::StructureLab(lab) => {
                 self.labs.insert(lab.id(), lab);
+            }
+            StructureObject::StructureExtractor(extractor) => {
+                self.extractor = Some(extractor);
             }
             _ => {}
         }
@@ -405,6 +414,7 @@ impl RoomStructureCache {
         //}
 
         let mut controller = None;
+        let mut mineral_container = None;
         let mut fast_filler = Vec::new();
         let mut source_container = Vec::new();
 
@@ -419,7 +429,7 @@ impl RoomStructureCache {
 
         for container in self.containers.values() {
             if let Some(room_controller) = &self.controller {
-                if container.pos().in_range_to(room_controller.pos(), 3) {
+                if container.pos().in_range_to(room_controller.pos(), 2) {
                     controller = Some(container.clone());
                 }
             }
@@ -427,6 +437,12 @@ impl RoomStructureCache {
             if let Some(spawn) = self.spawns.values().next() {
                 if container.pos().in_range_to(spawn.pos(), 2) {
                     fast_filler.push(container.clone());
+                }
+            }
+
+            if let Some(cmineral) = &resource_cache.mineral {
+                if container.pos().in_range_to(cmineral.pos(), 2) {
+                    mineral_container = Some(container.clone());
                 }
             }
 
@@ -445,6 +461,7 @@ impl RoomStructureCache {
             controller,
             fast_filler,
             source_container,
+            mineral: mineral_container,
         };
 
         self.classified_containers = Some(classified);

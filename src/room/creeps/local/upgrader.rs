@@ -1,4 +1,4 @@
-use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
+use screeps::{Creep, HasPosition, MaybeHasId, OwnedStructureProperties, Part, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::ScreepsMemory,
@@ -191,6 +191,32 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> bool {
     let room = creep.room().unwrap();
     let cache = cache.rooms.get_mut(&room.name()).unwrap();
+
+    if cache.structures.controller.is_none() {
+        return false;
+    }
+
+    if let Some(controller) = cache.structures.controller.as_ref() {
+        if controller.owner().is_some() && controller.owner().unwrap().username() == "Player94" {
+            if let Some(sign) = controller.sign() {
+                if sign.text() == "👀 - Always watching, always waiting." {
+                    return false;
+                }
+            }
+
+            if !creep.pos().is_near_to(controller.pos()) {
+                creep.better_move_to(
+                    memory,
+                    cache,
+                    controller.pos(),
+                    1,
+                    MoveOptions::default(),
+                );
+            } else {
+                let _ = creep.ITsign_controller(controller, "👀 - Always watching, always waiting.");
+            }
+        }
+    }
 
     // E46N38 is a remote of NeonCamoflauge, and I want to sign it ( Totally to not fuck with him ;) ).
     if !memory.remote_rooms.contains_key(&room.name()) && !memory.rooms.contains_key(&creep.room().unwrap().name()) && room.name() != "E46N38" {

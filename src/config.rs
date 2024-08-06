@@ -1,9 +1,12 @@
 pub const MEMORY_VERSION: u8 = 1;
 
+pub const USERNAME_LOCK: &str = "InfDev";
+
 pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "[CAT]";
 
+pub const RESERVATION_GOAL_THRESHOLD: u32 = 4000;
 pub const ROOM_ENERGY_STOCKPILE: u32 = 20000;
 
 pub fn REMOTES_FOR_RCL(rcl: u8) -> u8 {

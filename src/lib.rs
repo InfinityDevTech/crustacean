@@ -70,6 +70,7 @@ pub fn init() {
 //#[cfg(feature = "profile")]
 
 pub fn game_loop() {
+
     #[cfg(feature = "profile")]
     {
         if game::cpu::bucket() > 200 {
@@ -82,6 +83,19 @@ pub fn game_loop() {
     INITIALIZED.call_once(|| {
         init();
     });
+
+    if utils::get_my_username() != config::USERNAME_LOCK {
+        for _ in 0..10 {
+            info!("");
+        }
+
+        info!("Hello, whoever you are. I am not for you.");
+        info!("If you have acquired a copy of this code, please do not use it.");
+        info!("This is a private project, and I do not want it to be used by others.");
+        info!("If you are interested in the project, please contact me. I am open to talking.");
+        info!("DM me on discord: inf5 - Say the code word: 'I am not a bot'");
+        return;
+    }
 
     info!(
         "---------------- CURRENT TICK - {} ----------------",

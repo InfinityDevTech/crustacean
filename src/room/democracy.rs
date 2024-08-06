@@ -340,6 +340,13 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
             let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
         }
 
+        if room_cache.rcl >= 6 && room_cache.structures.extractor.is_none() {
+            if let Some(mineral) = &room_cache.resources.mineral {
+                let pos = mineral.pos();
+                let _ = room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Extractor, None);
+            }
+        }
+
         if !memory.rooms.get(&room.name()).unwrap().planned
             || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
             || game::time() % 300 == 0

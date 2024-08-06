@@ -92,7 +92,7 @@ pub fn visualise_controller_progress(
 ) {
     let controller = &cache.structures.controller.as_ref().unwrap();
 
-    if controller.level() == 8 {
+    if controller.level() == 8 || controller.progress().is_none() || controller.progress_total().is_none() {
         return;
     }
     let progress = (controller.progress().unwrap() as f32

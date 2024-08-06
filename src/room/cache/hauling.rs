@@ -7,7 +7,7 @@ use screeps::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    heap, heap_cache::hauling::HeapHaulingReservation, memory::{CreepHaulTask, Role, ScreepsMemory}, room::creeps::local::hauler::execute_order, traits::creep::CreepExtensions, utils::{name_to_role, scale_haul_priority}
+    heap, heap_cache::hauling::HeapHaulingReservation, memory::{CreepHaulTask, Role, ScreepsMemory}, room::creeps::local::hauler::execute_order, traits::creep::CreepExtensions, utils::{self, name_to_role, scale_haul_priority}
 };
 
 use super::{CachedRoom, RoomCache};
@@ -438,11 +438,31 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                 .store()
                 .get_free_capacity(Some(order.resource.unwrap_or(ResourceType::Energy)));
 
+            let resource = if let Some(order_resource) = order.resource {
+                order_resource
+            } else if utils::contains_other_than(&creep.store(), ResourceType::Energy) {
+                let hashed_store = utils::store_to_hashmap(&creep.store());
+
+                let mut carrying_most_of = ResourceType::Energy;
+                let mut most_carried = 0;
+
+                for (resource, amount) in hashed_store.iter() {
+                    if *amount > most_carried {
+                        carrying_most_of = *resource;
+                        most_carried = *amount;
+                    }
+                }
+
+                carrying_most_of
+            } else {
+                ResourceType::Energy
+            };
+
             // Haul task, for memory.
             let haul_task = CreepHaulTask {
                 target_id: order.target,
                 priority: order.priority,
-                resource: order.resource.unwrap_or(ResourceType::Energy),
+                resource,
                 amount: order.amount,
                 haul_type: order.haul_type,
             };
@@ -841,7 +861,7 @@ pub fn haul_extensions(room_cache: &mut CachedRoom) {
                 source.store().get_used_capacity(Some(ResourceType::Energy)),
                 HaulingPriority::Spawning,
                 true,
-            );
+            ) - 5.0;
 
             room_cache.hauling.create_order(
                 source.raw_id(),

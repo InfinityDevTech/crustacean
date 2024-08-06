@@ -116,9 +116,13 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
                         creep_memory.owning_room,
                     );
 
+                    if creep.store().get_used_capacity(None) > 0 {
+                        let _ = creep.drop(ResourceType::Energy, None);
+                    }
+
                     if creep.pos().get_range_to(flee_pos) > 24 {
                         creep.better_move_to(memory, room_cache, flee_pos, 24, MoveOptions::default().avoid_enemies(true));
-    
+
                         return;
                     } else {
                         creep.bsay("🚨", false);

@@ -1,7 +1,7 @@
 use std::vec;
 
 use log::info;
-use screeps::{HasId, HasPosition, Position, Room, StructureType};
+use screeps::{HasId, HasPosition, Position, Room, StructureProperties, StructureType};
 
 use crate::{
     heap,
@@ -151,53 +151,80 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
         all_source_containers_placed = true;
     }
 
+    if let Some(mineral) = &room_cache.resources.mineral {
+        if room_cache.structures.containers().mineral.is_none() {
+            let container_pos = find_pos_most_accessible(&mineral.pos(), &measure_pos, 1, vec![]);
+
+            if let Some(container_pos) = container_pos {
+                let _ = room.create_construction_site(
+                    container_pos.x().u8(),
+                    container_pos.y().u8(),
+                    StructureType::Container,
+                    None,
+                );
+            }
+        }
+    }
+
     if let Some(controller) = &room_cache.structures.controller.clone() {
         if room_cache.structures.containers().controller.is_none()
             || room_cache.structures.links().controller.is_none()
         {
             let container_pos =
-                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![]);
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 1, vec![]);
 
-            if let Some(container_pos) = container_pos {
-                if all_source_containers_placed {
-                    let _ = room.create_construction_site(
-                        container_pos.x().u8(),
-                        container_pos.y().u8(),
-                        StructureType::Container,
-                        None,
-                    );
+            if room_cache.rcl < 6 && room_cache.structures.links().controller.is_none() {
+                if let Some(container_pos) = container_pos {
+                    if all_source_containers_placed {
+                        let _ = room.create_construction_site(
+                            container_pos.x().u8(),
+                            container_pos.y().u8(),
+                            StructureType::Container,
+                            None,
+                        );
+                    }
                 }
+            } else if let Some(container) = &room_cache.structures.containers().controller {
+                container.destroy();
             }
 
             let link_pos = if container_pos.is_some() {
                 find_pos_most_accessible(
                     &controller.pos(),
                     &measure_pos,
-                    3,
+                    2,
                     vec![container_pos.unwrap()],
                 )
             } else {
-                find_pos_most_accessible(&controller.pos(), &measure_pos, 3, vec![])
+                find_pos_most_accessible(&controller.pos(), &measure_pos, 2, vec![])
             };
 
-            if let Some(link_pos) = link_pos {
-                if links_placed < max_links && room_cache.rcl >= 6 {
-                    links_placed += 1;
+            if room_cache.structures.links().controller.is_none() {
+                if let Some(link_pos) = link_pos {
+                    if links_placed < max_links && room_cache.rcl >= 6 {
+                        links_placed += 1;
 
-                    let res = room.create_construction_site(
-                        link_pos.x().u8(),
-                        link_pos.y().u8(),
-                        StructureType::Link,
-                        None,
-                    );
+                        let res = room.create_construction_site(
+                            link_pos.x().u8(),
+                            link_pos.y().u8(),
+                            StructureType::Link,
+                            None,
+                        );
 
-                    info!("Creating controller link: {:?}", res);
+                        info!("Creating controller link: {:?}", res);
+                    } else {
+                        info!("Links placed {} / {}", links_placed, max_links);
+                    }
                 } else {
-                    info!("Links placed {} / {}", links_placed, max_links);
+                    info!("No link pos found for controller");
                 }
-            } else {
-                info!("No link pos found for controller");
             }
+        }
+
+        if room_cache.rcl >= 6 && room_cache.structures.containers().controller.is_some() && room_cache.structures.links().controller.is_some() {
+            let container = room_cache.structures.containers().controller.as_ref().unwrap();
+
+            container.destroy();
         }
     }
 
@@ -294,6 +321,7 @@ pub fn get_rcl_4_plan() -> Vec<(i8, i8, StructureType)> {
         (6, 4, StructureType::Extension),
         (6, 3, StructureType::Extension),
         (6, 3, StructureType::Extension),
+        (-4, 6, StructureType::Extension),
         (-5, 5, StructureType::Extension),
         (-6, 4, StructureType::Extension),
         (-6, 3, StructureType::Extension),

@@ -1,7 +1,7 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, storage_sitter_body};
-use screeps::{find, game, HasId, Part, Position, ResourceType, Room, SharedCreepProperties};
+use screeps::{find, game, HasHits, HasId, Part, Position, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 use strum::IntoEnumIterator;
 
@@ -241,6 +241,7 @@ pub fn create_spawn_requests_for_room(
         repairer(room, room_cache, &mut cache.spawning),
         upgrader(room, room_cache, &mut cache.spawning),
         scout(room, room_cache, &mut cache.spawning),
+        mineral_miner(room, room_cache, &mut cache.spawning),
         hauler(room, room_cache, memory, &mut cache.spawning),
         // More inter-room creeps that require the WHOLE cache.
         remote_harvester(room, cache, memory),
@@ -423,6 +424,40 @@ pub fn scout(
     ))
 }
 
+pub fn mineral_miner(
+    room: &Room,
+    cache: &CachedRoom,
+    spawn_manager: &mut SpawnManager,
+) -> Option<SpawnRequest> {
+    let mineral = cache.resources.mineral.as_ref()?;
+    let extractor = cache.structures.extractor.as_ref()?;
+
+    let body = vec![Part::Work, Part::Work, Part::Move, Part::Move, Part::Carry];
+    let cost = get_body_cost(&body);
+
+    let miners = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::MineralMiner)
+        .unwrap_or(&Vec::new())
+        .len();
+
+    if miners >= 1 {
+        return None;
+    }
+
+    Some(spawn_manager.create_room_spawn_request(
+        Role::MineralMiner,
+        body,
+        4.0,
+        cost,
+        room.name(),
+        None,
+        None,
+        None,
+    ))
+}
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn repairer(
     room: &Room,
@@ -450,6 +485,8 @@ pub fn repairer(
         })
         .sum::<u32>();
 
+    let spawn_needs_repair = cache.structures.spawns.iter().any(|(_, s)| s.hits() < s.hits_max());
+
     if (cache
         .structures
         .controller
@@ -468,6 +505,7 @@ pub fn repairer(
             < 10000
             && repairing_work_parts >= 1))
         && repairing_work_parts >= 1
+        && !spawn_needs_repair
     {
         return None;
     }

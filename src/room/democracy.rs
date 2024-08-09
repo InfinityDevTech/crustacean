@@ -296,7 +296,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
         let should_rampart = room_cache.structures.storage.is_some() && room_cache.rcl >= 4;
-        let should_road = room_cache.rcl > 3;
+        let should_road = room_cache.rcl >= 3;
 
         if !room_memory.planned
             || (room_memory.rcl != room.controller().unwrap().level())

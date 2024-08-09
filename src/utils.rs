@@ -204,7 +204,7 @@ pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
-    let total_capacity = store.get_capacity(Some(resource));
+    let total_capacity = store.get_used_capacity(None);
     let total_amount = store.get_used_capacity(Some(resource));
 
     if store.get_used_capacity(None) == 0 {

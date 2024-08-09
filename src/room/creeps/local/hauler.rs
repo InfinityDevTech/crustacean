@@ -287,7 +287,7 @@ pub fn execute_order(
             cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
             position.unwrap(),
             1,
-            MoveOptions::default().path_age(6).avoid_enemies(true),
+            MoveOptions::default().path_age(6).avoid_enemies(true).avoid_creeps(true).avoid_hostile_rooms(true).avoid_sitters(true),
         );
         return false;
     }
@@ -301,7 +301,7 @@ pub fn execute_order(
             if let Some(resource) = resource {
                 let amount = std::cmp::min(
                     creep.store().get_free_capacity(Some(order.resource)),
-                    resource.amount().try_into().unwrap(),
+                    resource.amount().try_into().unwrap_or(0),
                 );
 
                 let result = creep.ITpickup(&resource);
@@ -325,7 +325,7 @@ pub fn execute_order(
                     let result = creep.ITwithdraw(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
-                        Some(amount.try_into().unwrap()),
+                        Some(amount.try_into().unwrap_or(0)),
                     );
 
                     cache.creeps_moving_stuff.insert(creep.name(), true);

@@ -44,6 +44,7 @@ mod room;
 mod traits;
 mod formation;
 mod utils;
+mod compression;
 
 static INITIALIZED: Once = Once::new();
 pub static CLEAN_PROFILE: Mutex<bool> = Mutex::new(true);
@@ -84,7 +85,7 @@ pub fn game_loop() {
         init();
     });
 
-    if utils::get_my_username() != config::USERNAME_LOCK {
+    if utils::get_my_username().to_lowercase() != config::USERNAME_LOCK {
         for _ in 0..10 {
             info!("");
         }
@@ -132,6 +133,10 @@ pub fn game_loop() {
     let pre_room_cpu = game::cpu::get_used();
     for room in game::rooms().keys() {
         let game_room = game::rooms().get(room).unwrap();
+        if game::cpu::bucket() < 100 && game::cpu::get_used() > game::cpu::limit() as f64 * 0.5 {
+            continue;
+        }
+
         start_government(game_room, &mut memory, &mut cache);
     }
 

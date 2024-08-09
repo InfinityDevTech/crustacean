@@ -1,6 +1,8 @@
+use crate::{room::cache::CachedRoom, utils};
+
 pub const MEMORY_VERSION: u8 = 1;
 
-pub const USERNAME_LOCK: &str = "InfDev";
+pub const USERNAME_LOCK: &str = "infdev";
 
 pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
@@ -9,8 +11,12 @@ pub const ALLIANCE_TAG: &str = "[CAT]";
 pub const RESERVATION_GOAL_THRESHOLD: u32 = 4000;
 pub const ROOM_ENERGY_STOCKPILE: u32 = 20000;
 
-pub fn REMOTES_FOR_RCL(rcl: u8) -> u8 {
-    match rcl {
+pub fn REMOTES_FOR_RCL(room_cache: &CachedRoom) -> u8 {
+    if utils::under_storage_gate(room_cache, 0.5) && room_cache.rcl >= 6 {
+        return 7;
+    }
+
+    match room_cache.rcl {
         1 => 3,
         2 => 4,
         3 => 5,
@@ -19,6 +25,20 @@ pub fn REMOTES_FOR_RCL(rcl: u8) -> u8 {
         6 => 6,
         7 => 4,
         8 => 2,
+        _ => 0,
+    }
+}
+
+pub fn REMOTE_SCAN_FOR_RCL(room_cache: &CachedRoom) -> u32 {
+    match room_cache.rcl {
+        1 => 100,
+        2 => 250,
+        3 => 500,
+        4 => 100,
+        5 => 1000,
+        6 => 2000,
+        7 => 3000,
+        8 => 3000,
         _ => 0,
     }
 }
@@ -37,31 +57,17 @@ pub const REMOTE_SIGNS: [&str; 3] = [
 "liaohuo isnt gone. Just ask lp136. - Infinity Dev",
 ];
 
-pub const ROOM_SIGNS: [&str; 24] = [
-//"Rust programming is just crab game.",
-//"Web Assembly is overrated",
-//"Warning: This room is under the control of an idiot.",
-//"Why did the creep cross the road? To escape a tigga quad!",
-"Marvin lies!",
-//"Kick me.",
-"Marx would be dissapointed",
-"If your name end with 'in' (or 'tmb'), time to get out.",
-"How many dictators does it take to turn an empire into a union of ruinous bots?",
-"Did somebody say, 'Communism'?",
+pub const ROOM_SIGNS: [&str; 15] = [
+"Marx would be dissapointed.",
+"If your name end with 'in', time to get out.",
 "Made a mess and the war got cold.",
 "Bourgeoisie member.",
-"The international will be defeated.",
-"We must stop Marvin at all costs!",
 "Pride of Lenin took Trotsky out of the picture.",
-"Stop the revolution!",
-"Tore down that wall like the koolaid man.",
-"Communism, everyones mortal enemy.",
 "Stop the red iceberg!",
 "Cease the Collectivization!",
 "Its not Communism, its Marvinism!",
 "Communism != Collectivization",
 "Why did the creeps cross the road? They were under Marvin's collectivized control.",
-"Real communism requires individual control.",
 "The top 1% dont control as much as Marvin. Stop the collectivization!",
 "Marvin is a collectivized menace.",
 "Workers of the world, unite! Against Marvin.",

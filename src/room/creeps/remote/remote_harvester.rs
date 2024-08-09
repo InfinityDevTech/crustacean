@@ -41,6 +41,10 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
             if remote_room_memory.under_attack {
                 creep.bsay("🚨", false);
 
+                if creep.store().get_used_capacity(None) > 0 {
+                    let _ = creep.drop(ResourceType::Energy, None);
+                }
+
                 let flee_pos = Position::new(
                     RoomCoordinate::new(25).unwrap(),
                     RoomCoordinate::new(25).unwrap(),

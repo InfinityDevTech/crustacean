@@ -1,12 +1,12 @@
 use std::{cmp, collections::HashMap, vec};
 
-use creep_sizing::{base_hauler_body, storage_sitter_body};
+use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
+use log::info;
 use screeps::{find, game, HasHits, HasId, Part, Position, ResourceType, Room, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
-use strum::IntoEnumIterator;
 
 use crate::{
-    formation::duo::duo_utils, memory::{CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
+    formation::duo::duo_utils, memory::{iter_roles, CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
 };
 
 use super::cache::{CachedRoom, RoomCache};
@@ -32,6 +32,13 @@ pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u3
         .unwrap()
         .ticks_to_downgrade();
 
+    let hauler_count = room_cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&Vec::new())
+        .len();
+
     let harvester_count = room_cache
         .creeps
         .creeps_of_role
@@ -39,7 +46,7 @@ pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u3
         .unwrap_or(&Vec::new())
         .len();
 
-    for role in Role::iter() {
+    for role in iter_roles() {
         let score = match role {
             Role::Harvester => 1,
             Role::Hauler => 3,
@@ -128,7 +135,7 @@ pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u3
                     }
                 }
 
-                if *controller_level < 8 || *ttdowngrade < Some(1500) && harvester_count >= 1 && !storage_blocked {
+                if (*controller_level < 8 || *ttdowngrade < Some(1500) && !storage_blocked) && harvester_count >= room_cache.resources.sources.len() && hauler_count >= 3 {
                     1
                 } else {
                     0
@@ -231,7 +238,7 @@ pub fn create_spawn_requests_for_room(
 ) -> Vec<SpawnRequest> {
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
-    let requests = vec![
+    let mut requests = vec![
         harvester(room, room_cache, &mut cache.spawning),
         base_hauler(room, room_cache, &mut cache.spawning),
         storage_sitter(room, room_cache, &mut cache.spawning),
@@ -244,8 +251,9 @@ pub fn create_spawn_requests_for_room(
         mineral_miner(room, room_cache, &mut cache.spawning),
         hauler(room, room_cache, memory, &mut cache.spawning),
         // More inter-room creeps that require the WHOLE cache.
-        remote_harvester(room, cache, memory),
     ];
+
+    requests.append(&mut remote_harvester(room, cache, memory));
 
     requests.into_iter().flatten().collect()
 }
@@ -431,8 +439,9 @@ pub fn mineral_miner(
 ) -> Option<SpawnRequest> {
     let mineral = cache.resources.mineral.as_ref()?;
     let extractor = cache.structures.extractor.as_ref()?;
+    let mineral_container = cache.structures.containers().mineral.as_ref()?;
 
-    let body = vec![Part::Work, Part::Work, Part::Move, Part::Move, Part::Carry];
+    let body = mineral_miner_body(room, cache);
     let cost = get_body_cost(&body);
 
     let miners = cache
@@ -441,6 +450,16 @@ pub fn mineral_miner(
         .get(&Role::MineralMiner)
         .unwrap_or(&Vec::new())
         .len();
+
+    if let Some(storage) = cache.structures.storage.as_ref() {
+        if storage
+            .store()
+            .get_used_capacity(Some(mineral.mineral_type()))
+            >= 50000
+        {
+            return None;
+        }
+    }
 
     if miners >= 1 {
         return None;
@@ -640,6 +659,11 @@ pub fn upgrader(
     cache: &CachedRoom,
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
+    let harvester_count = cache.creeps.creeps_of_role(Role::Harvester);
+
+    if harvester_count == 0 {
+        return None;
+    }
     let body = crate::room::spawning::creep_sizing::upgrader_body(room, cache);
     let cost = get_body_cost(&body);
 
@@ -742,6 +766,8 @@ pub fn hauler(room: &Room, cache: &mut CachedRoom, memory: &mut ScreepsMemory, s
         // I might need to tweak this number a bit.
         4.0
     };
+
+    info!("Hauler prio: {}", prio);
 
     // TODO
     // Patchwork fix to stop idle haulers from clogging space.
@@ -994,7 +1020,7 @@ pub fn harvester(
         let max_parts_for_source = source.max_work_parts;
         let current_parts_on_source = source.calculate_work_parts(cache);
         let mut parts_needed_on_source = source.parts_needed(cache);
-        let can_replace = source.can_replace_creep(measure_pos);
+        let can_replace = source.can_replace_creep(measure_pos, room);
 
         let current_creeps_on_source = source.creeps.len();
         let max_mining_positions = source.calculate_mining_spots(room);
@@ -1029,7 +1055,7 @@ pub fn harvester(
             let (_filled, body) = creep_sizing::miner_body(room, cache, parts_needed_on_source, true, source.container.is_some());
             let cost = get_body_cost(&body);
 
-            let mut priority = 4.0 * parts_needed_on_source as f64;
+            let mut priority = 4.0 + parts_needed_on_source as f64;
 
             if can_replace {
                 priority *= 2.1
@@ -1091,34 +1117,33 @@ pub fn remote_harvester(
     room: &Room,
     cache: &RoomCache,
     memory: &mut ScreepsMemory,
-) -> Option<SpawnRequest> {
+) -> Vec<Option<SpawnRequest>> {
     let owning_room_memory = memory.rooms.get(&room.name()).unwrap();
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
 
+    let mut requests = Vec::new();
+
     let measure_pos = Position::new(owning_cache.spawn_center.unwrap().x, owning_cache.spawn_center.unwrap().y, owning_cache.room.name());
 
-    let harvester_count = owning_cache
-        .creeps
-        .creeps_of_role
-        .get(&Role::Harvester)
-        .unwrap_or(&Vec::new())
-        .len();
+    let harvester_count = owning_cache.creeps.creeps_of_role(Role::Harvester);
 
-    let hauler_count = owning_cache
-        .creeps
-        .creeps_of_role
-        .get(&Role::Hauler)
-        .unwrap_or(&Vec::new())
-        .len();
+    let hauler_count = owning_cache.creeps.creeps_of_role(Role::Hauler);
 
     for remote_name in &owning_room_memory.remotes {
+        let remote_memory = memory.remote_rooms.get(remote_name).unwrap();
+
+        if remote_memory.under_attack {
+            continue;
+        }
+
+
         if let Some(remote_cache) = cache.rooms.get(remote_name) {
             for source in &remote_cache.resources.sources {
                 let max_parts_for_source = source.max_work_parts;
                 let mut parts_needed_on_source = source.parts_needed(remote_cache);
-                let can_replace = source.can_replace_creep(measure_pos);
+                //let can_replace = source.can_replace_creep(measure_pos, &game::rooms().get(*remote_name).unwrap());
 
-                if parts_needed_on_source == 0 && !can_replace {
+                if parts_needed_on_source == 0 {
                     continue;
                 }
 
@@ -1136,17 +1161,12 @@ pub fn remote_harvester(
                 // If we have enough parts on the source, just skip it.
                 if (parts_needed_on_source == 0
                     || current_creeps_on_source >= max_mining_positions as usize)
-                    && !can_replace
                 {
                     continue;
                 }
 
-                if can_replace {
-                    parts_needed_on_source = max_parts_for_source;
-                }
-
                 let (filled, body) =
-                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, can_replace, source.container.is_some());
+                    creep_sizing::miner_body(room, remote_cache, parts_needed_on_source, false, source.container.is_some());
                 let cost = get_body_cost(&body);
 
                 // We have a creep here, so its mining.
@@ -1159,7 +1179,8 @@ pub fn remote_harvester(
 
                     let priority = 4.0 * parts_needed_on_source as f64;
 
-                    return Some(cache.spawning.create_room_spawn_request(
+                    info!("RH with prio {}", priority);
+                    requests.push(Some(cache.spawning.create_room_spawn_request(
                         Role::RemoteHarvester,
                         body,
                         priority,
@@ -1173,7 +1194,7 @@ pub fn remote_harvester(
                         }),
                         None,
                         None,
-                    ));
+                    )));
                 }
 
                 let mut priority = 4.0;
@@ -1182,13 +1203,11 @@ pub fn remote_harvester(
                     priority *= 5.0;
                 }
 
-                if current_creeps_on_source == 0 {
-                    priority = 400000.0;
-                }
-
                 priority += parts_needed_on_source as f64;
 
-                return Some(cache.spawning.create_room_spawn_request(
+                info!("no replacement RH with prio {}", priority);
+
+                requests.push(Some(cache.spawning.create_room_spawn_request(
                     Role::RemoteHarvester,
                     body,
                     priority,
@@ -1202,7 +1221,7 @@ pub fn remote_harvester(
                     }),
                     None,
                     None,
-                ));
+                )));
             }
         } else if !owning_cache.remotes_with_harvester.contains(remote_name) {
             if let Some(remote_memory) = memory.remote_rooms.get_mut(remote_name) {
@@ -1212,7 +1231,9 @@ pub fn remote_harvester(
                     let priority = 50.0;
                     let cost = get_body_cost(&body);
 
-                    return Some(cache.spawning.create_room_spawn_request(
+                    info!("Nno Cache RH with prio {}", priority);
+
+                    requests.push(Some(cache.spawning.create_room_spawn_request(
                         Role::RemoteHarvester,
                         body,
                         priority,
@@ -1226,10 +1247,11 @@ pub fn remote_harvester(
                         }),
                         None,
                         None,
-                    ));
+                    )));
                 }
             }
         }
     }
-    None
+
+    requests
 }

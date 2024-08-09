@@ -1,6 +1,6 @@
 use log::info;
 use screeps::{
-    pathfinder::{self, SearchOptions}, Position, Room, RoomCoordinate, RoomName
+    game::{self, map::FindRouteOptions}, pathfinder::{self, SearchOptions}, Position, Room, RoomCoordinate, RoomName
 };
 
 use crate::{
@@ -22,7 +22,7 @@ pub fn fetch_possible_remotes(
     let mut possible_remotes = Vec::new();
 
     for room_name in adjacent_rooms {
-        let rank = rank_remote_room(memory, room_cache, &room_name);
+        let rank = rank_remote_room(memory, room_cache, &room_name, &room_cache.spawn_center.unwrap().as_position(&room.name()));
 
         if rank == u32::MAX {
             continue;
@@ -57,7 +57,7 @@ pub fn fetch_possible_remotes(
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         // Get the top 2.
-        for (remote_name, score) in possible_remotes.iter().take(config::REMOTES_FOR_RCL(room_cache.rcl).into()) {
+        for (remote_name, score) in possible_remotes.iter().take(config::REMOTES_FOR_RCL(room_cache).into()) {
             // I was too lazy to make it a string, so yk
             // u32::MAX -2 goes hard.
             if *score == u32::MAX - 2 && !memory.goals.remote_invader_cleanup.contains_key(remote_name) {
@@ -112,6 +112,7 @@ pub fn rank_remote_room(
     memory: &mut ScreepsMemory,
     room_cache: &CachedRoom,
     remote_room: &RoomName,
+    measure_pos: &Position,
 ) -> u32 {
     // If our room doesnt have a spawn placed yet.
     let spawn_pos = room_cache.spawn_center.unwrap().as_position(&room_cache.room.name());
@@ -123,6 +124,26 @@ pub fn rank_remote_room(
     // This >= 4 check is for SK rooms, idk why, or how, but my room classification is borked.
     if scouted.is_none() || scouted.unwrap().sources.is_none() || scouted.unwrap().sources.as_ref().unwrap().len() >= 3 {
         return u32::MAX;
+    }
+
+    let path: Result<Vec<game::map::RouteStep>, screeps::ErrorCode> = game::map::find_route(measure_pos.room_name(), *remote_room, Some(FindRouteOptions::default()));
+
+    if let Ok(path) = path {
+        for step in path {
+            let room = step.room;
+
+            if let Some(scouted) = memory.scouted_rooms.get(&room) {
+                if scouted.owner.is_some() && *scouted.owner.as_ref().unwrap() == utils::get_my_username() {
+                    return u32::MAX;
+                } else if scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() == utils::get_my_username() {
+                    if *scouted.reserved.as_ref().unwrap() == "Invader" {
+                        return u32::MAX - 2;
+                    }
+                    
+                    return u32::MAX;
+                }
+            }
+        }
     }
 
     // TODO: This should be changed to add aggression.
@@ -156,7 +177,12 @@ pub fn rank_remote_room(
         let path = pathfinder::search(spawn_pos, position, 1, options);
 
         if path.incomplete() {
-            return u32::MAX;
+            let dist = measure_pos.get_range_to(position);
+
+            current_avg += (dist as f32 * 1.75).round() as u32;
+            i += 1;
+
+            continue;
         }
 
         current_avg += path.cost();
@@ -169,5 +195,11 @@ pub fn rank_remote_room(
         current_avg += 15;
     }
 
-    current_avg / i
+    let mut score = current_avg / i;
+
+    if memory.remote_rooms.contains_key(remote_room) {
+        score -= 15;
+    }
+
+    score
 }

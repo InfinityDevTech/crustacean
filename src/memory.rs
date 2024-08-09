@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, Mineral, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
+use screeps::{game, Mineral, ObjectId, Position, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
-use strum::{Display, EnumIter};
+//use strum::{Display, EnumIter, IntoEnumIterator};
 
 use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::hauling::HaulingType, traits::room::RoomType};
 
@@ -22,7 +22,7 @@ pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy, EnumIter, Display)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
 // The roles listed in creep memory
 // The order of this also is the order in which
 // Traffic Priority is handled.
@@ -62,6 +62,41 @@ pub enum Role {
     GiftBasket = 100,
 }
 
+pub fn iter_roles() -> Vec<Role> {
+    vec![
+        Role::Harvester,
+        Role::MineralMiner,
+        Role::Hauler,
+
+        Role::FastFiller,
+        Role::BaseHauler,
+        Role::StorageSitter,
+
+        Role::Upgrader,
+        Role::Repairer,
+        Role::Scout,
+        Role::Builder,
+
+        Role::RemoteHarvester,
+        Role::PhysicalObserver,
+
+        Role::Bulldozer,
+        Role::Unclaimer,
+
+        Role::ExpansionBuilder,
+
+        Role::Claimer,
+        Role::Reserver,
+        Role::RemoteDefender,
+        Role::InvaderCoreCleaner,
+
+        Role::InvaderDuoAttacker,
+        Role::InvaderDuoHealer,
+
+        Role::Recycler,
+        Role::GiftBasket,
+    ]
+}
 // What each creep stores in its memory.
 structstruck::strike! {
     #[strikethrough[derive(Serialize, Deserialize, Debug, Clone)]]
@@ -156,6 +191,7 @@ pub struct RoomMemory{
 
     pub spawn_center: RoomXY,
     pub storage_center: RoomXY,
+    pub planned_paths: HashMap<RoomName, String>,
 
     pub under_attack: bool,
     pub hauler_count: u32,

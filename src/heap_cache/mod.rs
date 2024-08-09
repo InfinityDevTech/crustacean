@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use compressed_matrix::CompressedMatrix;
+use crate::compression::compressed_matrix::CompressedMatrix;
 use hauling::HeapHaulingCache;
 use heap_creep::HeapCreep;
 use heap_room::HeapRoom;
@@ -12,7 +12,6 @@ use crate::memory::ScreepsMemory;
 
 pub mod heap_creep;
 pub mod hauling;
-pub mod compressed_matrix;
 pub mod heap_room;
 // TODO:
 // Fully flesh this out, here are my ideas for paths to cache.

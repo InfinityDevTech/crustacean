@@ -124,7 +124,7 @@ impl RoomExtensions for screeps::Room {
         let sources = &room_cache.resources.sources;
 
         for (i, source) in sources.iter().enumerate() {
-            if source.calculate_work_parts(&room_cache) < source.parts_needed(&room_cache)
+            if source.calculate_work_parts(room_cache) < source.parts_needed(&room_cache)
                 && source.creeps.len() < source.calculate_mining_spots(self).into()
             {
                 return Some(i as u8);

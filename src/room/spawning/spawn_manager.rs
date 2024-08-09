@@ -67,7 +67,7 @@ impl SpawnManager {
         let mut cost = cost;
 
         let body = if body.len() > 50 {
-            info!("Body too large for {} {}/50 parts", role, body.len());
+            info!("Body too large for {:?} {}/50 parts", role, body.len());
             let new_body = body.iter().take(50).cloned().collect::<Vec<_>>(); // Limit body to 50 parts
 
             // Fix a small bug where I would limit the size, but not fix the cost
@@ -151,7 +151,7 @@ impl SpawnManager {
                 memory.create_creep(&room.name(), &name, request.creep_memory.clone());
                 return true;
             } else {
-                info!("[{}] Failed to spawn {} creep: {:#?}", room.name(), request.role, spawn_result);
+                info!("[SPAWNING] Room {:?} failed to spawn {:?} creep: {:#?}", room.name(), request.role, spawn_result);
             }
         }
 
@@ -161,7 +161,7 @@ impl SpawnManager {
     pub fn can_room_spawn_creep(&self, room: &Room, room_cache: &CachedRoom, request: &SpawnRequest) -> Result<(), ErrorCode> {
         let cost = request.cost;
 
-        info!("  [SPAWNING] Room {} trying to spawn {} with cost: {} (Available: {}, capacity: {}) - {:?}", room.name(), request.role, cost, room.energy_available(), room.energy_capacity_available(), request.body);
+        info!("  [SPAWNING] Room {:?} trying to spawn {:?} with cost: {} (Available: {}, capacity: {}) - {:?} parts", room.name(), request.role, cost, room.energy_available(), room.energy_capacity_available(), request.body.len());
 
         if room.energy_available() < cost {
             return Err(ErrorCode::NotEnough);
@@ -384,6 +384,8 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for room in &cache.my_rooms.clone() {
+        let pre_check = game::cpu::get_used();
+
         let room = game::rooms().get(*room).unwrap();
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
@@ -410,9 +412,9 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         for required_role in required_role_keys {
             let required_count_for_role = required_roles.get(required_role).unwrap();
-            let current_count_for_role = room_cache.creeps.creeps_of_role.get(required_role).unwrap_or(&Vec::new()).len();
+            let current_count_for_role = room_cache.creeps.creeps_of_role(*required_role);
 
-            if current_count_for_role < (*required_count_for_role).try_into().unwrap() && required_count_for_role > &0 {
+            if current_count_for_role < *required_count_for_role && required_count_for_role > &0 {
                 let spawn_request = match required_role {
                     Role::Harvester => harvester(&room, room_cache, &mut cache.spawning),
                     Role::Hauler => hauler(&room, room_cache, memory, &mut cache.spawning),
@@ -433,7 +435,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                 if let Some(spawn_request) = spawn_request {
                     let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, &spawn_request);
 
-                    info!("[SPAWNING] Room {} doesnt meet {} requirement, can spawn: {:?}", room.name(), required_role, can_spawn);
+                    info!("[SPAWNING] Room {} doesnt meet {:?} requirement, can spawn: {:?}", room.name(), required_role, can_spawn);
 
                     if can_spawn.is_ok() {
                         let spawned = cache.spawning.room_spawn_creep(&room, memory, room_cache, &spawn_request);
@@ -463,7 +465,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let room_requests = randomize_top_priorities(&room, room_requests);
 
             if let Some(request) = room_requests.first() {
-                info!("[SPAWNING] Room {} highest spawn scorer role: {} - score: {}" , room.name(), request.role, request.priority);
+                info!("[SPAWNING] Room {} highest spawn scorer role: {:?} - score: {}" , room.name(), request.role, request.priority);
                 let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, request);
 
                 if can_spawn.is_ok() {
@@ -477,6 +479,9 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                 }
             }
         }
+
+        let post_check = game::cpu::get_used();
+        info!("  [SPAWNING] Room {} took {} CPU to spawn creeps", room.name(), post_check - pre_check);
     }
 }
 
@@ -490,7 +495,7 @@ fn randomize_top_priorities(room: &Room, requests: Vec<SpawnRequest>) -> Vec<Spa
     let top_scorer = if get_body_cost(&requests.first().unwrap().body) > room.energy_capacity_available() {
         let mut top_scorer = requests.first().unwrap().priority;
 
-        info!("[SPAWNING] Room {} has a spawn request for {} that is larger than the room can handle... Fix!", room.name(), requests.first().unwrap().role);
+        info!("[SPAWNING] Room {} has a spawn request for {:?} that is larger than the room can handle... Fix!", room.name(), requests.first().unwrap().role);
 
         for request in &requests {
             if get_body_cost(&request.body) <= room.energy_capacity_available() {

@@ -6,13 +6,21 @@ use screeps::{
     StructureObject, StructureProperties, StructureType,
 };
 
-use crate::{constants::{SWAMP_MASK, WALL_MASK}, heap, memory::ScreepsMemory, utils::get_my_username};
+use crate::{
+    constants::{SWAMP_MASK, WALL_MASK},
+    heap,
+    memory::ScreepsMemory,
+    room::cache::RoomCache,
+    utils::get_my_username,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
     pub avoid_enemies: bool,
     pub avoid_creeps: bool,
     pub avoid_hostile_rooms: bool,
+    pub avoid_sitters: bool,
+    pub ignore_cached_cost_matrix: bool,
     pub path_age: u8,
 }
 
@@ -22,6 +30,8 @@ impl Default for MoveOptions {
             avoid_enemies: false,
             avoid_creeps: true,
             avoid_hostile_rooms: false,
+            avoid_sitters: true,
+            ignore_cached_cost_matrix: false,
             path_age: 8,
         }
     }
@@ -31,6 +41,16 @@ impl Default for MoveOptions {
 impl MoveOptions {
     pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
         self.avoid_enemies = avoid_enemies;
+        *self
+    }
+
+    pub fn ignore_cached_cost_matrix(&mut self, ignore_cached_cost_matrix: bool) -> Self {
+        self.ignore_cached_cost_matrix = ignore_cached_cost_matrix;
+        *self
+    }
+
+    pub fn avoid_sitters(&mut self, avoid_sitters: bool) -> Self {
+        self.avoid_sitters = avoid_sitters;
         *self
     }
 
@@ -93,8 +113,6 @@ impl MoveTarget {
         }*/
 
         let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, move_options))
-            .plain_cost(2)
-            .swamp_cost(5)
             .max_rooms(15)
             .max_ops(12000);
 
@@ -112,6 +130,8 @@ impl MoveTarget {
         let options = MoveOptions::default()
             .avoid_creeps(false)
             .avoid_enemies(false)
+            .avoid_sitters(true)
+            .ignore_cached_cost_matrix(true)
             .avoid_hostile_rooms(true);
 
         let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, options))
@@ -128,8 +148,6 @@ impl MoveTarget {
         move_options: MoveOptions,
     ) -> u64 {
         let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, move_options))
-            .plain_cost(2)
-            .swamp_cost(5)
             .max_rooms(15)
             .max_ops(200000);
 
@@ -211,13 +229,15 @@ pub fn path_call(
 ) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
-    if let Some(cached_matrix) = heap()
-        .per_tick_cost_matrixes
-        .lock()
-        .unwrap()
-        .get(&room_name)
-    {
-        return MultiRoomCostResult::CostMatrix(cached_matrix.clone().into());
+    if !move_options.ignore_cached_cost_matrix {
+        if let Some(cached_matrix) = heap()
+            .per_tick_cost_matrixes
+            .lock()
+            .unwrap()
+            .get(&room_name)
+        {
+            return MultiRoomCostResult::CostMatrix(cached_matrix.clone().into());
+        }
     }
 
     // Avoids an issue where it makes creeps unable to move if the room they are in is suddenly hostile
@@ -229,22 +249,33 @@ pub fn path_call(
                 false
             };
 
-            if room.controller().is_some()
-                && (room.controller().unwrap().owner().is_some()
-                    && room.controller().unwrap().owner().unwrap().username() != get_my_username())
-                || invader_owner
-            {
-                return MultiRoomCostResult::Impassable
+            if let Some(room_controller) = room.controller() {
+                if room_controller.owner().is_some()
+                    && room_controller.owner().unwrap().username() != get_my_username()
+                {
+                    return MultiRoomCostResult::Impassable;
+                }
+
+                if room_controller.reservation().is_some()
+                    && room_controller.reservation().unwrap().username() != get_my_username()
+                {
+                    return MultiRoomCostResult::Impassable;
+                }
+            }
+
+            if invader_owner {
+                return MultiRoomCostResult::Impassable;
             }
         } else if let Some(remote_memory) = memory.remote_rooms.get(&room_name) {
             if remote_memory.owner != get_my_username() || remote_memory.under_attack {
-                return MultiRoomCostResult::Impassable
+                return MultiRoomCostResult::Impassable;
             }
         } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
             if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()))
                 || scouting_data.invader_core.unwrap_or(false)
+                || scouting_data.reserved != Some(get_my_username())
             {
-                return MultiRoomCostResult::Impassable
+                return MultiRoomCostResult::Impassable;
             }
         }
     }
@@ -370,6 +401,25 @@ pub fn path_call(
                 }
             }
         }
+
+        if move_options.avoid_sitters {
+            // Fast fillers and storage sitters.
+            if let Some(room_memory) = memory.rooms.get(&room_name) {
+                matrix.set(room_memory.storage_center, 255);
+
+                matrix.set(room_memory.spawn_center, 255);
+
+                let y = room_memory.spawn_center.y;
+
+                let pos1 =
+                    unsafe { RoomXY::unchecked_new(room_memory.spawn_center.x.u8() + 1, y.into()) };
+                let pos2 =
+                    unsafe { RoomXY::unchecked_new(room_memory.spawn_center.x.u8() - 1, y.into()) };
+
+                matrix.set(pos1, 255);
+                matrix.set(pos2, 255);
+            }
+        }
     }
 
     /*let t = TEMP_COUNT;
@@ -407,10 +457,12 @@ pub fn path_call(
 
     *count += 1;*/
     // TODO: this can cause problems with different options, forgot about that
-    heap()
-        .per_tick_cost_matrixes
-        .lock()
-        .unwrap()
-        .insert(room_name, matrix.clone());
+    if !move_options.ignore_cached_cost_matrix {
+        heap()
+            .per_tick_cost_matrixes
+            .lock()
+            .unwrap()
+            .insert(room_name, matrix.clone());
+    }
     MultiRoomCostResult::CostMatrix(matrix.into())
 }

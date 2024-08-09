@@ -154,7 +154,7 @@ impl RoomStructureCache {
 
     // This is all to avoid a clone.
     // Plus, this makes it lazy.
-    pub fn all_structures(&mut self) -> Vec<StructureObject> {
+    pub fn all_structures(&self) -> Vec<StructureObject> {
         let mut vec = Vec::new();
 
         // Ramparts

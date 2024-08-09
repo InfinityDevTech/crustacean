@@ -26,7 +26,7 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
     // If we have less than 50 TTL, just dump everything into storage and die.
     if creep.ticks_to_live() <= Some(50) {
         if creep.pos().get_range_to(storage.pos()) > 1 {
-            creep.better_move_to(memory, room_cache, storage.pos(), 1, MoveOptions::default());
+            creep.better_move_to(memory, room_cache, storage.pos(), 1, MoveOptions::default().avoid_sitters(false));
         } else if creep.store().get_used_capacity(None) > 0 {
             let contains = utils::store_to_hashmap(&creep.store());
 
@@ -111,7 +111,7 @@ pub fn check_pos(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut Cac
         if pos != wanted_pos {
             creep.bsay("🚚 POS", false);
 
-            creep.better_move_to(memory, room_cache, wanted_pos, 0, MoveOptions::default());
+            creep.better_move_to(memory, room_cache, wanted_pos, 0, MoveOptions::default().avoid_sitters(false));
             return true;
         }
     }

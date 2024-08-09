@@ -1,6 +1,6 @@
 use std::cmp;
 
-use screeps::{HasId, ResourceType, Room, StructureType};
+use screeps::{game, HasId, ResourceType, Room, StructureType};
 
 use crate::memory::Role;
 
@@ -8,6 +8,10 @@ use super::cache::{hauling::HaulingType, CachedRoom};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
+    if game::cpu::bucket() < 100 {
+        return;
+    }
+
     if let Some(source_link) = &room_cache.structures.links().source {
         for link in source_link {
             if let Some(storage_link) = &room_cache.structures.links().storage {
@@ -33,7 +37,7 @@ pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
     }
 
     if let Some(storage_link) = &room_cache.structures.links().storage {
-        let base_hauler_count = room_cache.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+        let base_hauler_count = room_cache.creeps.creeps_of_role(Role::BaseHauler);
 
         if base_hauler_count == 0 {
             let amount = storage_link.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy));

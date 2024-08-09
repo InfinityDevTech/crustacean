@@ -63,6 +63,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
         spawn_center: spawn_pos,
         storage_center: store_pos,
+        planned_paths: HashMap::new(),
 
         hauler_count: 0,
         under_attack: false,

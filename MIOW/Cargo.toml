@@ -1,7 +1,6 @@
 [package]
-name = "crustacean"
-version = "0.0.0"
-authors = []
+name = "miow"
+version = "0.1.0"
 edition = "2021"
 
 [lib]
@@ -14,21 +13,11 @@ fern = "0.6"
 screeps-game-api = { version = "0.21.0", features = ["mmo"] }
 wasm-bindgen = {version = "0.2", features=[]}
 web-sys = { version = "0.3", features = ["console"] }
+serde = { version = "1.0.204", features = ["derive"] }
+serde_json = "1.0.122"
 structstruck = "0.4.1"
-serde_json = "1.0.104"
-serde = { version = "1.0.183", features = ["derive"] }
-regex = "1.9.4"
-rand = "0.8.5"
-getrandom = { version = "0.2.15", features = ["js"] }
-enum-map = "2.7.3"
-screeps-timing-annotate = { git = "https://github.com/InfinityDevTech/screeps-timing-annotate", optional = true }
-lazy_static = "1.5.0"
-screeps-game-utils = "0.21.1"
-base65536 = "1.0.1"
-flate2 = "1.0.31"
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3"
+simple_crypt = "0.2.3"
+#console_error_panic_hook = "0.1.7"
 
 [profile.release]
 panic = "abort"
@@ -47,10 +36,3 @@ lto = true
 # --disable-sign-ext - prevents opcodes that the screeps servers can't load (see
 # https://github.com/rustyscreeps/screeps-game-api/issues/391)
 wasm-opt = ["-O4", "--disable-sign-ext"]
-#wasm-opt = ["-g", "--disable-sign-ext"]
-
-[features]
-#default = ["profile"]
-profile = ["screeps-timing-annotate"]
-
-sim = ["screeps-game-api/sim"]

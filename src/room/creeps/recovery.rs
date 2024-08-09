@@ -37,6 +37,26 @@ pub fn recover_creeps(memory: &mut ScreepsMemory) {
         };
 
         match role {
+            Role::Harvester => {
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::Harvester, ..Default::default() };
+
+                memory.create_creep(&room_name, &creep.name(), cmemory);
+            }
+            Role::MineralMiner => {
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::MineralMiner, ..Default::default() };
+
+                memory.create_creep(&room_name, &creep.name(), cmemory);
+            }
+            Role::RemoteHarvester => {
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::RemoteHarvester, ..Default::default() };
+
+                memory.create_creep(&room_name, &creep.name(), cmemory);
+            }
+            Role::FastFiller => {
+                let cmemory = CreepMemory { owning_room: room_name, role: Role::FastFiller, ..Default::default() };
+
+                memory.create_creep(&room_name, &creep.name(), cmemory);
+            }
             Role::Hauler => {
                 let cmemory = CreepMemory { owning_room: room_name, role: Role::Hauler, ..Default::default() };
 

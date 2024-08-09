@@ -39,6 +39,18 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
         return;
     }
 
+    for flag in game::flags().values() {
+        if flag.name() == "cancel" {
+            memory.goals.remote_defense.remove(goal_room);
+
+            if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+                remote_mem.under_attack = false;
+            }
+
+            return;
+        }
+    }
+
     // Returns true if there are no more known enemy creeps.
     // TODO: Make this use observers to validate.
     if decrease_ttl(goal_room, memory) {

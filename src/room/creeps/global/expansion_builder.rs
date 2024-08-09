@@ -54,7 +54,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
         let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
         if needs_energy {
-            if room_cache.creeps.creeps_of_role.get(&Role::Harvester).unwrap_or(&Vec::new()).len() < 2 {
+            if room_cache.creeps.creeps_of_role(Role::Harvester) < 2 {
                 let mut target = room_cache
                 .resources
                 .sources

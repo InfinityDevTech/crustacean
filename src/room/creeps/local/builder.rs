@@ -114,8 +114,8 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         if let Some((_spawn, spawn_id)) = &room_cache.structures.spawns.clone().into_iter().next() {
             if spawn_id
                 .store()
-                .get_used_capacity(Some(ResourceType::Energy))
-                == 0
+                .get_free_capacity(Some(ResourceType::Energy))
+                > 0
             {
                 run = false;
             }

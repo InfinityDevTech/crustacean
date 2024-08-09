@@ -4,7 +4,7 @@ use screeps::{game, Part, ResourceType, Room};
 use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
-    room::cache::CachedRoom,
+    room::{cache::CachedRoom, creeps::local::hauler},
     utils::{self, get_body_cost},
 };
 
@@ -73,9 +73,36 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, forc
     (current_work_count >= source_parts_needed, parts)
 }
 
+pub fn mineral_miner_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+    let mut body = Vec::new();
+    let mut stamp = vec![Part::Work, Part::Work, Part::Work, Part::Work, Part::Move];
+    let mut cost = get_body_cost(&stamp);
+
+    let max_cost = room.energy_capacity_available();
+    let mut current_cost = cost;
+
+    while current_cost < max_cost {
+        if current_cost + cost > max_cost {
+            break;
+        }
+
+        body.extend_from_slice(&stamp);
+        current_cost += cost;
+    }
+
+    stamp
+}
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Part> {
     let mut body = Vec::new();
+
+    let hauler_count = cache
+        .creeps
+        .creeps_of_role
+        .get(&Role::Hauler)
+        .unwrap_or(&Vec::new())
+        .len();
 
     // Every hundo = 1C 1M
     let energy_for_haulers = match room.controller().unwrap().level() {
@@ -83,7 +110,7 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
         2 => 300,
         3 => 400,
         4 => 500,
-        5 => 1000,
+        5 => 700,
         6 => 1000,
         // We get more spawns, so they suck up less spawn time
         7 => 2000,
@@ -114,7 +141,7 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
         (true, room.energy_available())
     };
 
-    if scan_check {
+    if scan_check && hauler_count >= 3 {
         energy_to_use = room.energy_capacity_available();
     }
 
@@ -136,7 +163,7 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
     }
 
     while current_energy_usage < energy_to_use {
-        if current_energy_usage + tile_usage >= energy_to_use || body.len() >= 50 {
+        if current_energy_usage + tile_usage > energy_to_use || body.len() >= 50 {
             break;
         }
 
@@ -177,7 +204,7 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let stamp_cost = if cache.rcl >= 4 { 150 } else { 100 };
 
     while cost < max_energy {
-        if cost + stamp_cost > max_energy {
+        if cost + stamp_cost > max_energy || body.len() >= 50 {
             break;
         }
 
@@ -228,7 +255,7 @@ pub fn builder_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     parts.push(Part::Move);
 
     while current_cost < max_capable {
-        if current_cost + stamp_cost > max_capable {
+        if current_cost + stamp_cost > max_capable || parts.len() >= 50 {
             break;
         }
 
@@ -267,7 +294,7 @@ pub fn repairer_body(room: &Room, parts_needed: u8, cache: &CachedRoom) -> Vec<P
     parts.push(Part::Move);
 
     while current_cost < max_capable {
-        if current_cost + stamp_cost > max_capable || work_count >= parts_needed {
+        if current_cost + stamp_cost > max_capable || work_count >= parts_needed || parts.len() >= 50 {
             break;
         }
 
@@ -352,7 +379,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut tick = 0;
     if level >= 5 {
         while current_cost < max_cost {
-            if current_cost + link_cost >= max_cost || current_work_count >= parts_needed_to_fill {
+            if current_cost + link_cost >= max_cost || current_work_count >= parts_needed_to_fill || parts.len() >= 50 {
                 break;
             }
 
@@ -370,7 +397,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         }
     } else {
         while current_cost < cost_capable {
-            if current_cost + no_link_cost >= cost_capable || current_work_count >= parts_needed_to_fill {
+            if current_cost + no_link_cost >= cost_capable || current_work_count >= parts_needed_to_fill || parts.len() >= 50 {
                 break;
             }
 

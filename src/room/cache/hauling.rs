@@ -266,10 +266,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
         let mut heap_hauling = heap().hauling.lock().unwrap();
         let base_hauler_count = cache
             .creeps
-            .creeps_of_role
-            .get(&Role::BaseHauler)
-            .unwrap_or(&Vec::new())
-            .len();
+            .creeps_of_role(Role::BaseHauler);
 
         let mut orders = cache.hauling.new_orders.clone();
 
@@ -695,19 +692,13 @@ impl RoomHaulingOrder {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_spawn(room_cache: &mut CachedRoom) {
-    let has_ff = !room_cache
+    let has_ff = room_cache
         .creeps
-        .creeps_of_role
-        .get(&Role::FastFiller)
-        .unwrap_or(&Vec::new())
-        .is_empty();
+        .creeps_of_role(Role::FastFiller) > 0;
 
-    let has_base_hauler = !room_cache
+    let has_base_hauler = room_cache
         .creeps
-        .creeps_of_role
-        .get(&Role::BaseHauler)
-        .unwrap_or(&Vec::new())
-        .is_empty();
+        .creeps_of_role(Role::BaseHauler) > 0;
 
     for spawn in room_cache.structures.spawns.values() {
         if spawn.store().get_free_capacity(Some(ResourceType::Energy)) == 0 || (has_ff && (room_cache.structures.containers().fast_filler.is_some() || (room_cache.structures.links().fast_filler.is_some() && room_cache.rcl >= 7) )) || has_base_hauler {

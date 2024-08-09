@@ -18,7 +18,8 @@ pub fn run_mineralminer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut R
 
     if let Some(storage) = &room_cache.structures.storage {
         if let Some(mineral) = &room_cache.resources.mineral {
-            if storage.store().get_used_capacity(Some(mineral.mineral_type())) >= 10000 {
+            if storage.store().get_used_capacity(Some(mineral.mineral_type())) >= 50000 {
+                creep.bsay("STORAGE FULL", false);
                 return;
             }
         }
@@ -26,12 +27,27 @@ pub fn run_mineralminer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut R
         return;
     }
 
+    if let Some(mineral_container) = &room_cache.structures.containers().mineral {
+        if creep.pos() != mineral_container.pos() {
+            creep.better_move_to(
+                memory,
+                room_cache,
+                mineral_container.pos(),
+                1,
+                Default::default(),
+            );
+        }
+    }
+
     if let Some(mineral) = &room_cache.resources.mineral {
         if creep.pos().is_near_to(mineral.pos()) {
             let _ = creep.harvest(mineral);
 
+            creep.bsay("⛏️", false);
+
             deposit_energy(creep, memory, room_cache);
         } else {
+            creep.bsay("🚚 MINERAL", false);
             creep.better_move_to(memory, room_cache, mineral.pos(), 1, Default::default());
         }
     }

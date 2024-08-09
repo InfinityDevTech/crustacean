@@ -107,7 +107,7 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
 // RCL 7 - Add the second source link
 // RCL 8 - Throw on the Fast Filler link
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
+pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
     let mut source_links_placed = 0;
     let mut links_placed = 0;
 
@@ -152,7 +152,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &mut CachedRoom) {
     }
 
     if let Some(mineral) = &room_cache.resources.mineral {
-        if room_cache.structures.containers().mineral.is_none() {
+        if room_cache.structures.containers().mineral.is_none() && room_cache.rcl >= 6 {
             let container_pos = find_pos_most_accessible(&mineral.pos(), &measure_pos, 1, vec![]);
 
             if let Some(container_pos) = container_pos {
@@ -288,6 +288,22 @@ pub fn get_containers() -> Vec<(i8, i8, StructureType)> {
         (-2, -1, StructureType::Container),
         (2, -1, StructureType::Container),
     ]
+}
+
+pub fn get_all_structure_plans() -> Vec<(i8, i8, StructureType)> {
+    let mut plans = vec![];
+
+    plans.extend(get_rcl_2_plan());
+    plans.extend(get_rcl_3_plan());
+    plans.extend(get_rcl_4_plan());
+    plans.extend(get_rcl_5_plan());
+    plans.extend(get_rcl_6_plan());
+    plans.extend(get_rcl_7_plan());
+    plans.extend(get_rcl_8_plan());
+
+    plans.extend(get_roads_and_ramparts());
+
+    plans
 }
 
 pub fn get_rcl_2_plan() -> Vec<(i8, i8, StructureType)> {

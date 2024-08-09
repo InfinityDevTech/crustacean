@@ -159,7 +159,7 @@ module.exports.loop = function () {
       wasm_module.initialize_instance();
 
       let cpu_after = Game.cpu.getUsed();
-      console.log(`[JS] ${cpu_after - cpu_before}cpu used to initialize wasm`);
+      console.log(`[JS] ${cpu_after - cpu_before}cpu used to initialize crustacean`);
 
       // I mean, hey, if we have double our execution time, fuck it.
       // Why not run it?
@@ -193,59 +193,3 @@ module.exports.loop = function () {
     halt_next_tick = true;
   }
 };
-
-function calc_terminal_cost(amount, source, dest) {
-  let dist = calc_room_distance(source, dest, true);
-
-  return Math.ceil(amount * (1 + Math.pow(-dist / 30.0)))
-}
-
-function calc_room_distance(room1, room2, continuous) {
-  var [x1,y1] = roomNameToXY(room1);
-  var [x2,y2] = roomNameToXY(room2);
-  var dx = Math.abs(x2-x1);
-  var dy = Math.abs(y2-y1);
-  if(continuous) {
-      var worldSize = Game.map.getWorldSize();;
-      dx = Math.min(worldSize - dx, dx);
-      dy = Math.min(worldSize - dy, dy);
-  }
-  return Math.max(dx, dy);
-};
-
-
-function roomNameToXY(name) {
-  let xx = parseInt(name.substr(1), 10);
-  let verticalPos = 2;
-  if (xx >= 100) {
-      verticalPos = 4;
-  } else if (xx >= 10) {
-      verticalPos = 3;
-  }
-  let yy = parseInt(name.substr(verticalPos + 1), 10);
-  let horizontalDir = name.charAt(0);
-  let verticalDir = name.charAt(verticalPos);
-  if (horizontalDir === 'W' || horizontalDir === 'w') {
-      xx = -xx - 1;
-  }
-  if (verticalDir === 'N' || verticalDir === 'n') {
-      yy = -yy - 1;
-  }
-  return [xx, yy];
-};
-
-class MemHack {
-  register_mem_hack() {
-    this.memory = Memory;
-    this.memory = RawMemory._parsed;
-  }
-
-  run_mem_hack() {
-    delete global.Memory;
-    global.Memory = this.memory;
-    RawMemory._parsed = this.memory;
-  }
-}
-
-//const memhack = new MemHack();
-//memhack.register_mem_hack();

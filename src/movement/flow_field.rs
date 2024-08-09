@@ -1,6 +1,6 @@
 use screeps::{LocalCostMatrix, Position, Room, RoomCoordinate, RoomXY, TextStyle};
 
-use crate::heap_cache::compressed_matrix::CompressedMatrix;
+use crate::compression::compressed_matrix::CompressedMatrix;
 
 use super::movement_utils::{dir_to_coords, num_to_dir};
 

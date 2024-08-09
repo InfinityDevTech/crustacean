@@ -8,17 +8,13 @@ use screeps::{
 };
 
 use crate::{
-    combat::{hate_handler, rank_room},
-    config, heap,
-    memory::{Role, ScreepsMemory},
-    room::{
+    combat::{hate_handler, rank_room}, compression::decode_pos_list, config::{self, REMOTE_SCAN_FOR_RCL}, heap, memory::{Role, ScreepsMemory}, room::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
-        planning::room::{plan_room, remotes},
+        planning::room::{plan_room, remotes, roads::plan_main_room_roads},
         tower,
         visuals::run_full_visuals,
-    },
-    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
+    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
 };
 
 use super::{
@@ -26,11 +22,11 @@ use super::{
     links,
     planning::{
         self,
-        room::construction::{
+        room::{self, construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
             get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
             plan_remote_containers,
-        },
+        }},
     },
     visuals::visualise_room_visual,
 };
@@ -215,9 +211,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         }
 
         {
-            let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+            run_crap_planner_code(&room, memory, cache);
 
-            run_crap_planner_code(&room, memory, room_cache);
+            let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
             run_full_visuals(&room, memory, room_cache);
 
@@ -231,9 +227,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             // If we dont have enough remotes, scan every 10 ticks
             // If its 30000 ticks, scan
             // If we just pushed code, or the heap reset, scan.
-            if ((room_memory.remotes.len() < config::REMOTES_FOR_RCL(room_cache.rcl).into()
+            if ((room_memory.remotes.len() < config::REMOTES_FOR_RCL(room_cache).into()
                 && game::time() % 10 == 0)
-                || game::time() % 3000 == 0 || lifetime == 0) && game::cpu::bucket() > 500 {
+                || game::time() % REMOTE_SCAN_FOR_RCL(room_cache) == 0 || lifetime == 0) && game::cpu::bucket() > 500 {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
                 info!(
                     "  [REMOTES] Remote re-scan triggered, found {} remotes",
@@ -290,65 +286,20 @@ pub fn remote_path_call(_room_name: RoomName) -> MultiRoomCostResult {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache: &mut CachedRoom) {
+pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if game::cpu::bucket() < 500 {
         return;
     }
 
     if game::cpu::bucket() > 1000 && game::time() % 100 == 0 {
-        let stuffs = get_roads_and_ramparts();
-
-        let pos = room_cache.spawn_center.unwrap();
-
-        let offset_x = pos.x;
-        let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
+        let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
         let should_rampart = room_cache.structures.storage.is_some() && room_cache.rcl >= 4;
         let should_road = room_cache.rcl > 3;
 
-        if should_road {
-            planning::room::roads::plan_main_room_roads(room, room_cache, memory);
-        }
-
-        if room_cache.rcl >= 2 {
-            planning::room::construction::plan_containers_and_links(room, room_cache);
-        }
-
-        for structure in get_containers() {
-            let pos = RoomPosition::new(
-                structure.0 as u8 + offset_x.u8(),
-                structure.1 as u8 + offset_y.u8(),
-                room.name(),
-            );
-            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
-        }
-
-        for structure in stuffs {
-            if !should_rampart && structure.2 == StructureType::Rampart {
-                continue;
-            }
-
-            if !should_road && structure.2 == StructureType::Road {
-                continue;
-            }
-
-            let pos = RoomPosition::new(
-                structure.0 as u8 + offset_x.u8(),
-                structure.1 as u8 + offset_y.u8(),
-                room.name(),
-            );
-            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
-        }
-
-        if room_cache.rcl >= 6 && room_cache.structures.extractor.is_none() {
-            if let Some(mineral) = &room_cache.resources.mineral {
-                let pos = mineral.pos();
-                let _ = room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Extractor, None);
-            }
-        }
-
-        if !memory.rooms.get(&room.name()).unwrap().planned
-            || (memory.rooms.get(&room.name()).unwrap().rcl != room.controller().unwrap().level())
+        if !room_memory.planned
+            || (room_memory.rcl != room.controller().unwrap().level())
             || game::time() % 300 == 0
         {
             heap().cachable_positions.lock().unwrap().remove(&room.name());
@@ -356,10 +307,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
 
             let level = room.controller().unwrap().level();
 
-            memory
-                .rooms
-                .get_mut(&room.name())
-                .unwrap()
+            room_memory
                 .rcl_times
                 .insert(level, game::time());
 
@@ -376,29 +324,23 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
 
             for structure in structures {
                 if room_cache.structures.spawns.is_empty() {
-                    return;
+                    continue;
                 }
 
-                let offset_x = room_cache
-                    .structures
-                    .spawns
-                    .values()
-                    .next()
-                    .unwrap()
-                    .pos()
-                    .x();
-                let offset_y = room_cache
-                    .structures
-                    .spawns
-                    .values()
-                    .next()
-                    .unwrap()
-                    .pos()
-                    .y();
+                if !should_rampart && structure.2 == StructureType::Rampart {
+                    continue;
+                }
+    
+                if !should_road && structure.2 == StructureType::Road {
+                    continue;
+                }
+
+                let offset_x = room_cache.spawn_center.unwrap().x.u8();
+                let offset_y = room_cache.spawn_center.unwrap().y.u8() + 1;
 
                 let pos = RoomPosition::new(
-                    structure.0 as u8 + offset_x.u8(),
-                    structure.1 as u8 + offset_y.u8(),
+                    structure.0 as u8 + offset_x,
+                    structure.1 as u8 + offset_y,
                     room.name(),
                 );
                 let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
@@ -460,8 +402,78 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, room_cache
                     }
                 }
             }
-            memory.rooms.get_mut(&room.name()).unwrap().planned = true;
-            memory.rooms.get_mut(&room.name()).unwrap().rcl = room.controller().unwrap().level();
+            room_memory.planned = true;
+            room_memory.rcl = room.controller().unwrap().level();
+        }
+
+        let stuffs = get_roads_and_ramparts();
+
+        let pos = room_cache.spawn_center.unwrap();
+
+        let offset_x = pos.x;
+        let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
+
+        if should_road {
+            let mut should_plan = false;
+
+            for remote in room_memory.remotes.iter() {
+                if !room_memory.planned_paths.contains_key(remote) {
+                    should_plan = true;
+                    break;
+                }
+            }
+
+            if room_memory.planned_paths.is_empty() || should_plan {
+                let res = plan_main_room_roads(room, cache, memory);
+                memory.rooms.get_mut(&room.name()).unwrap().planned_paths = res;
+            }
+
+            for (room_name, path) in memory.rooms.get(&room.name()).unwrap().planned_paths.iter() {
+                if let Some(game_room) = game::rooms().get(*room_name) {
+                    for pos in decode_pos_list(path.to_string()) {
+                        let _ = game_room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None);
+                    }
+                }
+            }
+        }
+
+        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+
+        if room_cache.rcl >= 2 {
+            planning::room::construction::plan_containers_and_links(room, room_cache);
+        }
+
+        for structure in get_containers() {
+            let pos = RoomPosition::new(
+                structure.0 as u8 + offset_x.u8(),
+                structure.1 as u8 + offset_y.u8(),
+                room.name(),
+            );
+            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+        }
+
+        for structure in stuffs {
+            if !should_rampart && structure.2 == StructureType::Rampart {
+                continue;
+            }
+
+            if !should_road && structure.2 == StructureType::Road {
+                continue;
+            }
+
+            let pos = RoomPosition::new(
+                structure.0 as u8 + offset_x.u8(),
+                structure.1 as u8 + offset_y.u8(),
+                room.name(),
+            );
+            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+        }
+
+        if room_cache.rcl >= 6 && room_cache.structures.extractor.is_none() {
+            if let Some(mineral) = &room_cache.resources.mineral {
+                let pos = mineral.pos();
+                let _ = room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Extractor, None);
+            }
         }
     }
 }

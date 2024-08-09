@@ -85,7 +85,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                         cached_room,
                         pos,
                         1,
-                        MoveOptions::default(),
+                        MoveOptions::default().avoid_sitters(false),
                     );
                 }
             }
@@ -119,7 +119,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
                     cached_room,
                     container.pos(),
                     1,
-                    MoveOptions::default(),
+                    MoveOptions::default().avoid_sitters(false),
                 );
             }
 
@@ -142,7 +142,7 @@ pub fn run_fastfiller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Roo
             None,
         );
     } else {
-        creep.better_move_to(memory, cached_room, target.pos(), 1, MoveOptions::default());
+        creep.better_move_to(memory, cached_room, target.pos(), 1, MoveOptions::default().avoid_sitters(false));
     }
 }
 
@@ -226,10 +226,10 @@ pub fn check_current_position(
                 .look_for_at_xy(look::CREEPS, position_2.x(), position_2.y());
 
         if pos_1_creep.is_empty() {
-            creep.better_move_to(memory, cache, position_1.into(), 0, MoveOptions::default());
+            creep.better_move_to(memory, cache, position_1.into(), 0, MoveOptions::default().avoid_sitters(false));
             return true;
         } else if pos_2_creep.is_empty() {
-            creep.better_move_to(memory, cache, position_2.into(), 0, MoveOptions::default());
+            creep.better_move_to(memory, cache, position_2.into(), 0, MoveOptions::default().avoid_sitters(false));
             return true;
         }
 

@@ -1,0 +1,32 @@
+{
+    "stockpiled_resources": HashMap<ResourceType, number>,
+    "desired_resources": HashMap<ResourceType, number>,
+    "funnel_target": {
+        "target": String,
+        "resources": ResourceType[],
+        "amount": number[]
+    }[],
+    "defense_needs": {
+        "room_name": String,
+        "rcl": number,
+        "attacker": String,
+        "needs_repair": bool,
+        other stuff...
+    }[],
+    "defense/rebuild_support": {
+        "room_name": String,
+        "rcl": number,
+        "structures": StructureType[],
+        other stuff...
+    }[],
+    "supporting": {
+        "username": String,
+        "type": REBUILD | DEFENSE | OFFENSE | FUNNEL:
+    }[],
+    "offense": {
+        "room_name": String,
+        "rcl": number,
+        "needs_backup": bool,
+        other stuff...
+    }[],
+}

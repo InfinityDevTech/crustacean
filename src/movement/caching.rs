@@ -1,6 +1,6 @@
 use screeps::{game, HasPosition, LocalCostMatrix, Room, RoomCoordinate, RoomXY, StructureProperties, Terrain};
 
-use crate::{constants::WALKABLE_STRUCTURES, heap, heap_cache::compressed_matrix::CompressedMatrix, memory::ScreepsMemory, room::cache::CachedRoom, traits::position::PositionExtensions};
+use crate::{constants::WALKABLE_STRUCTURES, heap, compression::compressed_matrix::CompressedMatrix, memory::ScreepsMemory, room::cache::CachedRoom, traits::position::PositionExtensions};
 
 use super::flow_field::FlowField;
 

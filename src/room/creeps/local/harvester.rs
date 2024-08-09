@@ -1,28 +1,33 @@
 use log::info;
 use screeps::{
-    Creep, HasHits, HasPosition, Part, ResourceType, SharedCreepProperties,
-    Source, StructureContainer,
+    Creep, HasHits, HasPosition, Part, ResourceType, SharedCreepProperties, Source,
+    StructureContainer,
 };
 
 use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
     room::cache::{resources::CachedSource, CachedRoom, RoomCache},
-    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_harvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
     if creep_memory.task_id.is_none() {
-        creep.bsay("kurt kob", true);
-        info!("Harvester {} has no task id", creep.name());
-        let _ = creep.ITsuicide();
-        return;
-    }
+        let task = creep.room().unwrap().get_target_for_miner(cached_room);
 
-    let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
+        if let Some(task) = task {
+            creep_memory.task_id = Some(task.into());
+        } else {
+            creep.bsay("kurt kob", true);
+            info!("Harvester {} has no task id", creep.name());
+            let _ = creep.ITsuicide();
+            return;
+        }
+    }
 
     let pointer_index = creep_memory.task_id.unwrap() as usize;
     let scouted_source = &mut cached_room.resources.sources[pointer_index];
@@ -60,7 +65,7 @@ pub fn harvest_source(
 
         if let Some(pos) = open_pos {
             creep.better_move_to(memory, cache, pos, 0, MoveOptions::default());
-        } else{
+        } else {
             // If the source is flooded, let the traffic manager figure it out.
             //creep.better_move_to(memory, cache, source.source.pos(), 1, MoveOptions::default());
         }
@@ -95,13 +100,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
         if (cache.rcl < 4 || source.link.is_none()) && container.hits() < container.hits_max() {
             if container.pos().get_range_to(creep.pos()) > 1 {
                 creep.bsay("🚚", false);
-                creep.better_move_to(
-                    memory,
-                    cache,
-                    container.pos(),
-                    1,
-                    MoveOptions::default(),
-                );
+                creep.better_move_to(memory, cache, container.pos(), 1, MoveOptions::default());
                 return true;
             } else {
                 creep.bsay("🔧", false);
@@ -118,25 +117,17 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
             let _ = creep.ITtransfer(link, ResourceType::Energy, None);
             return false;
         } else {
-            creep.better_move_to(
-                memory,
-                cache,
-                link.pos(),
-                1,
-                MoveOptions::default(),
-            );
+            creep.better_move_to(memory, cache, link.pos(), 1, MoveOptions::default());
             return true;
         }
     }
 
-    if let Some(container) = &cache.resources.sources[task_id].container.clone()
-    {
+    if let Some(container) = &cache.resources.sources[task_id].container.clone() {
         if repair_container(creep, memory, cache, container) {
             return true;
         }
 
-        if creep.pos() == container.pos()
-        {
+        if creep.pos() == container.pos() {
             // Why am I wasting the CPU to drop it?
             // It will automatically drop and not cost me the 0.2 CPU.
             //let amount = creep.store().get_used_capacity(Some(ResourceType::Energy));
@@ -148,13 +139,7 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
 
             return false;
         } else {
-            creep.better_move_to(
-                memory,
-                cache,
-                container.pos(),
-                1,
-                MoveOptions::default(),
-            );
+            creep.better_move_to(memory, cache, container.pos(), 1, MoveOptions::default());
 
             return true;
         }
@@ -183,13 +168,7 @@ pub fn repair_container(
     if container.hits() < container.hits_max() {
         if container.pos().get_range_to(creep.pos()) > 1 {
             creep.bsay("🚚", false);
-            creep.better_move_to(
-                memory,
-                cache,
-                container.pos(),
-                1,
-                MoveOptions::default(),
-            );
+            creep.better_move_to(memory, cache, container.pos(), 1, MoveOptions::default());
             return true;
         } else {
             creep.bsay("🔧", false);

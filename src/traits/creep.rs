@@ -1,15 +1,11 @@
 use std::u8;
 
 use crate::{
-    heap,
-    heap_cache::{compressed_matrix::CompressedMatrix, RoomHeapFlowCache},
-    memory::{CreepMemory, ScreepsMemory},
-    movement::{
+    compression::compressed_matrix::CompressedMatrix, heap, heap_cache::RoomHeapFlowCache, memory::{CreepMemory, ScreepsMemory}, movement::{
         caching::generate_storage_path,
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
-    },
-    room::cache::CachedRoom,
+    }, room::cache::CachedRoom
 };
 
 use log::info;
@@ -198,7 +194,7 @@ impl CreepExtensions for screeps::Creep {
                 //self.bsay("HAS", false);
                 // If we can cache to that position, then we do the funni.
                 if cachable_positions.contains(&target) {
-                    self.bsay("HAS", false);
+                    //self.bsay("HAS", false);
                     let mut heap_cache = heap().flow_cache.lock().unwrap();
 
                     let flow_cache = heap_cache
@@ -212,7 +208,7 @@ impl CreepExtensions for screeps::Creep {
                         .or_insert_with(CompressedMatrix::new);
 
                     if self.is_stuck(cache) {
-                        path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 16);
+                        path.set_xy(self.pos().x().u8(), self.pos().y().u8(), 0);
 
                         let possible_moves = self.get_possible_moves(cache);
 
@@ -237,31 +233,25 @@ impl CreepExtensions for screeps::Creep {
 
                         self.move_request(dir, cache);
 
-                        if let Some(heap_creep) =
-                            heap().creeps.lock().unwrap().get_mut(&self.name())
-                        {
-                            self.bsay(
-                                &format!("STUCK={}", heap_creep.stuck_time).to_string(),
-                                false,
-                            );
-                        }
                         return;
                     } else {
                         // If not, we generate a path to said target, and cache it.
                         // This is a flow fill though, so over time, it will be cached.
                         let target = MoveTarget {
                             pos: target,
-                            range: range.into(),
+                            range: target.range,
                         }
                         .caching_pathfind(self.pos(), memory);
 
                         self.bsay("MV-CAPTH", false);
 
-                        if !target.incomplete() || target.path().len() > 3 {
+                        if !target.incomplete() {
                             if let Some(first) = target.path().first() {
                                 let dir = self.pos().get_direction_to(*first);
 
                                 if let Some(dir) = dir {
+                                    self.move_request(dir, cache);
+
                                     path.set_xy(
                                         self.pos().x().u8(),
                                         self.pos().y().u8(),
@@ -283,29 +273,14 @@ impl CreepExtensions for screeps::Creep {
                                     }
                                 }
                             }
+
+                            return;
                         } else {
                             self.bsay(
                                 &format!("INCMPLT-{}", target.path().len()).to_string(),
                                 false,
                             );
                         }
-
-                        if let Some(pos) = path.get_dir(self.pos().x().u8(), self.pos().y().u8()) {
-                            self.bsay(&format!("MV-CHE-{}", pos).to_string(), false);
-
-                            self.move_request(pos, cache);
-                        }
-
-                        if let Some(heap_creep) =
-                            heap().creeps.lock().unwrap().get_mut(&self.name())
-                        {
-                            self.bsay(
-                                &format!("STUCK={}", heap_creep.stuck_time).to_string(),
-                                false,
-                            );
-                        }
-
-                        return;
                     }
                 }
             } else {
@@ -337,6 +312,8 @@ impl CreepExtensions for screeps::Creep {
                 }
             }
         }
+
+        let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
 
         match &creep_memory.path {
             Some(path) => {

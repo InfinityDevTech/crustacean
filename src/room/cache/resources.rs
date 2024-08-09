@@ -157,13 +157,16 @@ impl CachedSource {
         work_parts_needed.clamp(0, u8::MAX as u32) as u8
     }
 
-    pub fn can_replace_creep(&self, dist: Position) -> bool {
+    pub fn can_replace_creep(&self, dist: Position, room: &Room) -> bool {
         let range_to_source = self.source.pos().get_range_to(dist);
         let max_parts = self.max_work_parts;
         let spawn_time = 3 * max_parts as u32;
         let lowest_ttl = self.lowest_ttl;
 
-        if (range_to_source + spawn_time > lowest_ttl) && self.work_part_count <= max_parts{
+        if (range_to_source + spawn_time > lowest_ttl) && self.work_part_count <= max_parts {
+            if self.creeps.len() > self.calculate_mining_spots(room).into() {
+                return false;
+            }
             return true;
         }
 
@@ -295,7 +298,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers().controller {
-        let upgrader_count = cached_room.creeps.creeps_of_role.get(&Role::Upgrader).unwrap_or(&Vec::new()).len();
+        let upgrader_count = cached_room.creeps.creeps_of_role(Role::Upgrader);
 
         if utils::contains_other_than(&controller_container.store(), ResourceType::Energy) {
             let hashed_store = utils::store_to_hashmap(&controller_container.store());
@@ -308,7 +311,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
         }
 
         if (controller_container.store().get_used_capacity(None) < (controller_container.store().get_capacity(None) / 2) && cached_room.structures.links().controller.is_none()) && upgrader_count > 0 {
-            let basehauler_count = cached_room.creeps.creeps_of_role.get(&Role::BaseHauler).unwrap_or(&Vec::new()).len();
+            let basehauler_count = cached_room.creeps.creeps_of_role(Role::BaseHauler);
 
             // TODO: Fix this, its sucking up energy
             // My rooms are dying lmao.
@@ -342,7 +345,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
         for fastfiller_container in fastfiller_containers {
             if utils::contains_other_than(&fastfiller_container.store(), ResourceType::Energy) {
                 let hashed_store = utils::store_to_hashmap(&fastfiller_container.store());
-    
+
                 for (resource, amount) in hashed_store.iter() {
                     if *resource != ResourceType::Energy {
                         cached_room.hauling.create_order(fastfiller_container.id().into(), Some(fastfiller_container.structure_type()), Some(*resource), Some(*amount), *amount as f32, HaulingType::NoDistanceCalcWithdraw);
@@ -367,6 +370,16 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
     if let Some(mineral_container) = &cached_room.structures.containers().mineral {
         if let Some(mineral) = &cached_room.resources.mineral {
+            if utils::contains_other_than(&mineral_container.store(), mineral.mineral_type()) {
+                let hashed_store = utils::store_to_hashmap(&mineral_container.store());
+
+                for (resource, amount) in hashed_store.iter() {
+                    if *resource != ResourceType::Energy {
+                        cached_room.hauling.create_order(mineral_container.id().into(), Some(mineral_container.structure_type()), Some(*resource), Some(*amount), *amount as f32, HaulingType::NoDistanceCalcWithdraw);
+                    }
+                }
+            }
+
             let amount = mineral_container.store().get_used_capacity(Some(mineral.mineral_type()));
             cached_room.hauling.create_order(mineral_container.raw_id(), Some(StructureType::Container), Some(mineral.mineral_type()), Some(amount), -(amount as f32), HaulingType::NoDistanceCalcWithdraw);
         }

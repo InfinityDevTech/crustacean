@@ -350,6 +350,11 @@ impl RoomStructureCache {
         }
 
         self.construction_sites = self.room.find(find::CONSTRUCTION_SITES, None);
+
+        let ruins = self.room.find(find::RUINS, None).into_iter();
+        for ruin in ruins {
+            self.ruins.insert(ruin.id(), ruin);
+        }
     }
 
     pub fn process_links(&mut self, resource_cache: &mut RoomResourceCache) {
@@ -467,19 +472,6 @@ impl RoomStructureCache {
         };
 
         self.classified_containers = Some(classified);
-    }
-
-    pub fn ruins(&mut self) -> &HashMap<ObjectId<Ruin>, Ruin> {
-        if !self.ruins.is_empty() {
-            return &self.ruins;
-        }
-
-        let ruins = self.room.find(find::RUINS, None).into_iter();
-        for ruin in ruins {
-            self.ruins.insert(ruin.id(), ruin);
-        }
-
-        &self.ruins
     }
 
     pub fn tombstones(&mut self) -> &HashMap<ObjectId<Tombstone>, Tombstone> {

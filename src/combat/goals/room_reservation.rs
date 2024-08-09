@@ -162,6 +162,15 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             priority *= 1.5;
         }
 
+        if let Some(target_game_room) = game::rooms().get(goal.reservation_target) {
+            let controller = target_game_room.controller().unwrap();
+            if controller.reservation().is_some() {
+                let percentage = (1.0 - controller.reservation().unwrap().ticks_to_end() as f64 / 5000.0) * 10.0;
+
+                priority += percentage;
+            }
+        }
+
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,
             body,

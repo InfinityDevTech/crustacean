@@ -151,12 +151,6 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
 
         let mut priority = 4.0;
 
-        // if we have one claim part, its doing nothing.
-        // So we can bump the priority to assist the 1 part creep
-        if get_claim_parts(goal) == 1 {
-            priority *= 1.5;
-        }
-
         if let Some(target_game_room) = game::rooms().get(goal.reservation_target) {
             let controller = target_game_room.controller().unwrap();
             if controller.reservation().is_some() {
@@ -169,6 +163,12 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         // We have two spawns, eco creeps can cope.
         if room.controller().unwrap().level() >= 7 {
             priority *= 2.0;
+        }
+
+        // if we have one claim part, its doing nothing.
+        // So we can bump the priority to assist the 1 part creep
+        if get_claim_parts(goal) == 1 {
+            priority *= 1.5;
         }
 
         if let Some(goal_cache) = cache.rooms.get_mut(&best_spawned) {

@@ -1,15 +1,18 @@
+use log::info;
 use screeps::{
-    ConstructionSite, Creep, HasPosition, Part, ResourceType, SharedCreepProperties,
+    ConstructionSite, Creep, HasPosition, Part, ResourceType, RoomName, SharedCreepProperties,
 };
 
 use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
     room::cache::{
+        self,
         hauling::{HaulTaskRequest, HaulingType},
         RoomCache,
     },
-    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::under_storage_gate,
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
+    utils::under_storage_gate,
 };
 
 use super::{hauler::execute_order, upgrader::run_upgrader};
@@ -17,6 +20,7 @@ use super::{hauler::execute_order, upgrader::run_upgrader};
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    info!("Running builder {}", creep.name());
 
     let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
@@ -34,22 +38,59 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     }
 }
 
+pub fn get_all_remote_csites(
+    main_room: &RoomName,
+    room_cache: &RoomCache,
+    memory: &mut ScreepsMemory,
+) -> Vec<ConstructionSite> {
+    let mut sites = Vec::new();
+
+    info!("Getting all roads for {}", main_room);
+
+    if let Some(memory) = memory.rooms.get(main_room) {
+        for remote in &memory.remotes {
+            if let Some(cache) = room_cache.rooms.get(remote) {
+                let mut remote_sites = cache.structures.construction_sites.clone();
+
+                sites.extend(remote_sites);
+            }
+        }
+    }
+
+    sites
+}
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
-    let sites = room_cache.structures.construction_sites().clone();
+    let mut sites = room_cache.structures.construction_sites.clone();
+    //sites.sort_by_key(|s| s.pos().get_range_to(creep.pos()));
+
+    let owning_room = creepmem.owning_room;
+    sites.append(&mut get_all_remote_csites(&owning_room, cache, memory));
+
+    let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
+    let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
     let mut site_clone = sites.clone();
     site_clone.retain(|s| s.structure_type() != screeps::StructureType::Road);
 
     if let Some(storage) = &room_cache.structures.storage {
-        if storage.store().get_used_capacity(Some(ResourceType::Energy)) < 10000 {
+        if storage
+            .store()
+            .get_used_capacity(Some(ResourceType::Energy))
+            < 10000
+        {
             site_clone.retain(|s| s.structure_type() != screeps::StructureType::Rampart);
         }
     }
 
     let sites = if site_clone.is_empty() {
+        info!(
+            "No non-road sites found. Getting all roads for {}",
+            creepmem.owning_room
+        );
         sites
     } else {
         site_clone
@@ -61,15 +102,27 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
     if !sites.is_empty() {
         if let Some(site) = sites.first() {
-            if site.pos().get_range_to(creep.pos()) > 3 {
+            if site.pos().get_range_to(creep.pos()) > 3
+                || creep.room().unwrap().name() != site.pos().room_name()
+            {
                 creep.bsay("🚚", false);
-                creep.better_move_to(
-                    memory,
-                    cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
-                    site.pos(),
-                    3,
-                    MoveOptions::default(),
-                );
+                if site.pos().room_name() != creep.room().unwrap().name() {
+                    creep.better_move_to(
+                        memory,
+                        cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+                        site.pos(),
+                        0,
+                        MoveOptions::default(),
+                    );
+                } else {
+                    creep.better_move_to(
+                        memory,
+                        cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+                        site.pos(),
+                        3,
+                        MoveOptions::default(),
+                    );
+                }
             } else {
                 creep.bsay("🔨", false);
                 let _ = creep.ITbuild(site);
@@ -93,13 +146,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         if !under_storage_gate(room_cache, 0.7) {
             if !creep.pos().is_near_to(storage.pos()) {
                 creep.bsay("🚚", false);
-                creep.better_move_to(
-                    memory,
-                    room_cache,
-                    storage.pos(),
-                    1,
-                    MoveOptions::default(),
-                );
+                creep.better_move_to(memory, room_cache, storage.pos(), 1, MoveOptions::default());
             } else {
                 creep.bsay("🔋", false);
                 let _ = creep.ITwithdraw(storage, ResourceType::Energy, None);

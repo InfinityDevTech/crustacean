@@ -18,17 +18,14 @@ use crate::{
 };
 
 use super::{
-    cache::CachedRoom,
-    links,
-    planning::{
+    cache::CachedRoom, creeps::local::builder, links, planning::{
         self,
         room::{self, construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
             get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
             plan_remote_containers,
         }},
-    },
-    visuals::visualise_room_visual,
+    }, visuals::visualise_room_visual
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -223,6 +220,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             }
 
             let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+            room_cache.stats.spawning_stats(&mut room_cache.structures);
 
             // If we dont have enough remotes, scan every 10 ticks
             // If its 30000 ticks, scan
@@ -230,14 +228,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             if ((room_memory.remotes.len() < config::REMOTES_FOR_RCL(room_cache).into()
                 && game::time() % 10 == 0)
                 || game::time() % REMOTE_SCAN_FOR_RCL(room_cache) == 0 || lifetime == 0) && game::cpu::bucket() > 500 {
-                let remotes = remotes::fetch_possible_remotes(&room, memory, room_cache);
+                let remotes = remotes::fetch_possible_remotes(&room, memory, cache);
                 info!(
                     "  [REMOTES] Remote re-scan triggered, found {} remotes",
                     remotes.len()
                 );
             }
-
-            room_cache.stats.spawning_stats(&mut room_cache.structures);
         }
     } else {
         // Room is NOT mine, therefore we should run creeps
@@ -296,7 +292,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
         let should_rampart = room_cache.structures.storage.is_some() && room_cache.rcl >= 4;
-        let should_road = room_cache.rcl >= 3;
+        let mut should_road = room_cache.rcl >= 3;
 
         if !room_memory.planned
             || (room_memory.rcl != room.controller().unwrap().level())
@@ -413,6 +409,19 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
         let offset_x = pos.x;
         let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
 
+        let mut all_csites = builder::get_all_remote_csites(&room.name(), cache, memory);
+        let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+
+        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+
+        all_csites.append(&mut room_cache.structures.construction_sites.clone());
+
+        let mut road_count = all_csites.iter().filter(|cs| cs.structure_type() == StructureType::Road).count();
+
+        if road_count > 50 {
+            should_road = false;
+        }
+
         if should_road {
             let mut should_plan = false;
 
@@ -431,6 +440,11 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
             for (room_name, path) in memory.rooms.get(&room.name()).unwrap().planned_paths.iter() {
                 if let Some(game_room) = game::rooms().get(*room_name) {
                     for pos in decode_pos_list(path.to_string()) {
+                        if road_count >= 50 {
+                            break;
+                        }
+
+                        road_count += 1;
                         let _ = game_room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None);
                     }
                 }
@@ -457,8 +471,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 continue;
             }
 
-            if !should_road && structure.2 == StructureType::Road {
+            if !should_road && road_count < 50 && structure.2 == StructureType::Road {
                 continue;
+            }
+
+            if structure.2 == StructureType::Road {
+                road_count += 1;
             }
 
             let pos = RoomPosition::new(

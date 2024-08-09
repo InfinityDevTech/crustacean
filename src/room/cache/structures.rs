@@ -77,7 +77,7 @@ pub struct RoomStructureCache {
 
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 
-    construction_sites: Option<Vec<ConstructionSite>>,
+    pub construction_sites: Vec<ConstructionSite>,
     tombstones: Option<HashMap<ObjectId<Tombstone>, Tombstone>>,
     classified_links: Option<CachedRoomLinks>,
     classified_containers: Option<CachedRoomContainers>,
@@ -124,7 +124,7 @@ impl RoomStructureCache {
             tombstones: None,
             classified_containers: Some(CachedRoomContainers::new()),
             classified_links: Some(CachedRoomLinks::new()),
-            construction_sites: None,
+            construction_sites: Vec::new(),
         };
 
         if let Some(controller) = room.controller() {
@@ -348,6 +348,8 @@ impl RoomStructureCache {
         if has_links {
             self.process_links(resource_cache);
         }
+
+        self.construction_sites = self.room.find(find::CONSTRUCTION_SITES, None);
     }
 
     pub fn process_links(&mut self, resource_cache: &mut RoomResourceCache) {
@@ -510,14 +512,5 @@ impl RoomStructureCache {
         }
 
         (available_spawns, unavailable_spawns)
-    }
-
-    pub fn construction_sites(&mut self) -> &Vec<ConstructionSite> {
-        if self.construction_sites.is_some() {
-            return self.construction_sites.as_ref().unwrap();
-        }
-        self.construction_sites = Some(self.room.find(find::CONSTRUCTION_SITES, None));
-
-        return self.construction_sites.as_ref().unwrap();
     }
 }

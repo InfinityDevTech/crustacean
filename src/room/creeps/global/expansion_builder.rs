@@ -31,7 +31,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
 
     let cloned_csites = room_cache
     .structures
-    .construction_sites()
+    .construction_sites
     .clone();
     let mut non_road_csite_count = cloned_csites
         .iter()

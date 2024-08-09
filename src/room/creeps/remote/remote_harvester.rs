@@ -183,11 +183,11 @@ pub fn build_container(
 ) -> bool {
     let source = &cache.resources.sources[creep_memory.task_id.unwrap() as usize].source;
 
-    for csite in cache.structures.construction_sites() {
+    for csite in &cache.structures.construction_sites {
         if csite.structure_type() == screeps::StructureType::Container
             && csite.pos().is_near_to(source.pos())
         {
-            let _ = creep.ITbuild(csite);
+            let _ = creep.ITbuild(&csite);
             return true;
         }
     }

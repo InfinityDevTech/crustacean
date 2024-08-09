@@ -4,16 +4,17 @@ use screeps::{
 };
 
 use crate::{
-    config, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::CachedRoom, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
+    config, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::{CachedRoom, RoomCache}, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fetch_possible_remotes(
     room: &Room,
     memory: &mut ScreepsMemory,
-    room_cache: &mut CachedRoom,
+    cache: &mut RoomCache,
 ) -> Vec<RoomName> {
 
+    let room_cache = cache.rooms.get(&room.name()).unwrap();
     // Little high on CPU, but its run every 3k ticks, so its fine. I guess.
     let mut pre_existing = Vec::new();
     let adjacent_rooms = room.get_adjacent(2);
@@ -57,7 +58,7 @@ pub fn fetch_possible_remotes(
 
     if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
         // Get the top 2.
-        for (remote_name, score) in possible_remotes.iter().take(config::REMOTES_FOR_RCL(room_cache).into()) {
+        for (remote_name, score) in possible_remotes.clone().iter().take(config::REMOTES_FOR_RCL(room_cache).into()) {
             // I was too lazy to make it a string, so yk
             // u32::MAX -2 goes hard.
             if *score == u32::MAX - 2 && !memory.goals.remote_invader_cleanup.contains_key(remote_name) {
@@ -84,6 +85,18 @@ pub fn fetch_possible_remotes(
                 creeps: Vec::new(),
                 under_attack: false
             };
+
+            if pre_existing.contains(remote_name) && !possible_remotes.clone().into_iter().take(config::REMOTES_FOR_RCL(room_cache).into()).map(|k| k.0).collect::<Vec<RoomName>>().contains(remote_name) {
+                if let Some(room_cache) = cache.rooms.get(&remote_name) {
+                    for csite in &room_cache.structures.construction_sites {
+                        csite.remove();
+                    }
+                } else {
+                    for csite in game::construction_sites().values().filter(|x| x.room().unwrap().name() == *remote_name) {
+                        csite.remove();
+                    }
+                }
+            }
 
             remotes.push(remote.name);
             room_memory.remotes.push(remote.name);

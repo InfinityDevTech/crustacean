@@ -366,7 +366,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
         let hauler_count = if wanted_hauler_count < 3.0 {
             3
         } else {
-            wanted_hauler_count.round() as u32
+            (wanted_hauler_count.round() * 1.25).ceil() as u32
         };
 
         //if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
@@ -387,7 +387,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         let pre_check = game::cpu::get_used();
 
         let room = game::rooms().get(*room).unwrap();
-        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+        let room_cache = cache.rooms.get(&room.name()).unwrap();
 
         let (available_spawns, unavailable_spawns) = room_cache.structures.get_spawns();
 
@@ -399,7 +399,9 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         let mut waiting_on_required = false;
         if available_spawns.is_empty() { continue; }
 
-        let required_roles = get_required_role_counts(room_cache);
+        info!("[SPAWNING] Running spawning for room {}", room.name());
+
+        let required_roles = get_required_role_counts(&room_cache.room.name(), &cache);
         let mut required_role_keys = required_roles.keys().collect::<Vec<_>>();
 
         // Sort the roles by their u8 vaules ascending
@@ -423,19 +425,20 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                     Role::StorageSitter => storage_sitter(&room, room_cache, &mut cache.spawning),
                     Role::Upgrader => upgrader(&room, room_cache, &mut cache.spawning),
                     Role::Repairer => repairer(&room, room_cache, &mut cache.spawning),
-                    Role::Builder => builder(&room, room_cache, &mut cache.spawning),
+                    Role::Builder => builder(&room, cache),
                     Role::Scout => scout(&room, room_cache, &mut cache.spawning),
                     _ => continue,
                 };
 
                 if spawn_request.is_none() {
+                    info!("  [SPAWNING] Room {} has no request for role {:?}, even though it is required. FIX!", room.name(), required_role);
                     continue;
                 }
 
                 if let Some(spawn_request) = spawn_request {
                     let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, &spawn_request);
 
-                    info!("[SPAWNING] Room {} doesnt meet {:?} requirement, can spawn: {:?}", room.name(), required_role, can_spawn);
+                    info!("  [SPAWNING] Room {} doesnt meet {:?} requirement, can spawn: {:?}", room.name(), required_role, can_spawn);
 
                     if can_spawn.is_ok() {
                         let spawned = cache.spawning.room_spawn_creep(&room, memory, room_cache, &spawn_request);
@@ -465,7 +468,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let room_requests = randomize_top_priorities(&room, room_requests);
 
             if let Some(request) = room_requests.first() {
-                info!("[SPAWNING] Room {} highest spawn scorer role: {:?} - score: {}" , room.name(), request.role, request.priority);
+                info!("  [SPAWNING] Room {} highest spawn scorer role: {:?} - score: {}" , room.name(), request.role, request.priority);
                 let can_spawn = cache.spawning.can_room_spawn_creep(&room, room_cache, request);
 
                 if can_spawn.is_ok() {
@@ -481,7 +484,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         }
 
         let post_check = game::cpu::get_used();
-        info!("  [SPAWNING] Room {} took {} CPU to spawn creeps", room.name(), post_check - pre_check);
+        info!("[SPAWNING] Room {} took {} CPU to spawn creeps", room.name(), post_check - pre_check);
     }
 }
 

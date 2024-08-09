@@ -2,21 +2,22 @@ use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
 use log::info;
-use screeps::{find, game, HasHits, HasId, Part, Position, ResourceType, Room, SharedCreepProperties};
+use screeps::{find, game, HasHits, HasId, Part, Position, ResourceType, Room, RoomName, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 
 use crate::{
     formation::duo::duo_utils, memory::{iter_roles, CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
 };
 
-use super::cache::{CachedRoom, RoomCache};
+use super::{cache::{self, CachedRoom, RoomCache}, creeps::remote};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u32> {
+pub fn get_required_role_counts(owning_name: &RoomName, cache: &RoomCache) -> HashMap<Role, u32> {
     let mut map = HashMap::new();
+    let room_cache = cache.rooms.get(owning_name).unwrap();
 
     let controller_level = &room_cache
         .structures
@@ -63,8 +64,18 @@ pub fn get_required_role_counts(room_cache: &mut CachedRoom) -> HashMap<Role, u3
                     }
                 }
 
+                let mut has_remote_csites = false;
+                for room_name in &room_cache.remotes.clone() {
+                    if let Some(remote_cache) = cache.rooms.get(room_name) {
+                        if !remote_cache.structures.construction_sites.is_empty() {
+                            has_remote_csites = true;
+                            break;
+                        }
+                    }
+                }
+
                 if *controller_level >= 2
-                    && !room_cache.structures.construction_sites().is_empty()
+                    && (!room_cache.structures.construction_sites.is_empty() || has_remote_csites)
                     && harvester_count >= 1
                     && !storage_blocked
                 {
@@ -244,7 +255,6 @@ pub fn create_spawn_requests_for_room(
         storage_sitter(room, room_cache, &mut cache.spawning),
         fast_filler(room, room_cache, &mut cache.spawning),
         flag_attacker(room, room_cache, &mut cache.spawning),
-        builder(room, room_cache, &mut cache.spawning),
         repairer(room, room_cache, &mut cache.spawning),
         upgrader(room, room_cache, &mut cache.spawning),
         scout(room, room_cache, &mut cache.spawning),
@@ -253,6 +263,7 @@ pub fn create_spawn_requests_for_room(
         // More inter-room creeps that require the WHOLE cache.
     ];
 
+    requests.push(builder(room, cache));
     requests.append(&mut remote_harvester(room, cache, memory));
 
     requests.into_iter().flatten().collect()
@@ -574,9 +585,9 @@ pub fn repairer(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn builder(
     room: &Room,
-    cache: &mut CachedRoom,
-    spawn_manager: &mut SpawnManager,
+    rcache: &RoomCache
 ) -> Option<SpawnRequest> {
+    let cache = rcache.rooms.get(&room.name()).unwrap();
     if under_storage_gate(cache, 0.5) {
         return None;
     }
@@ -608,7 +619,15 @@ pub fn builder(
         return None;
     }
 
-    if room_level >= 8 && cache.structures.construction_sites().is_empty() {
+    let mut remote_csite_count = 0;
+
+    for room_name in &cache.remotes.clone() {
+        if let Some(remote_cache) = rcache.rooms.get(room_name) {
+            remote_csite_count += remote_cache.structures.construction_sites.len();
+        }
+    }
+
+    if room_level >= 8 && cache.structures.construction_sites.is_empty() && remote_csite_count == 0 {
         return None;
     }
 
@@ -626,11 +645,11 @@ pub fn builder(
         return None;
     }
 
-    let construction_sites = cache.structures.construction_sites().len();
+    let construction_sites = cache.structures.construction_sites.len() + remote_csite_count;
 
     let desired_work_parts = (construction_sites as f32 * 1.5).round().clamp(3.0, 20.0);
 
-    if building_work_parts as f32 >= desired_work_parts || construction_sites == 0 {
+    if building_work_parts as f32 >= desired_work_parts || (construction_sites == 0 && remote_csite_count == 0) {
         return None;
     }
 
@@ -641,7 +660,7 @@ pub fn builder(
         return None;
     }
 
-    Some(spawn_manager.create_room_spawn_request(
+    Some(rcache.spawning.create_room_spawn_request(
         Role::Builder,
         body,
         4.5,
@@ -703,7 +722,7 @@ pub fn upgrader(
 
 // TODO: Math this shit! Make it better!
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn hauler(room: &Room, cache: &mut CachedRoom, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
+pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn_manager: &mut SpawnManager) -> Option<SpawnRequest> {
     let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
 
     let harvester_count = cache
@@ -926,7 +945,7 @@ pub fn storage_sitter(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn fast_filler(
     room: &Room,
-    cache: &mut CachedRoom,
+    cache: &CachedRoom,
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
     let fast_filler_count = cache

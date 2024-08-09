@@ -93,7 +93,7 @@ pub fn get_claim_parts(goal: &RoomReservationGoal) -> u8 {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<String> {
-    let room = utils::find_closest_owned_room(&goal.reservation_target, cache, Some(4));
+    let room = utils::find_closest_owned_room(&goal.reservation_target, cache, Some(3));
 
     if let Some(best_spawned) = room {
         let room = game::rooms().get(best_spawned).unwrap();

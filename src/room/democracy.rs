@@ -409,14 +409,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
         let offset_x = pos.x;
         let offset_y = unsafe { RoomCoordinate::unchecked_new(pos.y.u8() + 1) };
 
-        let mut all_csites = builder::get_all_remote_csites(&room.name(), cache, memory);
         let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
-
-        all_csites.append(&mut room_cache.structures.construction_sites.clone());
-
-        let mut road_count = all_csites.iter().filter(|cs| cs.structure_type() == StructureType::Road).count();
+        let mut road_count = game::construction_sites()
+            .values()
+            .filter(|cs| cs.structure_type() == StructureType::Road)
+            .count();
 
         if road_count > 50 {
             should_road = false;

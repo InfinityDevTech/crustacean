@@ -239,7 +239,7 @@ impl CreepExtensions for screeps::Creep {
                         // This is a flow fill though, so over time, it will be cached.
                         let target = MoveTarget {
                             pos: target,
-                            range: target.range,
+                            range: range.into(),
                         }
                         .caching_pathfind(self.pos(), memory);
 

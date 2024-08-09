@@ -171,6 +171,14 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             priority *= 2.0;
         }
 
+        if let Some(goal_cache) = cache.rooms.get_mut(&best_spawned) {
+            if let Some(storage) = &goal_cache.structures.storage {
+                if storage.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy)) < 10_000 {
+                    return None;
+                }
+            }
+        }
+
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,
             body,

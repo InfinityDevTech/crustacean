@@ -102,8 +102,8 @@ pub fn plan_remote_containers(room: &Room, memory: &mut ScreepsMemory, room_cach
 }
 
 // Links should be placed in this order
-// RCL 5 - Storage link and one Source link (try and do the furthest one)
-// RCL 6 - Add the controller link
+// RCL 5 - Storage link and upgrader link
+// RCL 6 - Add one source link (furthest from storage)
 // RCL 7 - Add the second source link
 // RCL 8 - Throw on the Fast Filler link
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -201,7 +201,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
 
             if room_cache.structures.links().controller.is_none() {
                 if let Some(link_pos) = link_pos {
-                    if links_placed < max_links && room_cache.rcl >= 6 {
+                    if links_placed < max_links && room_cache.rcl >= 5 {
                         links_placed += 1;
 
                         let res = room.create_construction_site(
@@ -254,7 +254,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
 
         if source.link.is_none() {
             if let Some(link_pos) = link_pos {
-                if room_cache.rcl <= 5 && source_links_placed < 1 && only_one_source_link {
+                if room_cache.rcl <= 6 && source_links_placed < 1 && only_one_source_link {
                     if let Some(furthest) = furthest_source_from_storage {
                         if source.source.id() == furthest {
                             source_links_placed += 1;

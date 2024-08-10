@@ -146,13 +146,13 @@ pub fn rank_remote_room(
             let room = step.room;
 
             if let Some(scouted) = memory.scouted_rooms.get(&room) {
-                if scouted.owner.is_some() && *scouted.owner.as_ref().unwrap() == utils::get_my_username() {
+                if scouted.owner.is_some() && *scouted.owner.as_ref().unwrap() != utils::get_my_username() {
                     return u32::MAX;
-                } else if scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() == utils::get_my_username() {
+                } else if scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() != utils::get_my_username() {
                     if *scouted.reserved.as_ref().unwrap() == "Invader" {
                         return u32::MAX - 2;
                     }
-                    
+
                     return u32::MAX;
                 }
             }

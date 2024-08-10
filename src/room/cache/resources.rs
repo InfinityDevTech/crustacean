@@ -300,6 +300,10 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers().controller {
         let upgrader_count = cached_room.creeps.creeps_of_role(Role::Upgrader);
 
+        if utils::under_storage_gate(cached_room, 1.0) {
+            return;
+        }
+
         if utils::contains_other_than(&controller_container.store(), ResourceType::Energy) {
             let hashed_store = utils::store_to_hashmap(&controller_container.store());
 

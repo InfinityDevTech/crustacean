@@ -8,6 +8,7 @@ pub fn run_invadercleaner(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
 
     if creep_memory.target_room.is_none() {
         creep.bsay("kurt kob", true);
+        creep_memory.role = Role::Recycler;
         return;
     }
 

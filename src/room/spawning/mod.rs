@@ -517,26 +517,7 @@ pub fn repairer(
 
     let spawn_needs_repair = cache.structures.spawns.iter().any(|(_, s)| s.hits() < s.hits_max());
 
-    if (cache
-        .structures
-        .controller
-        .as_ref()
-        .unwrap()
-        .level()
-        < 3
-        || cache.structures.storage.is_none()
-        || (cache
-            .structures
-            .storage
-            .as_ref()
-            .unwrap()
-            .store()
-            .get_used_capacity(Some(ResourceType::Energy))
-            < 10000
-            && repairing_work_parts >= 1))
-        && repairing_work_parts >= 1
-        && !spawn_needs_repair
-    {
+    if (cache.rcl < 3 || cache.structures.needs_repair.is_empty()) && repairing_work_parts >= 1 && !spawn_needs_repair {
         return None;
     }
 
@@ -556,7 +537,7 @@ pub fn repairer(
         return None;
     }
 
-    let mut desired_repair_parts = cmp::max(repair_sites / 9, 3);
+    let mut desired_repair_parts = cmp::max(repair_sites / 3, 12);
 
     if desired_repair_parts < 3 {
         desired_repair_parts = 3;
@@ -692,12 +673,8 @@ pub fn upgrader(
 
     let controller = &cache.structures.controller.as_ref().unwrap();
 
-    let room_cache = false;
-    if let Some(storage) = &cache.structures.storage {
-        if under_storage_gate(cache, 0.5) && controller.ticks_to_downgrade() > Some(5000)
-        {
-            return None;
-        }
+    if under_storage_gate(cache, 1.0) && controller.ticks_to_downgrade() > Some(5000) {
+        return None;
     }
 
     // Dont need em if we are level 8 and have a lot of ticks to downgrade.
@@ -771,20 +748,19 @@ pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn
     };
 
     // If we have less than 3 total haulers.
-    let prio = if hauler_count < 3 {
+    let mut prio = if hauler_count < 3 {
         400000.0
     // If we have more than half of the wanted count.
-    } else if hauler_count < (wanted_count as f32 / 2.0).ceil() as usize {
-        5.0
-
-    // If we are at a third of the hauler count
-    } else if hauler_count < (wanted_count as f32 / 3.0).ceil() as usize {
-        10.0
     } else {
-        // TODO
-        // I might need to tweak this number a bit.
-        4.0
+        let cnt = (1.0 - harvester_count as f64 / wanted_count as f64).round();
+        info!("Mathing (1.0 - {} / {}) = {}", hauler_count, wanted_count, cnt);
+
+        cnt * 10.0
     };
+
+    if (hauler_count as u32) < wanted_count as u32 / 2 {
+        prio *= 2.0;
+    }
 
     info!("Hauler prio: {}", prio);
 
@@ -1218,8 +1194,8 @@ pub fn remote_harvester(
 
                 let mut priority = 4.0;
 
-                if harvester_count < hauler_count {
-                    priority *= 5.0;
+                if harvester_count * 2 < hauler_count {
+                    priority *= 3.0;
                 }
 
                 priority += parts_needed_on_source as f64;

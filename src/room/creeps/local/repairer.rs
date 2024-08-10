@@ -1,4 +1,4 @@
-use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureProperties, StructureSpawn, StructureType};
+use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureProperties, StructureType};
 
 use crate::{memory::{CreepMemory, ScreepsMemory}, room::{cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, spawning::spawn_manager}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
 use super::hauler;

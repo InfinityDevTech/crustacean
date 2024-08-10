@@ -1,7 +1,7 @@
 use std::vec;
 
 use log::info;
-use screeps::{find, game, Flag, HasPosition, OwnedStructureProperties, Part, RoomName, SharedCreepProperties, StructureType};
+use screeps::{find, game, Flag, HasPosition, OwnedStructureProperties, Part, Room, RoomName, SharedCreepProperties, StructureType};
 
 use crate::{
     goal_memory::RoomClaimGoal,
@@ -58,7 +58,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
     // Spawn the claimer
     if !claimed && goal.creeps_assigned.is_empty() {
-        let claimer_body = vec![Part::Claim, Part::Move];
+        let claimer_body = vec![Part::Claim, Part::Move, Part::Move, Part::Move, Part::Move, Part::Move];
         let claimer_cost = utils::get_body_cost(&claimer_body);
 
         let creep_memory = CreepMemory {
@@ -80,7 +80,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         let spawn_request = cache.spawning.create_room_spawn_request(
             Role::Claimer,
             claimer_body,
-            4.0,
+            40.0,
             claimer_cost,
             responsible_room.unwrap(),
             Some(creep_memory),
@@ -103,7 +103,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
     } else if claimed {
         if goal.creeps_assigned.len() < 3 {
 
-            let claimer_body = get_creep_body();
+            let claimer_body = get_creep_body(&game::rooms().get(responsible_room.unwrap()).unwrap());
             let claimer_cost = utils::get_body_cost(&claimer_body);
 
             let creep_memory = CreepMemory {
@@ -190,19 +190,22 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn get_creep_body() -> Vec<Part> {
+fn get_creep_body(room: &Room) -> Vec<Part> {
     let mut body = Vec::new();
 
-    for _ in 0..10 {
-        body.push(Part::Work);
-    }
+    let stamp = vec![Part::Work, Part::Carry, Part::Move, Part::Move];
+    let stamp_cost = stamp.iter().map(|part| part.cost()).sum::<u32>();
 
-    for _ in 0..20 {
-        body.push(Part::Carry);
-    }
+    let energy_available = room.energy_capacity_available();
+    let mut current_cost = 0;
 
-    for _ in 0..20 {
-        body.push(Part::Move);
+    while current_cost < energy_available {
+        if current_cost + stamp_cost > energy_available {
+            break;
+        }
+
+        body.extend_from_slice(&stamp);
+        current_cost += stamp_cost;
     }
 
     body

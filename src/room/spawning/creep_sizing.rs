@@ -110,10 +110,10 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
         2 => 300,
         3 => 400,
         4 => 500,
-        5 => 700,
-        6 => 1000,
+        5 => 500,
+        6 => 500,
         // We get more spawns, so they suck up less spawn time
-        7 => 2000,
+        7 => 500,
         // 3 spawns, go ham.
         8 => 3000,
         _ => 100,
@@ -328,9 +328,9 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         2 => 15,
         3 => 22,
         4 => 30,
-        5 => 40,
-        6 => 45,
-        7 => 50,
+        5 => 32,
+        6 => 40,
+        7 => 45,
         8 => 5,
         _ => 1,
     };

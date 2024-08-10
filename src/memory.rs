@@ -193,6 +193,9 @@ pub struct RoomMemory{
     pub storage_center: RoomXY,
     pub planned_paths: HashMap<RoomName, String>,
 
+    pub avg_spawn_expense: f64,
+    pub income: u32,
+    pub expense: u32,
     pub under_attack: bool,
     pub hauler_count: u32,
 }

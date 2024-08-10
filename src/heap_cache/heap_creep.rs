@@ -1,11 +1,13 @@
+use std::vec;
+
 use screeps::{game, Creep, HasPosition, Position};
 
 #[derive(Debug, Clone)]
 pub struct HeapCreep {
     pub health: u32,
     // Stuck Detection
-    pub previous_position: Position,
-    pub stuck_time: u8,
+    pub previous_positions: Vec<Position>,
+    pub stuck: bool,
     pub last_checked: u32,
 }
 
@@ -22,8 +24,8 @@ impl HeapCreep {
         HeapCreep {
             health: creep.hits(),
             // Stuck Detection
-            previous_position: creep.pos(),
-            stuck_time: 0,
+            previous_positions: vec![creep.pos()],
+            stuck: false,
             last_checked: 0,
         }
     }
@@ -33,14 +35,26 @@ impl HeapCreep {
             return;
         }
 
-        if creep.pos() == self.previous_position {
-            self.stuck_time += 1;
-        } else {
-            self.stuck_time = 0;
+        if self.previous_positions.len() >= 10 {
+            self.previous_positions.truncate(9);
         }
 
+        self.previous_positions.insert(0, creep.pos());
         self.last_checked = game::time();
-        self.previous_position = creep.pos();
+
+        self.calculate_position_uniqueness();
+    }
+
+    pub fn calculate_position_uniqueness(&mut self) {
+        let mut unique = Vec::new();
+
+        for pos in &self.previous_positions {
+            if !unique.contains(pos) {
+                unique.push(*pos);
+            }
+        }
+
+        self.stuck = unique.len() < 5;
     }
 
     pub fn get_health_change(&mut self, creep: &Creep) -> HealthChangeType {

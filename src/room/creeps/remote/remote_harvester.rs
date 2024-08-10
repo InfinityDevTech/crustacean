@@ -5,10 +5,10 @@ use screeps::{
 };
 
 use crate::{
-    memory::{CreepMemory, ScreepsMemory},
+    memory::{CreepMemory, Role, ScreepsMemory},
     movement::move_target::MoveOptions,
     room::{
-        cache::{{CachedRoom, RoomCache}},
+        cache::{CachedRoom, RoomCache},
         creeps::local::harvester::{harvest_source, repair_container},
     },
     traits::{
@@ -23,6 +23,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
     if let Some(remote_room) = creep_memory.owning_remote {
         if creep_memory.task_id.is_none() {
             creep.bsay("kurt kob", true);
+            creep_memory.role = Role::Recycler;
             return;
         }
 

@@ -286,9 +286,6 @@ impl CreepExtensions for screeps::Creep {
             } else {
                 self.bsay("PUSHING", false);
 
-                if self.is_stuck(cache) {
-                    self.bsay("CSTUCK", false);
-                }
                 let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
 
                 if !locked.contains(&target.room_name()) {
@@ -338,9 +335,7 @@ impl CreepExtensions for screeps::Creep {
 
     fn is_stuck(&self, cache: &mut CachedRoom) -> bool {
         if let Some(heap_creep) = heap().creeps.lock().unwrap().get_mut(&self.name()) {
-            heap_creep.update_position(self);
-
-            return heap_creep.stuck_time >= 5;
+            return heap_creep.stuck;
         }
 
         false

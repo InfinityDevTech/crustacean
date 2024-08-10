@@ -3,8 +3,9 @@
 
 use std::{collections::HashMap, f32::consts::E};
 
+use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{constants, game, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Source, Store};
+use screeps::{constants, game, BodyPart, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Source, Store};
 
 use crate::{config, heap, memory::Role, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType};
 
@@ -298,6 +299,26 @@ pub fn get_unique_id() -> u128 {
     let id = *lock;
     *lock += 1;
     id
+}
+
+pub fn moving_average(old_value: f64, new_value: f64, alpha: f64) -> f64 {
+    (alpha * new_value) + (1.0 - alpha) * old_value
+}
+
+pub fn get_part_count(parts: &Vec<BodyPart>, part_type: Option<Part>) -> u8 {
+    let mut count = 0;
+
+    for part in parts {
+        if let Some(part_type) = part_type {
+            if part.part() == part_type {
+                count += 1;
+            }
+        } else {
+            count += 1;
+        }
+    }
+
+    count
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

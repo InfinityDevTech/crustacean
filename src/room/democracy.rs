@@ -411,10 +411,26 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
 
         let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
+        if let Some(flag) = game::flags().get("deleteAllRoadCSites".to_string()) {
+            let csites = game::construction_sites()
+                .values()
+                .filter(|cs| cs.structure_type() == StructureType::Road)
+                .collect::<Vec<screeps::ConstructionSite>>();
+
+            for csite in csites {
+                let _ = csite.remove();
+            }
+        }
+
         let mut road_count = game::construction_sites()
             .values()
             .filter(|cs| cs.structure_type() == StructureType::Road)
             .count();
+
+        info!(
+            "[PLANNER]  Planning roads for room: {} - Count: {}",
+            room.name(), road_count
+        );
 
         if road_count > 50 {
             should_road = false;
@@ -435,6 +451,20 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 memory.rooms.get_mut(&room.name()).unwrap().planned_paths = res;
             }
 
+            let planned_paths = memory.rooms.get(&room.name()).unwrap().planned_paths.clone();
+
+            if let Some(owning_room) = planned_paths.get(&room.name()) {
+                for pos in decode_pos_list(owning_room.to_string()) {
+                    if road_count >= 50 {
+                        break;
+                    }
+
+                    road_count += 1;
+                    let _ = room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None);
+                }
+            }
+
+            /*
             for (room_name, path) in memory.rooms.get(&room.name()).unwrap().planned_paths.iter() {
                 if let Some(game_room) = game::rooms().get(*room_name) {
                     for pos in decode_pos_list(path.to_string()) {
@@ -446,7 +476,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                         let _ = game_room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None);
                     }
                 }
-            }
+            }*/
         }
 
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();

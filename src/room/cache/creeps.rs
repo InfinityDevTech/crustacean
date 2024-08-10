@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, Creep, HasPosition, Room, RoomXY, SharedCreepProperties};
+use log::info;
+use screeps::{find, game, Creep, HasPosition, Part, Room, RoomName, RoomXY, SharedCreepProperties};
 
 use crate::{
-    allies, constants::HOSTILE_PARTS, heap, memory::{Role, ScreepsMemory}, traits::intents_tracking::CreepExtensionsTracking, utils::name_to_role
+    allies, constants::{self, HOSTILE_PARTS}, heap, memory::{Role, ScreepsMemory}, traits::intents_tracking::CreepExtensionsTracking, utils::{self, name_to_role}
 };
 
 use super::structures::RoomStructureCache;
@@ -23,7 +24,7 @@ pub struct CreepCache {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepCache {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, structures: &RoomStructureCache) -> CreepCache {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, structures: &RoomStructureCache, owning_room: Option<RoomName>) -> CreepCache {
         let mut cache = CreepCache {
             creeps_in_room: HashMap::new(),
             owned_creeps: HashMap::new(),
@@ -36,7 +37,7 @@ impl CreepCache {
             creeps_at_pos: HashMap::new(),
         };
 
-        cache.refresh_creep_cache(memory, room, structures);
+        cache.refresh_creep_cache(memory, room, structures, owning_room);
         cache
     }
 
@@ -44,7 +45,7 @@ impl CreepCache {
         self.creeps_of_role.get(&role).unwrap_or(&Vec::new()).len() as u32
     }
 
-    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room, structures: &RoomStructureCache) {
+    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room, structures: &RoomStructureCache, owning_room: Option<RoomName>) {
         let creeps = room.find(find::CREEPS, None);
 
         for creep in creeps {
@@ -77,6 +78,9 @@ impl CreepCache {
         // TODO: This can get very bad very fast. Each room iterating over all creeps in memory, each tick???
         // BADDDDD
         if let Some(room_memory) = memory.rooms.get_mut(&room.name()) {
+            room_memory.income = 0;
+            room_memory.expense = 0;
+
             for creep_name in &room_memory.creeps.clone() {
                 let creep = game::creeps().get(creep_name.to_string());
 
@@ -87,16 +91,43 @@ impl CreepCache {
                         let _ = creep.ITsuicide();
                         continue;
                     }
+                    let role = role.unwrap();
+
+                    if role == Role::Harvester || role == Role::RemoteHarvester {
+                        let harvest_power = utils::get_part_count(&creep.body(), Some(Part::Work)) as u32;
+                        let energy_income = harvest_power * constants::HARVEST_POWER as u32;
+
+                        room_memory.income += energy_income;
+                    }
+
+                    if role == Role::Upgrader {
+                        let upgrade_power = utils::get_part_count(&creep.body(), Some(Part::Work)) as u32;
+                        let energy_income = upgrade_power * constants::UPGRADE_POWER as u32;
+
+                        room_memory.expense += energy_income;
+                    } else if role == Role::Builder {
+                        let build_power = utils::get_part_count(&creep.body(), Some(Part::Work)) as u32;
+                        let energy_income = build_power * constants::BUILD_POWER as u32;
+
+                        room_memory.expense += energy_income;
+                    } else if role == Role::Repairer {
+                        let repair_power = utils::get_part_count(&creep.body(), Some(Part::Work)) as u32;
+                        let energy_income = repair_power * constants::REPAIR_POWER as u32;
+
+                        room_memory.expense += energy_income;
+                    }
+
+                    room_memory.expense += room_memory.avg_spawn_expense.ceil() as u32;
 
                     self.owned_creeps.insert(creep_name.to_string(), creep);
 
                     if let std::collections::hash_map::Entry::Vacant(e) =
-                        self.creeps_of_role.entry(role.unwrap())
+                        self.creeps_of_role.entry(role)
                     {
                         e.insert(vec![creep_name.to_string()]);
                     } else {
                         self.creeps_of_role
-                            .get_mut(&role.unwrap())
+                            .get_mut(&role)
                             .unwrap()
                             .push(creep_name.to_string());
                     }
@@ -107,6 +138,17 @@ impl CreepCache {
                         .creeps
                         .retain(|x| x != creep_name);
                     continue;
+                }
+            }
+
+            if room_memory.rcl < 8 {
+                room_memory.income /= 2;
+            }
+
+            if let Some(storage) = structures.storage.as_ref() {
+                let storage = storage.store().get_used_capacity(Some(screeps::ResourceType::Energy));
+                if storage > 30000 {
+                    room_memory.income *= storage / 10000;
                 }
             }
         }

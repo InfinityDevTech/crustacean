@@ -89,7 +89,7 @@ pub struct CachedRoom {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedRoom {
-    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) -> CachedRoom {
+    pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, owning_room: Option<RoomName>) -> CachedRoom {
         let pre_cache_cpu = game::cpu::get_used();
 
         let mut room_cache = heap().rooms.lock().unwrap();
@@ -98,7 +98,7 @@ impl CachedRoom {
 
         let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
         let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
-        let creeps = CreepCache::new_from_room(room, memory, &structures);
+        let creeps = CreepCache::new_from_room(room, memory, &structures, owning_room);
 
         let storage_status = storage_status(room, &mut structures);
         let mut stats =  StatsCache::default();
@@ -119,7 +119,7 @@ impl CachedRoom {
             reservation: 0,
 
             idle_haulers: 0,
-            manager: remote_manager,
+            manager: owning_room,
             remotes: Vec::new(),
 
             remotes_with_harvester: Vec::new(),
@@ -160,11 +160,11 @@ impl CachedRoom {
         cached
     }
 
-    pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory) {
+    pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory, owning_room: Option<RoomName>) {
         self.resources.refresh_source_cache(room, &mut self.room_heap_cache);
         self.structures.refresh_structure_cache(&mut self.resources, memory);
 
-        self.creeps.refresh_creep_cache(memory, room, &self.structures);
+        self.creeps.refresh_creep_cache(memory, room, &self.structures, owning_room);
 
         self.traffic.intended_move = HashMap::new();
         self.traffic.movement_map = HashMap::new();

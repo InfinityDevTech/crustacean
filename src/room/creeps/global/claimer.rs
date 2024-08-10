@@ -19,12 +19,6 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     }
     let creep_memory = creep_memory.unwrap();
 
-    info!("Claimer: {} - {:?}", creep.name(), creep_memory);
-
-    if creep.ticks_to_live() < Some(100) || creep_memory.target_room.is_none() {
-        creep_memory.role = Role::Recycler;
-    }
-
     let current_room = creep.room().unwrap();
 
     if current_room.name() != creep_memory.target_room.unwrap() {

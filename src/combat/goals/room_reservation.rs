@@ -157,6 +157,8 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
                 let percentage = (1.0 - controller.reservation().unwrap().ticks_to_end() as f64 / 5000.0) * 10.0;
 
                 priority += percentage;
+            } else {
+                priority += 6.0;
             }
         }
 
@@ -178,6 +180,11 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
                 }
             }
         }
+
+        info!(
+            "[{}] Spawning reserver for room reservation. Priority: {}",
+            best_spawned, priority
+        );
 
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,

@@ -107,6 +107,11 @@ pub const WORLD_SIZE: u8 = 255;
 pub const WALL_MASK: u8 = 1;
 pub const SWAMP_MASK: u8 = 2;
 
+pub static HARVEST_POWER: u8 = 2;
+pub static REPAIR_POWER: u8 = 100;
+pub static DISMANTLE_POWER: u8 = 50;
+pub static BUILD_POWER: u8 = 5;
+pub static UPGRADE_POWER: u8 = 1;
 pub static HOSTILE_PARTS: [Part; 3] = [Part::Attack, Part::RangedAttack, Part::Heal];
 
 pub fn part_attack_weight(part: &Part) -> u32 {

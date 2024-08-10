@@ -386,6 +386,8 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for room in &cache.my_rooms.clone() {
         let pre_check = game::cpu::get_used();
 
+        let mut spawned_creep_cost = 0;
+
         let room = game::rooms().get(*room).unwrap();
         let room_cache = cache.rooms.get(&room.name()).unwrap();
 
@@ -397,7 +399,11 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         let mut spawned_this_tick = false;
         let mut waiting_on_required = false;
-        if available_spawns.is_empty() { continue; }
+        if available_spawns.is_empty() {
+            info!("[SPAWNING] Room {} has no available spawns, skipping spawning", room.name());
+            //room_memory.avg_spawn_expense = utils::moving_average(room_memory.avg_spawn_expense, 0.0, 1.0 / 1500.0);
+            continue;
+        }
 
         info!("[SPAWNING] Running spawning for room {}", room.name());
 
@@ -445,10 +451,12 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
                         if spawned {
                             spawned_this_tick = true;
+
+                            spawned_creep_cost += spawn_request.cost;
                         }
                     } else {
                         waiting_on_required = true;
-                        break;
+                        spawned_this_tick = false;
                     }
                 }
             }
@@ -477,14 +485,17 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
                     if spawned {
                         spawned_this_tick = true;
 
-                        continue;
+                        spawned_creep_cost += request.cost;
                     }
                 }
             }
         }
 
+        let mut room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+        room_memory.avg_spawn_expense = utils::moving_average(room_memory.avg_spawn_expense, spawned_creep_cost as f64, 1.0 / 1500.0);
+
         let post_check = game::cpu::get_used();
-        info!("[SPAWNING] Room {} took {} CPU to spawn creeps", room.name(), post_check - pre_check);
+        info!("  [SPAWNING] Room {} took {} CPU to spawn creeps", room.name(), post_check - pre_check);
     }
 }
 

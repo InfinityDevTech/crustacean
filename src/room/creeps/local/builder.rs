@@ -20,7 +20,6 @@ use super::{hauler::execute_order, upgrader::run_upgrader};
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    info!("Running builder {}", creep.name());
 
     let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
@@ -44,8 +43,6 @@ pub fn get_all_remote_csites(
     memory: &mut ScreepsMemory,
 ) -> Vec<ConstructionSite> {
     let mut sites = Vec::new();
-
-    info!("Getting all roads for {}", main_room);
 
     if let Some(memory) = memory.rooms.get(main_room) {
         for remote in &memory.remotes {
@@ -87,10 +84,6 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     }
 
     let sites = if site_clone.is_empty() {
-        info!(
-            "No non-road sites found. Getting all roads for {}",
-            creepmem.owning_room
-        );
         sites
     } else {
         site_clone

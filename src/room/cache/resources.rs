@@ -379,7 +379,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
 
                 for (resource, amount) in hashed_store.iter() {
                     if *resource != ResourceType::Energy {
-                        cached_room.hauling.create_order(mineral_container.id().into(), Some(mineral_container.structure_type()), Some(*resource), Some(*amount), *amount as f32, HaulingType::NoDistanceCalcWithdraw);
+                        cached_room.hauling.create_order(mineral_container.id().into(), Some(mineral_container.structure_type()), Some(*resource), Some(*amount), -(*amount as f32), HaulingType::NoDistanceCalcWithdraw);
                     }
                 }
             }

@@ -120,10 +120,13 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                     return true;
                 }
             }
-            return false;
         }
         let container = &cached_room.structures.containers().controller;
         if let Some(container) = container {
+            if container.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+                return false;
+            }
+
             if creep.pos().get_range_to(container.pos()) > 1 {
                 let pos = container.pos();
 

@@ -151,14 +151,16 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     if room_cache.structures.containers().fast_filler.is_some() {
         let mut run = true;
-        if let Some((_spawn, spawn_id)) = &room_cache.structures.spawns.clone().into_iter().next() {
-            if spawn_id
-                .store()
-                .get_free_capacity(Some(ResourceType::Energy))
-                > 0
-            {
-                run = false;
+        let mut highest = 0;
+
+        for container in room_cache.structures.containers().fast_filler.as_ref().unwrap() {
+            if container.store().get_used_capacity(Some(ResourceType::Energy)) > highest {
+                highest = container.store().get_used_capacity(Some(ResourceType::Energy));
             }
+        }
+
+        if highest < 500 {
+            run = false;
         }
 
         if run {
@@ -169,9 +171,13 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                 .as_ref()
                 .unwrap()
                 .clone();
-            containers.sort_by_key(|c| c.store().get_free_capacity(Some(ResourceType::Energy)));
+            containers.sort_by_key(|c| c.store().get_used_capacity(Some(ResourceType::Energy)));
 
             if let Some(container) = containers.first() {
+                if container.store().get_used_capacity(Some(ResourceType::Energy)) < 1000 {
+                    run = false;
+                }
+
                 if !creep.pos().is_near_to(container.pos()) {
                     creep.bsay("🚚", false);
                     creep.better_move_to(

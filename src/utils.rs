@@ -5,9 +5,16 @@ use std::{collections::HashMap, f32::consts::E};
 
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use screeps::{constants, game, BodyPart, OwnedStructureProperties, Part, Position, ResourceType, RoomCoordinate, RoomName, Source, Store};
+use screeps::{
+    constants, game, BodyPart, LocalCostMatrix, OwnedStructureProperties, Part, Position, RectStyle, ResourceType, RoomCoordinate, RoomName, RoomXY, Source, Store, Terrain
+};
 
-use crate::{config, heap, memory::Role, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType};
+use crate::{
+    config, heap,
+    memory::Role,
+    room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache},
+    traits::room::RoomType,
+};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
@@ -24,8 +31,18 @@ pub fn get_my_username() -> String {
     }
 
     for room in game::rooms().values() {
-        if room.controller().is_some() && room.controller().unwrap().my() && room.controller().is_some() && room.controller().unwrap().my() {
-            let user = room.controller().unwrap().owner().unwrap().username().to_string();
+        if room.controller().is_some()
+            && room.controller().unwrap().my()
+            && room.controller().is_some()
+            && room.controller().unwrap().my()
+        {
+            let user = room
+                .controller()
+                .unwrap()
+                .owner()
+                .unwrap()
+                .username()
+                .to_string();
 
             heap_username.clone_from(&user);
             return user;
@@ -57,22 +74,28 @@ pub fn get_room_sign(remote: bool) -> String {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn room_type(name: &RoomName) -> RoomType {
-    let (room_x , room_y) = get_proper_coords(name);
+    let x_coord = name.x_coord();
+    let x_mod = if x_coord < 0 {
+        (x_coord.abs() - 1) % 10
+    } else {
+        x_coord % 10
+    };
 
-    let ew = room_x % 10;
-    let ns = room_y % 10;
+    let y_coord = name.y_coord();
+    let y_mod = if y_coord < 0 {
+        (y_coord.abs() - 1) % 10
+    } else {
+        y_coord % 10
+    };
 
-    if ew == 0 && ns == 0 {
-        return RoomType::Intersection
-    }
-    if ew == 0 || ns == 0 {
-        return RoomType::Highway
-    }
-    if room_x % 5 == 0 && room_y % 5 == 0 {
-        return RoomType::Center
-    }
-    if 5 - ew <= 1 && 5 - ns <= 1 {
-        return RoomType::SourceKeeper
+    if x_mod == 0 && y_mod == 0 {
+        return RoomType::Intersection;
+    } else if x_mod == 0 || y_mod == 0 {
+        return RoomType::Highway;
+    } else if x_mod == 5 && y_mod == 5 {
+        return RoomType::Center;
+    } else if (4..=6).contains(&x_mod) && (4..=6).contains(&y_mod) {
+        return RoomType::SourceKeeper;
     }
 
     RoomType::Normal
@@ -83,7 +106,12 @@ pub fn room_type(name: &RoomName) -> RoomType {
 /// Priority: The priority of the task
 /// Reverse: Get priority based off of how empty the container is
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority, reverse: bool) -> f32 {
+pub fn scale_haul_priority(
+    capacity: u32,
+    amount: u32,
+    priority: HaulingPriority,
+    reverse: bool,
+) -> f32 {
     let priority = (priority as u32) as f32;
     let capacity = capacity as f32;
     let amount = amount as f32;
@@ -93,7 +121,7 @@ pub fn scale_haul_priority(capacity: u32, amount: u32, priority: HaulingPriority
     }
 
     if reverse {
-        return (1.0 - amount / capacity) * priority
+        return (1.0 - amount / capacity) * priority;
     }
 
     (amount / capacity) * priority
@@ -131,26 +159,6 @@ pub fn role_to_name(role: Role) -> String {
         Role::InvaderDuoHealer => "ih",
     };
     data.to_string()
-}
-
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn get_proper_coords(room: &RoomName) -> (i32, i32) {
-    let x_coord = room.x_coord();
-    let y_coord = room.y_coord();
-
-    let x_mod = if x_coord < 0 {
-        x_coord + 1
-    } else {
-        x_coord
-    };
-
-    let y_mod = if y_coord < 0 {
-        y_coord + 1
-    } else {
-        y_coord
-    };
-
-    (x_mod, y_mod)
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -236,36 +244,40 @@ pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
 pub fn name_to_role(name: &str) -> Option<Role> {
     let role_tag = name.split("-").next().unwrap();
     match role_tag {
-        "sm" => { Some(Role::Harvester) },
-        "mb" => { Some(Role::Hauler) },
-        "mm" => { Some(Role::MineralMiner) },
-        "rb" => { Some(Role::Repairer) },
-        "bh" => { Some(Role::BaseHauler) },
-        "ss" => { Some(Role::StorageSitter) },
-        "ud" => { Some(Role::Upgrader) },
-        "bd" => { Some(Role::Builder) },
-        "fg" => { Some(Role::Scout) },
-        "ff" => { Some(Role::FastFiller) }
-        "sa" => { Some(Role::Bulldozer) },
-        "gb" => { Some(Role::GiftBasket) },
-        "rm" => { Some(Role::RemoteHarvester) },
-        "uc" => { Some(Role::Unclaimer) },
-        "rc" => { Some(Role::Recycler) },
-        "po" => { Some(Role::PhysicalObserver) },
-        "cl" => { Some(Role::Claimer) },
-        "rs" => { Some(Role::Reserver) },
-        "rd" => { Some(Role::RemoteDefender) },
-        "ic" => { Some(Role::InvaderCoreCleaner) },
-        "ia" => { Some(Role::InvaderDuoAttacker) },
-        "ih" => { Some(Role::InvaderDuoHealer) },
+        "sm" => Some(Role::Harvester),
+        "mb" => Some(Role::Hauler),
+        "mm" => Some(Role::MineralMiner),
+        "rb" => Some(Role::Repairer),
+        "bh" => Some(Role::BaseHauler),
+        "ss" => Some(Role::StorageSitter),
+        "ud" => Some(Role::Upgrader),
+        "bd" => Some(Role::Builder),
+        "fg" => Some(Role::Scout),
+        "ff" => Some(Role::FastFiller),
+        "sa" => Some(Role::Bulldozer),
+        "gb" => Some(Role::GiftBasket),
+        "rm" => Some(Role::RemoteHarvester),
+        "uc" => Some(Role::Unclaimer),
+        "rc" => Some(Role::Recycler),
+        "po" => Some(Role::PhysicalObserver),
+        "cl" => Some(Role::Claimer),
+        "rs" => Some(Role::Reserver),
+        "rd" => Some(Role::RemoteDefender),
+        "ic" => Some(Role::InvaderCoreCleaner),
+        "ia" => Some(Role::InvaderDuoAttacker),
+        "ih" => Some(Role::InvaderDuoHealer),
 
-        "eb" => { Some(Role::ExpansionBuilder) }
-        _ => { None },
+        "eb" => Some(Role::ExpansionBuilder),
+        _ => None,
     }
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn find_closest_owned_room(target_room: &RoomName, cache: &RoomCache, min_rcl: Option<u8>) -> Option<RoomName> {
+pub fn find_closest_owned_room(
+    target_room: &RoomName,
+    cache: &RoomCache,
+    min_rcl: Option<u8>,
+) -> Option<RoomName> {
     let mut closest_room = None;
     let mut closest_distance = 0;
 
@@ -345,4 +357,94 @@ pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
     }
 
     cost
+}
+
+pub fn new_xy(x: u8, y: u8) -> RoomXY {
+    RoomXY::new(
+        RoomCoordinate::new(x).unwrap(),
+        RoomCoordinate::new(y).unwrap(),
+    )
+}
+
+pub fn distance_transform(room_name: &RoomName, visual: bool) -> LocalCostMatrix {
+    let mut cm = LocalCostMatrix::new();
+
+    let mut terrain = game::map::get_room_terrain(*room_name).unwrap();
+
+    let x: u8;
+    let y: u8;
+
+    for x in 1..49 {
+        for y in 1..49 {
+            let score = if terrain.get(x, y) == Terrain::Wall {
+                0
+            } else {
+                255
+            };
+
+            cm.set(new_xy(x, y), score)
+        }
+    }
+
+    let mut top: u8;
+    let mut left: u8;
+    let mut top_left: u8;
+    let mut top_right: u8;
+    let mut bottom_left: u8;
+
+
+    for x in 1..49 {
+        for y in 1..49 {
+            top = cm.get(new_xy(x, y - 1));
+            left = cm.get(new_xy(x - 1, y));
+            top_left = cm.get(new_xy(x - 1, y - 1));
+            top_right = cm.get(new_xy(x + 1, y - 1));
+            bottom_left = cm.get(new_xy(x - 1, y + 1));
+
+            let coord = new_xy(x, y);
+
+            let num1 = top.min(left).min(top_left).min(top_right).min(bottom_left) + 1;
+            let num2 = cm.get(coord);
+            cm.set(coord, num1.min(num2) as u8);
+        }
+    }
+
+
+    let mut bottom;
+    let mut right;
+    let mut bottom_right;
+
+    for x in (1..49).rev() {
+        for y in (1..49).rev() {
+            bottom = cm.get(new_xy(x, y + 1));
+            right = cm.get(new_xy(x + 1, y));
+            bottom_right = cm.get(new_xy(x + 1, y + 1));
+            top_right = cm.get(new_xy(x + 1, y - 1));
+            bottom_left = cm.get(new_xy(x - 1, y + 1));
+
+            let num1 = bottom.min(right).min(bottom_right).min(top_right).min(bottom_left) + 1;
+            let num2 = cm.get(new_xy(x, y));
+            cm.set(new_xy(x, y), num1.min(num2) as u8);
+        }
+    }
+
+    if visual {
+        if let Some(game_room) = game::rooms().get(*room_name) {
+            let vis = game_room.visual();
+            for x in 1..49 {
+                for y in 1..49 {
+                    let score = cm.get(new_xy(x, y));
+
+                    if score == 255 {
+                        continue;
+                    }
+
+                    vis.rect(x as f32 - 0.5, y as f32 - 0.5, 1.0, 1.0, Some(RectStyle::default().fill(&format!("hsl({}, 100%, 60%)", 200 * cm.get(new_xy(x as u8, y as u8)) / 10).as_str())));
+                    vis.text(x as f32, y as f32 , cm.get(new_xy(x, y)).to_string(), Some(Default::default()));
+                }
+            }
+        }
+    }
+
+    cm
 }

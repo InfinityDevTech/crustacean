@@ -43,6 +43,10 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
     clear_creeps(goal);
 
+    if memory.rooms.len() >= game::gcl::level() as usize {
+        return;
+    }
+
     let claimed = if goal_game_room.is_none() {
         false
     } else {
@@ -120,11 +124,15 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                 utils::get_unique_id()
             );
 
-            let priority = if goal.creeps_assigned.len() <= 1 {
+            let mut priority = if goal.creeps_assigned.len() <= 1 {
                 10.0
             } else {
                 4.0
             };
+
+            if cache.rooms.get(&responsible_room.unwrap()).unwrap().rcl >= 6 {
+                priority *= 5.0;
+            }
 
             goal.creeps_assigned.push(name.clone());
 

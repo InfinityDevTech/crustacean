@@ -114,6 +114,9 @@ pub static BUILD_POWER: u8 = 5;
 pub static UPGRADE_POWER: u8 = 1;
 pub static HOSTILE_PARTS: [Part; 3] = [Part::Attack, Part::RangedAttack, Part::Heal];
 
+pub static CLAIM_LIFETIME: u32 = 600;
+pub static CREEP_LIFETIME: u32 = 1500;
+
 pub fn part_attack_weight(part: &Part) -> u32 {
     match part {
         Part::Attack => 30,

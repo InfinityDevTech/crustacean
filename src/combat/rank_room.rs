@@ -39,7 +39,7 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
     }
 
     let mineral_id = if cached_room.resources.mineral.is_some() {
-        Some(cached_room.resources.mineral.as_ref().unwrap().id())
+        Some(cached_room.resources.mineral.as_ref().unwrap().mineral_type())
     } else {
         None
     };

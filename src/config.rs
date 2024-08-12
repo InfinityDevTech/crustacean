@@ -1,4 +1,6 @@
-use crate::{room::cache::CachedRoom, utils};
+use screeps::{ResourceType, ROOM_SIZE};
+
+use crate::{constants::CLAIM_LIFETIME, room::cache::CachedRoom, utils};
 
 pub const MEMORY_VERSION: u8 = 1;
 
@@ -7,6 +9,9 @@ pub const USERNAME_LOCK: &str = "infdev";
 pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";
 pub const ALLIANCE_TAG: &str = "[CAT]";
+
+pub const MAX_CLAIM_DISTANCE: u32 = (CLAIM_LIFETIME / ROOM_SIZE as u32) - 2;
+pub const MIN_CLAIM_DISTANCE: u32 = 2;
 
 pub const RESERVATION_GOAL_THRESHOLD: u32 = 4000;
 pub const ROOM_ENERGY_STOCKPILE: u32 = 20000;

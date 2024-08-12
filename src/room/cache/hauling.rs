@@ -381,7 +381,9 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                             let new_amount = order.amount.unwrap_or(0) as i32 - pickup_amount;
 
                             if new_amount < 0 {
-                                orders.remove(&top_scorer.id);
+                                if order.target_type != Some(StructureType::Storage) {
+                                    orders.remove(&top_scorer.id);
+                                }
                             } else {
                                 order.amount = Some(new_amount as u32);
                             }

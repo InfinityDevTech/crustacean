@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use js_sys::JsString;
 //use strum::{Display, EnumIter, IntoEnumIterator};
 
-use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::cache::hauling::HaulingType, traits::room::RoomType};
+use crate::{config::MEMORY_VERSION, goal_memory::GoalMemory, room::{cache::hauling::HaulingType, expansion::ExpansionMemory}, traits::room::RoomType};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Enum)]
 pub enum SegmentIDs {
@@ -260,7 +260,7 @@ structstruck::strike! {
             pub pos_av: u8,
         }>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub mineral: Option<ObjectId<Mineral>>,
+        pub mineral: Option<ResourceType>,
         pub last_scouted: u32,
     }
 }
@@ -366,6 +366,8 @@ structstruck::strike! {
         pub formations: FormationMemory,
 
         pub goals: GoalMemory,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub expansion: Option<ExpansionMemory>,
 
         pub enemy_players: HashMap<String, EnemyPlayer>,
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
@@ -394,6 +396,7 @@ impl ScreepsMemory {
                 creeps: HashMap::new(),
                 formations: FormationMemory::default(),
                 goals: GoalMemory::default(),
+                expansion: None,
 
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
@@ -427,6 +430,7 @@ impl ScreepsMemory {
                         creeps: HashMap::new(),
                         formations: FormationMemory::default(),
                         goals: GoalMemory::default(),
+                        expansion: None,
 
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),

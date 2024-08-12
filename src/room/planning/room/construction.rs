@@ -254,7 +254,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
 
         if source.link.is_none() {
             if let Some(link_pos) = link_pos {
-                if room_cache.rcl <= 6 && source_links_placed < 1 && only_one_source_link {
+                if room_cache.rcl == 6 && source_links_placed < 1 && only_one_source_link {
                     if let Some(furthest) = furthest_source_from_storage {
                         if source.source.id() == furthest {
                             source_links_placed += 1;

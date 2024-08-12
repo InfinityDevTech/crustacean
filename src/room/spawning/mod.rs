@@ -753,7 +753,6 @@ pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn
     // If we have more than half of the wanted count.
     } else {
         let cnt = (1.0 - harvester_count as f64 / wanted_count as f64).round();
-        info!("Mathing (1.0 - {} / {}) = {}", hauler_count, wanted_count, cnt);
 
         cnt * 10.0
     };
@@ -761,8 +760,6 @@ pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn
     if (hauler_count as u32) < wanted_count as u32 / 2 {
         prio *= 2.0;
     }
-
-    info!("Hauler prio: {}", prio);
 
     // TODO
     // Patchwork fix to stop idle haulers from clogging space.
@@ -1174,7 +1171,6 @@ pub fn remote_harvester(
 
                     let priority = 4.0 * parts_needed_on_source as f64;
 
-                    info!("RH with prio {}", priority);
                     requests.push(Some(cache.spawning.create_room_spawn_request(
                         Role::RemoteHarvester,
                         body,
@@ -1200,8 +1196,6 @@ pub fn remote_harvester(
 
                 priority += parts_needed_on_source as f64;
 
-                info!("no replacement RH with prio {}", priority);
-
                 requests.push(Some(cache.spawning.create_room_spawn_request(
                     Role::RemoteHarvester,
                     body,
@@ -1225,8 +1219,6 @@ pub fn remote_harvester(
 
                     let priority = 50.0;
                     let cost = get_body_cost(&body);
-
-                    info!("Nno Cache RH with prio {}", priority);
 
                     requests.push(Some(cache.spawning.create_room_spawn_request(
                         Role::RemoteHarvester,

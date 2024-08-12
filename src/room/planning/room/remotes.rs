@@ -23,7 +23,7 @@ pub fn fetch_possible_remotes(
     let mut possible_remotes = Vec::new();
 
     for room_name in adjacent_rooms {
-        let rank = rank_remote_room(memory, room_cache, &room_name, &room_cache.spawn_center.unwrap().as_position(&room.name()));
+        let rank = rank_remote_room(memory, &room_name, &room_cache.spawn_center.unwrap().as_position(&room.name()));
 
         if rank == u32::MAX {
             continue;
@@ -122,13 +122,10 @@ pub fn fetch_possible_remotes(
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn rank_remote_room(
-    memory: &mut ScreepsMemory,
-    room_cache: &CachedRoom,
+    memory: &ScreepsMemory,
     remote_room: &RoomName,
     measure_pos: &Position,
 ) -> u32 {
-    // If our room doesnt have a spawn placed yet.
-    let spawn_pos = room_cache.spawn_center.unwrap().as_position(&room_cache.room.name());
     let mut i = 0;
     let mut current_avg = 0;
 
@@ -187,7 +184,7 @@ pub fn rank_remote_room(
             *remote_room,
         );
         let options = Some(SearchOptions::new(remote_path_call).max_rooms(16).plain_cost(1).swamp_cost(5));
-        let path = pathfinder::search(spawn_pos, position, 1, options);
+        let path = pathfinder::search(*measure_pos, position, 1, options);
 
         if path.incomplete() {
             let dist = measure_pos.get_range_to(position);

@@ -1,6 +1,7 @@
 #![allow(internal_features)]
 #![feature(map_many_mut)]
 #![feature(core_intrinsics)]
+#![feature(const_refs_to_static)]
 
 use std::{
     collections::HashMap,
@@ -16,10 +17,7 @@ use movement::caching::generate_pathing_targets;
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::{hauling, traffic, RoomCache},
-    democracy::start_government,
-    spawning::spawn_manager::{self, run_spawning, SpawnManager},
-    visuals::visualise_scouted_rooms,
+    cache::{hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
 use screeps::{find, game, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
@@ -251,6 +249,18 @@ pub fn game_loop() {
     memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu;
 
     set_stats(&mut memory);
+    decay_hate(&mut memory);
+
+    if game::flags().get("reset_expansion".to_string()).is_some() {
+        memory.goals.room_claim.clear();
+        memory.expansion = None;
+    }
+
+    if game::cpu::bucket() > 2000 && can_expand(&memory) {
+        attempt_expansion(&mut memory, &cache);
+    } else {
+        info!("[EXPANSION] Not enough CPU to run! Waiting for 2k in the bucket!");
+    }
 
     // Bot is finished, write the stats and local copy of memory.
     // This is run only once per tick as it serializes the memory.
@@ -263,8 +273,6 @@ pub fn game_loop() {
     } else {
         info!("[MEMORY] Bucket is too low, CPU usage is too high, or tick isnt divisible by 10, skipping memory write");
     }
-
-    decay_hate(&mut memory);
 
     if config::VISUALISE_SCOUTING_DATA {
         visualise_scouted_rooms(&mut memory);

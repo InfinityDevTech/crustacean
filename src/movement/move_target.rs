@@ -1,4 +1,4 @@
-use log::warn;
+use log::{info, warn};
 use screeps::{
     find, game,
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
@@ -14,6 +14,8 @@ use crate::{
     utils::get_my_username,
 };
 
+use super::movement_utils::visualise_path;
+
 #[derive(Debug, Clone, Copy)]
 pub struct MoveOptions {
     pub avoid_enemies: bool,
@@ -21,6 +23,8 @@ pub struct MoveOptions {
     pub avoid_hostile_rooms: bool,
     pub avoid_sitters: bool,
     pub ignore_cached_cost_matrix: bool,
+    pub visualize_path: bool,
+    pub ignore_cache: bool,
     pub path_age: u8,
 }
 
@@ -32,6 +36,8 @@ impl Default for MoveOptions {
             avoid_hostile_rooms: false,
             avoid_sitters: true,
             ignore_cached_cost_matrix: false,
+            ignore_cache: false,
+            visualize_path: false,
             path_age: 8,
         }
     }
@@ -41,6 +47,16 @@ impl Default for MoveOptions {
 impl MoveOptions {
     pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
         self.avoid_enemies = avoid_enemies;
+        *self
+    }
+
+    pub fn visualize_path(&mut self, visualize_path: bool) -> Self {
+        self.visualize_path = visualize_path;
+        *self
+    }
+
+    pub fn ignore_cache(&mut self, ignore_cache: bool) -> Self {
+        self.ignore_cache = ignore_cache;
         *self
     }
 
@@ -82,7 +98,7 @@ impl MoveTarget {
         from: Position,
         memory: &mut ScreepsMemory,
         move_options: MoveOptions,
-    ) -> String {
+    ) -> (String, bool) {
         //info!("Finding path to {}", self.pos);
 
         /*if memory.remote_rooms.contains_key(&self.pos.room_name()) {
@@ -118,8 +134,11 @@ impl MoveTarget {
 
         let search = self.pathfind(from, Some(opts));
 
-        //visualise_path(search.path().clone(), from, "#ff0000");
-        self.serialize_path(from, search.path(), move_options, false)
+        if move_options.visualize_path {
+            visualise_path(search.path().clone(), from, "#ff0000");
+        }
+
+        (self.serialize_path(from, search.path(), move_options, false), search.incomplete())
     }
 
     pub fn caching_pathfind(
@@ -272,8 +291,8 @@ pub fn path_call(
             }
         } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
             if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()))
+                || (scouting_data.reserved.is_some() && scouting_data.reserved != Some(get_my_username()))
                 || scouting_data.invader_core.unwrap_or(false)
-                || scouting_data.reserved != Some(get_my_username())
             {
                 return MultiRoomCostResult::Impassable;
             }

@@ -28,7 +28,7 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
             RoomCoordinate::unchecked_new(25)
         }, creep_memory.target_room.unwrap());
 
-        creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
+        creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().avoid_enemies(true).visualize_path(true).ignore_cache(true));
     } else {
         let controller = current_room.controller().unwrap();
 
@@ -37,7 +37,7 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         } else if creep.pos().is_near_to(controller.pos()) {
             let _ = creep.ITclaim_controller(&controller);
         } else {
-            creep.better_move_to(memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(true));
+            creep.better_move_to(memory, room_cache, controller.pos(), 1, MoveOptions::default().avoid_enemies(true).visualize_path(true).ignore_cache(true));
         }
     }
 }

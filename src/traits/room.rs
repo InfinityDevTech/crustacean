@@ -275,6 +275,7 @@ impl RoomExtensions for screeps::Room {
 
 pub trait RoomNameExtensions {
     fn split_name(&self) -> (String, u32, String, u32);
+    fn get_adjacent(&self, radius: i32) -> Vec<RoomName>;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -291,6 +292,62 @@ impl RoomNameExtensions for RoomName {
             captures[3].to_string(),
             captures[4].to_string().parse::<u32>().unwrap(),
         )
+    }
+
+    fn get_adjacent(&self, radius: i32) -> Vec<RoomName> {
+        let split = self.split_name();
+        let horizdir = split.0;
+        let horiznum = split.1 as i32;
+        let vertdir = split.2;
+        let vertnum = split.3 as i32;
+
+        let mut rooms = Vec::new();
+
+        for x in horiznum - radius..=horiznum + radius {
+            for y in vertnum - radius..=vertnum + radius {
+                let newhoriznum = x;
+                let newvertnum = y;
+
+                let mut newhorizdir = horizdir.clone();
+                let mut effectivehoriznum = newhoriznum;
+                if newhoriznum < 0 {
+                    newhorizdir = if horizdir == "E" {
+                        "W".to_owned()
+                    } else {
+                        "E".to_owned()
+                    };
+                    effectivehoriznum = newhoriznum.abs() - 1;
+                }
+
+                let mut newvertdir = vertdir.clone();
+                let mut effectivevertnum = newvertnum;
+                if newvertnum < 0 {
+                    newvertdir = if vertdir == "N" {
+                        "S".to_owned()
+                    } else {
+                        "N".to_owned()
+                    };
+                    effectivevertnum = newvertnum.abs() - 1;
+                }
+
+                let room_name = format!(
+                    "{}{}{}{}",
+                    newhorizdir, effectivehoriznum, newvertdir, effectivevertnum
+                );
+                rooms.push(RoomName::new(&room_name));
+                //const newRoomName = `${newHorizDir}${effectiveHorizNum}${newVertDir}${effectiveVertNum}`;
+                //rooms.push(newRoomName);
+            }
+        }
+
+        let mut adjacent_checked = Vec::new();
+        for room in rooms.into_iter().flatten() {
+            if room != *self {
+                adjacent_checked.push(room);
+            }
+        }
+
+        adjacent_checked
     }
 }
 

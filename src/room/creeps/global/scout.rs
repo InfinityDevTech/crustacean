@@ -65,55 +65,11 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let exits = game::map::describe_exits(creep.room().unwrap().name());
         let exits = exits.values().collect::<Vec<_>>();
 
-        let mut exit_clone = exits.clone();
+        let
 
-        creep.bsay("🚚", false);
+        for exit in exits {
 
-        for exit in exits.clone() {
-            let existing_data = memory.scouted_rooms.get(&exit);
-            let is_normal = if let Some(status) = game::map::get_room_status(exit) {
-                status.status() == RoomStatus::Normal
-            } else {
-                false
-            };
-
-            if ((existing_data.is_some() && existing_data.unwrap().last_scouted + 3000 < game::time()) || memory.rooms.contains_key(&exit) || memory.remote_rooms.contains_key(&exit)) || !is_normal {
-                exit_clone.retain(|x| *x != exit);
-            }
         }
-
-        let exit = if exit_clone.is_empty() {
-            let mut top_scorer = None;
-            let mut top_scorer_age = u32::MAX;
-
-            for exit in exits.clone() {
-                let room = memory.scouted_rooms.get(&exit);
-
-                // If we scouted it, check if it's the oldest
-                // if we havent, go to it.
-                if let Some(room) = room {
-                    let last_scout = room.last_scouted;
-
-                    if last_scout > top_scorer_age {
-                        top_scorer = Some(exit);
-                        top_scorer_age = last_scout;
-                    }
-                } else {
-                    top_scorer = Some(exit);
-                    top_scorer_age = u32::MAX;
-                }
-            }
-
-            if let Some(top_scorer) = top_scorer {
-                top_scorer
-            } else {
-                let mut rng = StdRng::seed_from_u64(game::time() as u64);
-                *exits.choose(&mut rng).unwrap()
-            }
-        } else {
-            let mut rng = StdRng::seed_from_u64(game::time() as u64);
-            *exit_clone.choose(&mut rng).unwrap()
-        };
 
         let pos = RoomPosition::new(25, 25, exit);
 

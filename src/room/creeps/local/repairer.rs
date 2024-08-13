@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureProperties, StructureType};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::{cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, spawning::spawn_manager}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::get_rampart_repair_rcl};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::{cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, spawning::spawn_manager}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::{get_rampart_repair_rcl, under_storage_gate}};
 use super::hauler;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -130,6 +130,21 @@ pub fn get_repair_task(creep: &Creep, creep_memory: &mut CreepMemory, cache: &mu
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
+    let room_cache = cache.rooms.get(&creep_memory.owning_room).unwrap();
+
+    if let Some(storage) = &room_cache.structures.storage {
+        if !under_storage_gate(room_cache, 0.8) {
+            if !creep.pos().is_near_to(storage.pos()) {
+                let pos = storage.pos();
+                creep.better_move_to(memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), pos, 3, Default::default());
+                return;
+            } else {
+                creep.bsay("🚚", false);
+                let _ = creep.ITwithdraw(storage, ResourceType::Energy, None);
+                return;
+            }
+        }
+    }
 
     if let Some(hauling_task) = creep_memory.hauling_task.clone() {
         hauler::execute_order(creep, memory, cache, &hauling_task);

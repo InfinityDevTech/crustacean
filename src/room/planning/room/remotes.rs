@@ -4,7 +4,7 @@ use screeps::{
 };
 
 use crate::{
-    config, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::{CachedRoom, RoomCache}, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
+    config, constants, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::{CachedRoom, RoomCache}, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -145,11 +145,7 @@ pub fn rank_remote_room(
             if let Some(scouted) = memory.scouted_rooms.get(&room) {
                 if scouted.owner.is_some() && *scouted.owner.as_ref().unwrap() != utils::get_my_username() {
                     return u32::MAX;
-                } else if scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() != utils::get_my_username() {
-                    if *scouted.reserved.as_ref().unwrap() == "Invader" {
-                        return u32::MAX - 2;
-                    }
-
+                } else if scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() != utils::get_my_username() && *scouted.reserved.as_ref().unwrap().to_lowercase() != constants::INVADER_USERNAME.to_lowercase() {
                     return u32::MAX;
                 }
             }

@@ -6,14 +6,11 @@ use std::{collections::HashMap, f32::consts::E};
 use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
-    constants, game, BodyPart, LocalCostMatrix, OwnedStructureProperties, Part, Position, RectStyle, ResourceType, RoomCoordinate, RoomName, RoomXY, Source, Store, Terrain
+    constants, game, pathfinder::SearchOptions, BodyPart, LocalCostMatrix, OwnedStructureProperties, Part, Position, RectStyle, ResourceType, RoomCoordinate, RoomName, RoomXY, Source, Store, Terrain
 };
 
 use crate::{
-    config, heap,
-    memory::Role,
-    room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache},
-    traits::room::RoomType,
+    config, constants::{SWAMP_MASK, WALL_MASK}, heap, memory::Role, movement::move_target::MoveTarget, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -331,6 +328,46 @@ pub fn get_part_count(parts: &Vec<BodyPart>, part_type: Option<Part>) -> u8 {
     }
 
     count
+}
+
+pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
+    let path = MoveTarget {
+        pos,
+        range: 1,
+    }.pathfind(target, Some(SearchOptions::default()));
+
+    if path.incomplete() {
+        return 0;
+    }
+
+    path.path().len() as u32
+}
+
+pub fn calculate_swamp_percentage(room_name: &RoomName) -> u32 {
+    let terrain = game::map::get_room_terrain(*room_name).unwrap();
+
+    let mut walkable_tiles = 0;
+    let mut swamp_tiles = 0;
+
+    for x in 0..50 {
+        for y in 0..50 {
+            let tile = terrain.get(x, y);
+
+            if tile == Terrain::Wall {
+                continue;
+            }
+
+            walkable_tiles += 1;
+
+            if tile == Terrain::Swamp {
+                swamp_tiles += 1;
+            }
+        }
+    }
+
+    let total = walkable_tiles + swamp_tiles;
+
+    (swamp_tiles / total) * 100
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

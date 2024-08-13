@@ -258,8 +258,10 @@ pub fn game_loop() {
 
     if game::cpu::bucket() > 2000 && can_expand(&memory) {
         attempt_expansion(&mut memory, &cache);
-    } else {
+    } else if game::cpu::bucket() < 2000 {
         info!("[EXPANSION] Not enough CPU to run! Waiting for 2k in the bucket!");
+    } else if memory.expansion.is_some() {
+        memory.expansion = None;
     }
 
     // Bot is finished, write the stats and local copy of memory.

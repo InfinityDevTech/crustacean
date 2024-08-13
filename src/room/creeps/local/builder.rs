@@ -1,6 +1,6 @@
 use log::info;
 use screeps::{
-    ConstructionSite, Creep, HasPosition, Part, ResourceType, RoomName, SharedCreepProperties,
+    ConstructionSite, Creep, HasPosition, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties
 };
 
 use crate::{
@@ -22,6 +22,20 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     let needs_energy = creep_memory.needs_energy.unwrap_or(false);
+
+    if creep.room().unwrap().name() != creep_memory.owning_room {
+        let room = creep_memory.owning_room;
+        
+        creep.better_move_to(
+            memory,
+            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+            Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), room),
+            23,
+            MoveOptions::default(),
+        );
+
+        return;
+    }
 
     if creep.spawning() {
         return;
@@ -65,7 +79,7 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     //sites.sort_by_key(|s| s.pos().get_range_to(creep.pos()));
 
     let owning_room = creepmem.owning_room;
-    sites.append(&mut get_all_remote_csites(&owning_room, cache, memory));
+    //sites.append(&mut get_all_remote_csites(&owning_room, cache, memory));
 
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();

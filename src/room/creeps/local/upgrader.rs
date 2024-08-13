@@ -12,7 +12,7 @@ use crate::{
     traits::{
         creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions
     },
-    utils::get_room_sign,
+    utils::{get_room_sign, under_storage_gate},
 };
 
 use super::hauler::execute_order;
@@ -76,9 +76,9 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
         <= (creep.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.75)
     {
         if let Some(room_storage) = cached_room.structures.storage.as_ref() {
-            let energy_gate = cached_room.storage_status.wanted_energy as f32 * 0.8;
+            //let energy_gate = cached_room.storage_status.wanted_energy as f32 * 0.8;
 
-            if room_storage.store().get_used_capacity(Some(ResourceType::Energy)) <= energy_gate.round() as u32 && controller_downgrade > Some(5000) {
+            if under_storage_gate(cached_room, 0.9) && controller_downgrade > Some(5000) {
                 if let Some(controller) = cached_room.structures.controller.as_ref() {
                     if creep.pos().get_range_to(controller.pos()) > 3 {
                         creep.better_move_to(

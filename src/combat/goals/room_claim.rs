@@ -1,14 +1,17 @@
-use std::vec;
+use std::{str::FromStr, u32, vec};
 
+use js_sys::JsString;
 use log::info;
-use screeps::{find, game, Flag, HasPosition, OwnedStructureProperties, Part, Room, RoomName, SharedCreepProperties, StructureType};
+use screeps::{
+    find, game, Flag, HasPosition, MapTextStyle, MapVisual, OwnedStructureProperties, Part, Position, Room, RoomCoordinate, RoomName, SharedCreepProperties, StructureType
+};
 
 use crate::{
     goal_memory::RoomClaimGoal,
     memory::{CreepMemory, Role, ScreepsMemory},
     room::cache::RoomCache,
-    traits::intents_tracking::RoomExtensionsTracking,
-    utils::{self, role_to_name},
+    traits::{intents_tracking::RoomExtensionsTracking, position::RoomXYExtensions},
+    utils::{self, distance_transform, new_xy, role_to_name, under_storage_gate},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -43,7 +46,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
     clear_creeps(goal);
 
-    if memory.rooms.len() >= game::gcl::level() as usize {
+    if memory.rooms.len() > game::gcl::level() as usize {
         return;
     }
 
@@ -60,9 +63,19 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         return;
     }
 
+    let pos = Position::new(RoomCoordinate::new(5).unwrap(), RoomCoordinate::new(5).unwrap(), *goal_room);
+    MapVisual::text(pos, "🚩".to_string(), MapTextStyle::default());
+
     // Spawn the claimer
     if !claimed && goal.creeps_assigned.is_empty() {
-        let claimer_body = vec![Part::Claim, Part::Move, Part::Move, Part::Move, Part::Move, Part::Move];
+        let claimer_body = vec![
+            Part::Claim,
+            Part::Move,
+            Part::Move,
+            Part::Move,
+            Part::Move,
+            Part::Move,
+        ];
         let claimer_cost = utils::get_body_cost(&claimer_body);
 
         let creep_memory = CreepMemory {
@@ -106,8 +119,8 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         }
     } else if claimed {
         if goal.creeps_assigned.len() < 3 {
-
-            let claimer_body = get_creep_body(&game::rooms().get(responsible_room.unwrap()).unwrap());
+            let claimer_body =
+                get_creep_body(&game::rooms().get(responsible_room.unwrap()).unwrap());
             let claimer_cost = utils::get_body_cost(&claimer_body);
 
             let creep_memory = CreepMemory {
@@ -132,6 +145,10 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
             if cache.rooms.get(&responsible_room.unwrap()).unwrap().rcl >= 6 {
                 priority *= 5.0;
+            }
+
+            if !under_storage_gate(cache.rooms.get(&responsible_room.unwrap()).unwrap(), 1.0) {
+                priority = f64::MAX - 5.0;
             }
 
             goal.creeps_assigned.push(name.clone());
@@ -174,25 +191,75 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
         // If we built the spawn, the room can be removed from the goal list
         // Since it can handle itself now
         // RCL 2 since we get a safemode.
-        if !expansion_cache.structures.spawns.is_empty() && expansion_game_room.controller().unwrap().level() >= 2 {
+        if !expansion_cache.structures.spawns.is_empty()
+            && expansion_game_room.controller().unwrap().level() >= 2
+        {
             memory.goals.room_claim.remove(goal_room);
         }
 
         let has_spawn_csite_or_spawn = !expansion_cache.structures.spawns.is_empty()
-            || expansion_cache.structures.construction_sites.iter().any(|cs| {
-                cs.structure_type() == screeps::StructureType::Spawn
-            });
+            || expansion_cache
+                .structures
+                .construction_sites
+                .iter()
+                .any(|cs| cs.structure_type() == screeps::StructureType::Spawn);
 
         if !has_spawn_csite_or_spawn {
-            let find = expansion_game_room.find(find::FLAGS, None);
-            let flag_pos = find.iter().filter(|f| f.name().starts_with("claim")).collect::<Vec<&Flag>>();
-
-            if flag_pos.is_empty() {
+            if game::rooms().get(responsible_room.unwrap()).is_none() {
                 return;
             }
 
-            let flag = flag_pos[0];
-            let res = expansion_game_room.ITcreate_construction_site(flag.pos().x().u8(), flag.pos().y().u8(), StructureType::Spawn, None);
+            cache.create_if_not_exists(
+                &game::rooms().get(responsible_room.unwrap()).unwrap(),
+                memory,
+                None,
+            );
+            let cached_room = cache.rooms.get_mut(&responsible_room.unwrap()).unwrap();
+
+            let available_positions = distance_transform(goal_room, true);
+            let mut available_xy = Vec::new();
+
+            for x in 1..49 {
+                for y in 1..49 {
+                    let xy = new_xy(x, y);
+
+                    let score = available_positions.get(xy);
+
+                    if score >= 7 {
+                        available_xy.push(xy);
+                    }
+                }
+            }
+
+            let cpos = cached_room.structures.controller.as_ref().map(|controller| controller.pos());
+
+            let mut lowest = u32::MAX;
+            let mut lowest_pos = None;
+
+            for pos in available_xy {
+                let xy = pos.as_position(goal_room);
+
+                let dist = utils::get_pathfind_distance(cpos.unwrap(), xy);
+                let mut source_dist = 0;
+
+                for source in &cached_room.resources.sources {
+                    source_dist += utils::get_pathfind_distance(source.source.pos(), xy) / 2;
+                }
+
+                let total_dist = dist + source_dist;
+
+                if total_dist < lowest {
+                    lowest = total_dist;
+                    lowest_pos = Some(xy);
+                }
+            }
+
+            //let flag = lowest_pos.unwrap().create_flag(
+            //    Some(&JsString::from_str("PlacedSpawn").unwrap()),
+            //    None,
+            //    None,
+            //);
+            expansion_game_room.ITcreate_construction_site(lowest_pos.unwrap().x().u8(), lowest_pos.unwrap().y().u8(), StructureType::Spawn, None);
         }
     }
 }

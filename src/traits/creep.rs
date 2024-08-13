@@ -10,7 +10,7 @@ use crate::{
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
     },
-    room::cache::CachedRoom,
+    room::cache::CachedRoom, utils::new_xy,
 };
 
 use log::info;
@@ -136,8 +136,6 @@ impl CreepExtensions for screeps::Creep {
 
             return true;
         }
-
-        false
     }
 
     fn better_move_to(
@@ -157,8 +155,8 @@ impl CreepExtensions for screeps::Creep {
         if !move_options.ignore_cache {
             if let Some(storage) = &cache.structures.storage {
                 if storage.pos() == target && self.move_to_storage(cache) {
-                    self.bsay("MV-STUCK", false);
                     if self.is_stuck(cache) {
+                        self.bsay("ST-STUCK", false);
                         let possible_moves = self.get_possible_moves(cache);
 
                         if let Some(pos) = possible_moves.first() {
@@ -167,8 +165,14 @@ impl CreepExtensions for screeps::Creep {
                             if let Some(dir) = dir {
                                 self.move_request(dir, cache);
 
+                                self.bsay(format!("MV-STCK-{}", dir).as_str(), false);
+
                                 return;
+                            } else {
+                                self.bsay("NO-MV", false);
                             }
+                        } else {
+                            self.bsay("NO-MV", false);
                         }
                     }
 
@@ -426,39 +430,30 @@ impl CreepExtensions for screeps::Creep {
 
         let mut possible_moves = vec![];
 
+        if room_cache
+        .traffic
+        .intended_move
+        .contains_key(&self.try_id().unwrap())
+    {
+        possible_moves.insert(
+            0,
+            *room_cache
+                .traffic
+                .intended_move
+                .get(&self.try_id().unwrap())
+                .unwrap(),
+        );
+        return possible_moves;
+    }
+
         if self.tired() {
             return possible_moves;
         }
 
-        if room_cache
-            .traffic
-            .intended_move
-            .contains_key(&self.try_id().unwrap())
-        {
-            possible_moves.insert(
-                0,
-                *room_cache
-                    .traffic
-                    .intended_move
-                    .get(&self.try_id().unwrap())
-                    .unwrap(),
-            );
-            return possible_moves;
-        }
-
         let mut adjacent_coords = vec![];
-        let directions = vec![
-            Direction::Top,
-            Direction::TopRight,
-            Direction::Right,
-            Direction::BottomRight,
-            Direction::Bottom,
-            Direction::BottomLeft,
-            Direction::Left,
-            Direction::TopLeft,
-        ];
-        for dir in directions {
-            let pos = dir_to_coords(dir, self.pos().x().u8(), self.pos().y().u8());
+
+        for dir in Direction::iter() {
+            let pos = dir_to_coords(*dir, self.pos().x().u8(), self.pos().y().u8());
 
             adjacent_coords.push(pos);
         }
@@ -473,7 +468,7 @@ impl CreepExtensions for screeps::Creep {
             let x = xy.x.u8();
             let y = xy.y.u8();
 
-            if room_terrain.get_xy(xy) == Terrain::Wall {
+            if room_terrain.get_xy(xy) == Terrain::Wall || room_cache.creeps.creeps_at_pos.contains_key(&xy) {
                 continue;
             }
 

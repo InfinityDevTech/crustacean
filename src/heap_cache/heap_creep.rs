@@ -48,6 +48,11 @@ impl HeapCreep {
     pub fn calculate_position_uniqueness(&mut self) {
         let mut unique = Vec::new();
 
+        if self.previous_positions.len() < 7 {
+            self.stuck = false;
+            return;
+        }
+
         for pos in &self.previous_positions {
             if !unique.contains(pos) {
                 unique.push(*pos);

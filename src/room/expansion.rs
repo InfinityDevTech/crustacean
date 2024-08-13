@@ -5,23 +5,16 @@ use log::info;
 use screeps::{
     game::{
         self,
-        map::{RoomStatus, RoomStatusResult},
-    },
-    pathfinder::SearchOptions,
-    MapTextStyle, MapVisual, Position, ResourceType, RoomCoordinate, RoomName, RoomXY,
+        map::{FindRouteOptions, RoomStatus, RoomStatusResult},
+    }, pathfinder::SearchOptions, MapTextStyle, MapVisual, Position, ResourceType, RoomCoordinate, RoomName, RoomVisual, RoomXY
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config,
-    constants::ROOM_SIZE,
-    memory::ScreepsMemory,
-    movement::move_target::{MoveOptions, MoveTarget},
-    traits::{
+    config, constants::ROOM_SIZE, goal_memory::RoomClaimGoal, memory::ScreepsMemory, movement::move_target::{MoveOptions, MoveTarget}, traits::{
         position::RoomXYExtensions,
         room::{RoomNameExtensions, RoomType},
-    },
-    utils,
+    }, utils
 };
 
 use super::{
@@ -38,14 +31,28 @@ pub enum ExpansionStatus {
     Expanding,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExpansionMemory {
     pub start_time: u32,
     pub current_status: ExpansionStatus,
+    pub last_chcked: u32,
 
     pub potential_rooms: Vec<RoomName>,
     pub rooms_can_fit: HashMap<RoomName, bool>,
     pub scored_rooms: HashMap<RoomName, f64>,
+}
+
+impl ExpansionMemory {
+    pub fn new() -> ExpansionMemory {
+        ExpansionMemory {
+            start_time: game::time(),
+            last_chcked: 0,
+            current_status: ExpansionStatus::FindingCapable,
+            potential_rooms: Vec::new(),
+            rooms_can_fit: HashMap::new(),
+            scored_rooms: HashMap::new(),
+        }
+    }
 }
 
 pub fn can_expand(memory: &ScreepsMemory) -> bool {
@@ -53,12 +60,16 @@ pub fn can_expand(memory: &ScreepsMemory) -> bool {
     let gcl = game::gcl::level() as usize;
     let claim_goals = memory.goals.room_claim.len();
 
+    if memory.goals.room_claim.len() > 0 {
+        return false;
+    }
+
     room_count + claim_goals < gcl
 }
 
 pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
     let mut expansion_memory = if memory.expansion.is_none() {
-        ExpansionMemory::default()
+        ExpansionMemory::new()
     } else {
         memory.expansion.as_ref().unwrap().clone()
     };
@@ -67,16 +78,26 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
 
     match expansion_memory.current_status {
         ExpansionStatus::FindingCapable => {
+            if expansion_memory.last_chcked + 10 > game::time() {
+                info!("[EXPANSION] We dont have enough scouting data!");
+                return;
+            }
+
             let (expandable_rooms, total_rooms, unscouted_rooms) =
                 find_expandable_rooms(memory, cache);
 
             let percent_unscouted = (unscouted_rooms as f32 / total_rooms as f32) * 100.0;
 
-            if percent_unscouted >= 50.0 {
+            // TODO:
+            // Improve scouts!!!
+            if percent_unscouted >= 70.0 {
                 info!(
-                    "[EXPANSION] We havent scouted around {:.2}% of rooms, pausing expansion until we scout 50%.",
+                    "[EXPANSION] We havent scouted around {:.2}% of rooms, pausing expansion until we scout 70%.",
                     percent_unscouted
                 );
+
+                expansion_memory.last_chcked = game::time();
+                memory.expansion = Some(expansion_memory);
                 return;
             }
 
@@ -90,7 +111,6 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             info!("[EXPANSION] Scoring {} rooms.", potential_rooms.len());
 
             let mut status = ExpansionStatus::ScoringRooms;
-            let mut i = 0;
 
             let mut unscored_rooms = Vec::new();
             for room in &potential_rooms {
@@ -102,19 +122,16 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             let needed_minerals = get_needed_minerals(memory, cache);
 
             for room in &unscored_rooms {
+                info!("[EXPANSION] Scoring room: {}", room);
                 if game::cpu::get_used() > game::cpu::tick_limit() - 100.0 {
                     break;
                 }
 
-                info!("[EXPANSION] Attempting to score room: {}", room);
-
                 let score = score_room(room, needed_minerals.clone(), memory, cache);
                 scored_rooms.insert(*room, score);
-
-                i += 1;
             }
 
-            if i == unscored_rooms.len() {
+            if unscored_rooms.is_empty() {
                 status = ExpansionStatus::FinalTouches;
             }
 
@@ -165,16 +182,46 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             let mut sorted_scores = scores.iter().collect::<Vec<_>>();
             sorted_scores.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
 
+            let mut highest_score = 0.0;
+            let mut top_scorer = None;
+
             for (room_name, score) in sorted_scores {
-                if fittable.contains_key(room_name) && *fittable.get(room_name).unwrap() {
-                    info!(
-                        "[EXPANSION] Expanding to room: {} with score: {}",
-                        room_name, score
-                    );
-                    //room::claim::claim_room(room_name, memory, cache);
+                if fittable.contains_key(room_name) && *fittable.get(room_name).unwrap() && *score > highest_score {
+                    highest_score = *score;
+                    top_scorer = Some(*room_name);
                 }
             }
+
+            if let Some(top_scorer) = top_scorer {
+                info!(
+                    "[EXPANSION] Expanding to room: {} with score: {}",
+                    top_scorer, highest_score
+                );
+
+                if memory.goals.room_claim.contains_key(&top_scorer) {
+                    info!("[EXPANSION] Room already claimed, skipping.");
+                    memory.expansion = None;
+
+                    return;
+                }
+
+                game::notify(format!("[EXPANSION] Attempting to expand to the room: {}", top_scorer).as_str(), None);
+                let goal = RoomClaimGoal {
+                    claim_target: top_scorer,
+                    creeps_assigned: Vec::new(),
+                };
+
+                memory.goals.room_claim.insert(top_scorer, goal);
+            } else {
+                info!("[EXPANSION] Found no suitable rooms to expand to.");
+            }
         }
+    }
+
+    if !memory.goals.room_claim.is_empty() {
+        memory.expansion = None;
+
+        return;
     }
 
     memory.expansion = Some(expansion_memory);
@@ -318,14 +365,39 @@ pub fn score_room(
 
     // Sources, if it has more than 1, add 100 points per source.
     score += (scouting_data.sources.as_ref().unwrap().len() as f64 - 1.0) * 100.0;
+
     // If we want the mineral, add 50 points.
     if needed_minerals.contains(&scouting_data.mineral.unwrap()) {
         score += 50.0;
     }
+
+    let (remote_score, remote_source_count) = score_remotes(room_name, memory);
     // Get remotes score.
-    score += score_remotes(room_name, memory) * 1.5;
+    score += remote_score * 1.5;
+    score += remote_source_count as f64 * 10.0;
+
+    score -= nearby_source_keepers(room_name) * 10.0;
+    score -= scan_remote_accessibility(room_name) as f64 * 3.0;
+    score -= utils::calculate_swamp_percentage(room_name) as f64;
+
 
     score
+}
+
+pub fn nearby_source_keepers(room_name: &RoomName) -> f64 {
+    let nearby_rooms = room_name.get_adjacent(1_i32);
+
+    let mut amount = 0.0;
+
+    for room in nearby_rooms {
+        let room_type = utils::room_type(&room);
+
+        if room_type == RoomType::SourceKeeper {
+            amount += 1.0;
+        }
+    }
+
+    amount
 }
 
 // TODO:
@@ -347,12 +419,28 @@ pub fn can_fit_base(room_name: &RoomName) -> (RoomXY, bool) {
         }
     }
 
-    (highest_xy, highest_position >= 5)
+    (highest_xy, highest_position >= 7)
 }
 
-pub fn score_remotes(room_name: &RoomName, memory: &ScreepsMemory) -> f64 {
+pub fn scan_remote_accessibility(room_name: &RoomName) -> u32 {
+    let potential_remotes = room_name.get_adjacent(2 as i32);
+
+    let mut accessible = 0;
+    for remote in potential_remotes {
+        let path = game::map::find_route(*room_name, remote, Some(FindRouteOptions::default()));
+
+        if path.is_ok() {
+            accessible += path.unwrap().len() as u32;
+        }
+    }
+
+    accessible
+}
+
+pub fn score_remotes(room_name: &RoomName, memory: &ScreepsMemory) -> (f64, u32) {
     let potential_remotes = room_name.get_adjacent(2 as i32);
     let mut score = 0.0;
+    let mut source_count = 0;
 
     let mut paths = Vec::new();
 
@@ -366,18 +454,29 @@ pub fn score_remotes(room_name: &RoomName, memory: &ScreepsMemory) -> f64 {
         if let Some(scouting_data) = memory.scouted_rooms.get(&remote) {
             if let Some(sources) = &scouting_data.sources {
                 for source in sources {
-                    let opts = SearchOptions::default().max_ops(20000);
+                    if scouting_data.room_type == RoomType::Normal {
+                        source_count += 1;
+                    }
+
+                    let opts = SearchOptions::default().max_ops(2000000);
                     let target = MoveTarget {
                         pos: room_pos,
-                        range: 1,
+                        range: 24,
                     }
                     .pathfind(source.pos.as_position(&remote), Some(opts));
 
                     if !target.incomplete() {
                         paths.push(target.path().len());
+                    } else {
+                        paths.push((room_pos.get_range_to(source.pos.as_position(&remote)) * 3).try_into().unwrap_or(0));
                     }
                 }
             }
+        }
+
+        if game::map::get_room_status(remote).is_some() && game::map::get_room_status(remote).unwrap().status() == RoomStatus::Normal {
+            let swampiness = utils::calculate_swamp_percentage(&remote);
+            paths.push(swampiness as usize);
         }
     }
     paths.sort();
@@ -395,5 +494,5 @@ pub fn score_remotes(room_name: &RoomName, memory: &ScreepsMemory) -> f64 {
         index += 1;
     }
 
-    score
+    (score, source_count)
 }

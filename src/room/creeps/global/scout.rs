@@ -48,7 +48,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                     cached_room,
                     scout_target.pos(),
                     23,
-                    MoveOptions::default().avoid_enemies(true)
+                    MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(false)
                 );
             }
         } else {
@@ -58,20 +58,53 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 cached_room,
                 scout_target.pos(),
                 23,
-                MoveOptions::default().avoid_enemies(true)
+                MoveOptions::default().avoid_enemies(true).avoid_hostile_rooms(false)
             );
         }
     } else {
         let exits = game::map::describe_exits(creep.room().unwrap().name());
         let exits = exits.values().collect::<Vec<_>>();
 
-        let
+        let mut not_scouted = Vec::new();
+        let mut out_of_date_scouted = Vec::new();
+        let mut last_scouted = Vec::new();
 
         for exit in exits {
+            let room_status = game::map::get_room_status(exit);
 
+            if room_status.is_none() || room_status.unwrap().status() != RoomStatus::Normal || memory.rooms.contains_key(&exit) {
+                continue;
+            }
+
+            if !memory.scouted_rooms.contains_key(&exit) {
+                not_scouted.push(exit);
+            } else {
+                let last_scouted_time = memory.scouted_rooms.get(&exit).unwrap();
+
+                if game::time() - last_scouted_time.last_scouted > 3000 {
+                    out_of_date_scouted.push((exit, last_scouted_time.last_scouted));
+                } else {
+                    last_scouted.push((exit, last_scouted_time.last_scouted));
+                }
+            }
         }
 
-        let pos = RoomPosition::new(25, 25, exit);
+        out_of_date_scouted.sort_by_key(|x| x.1);
+        last_scouted.sort_by_key(|x| x.1);
+
+        let mut exit = if game::flags().get("force_scout".to_string()).is_some() {
+            &game::flags().get("force_scout".to_string()).unwrap().pos().room_name()
+        } else if let Some(exit) = not_scouted.first() {
+            exit
+        } else if let Some(exit) = out_of_date_scouted.first() {
+            &exit.0
+        } else if let Some(exit) = last_scouted.first() {
+            &exit.0
+        } else {
+            return;
+        };
+
+        let pos = RoomPosition::new(25, 25, *exit);
 
         creep.bsay(&format!("👁️ {}", pos.room_name()), true);
 
@@ -82,6 +115,6 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             23,
             MoveOptions::default().avoid_enemies(true)
         );
-        memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(exit);
+        memory.creeps.get_mut(&creep.name()).unwrap().scout_target = Some(*exit);
     }
 }

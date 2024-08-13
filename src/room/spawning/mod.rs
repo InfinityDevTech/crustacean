@@ -673,7 +673,7 @@ pub fn upgrader(
 
     let controller = &cache.structures.controller.as_ref().unwrap();
 
-    if under_storage_gate(cache, 1.0) && controller.ticks_to_downgrade() > Some(5000) {
+    if under_storage_gate(cache, 1.1) && controller.ticks_to_downgrade() > Some(5000) {
         return None;
     }
 

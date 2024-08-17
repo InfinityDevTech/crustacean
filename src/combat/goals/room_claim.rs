@@ -204,7 +204,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                 .iter()
                 .any(|cs| cs.structure_type() == screeps::StructureType::Spawn);
 
-        if !has_spawn_csite_or_spawn {
+        if !has_spawn_csite_or_spawn && game::cpu::bucket() >= 1000 {
             if game::rooms().get(responsible_room.unwrap()).is_none() {
                 return;
             }
@@ -219,11 +219,24 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             let available_positions = distance_transform(goal_room, true);
             let mut available_xy = Vec::new();
 
+            let exits = expansion_game_room.find(find::EXIT, None);
+            let mut xy_exits = Vec::new();
+
+            for exit in exits {
+                xy_exits.push(new_xy(exit.x(), exit.y()));
+            }
+
             for x in 1..49 {
                 for y in 1..49 {
                     let xy = new_xy(x, y);
 
                     let score = available_positions.get(xy);
+
+                    for exit in &xy_exits {
+                        if exit.get_range_to(xy) <= 8 {
+                            continue;
+                        }
+                    }
 
                     if score >= 7 {
                         available_xy.push(xy);

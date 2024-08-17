@@ -259,6 +259,9 @@ structstruck::strike! {
             pub pos: RoomXY,
             pub pos_av: u8,
         }>>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub source_keepers: Option<Vec<RoomXY>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mineral: Option<ResourceType>,
         pub last_scouted: u32,

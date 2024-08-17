@@ -378,8 +378,14 @@ pub fn score_room(
 
     score -= nearby_source_keepers(room_name) * 10.0;
     score -= scan_remote_accessibility(room_name) as f64 * 3.0;
-    score -= utils::calculate_swamp_percentage(room_name) as f64;
+    let swamp_percent = utils::calculate_swamp_percentage(room_name) as f64;
 
+    score -= swamp_percent * 5.0;
+
+    // Too much swamp = unusable.
+    if swamp_percent >= 75.0 {
+        return 0.0;
+    }
 
     score
 }

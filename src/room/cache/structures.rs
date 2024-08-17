@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
 };
 
 use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
@@ -60,6 +60,7 @@ pub struct RoomStructureCache {
     pub extensions: HashMap<ObjectId<StructureExtension>, StructureExtension>,
     pub containers: HashMap<ObjectId<StructureContainer>, StructureContainer>,
     pub links: HashMap<ObjectId<StructureLink>, StructureLink>,
+    pub keeper_lairs: HashMap<ObjectId<StructureKeeperLair>, StructureKeeperLair>,
 
     pub invader_core: Option<StructureInvaderCore>,
     pub controller: Option<StructureController>,
@@ -104,6 +105,7 @@ impl RoomStructureCache {
             spawns: HashMap::new(),
             links: HashMap::new(),
             containers: HashMap::new(),
+            keeper_lairs: HashMap::new(),
 
             invader_core: None,
             controller: None,
@@ -285,6 +287,9 @@ impl RoomStructureCache {
             }
             StructureObject::StructureExtractor(extractor) => {
                 self.extractor = Some(extractor);
+            }
+            StructureObject::StructureKeeperLair(keeper_lair) => {
+                self.keeper_lairs.insert(keeper_lair.id(), keeper_lair);
             }
             _ => {}
         }

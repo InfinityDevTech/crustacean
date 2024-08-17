@@ -60,6 +60,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         MapVisual::text(pos, "👁️".to_string(), style);
     }
 
+    if !room.my() && memory.rooms.contains_key(&room.name()) {
+        memory.rooms.remove(&room.name());
+
+        return;
+    }
+
     if !room.my() && !memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
         info!("[{}] Skipping execution, bucket is too low...", room.name());
 
@@ -243,6 +249,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         // Place remote containers every 250 ticks, if we have remotes.
         if game::time() % 250 == 0 && memory.remote_rooms.contains_key(&room.name()) {
             plan_remote_containers(&room, memory, cache);
+        }
+
+        if let Some(remote_memory) = memory.remote_rooms.get_mut(&room.name()) {
+            if !memory.rooms.contains_key(&remote_memory.owner) {
+                memory.remote_rooms.remove(&room.name());
+            }
         }
 
         if let Some(scouted_room) = memory.scouted_rooms.get(&room.name()) {
@@ -451,6 +463,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 memory.rooms.get_mut(&room.name()).unwrap().planned_paths = res;
             }
 
+            let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
+
+            if room_cache.rcl >= 2 {
+                planning::room::construction::plan_containers_and_links(room, room_cache);
+            }
+
             let planned_paths = memory.rooms.get(&room.name()).unwrap().planned_paths.clone();
 
             if let Some(owning_room) = planned_paths.get(&room.name()) {
@@ -479,12 +497,6 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
             }*/
         }
 
-        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
-
-        if room_cache.rcl >= 2 {
-            planning::room::construction::plan_containers_and_links(room, room_cache);
-        }
-
         for structure in get_containers() {
             let pos = RoomPosition::new(
                 structure.0 as u8 + offset_x.u8(),
@@ -493,6 +505,8 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
             );
             let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
         }
+
+        let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
         for structure in stuffs {
             if !should_rampart && structure.2 == StructureType::Rampart {

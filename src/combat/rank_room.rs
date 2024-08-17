@@ -60,11 +60,17 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
         Some(cached_sources)
     };
 
+    let mut keeper_lairs = Vec::new();
+    for keeper in cached_room.structures.keeper_lairs.values() {
+        keeper_lairs.push(keeper.pos().xy());
+    }
+
     let scouted_room = ScoutedRoom {
         name: room_name,
         room_type: utils::room_type(&room_name),
         rcl: room_rcl,
         owner: owner.clone(),
+        source_keepers: Some(keeper_lairs),
         invader_core: invader_owned,
         reserved: reserved.clone(),
         defense_capability: 0,

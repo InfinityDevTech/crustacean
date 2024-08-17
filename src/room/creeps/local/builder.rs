@@ -23,20 +23,6 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
-    if creep.room().unwrap().name() != creep_memory.owning_room {
-        let room = creep_memory.owning_room;
-        
-        creep.better_move_to(
-            memory,
-            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
-            Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), room),
-            23,
-            MoveOptions::default(),
-        );
-
-        return;
-    }
-
     if creep.spawning() {
         return;
     }
@@ -80,6 +66,20 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
     let owning_room = creepmem.owning_room;
     //sites.append(&mut get_all_remote_csites(&owning_room, cache, memory));
+
+    if creep.room().unwrap().name() != creepmem.owning_room {
+        let room = creepmem.owning_room;
+
+        creep.better_move_to(
+            memory,
+            cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+            Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), room),
+            23,
+            MoveOptions::default(),
+        );
+
+        return;
+    }
 
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();

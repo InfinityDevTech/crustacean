@@ -148,6 +148,42 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
         } else if creep.store().get_used_capacity(None) == 0 {
             let priority = creep.store().get_free_capacity(Some(ResourceType::Energy));
 
+            let is_spawn_empty = cached_room.structures.spawns.iter().all(|(_spawn_id, spawn)| {
+                spawn.store().get_free_capacity(Some(ResourceType::Energy)) as f32 >= spawn.store().get_capacity(Some(ResourceType::Energy)) as f32 * 0.5
+            });
+
+            if !is_spawn_empty {
+                cached_room.hauling.create_order(
+                    creep.try_raw_id().unwrap(),
+                    None,
+                    Some(ResourceType::Energy),
+                    Some(
+                        creep
+                            .store()
+                            .get_free_capacity(Some(ResourceType::Energy))
+                            .try_into()
+                            .unwrap(),
+                    ),
+                    priority as f32,
+                    HaulingType::Transfer,
+                );
+
+                if let Some(controller) = &cached_room.structures.controller {
+                    if creep.pos().get_range_to(controller.pos()) > 3 {
+                        creep.better_move_to(
+                            memory,
+                            cached_room,
+                            controller.pos(),
+                            3,
+                            MoveOptions::default(),
+                        );
+                        return true;
+                    }
+                }
+
+                return true;
+            }
+
             if cached_room.rcl <= 2 {
                 if let Some(task) = creep_memory.hauling_task.clone() {
                     execute_order(creep, memory, cache, &task);
@@ -169,20 +205,6 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                     return true;
                 }
             }
-            cached_room.hauling.create_order(
-                creep.try_raw_id().unwrap(),
-                None,
-                Some(ResourceType::Energy),
-                Some(
-                    creep
-                        .store()
-                        .get_free_capacity(Some(ResourceType::Energy))
-                        .try_into()
-                        .unwrap(),
-                ),
-                priority as f32,
-                HaulingType::Transfer,
-            );
             return false;
         }
     }

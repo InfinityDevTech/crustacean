@@ -337,7 +337,7 @@ pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
     }.pathfind(target, Some(SearchOptions::default()));
 
     if path.incomplete() {
-        return 0;
+        return pos.get_range_to(target) * 2;
     }
 
     path.path().len() as u32

@@ -2,11 +2,11 @@ use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
 use log::info;
-use screeps::{find, game, HasHits, HasId, Part, Position, ResourceType, Room, RoomName, SharedCreepProperties};
+use screeps::{find, game, HasHits, HasId, HasPosition, Part, Position, ResourceType, Room, RoomName, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 
 use crate::{
-    formation::duo::duo_utils, memory::{iter_roles, CreepMemory, DuoMemory, Role, ScreepsMemory}, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
+    formation::duo::duo_utils, memory::{iter_roles, CreepMemory, DuoMemory, Role, ScreepsMemory}, traits::position::PositionExtensions, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
 };
 
 use super::{cache::{self, CachedRoom, RoomCache}, creeps::remote};
@@ -359,7 +359,7 @@ pub fn flag_attacker(
                     return Some(spawn_manager.create_room_spawn_request(
                         Role::Bulldozer,
                         body,
-                        4.0,
+                        10.0,
                         cost,
                         room.name(),
                         None,
@@ -660,6 +660,13 @@ pub fn upgrader(
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
     let harvester_count = cache.creeps.creeps_of_role(Role::Harvester);
+    let upgrader_count = cache.creeps.creeps_of_role(Role::Upgrader);
+
+    let max_pos = cache.structures.controller.as_ref().unwrap().pos().get_accessible_positions_around(3);
+
+    if upgrader_count as usize >= max_pos.len() {
+        return None;
+    }
 
     if harvester_count == 0 {
         return None;

@@ -343,10 +343,10 @@ pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
     path.path().len() as u32
 }
 
-pub fn calculate_swamp_percentage(room_name: &RoomName) -> u32 {
+pub fn calculate_swamp_percentage(room_name: &RoomName) -> f64 {
     let terrain = game::map::get_room_terrain(*room_name).unwrap();
 
-    let mut walkable_tiles = 0;
+    let mut total_tiles = 0;
     let mut swamp_tiles = 0;
 
     for x in 0..50 {
@@ -357,7 +357,7 @@ pub fn calculate_swamp_percentage(room_name: &RoomName) -> u32 {
                 continue;
             }
 
-            walkable_tiles += 1;
+            total_tiles += 1;
 
             if tile == Terrain::Swamp {
                 swamp_tiles += 1;
@@ -365,9 +365,7 @@ pub fn calculate_swamp_percentage(room_name: &RoomName) -> u32 {
         }
     }
 
-    let total = walkable_tiles + swamp_tiles;
-
-    (swamp_tiles / total) * 100
+    (swamp_tiles as f64 / total_tiles as f64) * 100.0
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

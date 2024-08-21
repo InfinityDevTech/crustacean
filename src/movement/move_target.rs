@@ -26,6 +26,8 @@ pub struct MoveOptions {
     pub visualize_path: bool,
     pub ignore_cache: bool,
     pub path_age: u8,
+
+    pub fixing_stuck_creeps: bool,
 }
 
 impl Default for MoveOptions {
@@ -39,6 +41,8 @@ impl Default for MoveOptions {
             ignore_cache: false,
             visualize_path: false,
             path_age: 8,
+
+            fixing_stuck_creeps: false,
         }
     }
 }
@@ -47,6 +51,11 @@ impl Default for MoveOptions {
 impl MoveOptions {
     pub fn avoid_enemies(&mut self, avoid_enemies: bool) -> Self {
         self.avoid_enemies = avoid_enemies;
+        *self
+    }
+
+    pub fn fixing_stuck_creeps(&mut self, fixing_stuck_creeps: bool) -> Self {
+        self.fixing_stuck_creeps = fixing_stuck_creeps;
         *self
     }
 

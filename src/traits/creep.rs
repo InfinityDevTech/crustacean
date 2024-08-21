@@ -1,22 +1,17 @@
 use std::u8;
 
 use crate::{
-    compression::compressed_matrix::CompressedMatrix,
-    heap,
-    heap_cache::RoomHeapFlowCache,
-    memory::{CreepMemory, ScreepsMemory},
-    movement::{
+    compression::compressed_matrix::CompressedMatrix, constants::WALKABLE_STRUCTURES, heap, heap_cache::RoomHeapFlowCache, memory::{CreepMemory, ScreepsMemory}, movement::{
         caching::generate_storage_path,
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
-    },
-    room::cache::CachedRoom, utils::new_xy,
+    }, room::cache::CachedRoom, utils::new_xy
 };
 
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain,
+    find, game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, StructureProperties, Terrain
 };
 
 use super::intents_tracking::CreepExtensionsTracking;
@@ -44,7 +39,8 @@ pub trait CreepExtensions {
     fn near_age_death(&self) -> bool;
 
     fn move_request(&self, target_delta: Direction, room_cache: &mut CachedRoom);
-    fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<RoomXY>;
+    fn get_possible_moves_traffic(&self, room_cache: &CachedRoom) -> Vec<RoomXY>;
+    fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<Direction>;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -152,28 +148,16 @@ impl CreepExtensions for screeps::Creep {
             return;
         }
 
-        if !move_options.ignore_cache {
+        if !move_options.ignore_cache && !move_options.fixing_stuck_creeps {
             if let Some(storage) = &cache.structures.storage {
                 if storage.pos() == target && self.move_to_storage(cache) {
                     if self.is_stuck(cache) {
                         self.bsay("ST-STUCK", false);
-                        let possible_moves = self.get_possible_moves(cache);
 
-                        if let Some(pos) = possible_moves.first() {
-                            let dir = self.pos().xy().get_direction_to(*pos);
+                        let opts = move_options.clone().fixing_stuck_creeps(true);
+                        self.better_move_to(memory, cache, target, range, opts);
 
-                            if let Some(dir) = dir {
-                                self.move_request(dir, cache);
-
-                                self.bsay(format!("MV-STCK-{}", dir).as_str(), false);
-
-                                return;
-                            } else {
-                                self.bsay("NO-MV", false);
-                            }
-                        } else {
-                            self.bsay("NO-MV", false);
-                        }
+                        return;
                     }
 
                     //self.bsay(&format!("MV-STOR {}",).to_string(), false);
@@ -220,13 +204,9 @@ impl CreepExtensions for screeps::Creep {
                             let possible_moves = self.get_possible_moves(cache);
 
                             if let Some(pos) = possible_moves.first() {
-                                let dir = self.pos().xy().get_direction_to(*pos);
+                                self.move_request(*pos, cache);
 
-                                if let Some(dir) = dir {
-                                    self.move_request(dir, cache);
-
-                                    return;
-                                }
+                                return;
                             }
 
                             self.bsay("FIX-STUCK", false);
@@ -302,19 +282,14 @@ impl CreepExtensions for screeps::Creep {
             }
         }
 
-        if self.is_stuck(cache) {
+        if self.is_stuck(cache) && !move_options.fixing_stuck_creeps {
             self.bsay("CSTUCK", false);
 
             let possible_moves = self.get_possible_moves(cache);
 
             if let Some(pos) = possible_moves.first() {
-                let dir = self.pos().xy().get_direction_to(*pos);
-
-                if let Some(dir) = dir {
-                    self.move_request(dir, cache);
-
-                    return;
-                }
+                self.move_request(*pos, cache);
+                return;
             }
         }
 
@@ -419,7 +394,67 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
-    fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<RoomXY> {
+    fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<Direction> {
+        let mut possible_moves = vec![];
+        let terrain = room_cache.structures.terrain.clone();
+
+        let s_at_pos = &room_cache.structures.structures_at_pos;
+
+        for dir in Direction::iter() {
+            let pos = dir_to_coords(*dir, self.pos().x().u8(), self.pos().y().u8());
+
+            // >= because if we are at a 1 pos, it will wrap around to 255.
+            if pos.0 == 0 || pos.0 >= 49 || pos.1 == 0 || pos.1 >= 49 {
+                continue;
+            }
+
+            let xy = new_xy(pos.0, pos.1);
+
+            let mut can_run = true;
+            for structure in s_at_pos.get(&xy).unwrap_or(&vec![]) {
+                if !WALKABLE_STRUCTURES.contains(structure) {
+                    can_run = false;
+                }
+            }
+
+            if terrain.get_xy(xy) == Terrain::Wall || !can_run {
+                continue;
+            }
+
+            if room_cache.creeps.creeps_at_pos.contains_key(&xy) {
+                continue;
+            }
+
+            possible_moves.push(*dir);
+        }
+
+        let heap_creep = heap().creeps.lock().unwrap();
+        let s_creep = heap_creep.get(&self.name());
+
+        if let Some(s_creep) = s_creep {
+            let mut new_list = possible_moves.clone();
+
+            for dir in possible_moves.iter() {
+                let coord = dir_to_coords(*dir, self.pos().x().u8(), self.pos().y().u8());
+
+                for pos in s_creep.previous_positions.iter() {
+                    if (pos.x().u8(), pos.y().u8()) == coord {
+                        new_list.retain(|&x| x != *dir);
+                    }
+                }
+            }
+
+            if new_list.is_empty() {
+                return possible_moves;
+            } else {
+                return new_list;
+            }
+        }
+
+        possible_moves
+    }
+
+    fn get_possible_moves_traffic(&self, room_cache: &CachedRoom) -> Vec<RoomXY> {
         if room_cache
             .traffic
             .cached_ops

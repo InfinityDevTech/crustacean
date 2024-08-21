@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
+use log::info;
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
+    find, CircleStyle, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
 };
 
 use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
@@ -78,7 +79,10 @@ pub struct RoomStructureCache {
 
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 
+    pub structures_at_pos: HashMap<RoomXY, Vec<StructureType>>,
+
     pub construction_sites: Vec<ConstructionSite>,
+    pub inactive_structures: Vec<StructureObject>,
     tombstones: Option<HashMap<ObjectId<Tombstone>, Tombstone>>,
     classified_links: Option<CachedRoomLinks>,
     classified_containers: Option<CachedRoomContainers>,
@@ -121,12 +125,14 @@ impl RoomStructureCache {
             terrain: LocalRoomTerrain::from(room.get_terrain()),
             roads: HashMap::new(),
 
+            structures_at_pos: HashMap::new(),
 
             extensions: HashMap::new(),
             tombstones: None,
             classified_containers: Some(CachedRoomContainers::new()),
             classified_links: Some(CachedRoomLinks::new()),
             construction_sites: Vec::new(),
+            inactive_structures: Vec::new(),
         };
 
         if let Some(controller) = room.controller() {
@@ -189,11 +195,17 @@ impl RoomStructureCache {
         if let Some(power_spawn) = &self.power_spawn { vec.push(StructureObject::from(power_spawn.clone())); }
         // Extractor
         if let Some(extractor) = &self.extractor { vec.push(StructureObject::from(extractor.clone())); }
+        // Keeper Lairs
+        vec.extend(self.keeper_lairs.values().map(|keeper_lair| StructureObject::from(keeper_lair.clone())));
+
         // Roads
         vec.extend(self.roads.values().map(|road| StructureObject::from(road.clone())));
 
         // Towers
         vec.extend(self.towers.values().map(|tower| StructureObject::from(tower.clone())));
+
+        // inactives
+        vec.extend(self.inactive_structures.iter().cloned());
 
         vec
     }
@@ -323,6 +335,11 @@ impl RoomStructureCache {
         let mut has_links = false;
 
         for structure in self.run_structure_find().into_iter() {
+            let entry = self.structures_at_pos.entry(structure.pos().xy()).or_default();
+            if !entry.contains(&structure.structure_type()) {
+                entry.push(structure.structure_type());
+            }
+            
             //if self.skip_check(can_structures_be_placed, &structure) {
             //    continue;
             //}
@@ -331,6 +348,10 @@ impl RoomStructureCache {
             // Its very expensive from what I have heard.
             // This information has been reported by: Gadjung
             if check_ownable && !structure.is_active() {
+                self.inactive_structures.push(structure);
+
+                info!("Inactive structure found: {:?}", false);
+
                 continue;
             }
 

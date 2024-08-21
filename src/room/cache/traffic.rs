@@ -165,7 +165,7 @@ fn depth_first_searh(creep: &Creep, room_cache: &mut CachedRoom, visited_creeps:
     let mut score = score.unwrap_or(0);
     visited_creeps.push(creep.try_id().unwrap());
 
-    let possible_moves = creep.get_possible_moves(room_cache);
+    let possible_moves = creep.get_possible_moves_traffic(room_cache);
 
     let mut empty_tiles = Vec::new();
     let mut occupied_tiles = Vec::new();

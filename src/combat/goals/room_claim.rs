@@ -44,6 +44,14 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
     let goal = memory.goals.room_claim.get_mut(goal_room).unwrap();
     let goal_game_room = game::rooms().get(*goal_room);
 
+    if let Some(scouting_data) = memory.scouted_rooms.get(goal_room) {
+        if scouting_data.owner.is_some() || scouting_data.reserved.is_some() {
+            memory.goals.room_claim.remove(goal_room);
+            memory.expansion = None;
+            return;
+        }
+    }
+
     clear_creeps(goal);
 
     if memory.rooms.len() > game::gcl::level() as usize {
@@ -142,6 +150,15 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             } else {
                 4.0
             };
+
+            let cr = cache.rooms.get(&responsible_room.unwrap()).unwrap();
+
+            info!("RCL: {}", cr.rcl);
+            info!("Max RCL: {}", cr.max_rcl);
+
+            if cr.rcl < cr.max_rcl {
+                return;
+            }
 
             if cache.rooms.get(&responsible_room.unwrap()).unwrap().rcl >= 6 {
                 priority *= 5.0;

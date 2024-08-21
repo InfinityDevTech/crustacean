@@ -5,7 +5,7 @@ use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
     room::{cache::CachedRoom, creeps::local::hauler},
-    utils::{self, get_body_cost},
+    utils::{self, get_body_cost, under_storage_gate},
 };
 
 /// Returns the parts needed for a miner creep
@@ -192,11 +192,15 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         }
     }
 
-    let max_energy = if hauler_count > 0 && !storage_blocked {
+    let mut max_energy = if hauler_count >= 5 && !storage_blocked {
         room.energy_capacity_available()
     } else {
         room.energy_available()
     };
+
+    if cache.creeps.creeps_of_role(Role::Harvester) < 2 || cache.creeps.creeps_of_role(Role::Hauler) < 2 || cache.rcl < cache.max_rcl || under_storage_gate(cache, 0.8) {
+        max_energy = room.energy_available();
+    }
 
     let mut body = vec![Part::Move, Part::Carry];
     let mut cost = 100;
@@ -323,7 +327,9 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     .unwrap()
     .level();
 
-    let target_work_parts = match level {
+    let current_upgraders = cache.creeps.creeps_of_role(Role::Upgrader);
+
+    let mut target_work_parts = match level {
         1 => 5,
         2 => 15,
         3 => 22,
@@ -334,6 +340,10 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         8 => 5,
         _ => 1,
     };
+
+    if !under_storage_gate(cache, 3.0) && current_upgraders >= 1 {
+        target_work_parts *= 3;
+    }
 
     let current_work_parts = cache
         .creeps
@@ -353,7 +363,7 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         })
         .sum::<usize>();
 
-    if current_work_parts >= target_work_parts {
+    if current_work_parts >= target_work_parts || current_work_parts >= 65 {
         return parts;
     }
 
@@ -367,13 +377,25 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     parts.push(Part::Move);
     parts.push(Part::Move);
     let mut current_cost = get_body_cost(&parts);
-    let cost_capable = room.energy_available();
-    let max_cost = room.energy_capacity_available();
+    let mut cost_capable = room.energy_available();
+    let mut max_cost = room.energy_capacity_available();
 
     let mut current_work_count = 0;
 
     let no_link_cost = part_costs()[PartsCost::Work] + part_costs()[PartsCost::Move] + part_costs()[PartsCost::Carry];
     let link_cost = part_costs()[PartsCost::Work];
+
+    if !utils::under_storage_gate(cache, 2.5) && current_upgraders >= 1 {
+        max_cost = room.energy_capacity_available();
+        cost_capable = room.energy_capacity_available();
+
+        parts_needed_to_fill = 50;
+    }
+
+    if current_upgraders <= 1 {
+        max_cost = room.energy_available();
+        cost_capable = room.energy_available();
+    }
 
     // If we are level 5, we have a link, so we can go ham.
     let mut tick = 0;

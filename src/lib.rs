@@ -19,7 +19,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::{hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
-use screeps::{find, game, OwnedStructureProperties};
+use screeps::{find, game, OwnedStructureProperties, RoomName};
 use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,

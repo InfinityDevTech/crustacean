@@ -31,6 +31,28 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let cached_room = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
+    if cached_room.structures.spawns.is_empty() {
+        let csites = cached_room.structures.construction_sites.clone();
+
+        if !csites.is_empty() {
+            let csite = csites.first().unwrap();
+
+            if creep.pos().get_range_to(csite.pos()) > 3 {
+                creep.better_move_to(
+                    memory,
+                    cached_room,
+                    csite.pos(),
+                    3,
+                    MoveOptions::default(),
+                );
+            } else {
+                let _ = creep.build(csite);
+            }
+        }
+
+        return;
+    }
+
     let controller = cached_room.structures.controller.as_ref().unwrap();
 
     if controller.pos().get_range_to(creep.pos()) > 3 {
@@ -77,6 +99,21 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     {
         if let Some(room_storage) = cached_room.structures.storage.as_ref() {
             //let energy_gate = cached_room.storage_status.wanted_energy as f32 * 0.8;
+
+            if cached_room.structures.spawns.is_empty() {
+                if creep.pos().is_near_to(room_storage.pos()) {
+                    let _ = creep.ITwithdraw(room_storage, ResourceType::Energy, None);
+                } else {
+                    creep.better_move_to(
+                        memory,
+                        cached_room,
+                        room_storage.pos(),
+                        1,
+                        MoveOptions::default(),
+                    );
+                }
+                return true;
+            }
 
             if under_storage_gate(cached_room, 0.9) && controller_downgrade > Some(5000) {
                 if let Some(controller) = cached_room.structures.controller.as_ref() {

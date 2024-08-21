@@ -101,7 +101,7 @@ impl FlowField {
                 }
 
                 // If we are an exit, we need to point to a non-exit
-                if pointing_to_exit {
+                /*if pointing_to_exit {
                     let mut lowest_dir = u8::MAX;
                     let mut lowest_score = u8::MAX;
 
@@ -120,7 +120,7 @@ impl FlowField {
                     if lowest_dir != u8::MAX {
                         dir = lowest_dir;
                     }
-                }
+                }*/
 
                 cdm.set_xy(x, y, dir);
             }

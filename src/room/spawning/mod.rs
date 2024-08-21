@@ -48,8 +48,14 @@ pub fn get_required_role_counts(owning_name: &RoomName, cache: &RoomCache) -> Ha
         .len();
 
     for role in iter_roles() {
-        let score = match role {
-            Role::Harvester => 1,
+        let score: u32 = match role {
+            Role::Harvester => {
+                if hauler_count >= 3 {
+                    room_cache.resources.sources.len() as u32
+                } else {
+                    1
+                }
+            },
             Role::Hauler => 3,
             Role::Builder => {
                 let mut storage_blocked = false;
@@ -250,7 +256,6 @@ pub fn create_spawn_requests_for_room(
     let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
     let mut requests = vec![
-        harvester(room, room_cache, &mut cache.spawning),
         base_hauler(room, room_cache, &mut cache.spawning),
         storage_sitter(room, room_cache, &mut cache.spawning),
         fast_filler(room, room_cache, &mut cache.spawning),
@@ -262,6 +267,8 @@ pub fn create_spawn_requests_for_room(
         hauler(room, room_cache, memory, &mut cache.spawning),
         // More inter-room creeps that require the WHOLE cache.
     ];
+
+    requests.append(&mut harvester(room, room_cache, &mut cache.spawning));
 
     requests.push(builder(room, cache));
     requests.append(&mut remote_harvester(room, cache, memory));
@@ -692,6 +699,10 @@ pub fn upgrader(
     let mut priority = 4.0;
     priority += (body.len() as f64 / 3.0).round();
 
+    if !under_storage_gate(cache, 1.5) {
+        priority *= 1.5;
+    }
+
     Some(spawn_manager.create_room_spawn_request(
         Role::Upgrader,
         body,
@@ -840,11 +851,15 @@ pub fn base_hauler(
         return None;
     }
 
-    let priority = if current_bh_count.len() < (required_bh_bount / 2) {
+    let mut priority = if current_bh_count.len() < (required_bh_bount / 2) {
         f64::MAX
     } else {
         4.0
     };
+
+    if cache.creeps.creeps_of_role(Role::Harvester) < 2 || cache.creeps.creeps_of_role(Role::Hauler) < 2 || cache.rcl < cache.max_rcl || under_storage_gate(cache, 0.8) {
+        priority = f64::MAX;
+    }
 
     let creep_memory = CreepMemory {
         owning_room: room.name(),
@@ -998,7 +1013,7 @@ pub fn harvester(
     room: &Room,
     cache: &CachedRoom,
     spawn_manager: &mut SpawnManager,
-) -> Option<SpawnRequest> {
+) -> Vec<Option<SpawnRequest>> {
     let harvester_count = cache
         .creeps
         .creeps_of_role
@@ -1014,6 +1029,8 @@ pub fn harvester(
         .len();
 
     let measure_pos = Position::new(cache.spawn_center.unwrap().x, cache.spawn_center.unwrap().y, cache.room.name());
+
+    let mut requests = Vec::new();
 
     for source in &cache.resources.sources {
         let max_parts_for_source = source.max_work_parts;
@@ -1060,7 +1077,7 @@ pub fn harvester(
                 priority *= 2.1
             }
 
-            return Some(spawn_manager.create_room_spawn_request(
+            requests.push(Some(spawn_manager.create_room_spawn_request(
                 Role::Harvester,
                 body,
                 priority,
@@ -1073,7 +1090,9 @@ pub fn harvester(
                 }),
                 None,
                 None,
-            ));
+            )));
+
+            continue;
         }
 
         let mut priority = 4.0;
@@ -1082,17 +1101,17 @@ pub fn harvester(
             priority *= 5.0;
         }
 
-        if current_creeps_on_source == 0 {
-            priority = 400000.0;
-        }
-
         if can_replace {
             priority *= 2.0;
         }
 
         priority += parts_needed_on_source as f64;
 
-        return Some(spawn_manager.create_room_spawn_request(
+        if current_creeps_on_source == 0 && hauler_count >= 3 {
+            priority = f64::MAX;
+        }
+
+        requests.push(Some(spawn_manager.create_room_spawn_request(
             Role::Harvester,
             body,
             priority,
@@ -1105,10 +1124,12 @@ pub fn harvester(
             }),
             None,
             None,
-        ));
+        )));
+
+        continue;
     }
 
-    None
+    requests
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

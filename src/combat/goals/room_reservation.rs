@@ -98,6 +98,12 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
     if let Some(best_spawned) = room {
         let room = game::rooms().get(best_spawned).unwrap();
 
+        if let Some(room_cache) = cache.rooms.get(&best_spawned) {
+            if room_cache.rcl < room_cache.max_rcl {
+                return None;
+            }
+        }
+
         // Only at RCL 4 do we really start to care about reserving rooms
         if room.controller().unwrap().level() < 4 {
             return None;

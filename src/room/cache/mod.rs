@@ -64,6 +64,7 @@ pub struct CachedRoom {
     pub room: Room,
     pub current_holder: Option<String>,
     pub rcl: u8,
+    pub max_rcl: u8,
     pub reservation: u32,
 
     pub idle_haulers: u32,
@@ -116,6 +117,7 @@ impl CachedRoom {
             room: room.clone(),
             current_holder: None,
             rcl: 0,
+            max_rcl: 0,
             reservation: 0,
 
             idle_haulers: 0,
@@ -140,6 +142,8 @@ impl CachedRoom {
 
         if let Some(room_memory) = memory.rooms.get(&room.name()) {
             cached.remotes.clone_from(&room_memory.remotes);
+
+            cached.max_rcl = room_memory.max_rcl;
         }
 
         if let Some(ref controller) = cached.structures.controller {

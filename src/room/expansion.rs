@@ -252,6 +252,11 @@ pub fn find_expandable_rooms(
                 continue;
             }
 
+            let room_status = game::map::get_room_status(possible_name);
+            if room_status.is_none() || room_status.unwrap().status() != RoomStatus::Normal {
+                continue;
+            }
+
             if !memory.rooms.contains_key(&possible_name) {
                 if let Some(scouting_data) = memory.scouted_rooms.get(&possible_name) {
                     if scouting_data.room_type == RoomType::Normal
@@ -378,12 +383,28 @@ pub fn score_room(
 
     score -= nearby_source_keepers(room_name) * 10.0;
     score -= scan_remote_accessibility(room_name) as f64 * 3.0;
-    let swamp_percent = utils::calculate_swamp_percentage(room_name) as f64;
+    let swamp_percent = utils::calculate_swamp_percentage(room_name);
+
+    let closest_room = utils::find_closest_owned_room(room_name, cache, None);
+    if let Some(closest_room) = closest_room {
+        let res = game::map::find_route(*room_name, closest_room, Some(FindRouteOptions::default()));
+
+        if res.is_ok() {
+            let path = res.unwrap();
+            let path_length = path.len();
+
+            let count = ROOM_SIZE as u32 * path_length as u32;
+
+            if count >= 550 {
+                return 0.0;
+            }
+        }
+    }
 
     score -= swamp_percent * 5.0;
 
     // Too much swamp = unusable.
-    if swamp_percent >= 75.0 {
+    if swamp_percent >= 45.0 {
         return 0.0;
     }
 

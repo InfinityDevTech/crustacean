@@ -118,7 +118,7 @@ impl SpawnManager {
                     let dir = creep.get_possible_moves(room_cache);
 
                     if let Some(dir) = dir.first() {
-                        let _ = creep.ITmove_direction(dir_to_other_coord(creep.pos().xy(), *dir));
+                        let _ = creep.ITmove_direction(*dir);
                     }
                 }
             }
@@ -423,16 +423,17 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             let current_count_for_role = room_cache.creeps.creeps_of_role(*required_role);
 
             if current_count_for_role < *required_count_for_role && required_count_for_role > &0 {
+                let harvester = harvester(&room, room_cache, &mut cache.spawning);
                 let spawn_request = match required_role {
-                    Role::Harvester => harvester(&room, room_cache, &mut cache.spawning),
-                    Role::Hauler => hauler(&room, room_cache, memory, &mut cache.spawning),
-                    Role::FastFiller => fast_filler(&room, room_cache, &mut cache.spawning),
-                    Role::BaseHauler => base_hauler(&room, room_cache, &mut cache.spawning),
-                    Role::StorageSitter => storage_sitter(&room, room_cache, &mut cache.spawning),
-                    Role::Upgrader => upgrader(&room, room_cache, &mut cache.spawning),
-                    Role::Repairer => repairer(&room, room_cache, &mut cache.spawning),
-                    Role::Builder => builder(&room, cache),
-                    Role::Scout => scout(&room, room_cache, &mut cache.spawning),
+                    Role::Harvester => harvester.first().unwrap_or(&None),
+                    Role::Hauler => &hauler(&room, room_cache, memory, &mut cache.spawning),
+                    Role::FastFiller => &fast_filler(&room, room_cache, &mut cache.spawning),
+                    Role::BaseHauler => &base_hauler(&room, room_cache, &mut cache.spawning),
+                    Role::StorageSitter => &storage_sitter(&room, room_cache, &mut cache.spawning),
+                    Role::Upgrader => &upgrader(&room, room_cache, &mut cache.spawning),
+                    Role::Repairer => &repairer(&room, room_cache, &mut cache.spawning),
+                    Role::Builder => &builder(&room, cache),
+                    Role::Scout => &scout(&room, room_cache, &mut cache.spawning),
                     _ => continue,
                 };
 

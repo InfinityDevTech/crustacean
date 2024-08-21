@@ -74,6 +74,11 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
                     Terrain::Swamp => matrix.set(pos, 5),
                     Terrain::Wall => matrix.set(pos, 255),
                 }
+
+                // Add a border around the room.
+                if x == 0 || y == 0 || x == 49 || y == 49 {
+                    matrix.set(pos, 255);
+                }
             }
         }
 

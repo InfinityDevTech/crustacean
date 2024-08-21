@@ -339,7 +339,7 @@ impl RoomStructureCache {
             if !entry.contains(&structure.structure_type()) {
                 entry.push(structure.structure_type());
             }
-            
+
             //if self.skip_check(can_structures_be_placed, &structure) {
             //    continue;
             //}
@@ -468,7 +468,7 @@ impl RoomStructureCache {
             }
 
             if let Some(spawn) = self.spawns.values().next() {
-                if container.pos().in_range_to(spawn.pos(), 2) {
+                if container.pos().in_range_to(spawn.pos(), 3) {
                     fast_filler.push(container.clone());
                 }
             }

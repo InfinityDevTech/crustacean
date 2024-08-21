@@ -1,17 +1,25 @@
 use std::u8;
 
 use crate::{
-    compression::compressed_matrix::CompressedMatrix, constants::WALKABLE_STRUCTURES, heap, heap_cache::RoomHeapFlowCache, memory::{CreepMemory, ScreepsMemory}, movement::{
+    compression::compressed_matrix::CompressedMatrix,
+    constants::WALKABLE_STRUCTURES,
+    heap,
+    heap_cache::RoomHeapFlowCache,
+    memory::{CreepMemory, ScreepsMemory},
+    movement::{
         caching::generate_storage_path,
         move_target::{MoveOptions, MoveTarget},
         movement_utils::{dir_to_coords, num_to_dir},
-    }, room::cache::CachedRoom, utils::new_xy
+    },
+    room::cache::CachedRoom,
+    utils::new_xy,
 };
 
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    find, game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, StructureProperties, Terrain
+    creep, find, game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomXY,
+    SharedCreepProperties, StructureProperties, Terrain,
 };
 
 use super::intents_tracking::CreepExtensionsTracking;
@@ -148,7 +156,15 @@ impl CreepExtensions for screeps::Creep {
             return;
         }
 
-        if !move_options.ignore_cache && !move_options.fixing_stuck_creeps {
+        let not_on_exit = self.pos().x().u8() != 0
+            && self.pos().x().u8() != 49
+            && self.pos().y().u8() != 0
+            && self.pos().y().u8() != 49;
+
+        if !move_options.ignore_cache && !move_options.fixing_stuck_creeps && not_on_exit {
+            let x = self.pos().x().u8();
+            let y = self.pos().y().u8();
+
             if let Some(storage) = &cache.structures.storage {
                 if storage.pos() == target && self.move_to_storage(cache) {
                     if self.is_stuck(cache) {
@@ -466,20 +482,20 @@ impl CreepExtensions for screeps::Creep {
         let mut possible_moves = vec![];
 
         if room_cache
-        .traffic
-        .intended_move
-        .contains_key(&self.try_id().unwrap())
-    {
-        possible_moves.insert(
-            0,
-            *room_cache
-                .traffic
-                .intended_move
-                .get(&self.try_id().unwrap())
-                .unwrap(),
-        );
-        return possible_moves;
-    }
+            .traffic
+            .intended_move
+            .contains_key(&self.try_id().unwrap())
+        {
+            possible_moves.insert(
+                0,
+                *room_cache
+                    .traffic
+                    .intended_move
+                    .get(&self.try_id().unwrap())
+                    .unwrap(),
+            );
+            return possible_moves;
+        }
 
         if self.tired() {
             return possible_moves;
@@ -503,7 +519,9 @@ impl CreepExtensions for screeps::Creep {
             let x = xy.x.u8();
             let y = xy.y.u8();
 
-            if room_terrain.get_xy(xy) == Terrain::Wall || room_cache.creeps.creeps_at_pos.contains_key(&xy) {
+            if room_terrain.get_xy(xy) == Terrain::Wall
+                || room_cache.creeps.creeps_at_pos.contains_key(&xy)
+            {
                 continue;
             }
 

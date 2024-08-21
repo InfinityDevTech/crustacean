@@ -28,7 +28,7 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
             RoomCoordinate::unchecked_new(25)
         }, creep_memory.target_room.unwrap());
 
-        creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().avoid_enemies(true).visualize_path(true).ignore_cache(true));
+        creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(200));
     } else {
         let controller = current_room.controller().unwrap();
 

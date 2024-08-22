@@ -67,12 +67,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     if !room.my() && !memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
-        info!("[{}] Skipping execution, bucket is too low...", room.name());
+        //info!("[{}] Skipping execution, bucket is too low...", room.name());
 
         return;
     } else if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
         info!(
-            "[{}] Running in low-power mode, to fix some bugs...",
+            "[REMOTE] Room {} running in low-power mode, to fix some bugs...",
             room.name()
         );
 
@@ -284,6 +284,12 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         room_cache
             .stats
             .write_to_memory(memory, room.name(), end_cpu - starting_cpu);
+
+        info!(
+            "  [GOVERNMENT] Finished government for room: {} - CPU: {:.2}",
+            room.name(),
+            end_cpu - starting_cpu
+        );
     }
 }
 

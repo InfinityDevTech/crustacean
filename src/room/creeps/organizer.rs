@@ -35,7 +35,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     }
 
     if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
-        info!("  [CREEPS] Bucket too low to run creeps, running essential remote roles");
+        //info!("  [CREEPS] Bucket too low to run creeps, running essential remote roles");
     }
 
     let creep_count = creeps.len();
@@ -76,7 +76,7 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
         match role {
             Role::Harvester => local::harvester::run_harvester(&creep, memory, cache),
             Role::MineralMiner => local::mineral_miner::run_mineralminer(&creep, memory, cache),
-            Role::Hauler => local::hauler::run_hauler(&creep, memory, cache),
+            Role::Hauler => local::hauler::run_hauler(&creep, memory, cache, None),
             Role::Repairer => local::repairer::run_repairer(&creep, memory, cache),
             Role::BaseHauler => local::base_hauler::run_basehauler(&creep, memory, cache),
             Role::StorageSitter => local::storage_sitter::run_storagesitter(&creep, memory, cache),
@@ -161,23 +161,18 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
     let end_cpu = game::cpu::get_used();
     if room.my() {
         info!(
-            "  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep",
-            end_cpu - starting_cpu,
-            (end_cpu - starting_cpu) / creep_count as f64
-        );
-        info!(
-            "  [CREEPS] Highest CPU usage: {:.4} by {}",
-            highest_usage, highest_user
-        );
-    } else {
-        info!(
-            "  [{}] Used {:.4} CPU to run creeps {:.4} CPU per creep - Highest: {} : {:.4}",
-            room.name(),
+            "  [CREEPS] Used {:.4} CPU to run creeps {:.4} CPU per creep. Highest user: {} with {:.4} CPU",
             end_cpu - starting_cpu,
             (end_cpu - starting_cpu) / creep_count as f64,
             highest_user,
             highest_usage
         );
+    } else {
+        //info!(
+        //    "[REMOTE] Room {} used {:.4} CPU to run creeps.",
+        //    room.name(),
+        //    end_cpu - starting_cpu,
+        //);
     }
 
     if let Some(room) = cache.rooms.get_mut(&room.name()) {

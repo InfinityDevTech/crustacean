@@ -22,7 +22,6 @@ pub struct CreepCache {
     pub creeps_at_pos: HashMap<RoomXY, Creep>,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepCache {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, structures: &RoomStructureCache, owning_room: Option<RoomName>) -> CreepCache {
         let mut cache = CreepCache {

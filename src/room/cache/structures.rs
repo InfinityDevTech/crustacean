@@ -37,7 +37,6 @@ pub struct CachedRoomLinks {
     pub storage: Option<StructureLink>,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CachedRoomLinks {
     pub fn new() -> Self {
         CachedRoomLinks {
@@ -88,7 +87,6 @@ pub struct RoomStructureCache {
     classified_containers: Option<CachedRoomContainers>,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomStructureCache {
     pub fn new_from_room(
         room: &Room,

@@ -1,6 +1,13 @@
 use screeps::{game, HasPosition, OwnedStructureProperties, Position, Room, RoomCoordinate};
 
-use crate::{config, goal_memory::RoomReservationGoal, memory::ScreepsMemory, room::cache::RoomCache, traits::position::{PositionExtensions, RoomXYExtensions}, utils::get_my_username};
+use crate::{
+    config,
+    goal_memory::RoomReservationGoal,
+    memory::ScreepsMemory,
+    room::cache::RoomCache,
+    traits::position::{PositionExtensions, RoomXYExtensions},
+    utils::get_my_username,
+};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
@@ -19,7 +26,11 @@ pub fn determine_reservations(memory: &mut ScreepsMemory, cache: &mut RoomCache)
 
         // TODO: Make this spawn a dismantler, that way we can remove the wall
         // blocking it, and then claim it. I hate people that wall off controllers.
-        let accessible_reservation_points = room.controller().unwrap().pos().get_accessible_positions_around(1);
+        let accessible_reservation_points = room
+            .controller()
+            .unwrap()
+            .pos()
+            .get_accessible_positions_around(1);
         if accessible_reservation_points.is_empty() {
             continue;
         }
@@ -54,22 +65,31 @@ pub fn remote_need_reservation(room: &Room, memory: &ScreepsMemory, cache: &Room
         return true;
     }
 
-    if controller.reservation().is_some() && controller.reservation().unwrap().username() != get_my_username() || controller.owner().is_some() {
+    if controller.reservation().is_some()
+        && controller.reservation().unwrap().username() != get_my_username()
+        || controller.owner().is_some()
+    {
         return false;
     }
 
     let reservation = controller.reservation().unwrap();
 
-    let owning_room_cache = cache.rooms.get(&remote_memory.owner).unwrap();
+    let owning_room_cache = cache.rooms.get(&remote_memory.owner);
+    if let Some(owning_room_cache) = owning_room_cache {
+        let twenty_five = RoomCoordinate::new(25).unwrap();
+        let center_position = Position::new(twenty_five, twenty_five, room.name());
+        let owner_center = owning_room_cache
+            .spawn_center
+            .unwrap()
+            .as_position(&room.name());
 
-    let twenty_five = RoomCoordinate::new(25).unwrap();
-    let center_position = Position::new(twenty_five, twenty_five, room.name());
-    let owner_center = owning_room_cache.spawn_center.unwrap().as_position(&room.name());
+        let distance = center_position.get_range_to(owner_center);
 
-    let distance = center_position.get_range_to(owner_center);
-
-    if reservation.ticks_to_end() < distance || reservation.ticks_to_end() < config::RESERVATION_GOAL_THRESHOLD.into() {
-        return true;
+        if reservation.ticks_to_end() < distance
+            || reservation.ticks_to_end() < config::RESERVATION_GOAL_THRESHOLD
+        {
+            return true;
+        }
     }
 
     false

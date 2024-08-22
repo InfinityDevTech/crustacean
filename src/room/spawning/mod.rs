@@ -671,7 +671,8 @@ pub fn upgrader(
 
     let max_pos = cache.structures.controller.as_ref().unwrap().pos().get_accessible_positions_around(3);
 
-    if upgrader_count as usize >= max_pos.len() {
+    // TODO: Bandaid fix.
+    if upgrader_count as usize >= max_pos.len() || upgrader_count >= 9 {
         return None;
     }
 
@@ -687,7 +688,7 @@ pub fn upgrader(
 
     let controller = &cache.structures.controller.as_ref().unwrap();
 
-    if under_storage_gate(cache, 1.1) && controller.ticks_to_downgrade() > Some(5000) {
+    if under_storage_gate(cache, 1.0) && controller.ticks_to_downgrade() > Some(50000) {
         return None;
     }
 

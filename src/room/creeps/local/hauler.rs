@@ -1,6 +1,7 @@
+use js_sys::JsString;
+use log::info;
 use screeps::{
-    game, Creep, ErrorCode, HasId, HasPosition, ObjectId, Resource, ResourceType,
-    SharedCreepProperties, StructureStorage,
+    game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
 };
 
 use wasm_bindgen::JsCast;
@@ -17,7 +18,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache, relay_run: Option<bool>) {
     if creep.spawning() || creep.tired() {
         creep.bsay("😴", false);
         return;
@@ -29,14 +30,15 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     if let Some(order) = &creep_memory.hauling_task.clone() {
         creep.bsay("EXEC", false);
 
-        if execute_order(creep, memory, cache, order) {
-            // Invalidate the path and the hauling task
-            // Since it was mission success
-            decide_energy_need(creep, memory, cache);
+        execute_order(creep, memory, cache, order);
 
-            //run_hauler(creep, memory, cache);
-            return;
+        decide_energy_need(creep, memory, cache);
+
+        if order.haul_type == HaulingType::Transfer && relay_run.is_none() {
+            check_relay(creep, memory, cache);
         }
+
+        return;
     }
 
     decide_energy_need(creep, memory, cache);
@@ -480,6 +482,71 @@ pub fn release_reservation(
 
         if reservation.reserved_amount <= 0 || reservation.creeps_assigned.is_empty() {
             heap_hauling.reserved_orders.remove(&order.target_id);
+        }
+    }
+}
+
+pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
+
+    if room_cache.creep_checked_relay.contains_key(&creep.name()) {
+        return;
+    }
+
+    room_cache.creep_checked_relay.insert(creep.name(), true);
+
+    let creep_moving_to = room_cache.traffic.intended_move.get(&creep.try_id().unwrap());
+    if let Some(moving_dir) = creep_moving_to {
+        let creeps_at_pos = room_cache.creeps.creeps_at_pos.get(moving_dir);
+
+        if let Some(creep_at_pos) = creeps_at_pos {
+            let other_free_capacity = creep_at_pos.store().get_free_capacity(Some(ResourceType::Energy)) as i64;
+            let my_used_capacity = creep.store().get_used_capacity(Some(ResourceType::Energy)) as i64;
+
+            if other_free_capacity >= my_used_capacity {
+                let creeps = memory.creeps.get_many_mut([&creep_at_pos.name(), &creep.name()]);
+                if creeps.is_none() {
+                    return;
+                }
+
+                let [other_creep, my_creep] = creeps.unwrap();
+
+                if other_creep.role != Role::Hauler || my_creep.role != Role::Hauler {
+                    return;
+                }
+
+                if let Some(other_haul_task) = &other_creep.hauling_task {
+                    if other_haul_task.haul_type == HaulingType::Transfer {
+                        return;
+                    }
+                }
+
+                let my_task = &my_creep.hauling_task.clone();
+                let other_task = &other_creep.hauling_task.clone();
+
+                other_creep.hauling_task = my_task.clone();
+                my_creep.hauling_task = other_task.clone();
+
+                other_creep.path = None;
+                my_creep.path = None;
+
+                let at_pos = creep_at_pos.clone();
+                // Transfer the energy
+                let _ = creep.transfer(&at_pos, ResourceType::Energy, None);
+
+                // Remove the creeps from the intended move
+                room_cache.traffic.intended_move.remove(&creep.try_id().unwrap());
+                room_cache.traffic.intended_move.remove(&creep_at_pos.try_id().unwrap());
+
+                // Cancel any movement intents
+                let _ = creep.cancel_order(&JsString::from("move"));
+                let _ = creep_at_pos.cancel_order(&JsString::from("move"));
+
+                // run the hauler again
+                let at_pos = creep_at_pos.clone();
+                run_hauler(creep, memory, cache, Some(true));
+                run_hauler(&at_pos, memory, cache, Some(true));
+            }
         }
     }
 }

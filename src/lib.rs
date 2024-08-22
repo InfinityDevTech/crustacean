@@ -69,7 +69,6 @@ pub fn init() {
 //#[cfg(feature = "profile")]
 
 pub fn game_loop() {
-
     #[cfg(feature = "profile")]
     {
         if game::cpu::bucket() > 200 {
@@ -102,8 +101,7 @@ pub fn game_loop() {
     );
 
     if game::cpu::bucket() < 500 {
-        info!("Bucket is too low, not profiling...");
-        info!("Bucket: {}/500", game::cpu::bucket());
+        info!("Bucket needed for profiling: {}/500", game::cpu::bucket());
 
         #[cfg(feature = "profile")]
         {
@@ -209,15 +207,18 @@ pub fn game_loop() {
         hauling::clean_heap_hauling(&mut memory);
     }
 
+    let pre_traffic_cpu = game::cpu::get_used();
+    let mut intent_count = 0;
+
     for room in game::rooms().keys() {
         let room = game::rooms().get(room).unwrap();
         if let Some(room_cache) = cache.rooms.get_mut(&room.name()) {
             let start = game::cpu::get_used();
-            traffic::run_movement(room_cache, &mut memory);
+            intent_count += traffic::run_movement(room_cache, &mut memory);
 
             if room.my() {
                 info!(
-                    "[{}] Traffic took: {:.4} with {} intents, {:.4} without intents",
+                    "[TRAFFIC] {} Rooms traffic took: {:.4} with {} intents, {:.4} without intents",
                     room.name().to_string(),
                     game::cpu::get_used() - start,
                     room_cache.traffic.move_intents,
@@ -230,6 +231,9 @@ pub fn game_loop() {
             }
         }
     }
+
+    let traffic_cpu = game::cpu::get_used() - pre_traffic_cpu;
+    info!("[TRAFFIC] Government wide traffic took {:.2} CPU. Without the {} intents {:.2}", traffic_cpu, intent_count, traffic_cpu - (intent_count as f64 * 0.2));
 
     if game::time() % 10000 == 0 {
         heap().cachable_positions.lock().unwrap().clear();
@@ -296,7 +300,6 @@ pub fn game_loop() {
 
     let percentage_to_next_gcl = (game::gcl::progress() / game::gcl::progress_total()) * 100.0;
 
-    info!("[STATS] Statistics are as follows: ");
     info!(
         "GCL {}. {:.2}% to level {}",
         game::gcl::level(),

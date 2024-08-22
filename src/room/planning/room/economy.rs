@@ -11,10 +11,12 @@ pub fn get_required_energy_storage(room: &Room) -> u32 {
     }
 
     if controller.level() < 8 {
-        let controller_progress = controller.progress().unwrap();
-        let controller_needed = controller.progress_total().unwrap();
+        let controller_progress = controller.progress().unwrap_or(0);
+        let controller_needed = controller.progress_total().unwrap_or(0);
 
-        base_stock *= 1 - (controller_progress / controller_needed);
+        if controller_progress > 0 && controller_needed > 0 {
+            base_stock *= 1 - (controller_progress / controller_needed);
+        }
     }
 
     base_stock

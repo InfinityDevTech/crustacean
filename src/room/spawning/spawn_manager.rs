@@ -151,7 +151,7 @@ impl SpawnManager {
                 memory.create_creep(&room.name(), &name, request.creep_memory.clone());
                 return true;
             } else {
-                info!("[SPAWNING] Room {:?} failed to spawn {:?} creep: {:#?}", room.name(), request.role, spawn_result);
+                info!("[SPAWNING] Room {} failed to spawn {:?} creep: {:#?}", room.name(), request.role, spawn_result);
             }
         }
 
@@ -160,8 +160,6 @@ impl SpawnManager {
 
     pub fn can_room_spawn_creep(&self, room: &Room, room_cache: &CachedRoom, request: &SpawnRequest) -> Result<(), ErrorCode> {
         let cost = request.cost;
-
-        info!("  [SPAWNING] Room {:?} trying to spawn {:?} with cost: {} (Available: {}, capacity: {}) - {:?} parts", room.name(), request.role, cost, room.energy_available(), room.energy_capacity_available(), request.body.len());
 
         if room.energy_available() < cost {
             return Err(ErrorCode::NotEnough);
@@ -358,15 +356,16 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
         // Then we add 25%, because we want to have a bit of a buffer
         let mut wanted_hauler_count = (carry_requirement as f32) / (carry_count as f32 * 50.0);
 
-        // Only for developing rooms, we want to have a bit more haulers
-        if owning_cache.rcl <= 7 {
-            wanted_hauler_count *= 1.25;
+        // RCL 7 and 8 have two spawns.
+        // So we dont have to fight for spawn time!
+        if owning_cache.rcl < 7 {
+            wanted_hauler_count *= 1.5;
         }
 
         let hauler_count = if wanted_hauler_count < 3.0 {
             3
         } else {
-            (wanted_hauler_count.round() * 1.25).ceil() as u32
+            wanted_hauler_count.ceil() as u32
         };
 
         //if wanted_hauler_count > (f32::max(2.0, 15.0 / owning_cache.structures.controller.as_ref().unwrap().controller.level() as f32) * harvester_count as f32).round() {
@@ -383,6 +382,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let starting_cpu = game::cpu::get_used();
     for room in &cache.my_rooms.clone() {
         let pre_check = game::cpu::get_used();
 
@@ -400,7 +400,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         let mut spawned_this_tick = false;
         let mut waiting_on_required = false;
         if available_spawns.is_empty() {
-            info!("[SPAWNING] Room {} has no available spawns, skipping spawning", room.name());
+            //info!("[SPAWNING] Room {} has no available spawns, skipping spawning", room.name());
             //room_memory.avg_spawn_expense = utils::moving_average(room_memory.avg_spawn_expense, 0.0, 1.0 / 1500.0);
             continue;
         }
@@ -496,8 +496,10 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
         room_memory.avg_spawn_expense = utils::moving_average(room_memory.avg_spawn_expense, spawned_creep_cost as f64, 1.0 / 1500.0);
 
         let post_check = game::cpu::get_used();
-        info!("  [SPAWNING] Room {} took {} CPU to spawn creeps", room.name(), post_check - pre_check);
+        info!("  [SPAWNING] Room {} took {:.2} CPU to spawn creeps", room.name(), post_check - pre_check);
     }
+
+    info!("[SPAWNING] Government wide spawning took {:.2} CPU", game::cpu::get_used() - starting_cpu);
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

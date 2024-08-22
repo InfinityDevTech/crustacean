@@ -110,6 +110,6 @@ pub fn visualise_controller_progress(
         controller.pos().x().u8() as f32,
         controller.pos().y().u8() as f32 + 0.25,
         format!("{}", controller.level()),
-        Default::default(),
+        Some(TextStyle::default().align(screeps::TextAlign::Center).color("#FFFFFF")),
     );
 }

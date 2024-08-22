@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use screeps::{game, OwnedStructureProperties, ResourceType, Room, RoomName, RoomXY};
 use stats::StatsCache;
 use terminals::TerminalCache;
+use traffic::traffic_cache::TrafficCache;
 
 use crate::{heap, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory, room::spawning::spawn_manager::SpawnManager};
 
-use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache, traffic::TrafficCache};
+use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache};
 
 use super::planning::room::economy;
 
@@ -86,6 +87,8 @@ pub struct CachedRoom {
     pub hauling: HaulingCache,
     pub room_heap_cache: HeapRoom,
     pub stats: StatsCache,
+
+    pub creep_checked_relay: HashMap<String, bool>,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -138,6 +141,7 @@ impl CachedRoom {
             stats,
 
             storage_status,
+            creep_checked_relay: HashMap::new(),
         };
 
         if let Some(room_memory) = memory.rooms.get(&room.name()) {

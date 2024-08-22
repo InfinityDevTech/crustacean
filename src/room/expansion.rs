@@ -401,7 +401,7 @@ pub fn score_room(
         }
     }
 
-    score -= swamp_percent * 5.0;
+    score -= swamp_percent * 1.5;
 
     // Too much swamp = unusable.
     if swamp_percent >= 45.0 {

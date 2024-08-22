@@ -64,7 +64,6 @@ pub struct HaulTaskRequest {
     pub resource_type: Option<ResourceType>,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulTaskRequest {
     pub fn creep_name(&mut self, creep_name: String) -> &mut Self {
         self.creep_name = creep_name;
@@ -115,7 +114,6 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -247,7 +245,6 @@ impl HaulingCache {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, room_name: &RoomName) {
     let starting_cpu = game::cpu::get_used();
     let mut matched_creeps = Vec::new();
@@ -354,12 +351,17 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                 // If we are a better match than the other creep, we take it.
                 // Fuck you other creep! This shit is mine!
                 // Yes, we lose one tick on the other creep, but if its more worth it, then its fine.
-                if let Some((responsible_creep, score)) = responsible_creep {
+                /*if let Some((responsible_creep, score)) = responsible_creep {
+                    info!("Has responsible.");
+                    continue;
+
                     if *responsible_creep == hauler.creep_name {
                         continue;
                     }
 
                     if top_score < *score {
+
+                        info!("Switching tasks.");
                         let matched_order = (hauler.creep_name.to_string(), top_score);
 
                         cache
@@ -391,7 +393,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
                         matched_creeps.push(hauler.creep_name.to_string());
                     }
-                } else {
+                } else */{
                     let matched_order = (hauler.creep_name.to_string(), top_score);
 
                     cache
@@ -412,7 +414,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                         );
                         let new_amount = order.amount.unwrap_or(0) as i32 - pickup_amount;
 
-                        if new_amount < 0 {
+                        if new_amount <= 0 {
                             orders.remove(&top_scorer.id);
                         } else {
                             order.amount = Some(new_amount as u32);
@@ -494,21 +496,23 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
         }
     }
 
+    info!(
+        "[HAULING] Room {} matched {} haulers to {} orders in {:.2} CPU",
+        room_name,
+        matched_creeps.len(),
+        count,
+        game::cpu::get_used() - starting_cpu
+    );
+
+    // We have the output above, because we dont want to include intents from the creeps being matched.
+
     for (creep_name, haul_task) in saved {
         let creep = game::creeps().get(creep_name.clone()).unwrap();
 
         execute_order(&creep, memory, room_cache, &haul_task);
     }
-
-    info!(
-        "  [HAULING] Matched {} haulers to {} orders in {} CPU",
-        matched_creeps.len(),
-        count,
-        game::cpu::get_used() - starting_cpu
-    );
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
     if order.no_distance_calc {
         order.priority
@@ -522,7 +526,6 @@ pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn clean_heap_hauling(memory: &mut ScreepsMemory) {
     let mut to_delete = Vec::new();
 
@@ -585,92 +588,7 @@ pub fn clean_heap_hauling(memory: &mut ScreepsMemory) {
     }
 }
 
-// End order creation ------
-// Relaying -----
 
-pub fn attempt_relay(
-    current_creep: &Creep,
-    coord: Position,
-    cache: &mut RoomCache,
-    memory: &mut ScreepsMemory,
-) -> bool {
-    let current_room_cache = cache
-        .rooms
-        .get_mut(&current_creep.room().unwrap().name())
-        .unwrap();
-
-    if let Some(target_creep) = current_room_cache
-        .creeps
-        .creeps_at_pos
-        .get(&coord.xy())
-    {
-        let [current_creep_memory, target_creep_memory] = memory
-            .creeps
-            .get_many_mut([&current_creep.name(), &target_creep.name()])
-            .unwrap();
-        if target_creep_memory.role != Role::Hauler
-            || cache.creeps_moving_stuff.contains_key(&target_creep.name())
-        {
-            return false;
-        }
-
-        if target_creep.store().get_used_capacity(None) > 0 {
-            return false;
-        }
-        if target_creep.store().get_free_capacity(None)
-            < current_creep
-                .store()
-                .get_used_capacity(None)
-                .try_into()
-                .unwrap()
-        {
-            return false;
-        }
-
-        let mut target_distance_from_goal = 0;
-        let mut my_distance_from_goal = 0;
-
-        if let Some(target_creep_goal) = target_creep_memory.hauling_task.as_ref() {
-            let pos = target_creep_goal.get_target_position();
-
-            target_distance_from_goal = target_creep.pos().get_range_to(pos.unwrap());
-        }
-        if let Some(my_goal) = current_creep_memory.hauling_task.as_ref() {
-            let pos = my_goal.get_target_position();
-
-            my_distance_from_goal = current_creep.pos().get_range_to(pos.unwrap());
-        }
-
-        if target_distance_from_goal < my_distance_from_goal {
-            current_creep.bsay("🔄 - CRNT", false);
-            target_creep.bsay("🔄 - TRGT", false);
-
-            cache.creeps_moving_stuff.insert(current_creep.name(), true);
-            cache.creeps_moving_stuff.insert(target_creep.name(), true);
-
-            // Trade target and current creeps tasks
-            let target_task = target_creep_memory.hauling_task.clone();
-            let current_task = current_creep_memory.hauling_task.clone();
-
-            target_creep_memory.hauling_task = current_task;
-            current_creep_memory.hauling_task = target_task;
-
-            // Trade their paths
-            let target_path = target_creep_memory.path.clone();
-            let current_path = current_creep_memory.path.clone();
-
-            target_creep_memory.path = current_path;
-            current_creep_memory.path = target_path;
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    }
-}
-
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepHaulTask {
     pub fn get_target_position(&self) -> Option<Position> {
         let target = game::get_object_by_id_erased(&self.target_id);
@@ -681,7 +599,6 @@ impl CreepHaulTask {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomHaulingOrder {
     pub fn get_target_position(&self) -> Option<Position> {
         let target = game::get_object_by_id_erased(&self.target);
@@ -692,7 +609,6 @@ impl RoomHaulingOrder {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_spawn(room_cache: &mut CachedRoom) {
     let has_ff = room_cache
         .creeps
@@ -725,7 +641,6 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_ruins(room_cache: &mut CachedRoom) {
     let ruins = &room_cache.structures.ruins;
 
@@ -745,7 +660,6 @@ pub fn haul_ruins(room_cache: &mut CachedRoom) {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_tombstones(room_cache: &mut CachedRoom) {
     let tombstones = &room_cache.structures.tombstones();
 
@@ -776,7 +690,6 @@ pub fn haul_tombstones(room_cache: &mut CachedRoom) {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_storage(room_cache: &mut CachedRoom) {
     let storage = &room_cache.structures.storage;
     let base_hauler_count = room_cache
@@ -834,7 +747,6 @@ pub fn haul_storage(room_cache: &mut CachedRoom) {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_extensions(room_cache: &mut CachedRoom) {
     let base_hauler_count = room_cache
         .creeps

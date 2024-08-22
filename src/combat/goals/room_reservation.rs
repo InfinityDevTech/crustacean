@@ -188,12 +188,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
                 }
             }
         }
-
-        info!(
-            "[{}] Spawning reserver for room reservation. Priority: {}",
-            best_spawned, priority
-        );
-
+        
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,
             body,

@@ -47,11 +47,11 @@ pub trait CreepExtensions {
     fn near_age_death(&self) -> bool;
 
     fn move_request(&self, target_delta: Direction, room_cache: &mut CachedRoom);
-    fn get_possible_moves_traffic(&self, room_cache: &CachedRoom) -> Vec<RoomXY>;
+    fn get_possible_moves_traffic(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
     fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<Direction>;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
@@ -470,69 +470,47 @@ impl CreepExtensions for screeps::Creep {
         possible_moves
     }
 
-    fn get_possible_moves_traffic(&self, room_cache: &CachedRoom) -> Vec<RoomXY> {
-        if room_cache
-            .traffic
-            .cached_ops
-            .contains_key(&self.try_id().unwrap())
-        {
+    fn get_possible_moves_traffic(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY> {
+        if room_cache.traffic.cached_ops.contains_key(&self.try_id().unwrap()) {
             return room_cache.traffic.cached_ops[&self.try_id().unwrap()].clone();
         }
 
-        let mut possible_moves = vec![];
-
-        if room_cache
-            .traffic
-            .intended_move
-            .contains_key(&self.try_id().unwrap())
-        {
-            possible_moves.insert(
-                0,
-                *room_cache
-                    .traffic
-                    .intended_move
-                    .get(&self.try_id().unwrap())
-                    .unwrap(),
-            );
-            return possible_moves;
-        }
+        let mut possible_moves = vec![self.pos().xy()];
+        room_cache.traffic.cached_ops.insert(self.try_id().unwrap(), possible_moves.clone());
 
         if self.tired() {
             return possible_moves;
         }
 
-        let mut adjacent_coords = vec![];
+        if room_cache.traffic.intended_move.contains_key(&self.try_id().unwrap()) {
+            let mut new = vec![room_cache.traffic.intended_move[&self.try_id().unwrap()]];
+            new.extend(possible_moves);
 
-        for dir in Direction::iter() {
-            let pos = dir_to_coords(*dir, self.pos().x().u8(), self.pos().y().u8());
-
-            adjacent_coords.push(pos);
+            return new;
         }
 
-        let room_terrain = room_cache.structures.terrain.clone();
+        let x = self.pos().x().u8();
+        let y = self.pos().y().u8();
 
-        let mut seedable = StdRng::seed_from_u64(game::time().into());
-        adjacent_coords.shuffle(&mut seedable);
+        for dir in Direction::iter() {
+            let pos = dir_to_coords(*dir, x, y);
 
-        for coord in adjacent_coords {
-            let xy = unsafe { RoomXY::unchecked_new(coord.0, coord.1) };
-            let x = xy.x.u8();
-            let y = xy.y.u8();
-
-            if room_terrain.get_xy(xy) == Terrain::Wall
-                || room_cache.creeps.creeps_at_pos.contains_key(&xy)
-            {
+            if pos.0 == 0 || pos.0 >= 49 || pos.1 == 0 || pos.1 >= 49 {
                 continue;
             }
 
-            if x == 0 || x == 49 || y == 0 || y == 49 {
+            let xy = new_xy(pos.0, pos.1);
+
+            if room_cache.structures.terrain.get_xy(xy) == Terrain::Wall {
                 continue;
             }
 
             possible_moves.push(xy);
         }
 
-        possible_moves.shuffle(&mut seedable);
+        let mut rand = StdRng::seed_from_u64(game::time() as u64);
+        possible_moves.shuffle(&mut rand);
+
         possible_moves
     }
 }

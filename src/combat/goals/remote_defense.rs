@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use screeps::{game, Part, ResourceType, Room, RoomName, SharedCreepProperties};
 
 use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
@@ -127,7 +129,18 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
         let room_cache = cache.rooms.get_mut(&room).unwrap();
 
         let my_creeps = &goal.creeps_assigned;
-        let my_creep_power = determine_group_attack_power(&my_creeps.iter().map(|c| room_cache.creeps.owned_creeps.get(c).unwrap()).collect());
+
+        let mut t = Vec::new();
+
+        for creep in my_creeps {
+            if !room_cache.creeps.owned_creeps.contains_key(creep) {
+                continue;
+            }
+
+            let e = room_cache.creeps.owned_creeps.get(creep).unwrap().clone();
+            t.push(e);
+        }
+        let my_creep_power = determine_group_attack_power(&t);
 
         if my_creep_power < goal.total_attack_power {
             determine_spawn_needs(&game::rooms().get(room).unwrap(), goal, cache);

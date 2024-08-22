@@ -237,7 +237,7 @@ pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
 /// Convert a string to its respective role
 /// **Example:** sm **=** Miner
 /// **Example:** mb **=** Hauler
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn name_to_role(name: &str) -> Option<Role> {
     let role_tag = name.split("-").next().unwrap();
     match role_tag {

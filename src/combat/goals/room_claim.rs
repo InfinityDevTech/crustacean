@@ -153,9 +153,6 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
             let cr = cache.rooms.get(&responsible_room.unwrap()).unwrap();
 
-            info!("RCL: {}", cr.rcl);
-            info!("Max RCL: {}", cr.max_rcl);
-
             if cr.rcl < cr.max_rcl {
                 return;
             }
@@ -212,6 +209,8 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             && expansion_game_room.controller().unwrap().level() >= 2
         {
             memory.goals.room_claim.remove(goal_room);
+
+            return;
         }
 
         let has_spawn_csite_or_spawn = !expansion_cache.structures.spawns.is_empty()
@@ -221,7 +220,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                 .iter()
                 .any(|cs| cs.structure_type() == screeps::StructureType::Spawn);
 
-        if !has_spawn_csite_or_spawn && game::cpu::bucket() >= 1000 {
+        if !has_spawn_csite_or_spawn && game::cpu::bucket() >= 2500 {
             if game::rooms().get(responsible_room.unwrap()).is_none() {
                 return;
             }
@@ -233,7 +232,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             );
             let cached_room = cache.rooms.get_mut(&responsible_room.unwrap()).unwrap();
 
-            let available_positions = distance_transform(goal_room, true);
+            let available_positions = distance_transform(goal_room, false);
             let mut available_xy = Vec::new();
 
             let exits = expansion_game_room.find(find::EXIT, None);
@@ -255,7 +254,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                         }
                     }
 
-                    if score >= 7 {
+                    if score >= 8 {
                         available_xy.push(xy);
                     }
                 }
@@ -269,14 +268,18 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             for pos in available_xy {
                 let xy = pos.as_position(goal_room);
 
-                let dist = utils::get_pathfind_distance(cpos.unwrap(), xy);
+                let dist = cpos.unwrap().pos().xy().get_range_to(pos);
                 let mut source_dist = 0;
 
                 for source in &cached_room.resources.sources {
-                    source_dist += utils::get_pathfind_distance(source.source.pos(), xy) / 2;
+                    source_dist += source.source.pos().xy().get_range_to(pos) / 2;
                 }
 
                 let total_dist = dist + source_dist;
+
+                if game::cpu::get_used() >= 475.0 {
+                    break;
+                }
 
                 if total_dist < lowest {
                     lowest = total_dist;

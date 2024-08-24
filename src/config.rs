@@ -28,8 +28,8 @@ pub fn REMOTES_FOR_RCL(room_cache: &CachedRoom) -> u8 {
         4 => 5,
         5 => 7,
         6 => 7,
-        7 => 4,
-        8 => 2,
+        7 => 5,
+        8 => 3,
         _ => 0,
     }
 }

@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, Part, ResourceType, RoomName, SharedCreepProperties};
+use screeps::{game, MapTextStyle, MapVisual, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties, TextStyle};
 
 use crate::{
     goal_memory::RemoteInvaderCleanup,
@@ -46,6 +46,9 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
 
     let responsible_room = utils::find_closest_owned_room(target_room, cache, Some(2));
 
+    let pos = Position::new(RoomCoordinate::new(15).unwrap(), RoomCoordinate::new(45).unwrap(), *target_room);
+    MapVisual::text(pos, format!("👾: {}", goal.destroyed_core), MapTextStyle::default().color("#ff0000").font_size(7.0));
+
     if let Some(room_cache) = cache.rooms.get_mut(target_room) {
         let invader_core = &room_cache.structures.invader_core;
 
@@ -57,6 +60,8 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
         if invader_core.is_none() {
             goal.destroyed_core = true;
             return;
+        } else {
+            goal.destroyed_core = false;
         }
     }
 

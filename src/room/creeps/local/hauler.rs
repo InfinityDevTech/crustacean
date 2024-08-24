@@ -35,7 +35,7 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
         decide_energy_need(creep, memory, cache);
 
         if order.haul_type == HaulingType::Transfer && relay_run.is_none() {
-            check_relay(creep, memory, cache);
+            //check_relay(creep, memory, cache);
         }
 
         return;

@@ -50,7 +50,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     );
     let style = MapTextStyle::default()
         .align(screeps::TextAlign::Center)
-        .font_size(4.0);
+        .font_size(7.0);
 
     if memory.rooms.contains_key(&room.name()) {
         MapVisual::text(pos, "🏠".to_string(), style);

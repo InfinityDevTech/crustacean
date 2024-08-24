@@ -226,6 +226,8 @@ pub fn deposit_enegy(creep: &Creep, memory: &mut ScreepsMemory, remote_cache: &m
                 1,
                 MoveOptions::default(),
             );
+        } else if creep.pos() == contianer.pos() {
+            // Auto drop, save 0.2 CPU. It will automatically end up in the container.
         } else {
             let _ = creep.ITtransfer(contianer, ResourceType::Energy, None);
         }

@@ -283,12 +283,6 @@ pub fn path_call(
                 {
                     return MultiRoomCostResult::Impassable;
                 }
-
-                if room_controller.reservation().is_some()
-                    && room_controller.reservation().unwrap().username() != get_my_username()
-                {
-                    return MultiRoomCostResult::Impassable;
-                }
             }
 
             if invader_owner {

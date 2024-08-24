@@ -78,6 +78,12 @@ pub fn harvest_source(
         creep.bsay("⛏️", false);
         let _ = creep.ITharvest(&source.source);
 
+        if let Some(container) = &source.container {
+            if creep.pos() != container.pos() && !cache.creeps.creeps_at_pos.contains_key(&container.pos().xy()) {
+                creep.better_move_to(memory, cache, container.pos(), 0, MoveOptions::default());
+            }
+        }
+
         let amount_harvsted = get_aproximate_energy_mined(creep, &source.source);
         cache.stats.energy.income_energy += amount_harvsted;
 

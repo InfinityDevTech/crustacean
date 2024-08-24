@@ -294,7 +294,6 @@ pub fn path_call(
             }
         } else if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
             if (scouting_data.owner.is_some() && scouting_data.owner != Some(get_my_username()))
-                || (scouting_data.reserved.is_some() && scouting_data.reserved != Some(get_my_username()))
                 || scouting_data.invader_core.unwrap_or(false)
             {
                 return MultiRoomCostResult::Impassable;

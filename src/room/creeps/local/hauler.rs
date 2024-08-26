@@ -272,6 +272,19 @@ pub fn execute_order(
                 return true;
             }
         }
+    } else if order.haul_type == HaulingType::Withdraw {
+        if let Some(ref target) = target {
+            let store = target.unchecked_ref::<StructureStorage>().store();
+
+            if store.get_used_capacity(Some(order.resource)) == 0 {
+                creep_memory.hauling_task = None;
+                creep_memory.path = None;
+
+                release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, 0);
+
+                return true;
+            }
+        }
     }
 
     if !creep.pos().is_near_to(position.unwrap()) {

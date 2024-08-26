@@ -1156,7 +1156,11 @@ pub fn remote_harvester(
     let hauler_count = owning_cache.creeps.creeps_of_role(Role::Hauler);
 
     for remote_name in &owning_room_memory.remotes {
-        let remote_memory = memory.remote_rooms.get(remote_name).unwrap();
+        let remote_memory = memory.remote_rooms.get(remote_name);
+        if remote_memory.is_none() {
+            continue;
+        }
+        let remote_memory = remote_memory.unwrap();
 
         if remote_memory.under_attack {
             continue;

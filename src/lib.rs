@@ -136,6 +136,8 @@ pub fn game_loop() {
         start_government(game_room, &mut memory, &mut cache);
     }
 
+    info!("[GOVERNMENT] Non owned rooms took {:.2} CPU!", cache.non_owned_cpu);
+
     if game::time() % 1500 == 0 {
         for room in memory.rooms.clone().keys() {
             let groom = game::rooms().get(*room);
@@ -152,6 +154,7 @@ pub fn game_loop() {
         }
     }
 
+    let pre_haul_cpu = game::cpu::get_used();
     for room in cache.my_rooms.clone().iter() {
         hauling::match_haulers(&mut cache, &mut memory, room);
 
@@ -192,6 +195,7 @@ pub fn game_loop() {
             // -- End creep chant stuffs
         }
     }
+    info!("[HAULING] Government wide hauling took {:.2} CPU.", game::cpu::get_used() - pre_haul_cpu);
 
     run_global_goal_setters(&mut memory, &mut cache);
     run_goal_handlers(&mut memory, &mut cache);

@@ -27,6 +27,7 @@ pub struct RoomCache {
     pub terminals: TerminalCache,
 
     pub creeps_moving_stuff: HashMap<String, bool>,
+    pub non_owned_cpu: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -50,6 +51,7 @@ impl RoomCache {
 
             spawning: spawn_manager,
             creeps_moving_stuff: HashMap::new(),
+            non_owned_cpu: 0.0,
         }
     }
 

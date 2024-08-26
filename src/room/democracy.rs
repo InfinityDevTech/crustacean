@@ -81,6 +81,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         cache.create_if_not_exists(&room, memory, None);
         organizer::run_creeps(&room, memory, cache);
 
+        cache.non_owned_cpu += game::cpu::get_used() - starting_cpu;
+
         return;
     }
 
@@ -290,6 +292,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             room.name(),
             end_cpu - starting_cpu
         );
+    } else {
+        cache.non_owned_cpu += game::cpu::get_used() - starting_cpu;
     }
 }
 

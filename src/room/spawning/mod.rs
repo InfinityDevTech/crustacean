@@ -1033,7 +1033,10 @@ pub fn harvester(
 
     let mut requests = Vec::new();
 
-    for source in &cache.resources.sources {
+    let sources = &mut cache.resources.sources.clone();
+    sources.sort_by_key(|s| s.source.pos().xy().get_range_to(cache.spawn_center.unwrap()));
+
+    for source in sources {
         let max_parts_for_source = source.max_work_parts;
         let current_parts_on_source = source.calculate_work_parts(cache);
         let mut parts_needed_on_source = source.parts_needed(cache);
@@ -1078,6 +1081,10 @@ pub fn harvester(
                 priority *= 2.1
             }
 
+            if parts_needed_on_source <= 3 && hauler_count >= 3 {
+                priority = f64::MAX;
+            }
+
             requests.push(Some(spawn_manager.create_room_spawn_request(
                 Role::Harvester,
                 body,
@@ -1112,7 +1119,7 @@ pub fn harvester(
             priority = f64::MAX;
         }
 
-        requests.push(Some(spawn_manager.create_room_spawn_request(
+        return vec![Some(spawn_manager.create_room_spawn_request(
             Role::Harvester,
             body,
             priority,
@@ -1125,9 +1132,7 @@ pub fn harvester(
             }),
             None,
             None,
-        )));
-
-        continue;
+        ))];
     }
 
     requests

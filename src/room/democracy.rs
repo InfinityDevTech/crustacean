@@ -357,7 +357,11 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                     structure.1 as u8 + offset_y,
                     room.name(),
                 );
-                let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+                let r = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+
+                if r.is_ok() {
+                    heap().flow_cache.lock().unwrap().remove(&room.name());
+                }
             }
 
             // Plan container around source and controller
@@ -509,7 +513,11 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 structure.1 as u8 + offset_y.u8(),
                 room.name(),
             );
-            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+            let r = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+
+            if r.is_ok() {
+                heap().flow_cache.lock().unwrap().remove(&room.name());
+            }
         }
 
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
@@ -532,7 +540,11 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 structure.1 as u8 + offset_y.u8(),
                 room.name(),
             );
-            let _ = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+            let r = room.ITcreate_construction_site(pos.x(), pos.y(), structure.2, None);
+
+            if r.is_ok() {
+                heap().flow_cache.lock().unwrap().remove(&room.name());
+            }
         }
 
         if room_cache.rcl >= 6 && room_cache.structures.extractor.is_none() {

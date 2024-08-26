@@ -79,6 +79,7 @@ pub struct RoomStructureCache {
     pub towers: HashMap<ObjectId<StructureTower>, StructureTower>,
 
     pub structures_at_pos: HashMap<RoomXY, Vec<StructureType>>,
+    pub csites_at_pos: HashMap<RoomXY, Vec<StructureType>>,
 
     pub construction_sites: Vec<ConstructionSite>,
     pub inactive_structures: Vec<StructureObject>,
@@ -124,6 +125,7 @@ impl RoomStructureCache {
             roads: HashMap::new(),
 
             structures_at_pos: HashMap::new(),
+            csites_at_pos: HashMap::new(),
 
             extensions: HashMap::new(),
             tombstones: None,
@@ -373,7 +375,16 @@ impl RoomStructureCache {
             self.process_links(resource_cache);
         }
 
-        self.construction_sites = self.room.find(find::CONSTRUCTION_SITES, None);
+        let mut csites = Vec::new();
+        for csite in self.room.find(find::CONSTRUCTION_SITES, None) {
+            let entry = self.structures_at_pos.entry(csite.pos().xy()).or_default();
+            if !entry.contains(&csite.structure_type()) {
+                entry.push(csite.structure_type());
+            }
+
+            csites.push(csite)
+        }
+        self.construction_sites = csites;
 
         let ruins = self.room.find(find::RUINS, None).into_iter();
         for ruin in ruins {

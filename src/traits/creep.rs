@@ -9,7 +9,7 @@ use crate::{
     movement::{
         caching::generate_storage_path,
         move_target::{MoveOptions, MoveTarget},
-        movement_utils::{dir_to_coords, num_to_dir},
+        movement_utils::{dir_to_coords, num_to_dir, visualise_path},
     },
     room::cache::CachedRoom,
     utils::new_xy,
@@ -18,8 +18,7 @@ use crate::{
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    creep, find, game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomXY,
-    SharedCreepProperties, StructureProperties, Terrain,
+    creep, find, game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomCoordinate, RoomName, RoomXY, SharedCreepProperties, StructureProperties, Terrain
 };
 
 use super::intents_tracking::CreepExtensionsTracking;
@@ -146,13 +145,14 @@ impl CreepExtensions for screeps::Creep {
         &self,
         memory: &mut ScreepsMemory,
         cache: &mut CachedRoom,
-        target: Position,
+        target_pos: Position,
         range: u16,
         move_options: MoveOptions,
     ) {
         let pre_move_cpu = game::cpu::get_used();
 
         if self.tired() {
+            self.bsay("😴", false);
             return;
         }
 
@@ -162,16 +162,13 @@ impl CreepExtensions for screeps::Creep {
             && self.pos().y().u8() != 49;
 
         if !move_options.ignore_cache && !move_options.fixing_stuck_creeps && not_on_exit {
-            let x = self.pos().x().u8();
-            let y = self.pos().y().u8();
-
             if let Some(storage) = &cache.structures.storage {
-                if storage.pos() == target && self.move_to_storage(cache) {
+                if storage.pos() == target_pos && self.move_to_storage(cache) {
                     if self.is_stuck(cache) {
                         self.bsay("ST-STUCK", false);
 
                         let opts = move_options.clone().fixing_stuck_creeps(true);
-                        self.better_move_to(memory, cache, target, range, opts);
+                        self.better_move_to(memory, cache, target_pos, range, opts);
 
                         return;
                     }
@@ -195,12 +192,12 @@ impl CreepExtensions for screeps::Creep {
                     .remote_rooms
                     .contains_key(&self.room().unwrap().name())
             {
-                if let Some(cachable_positions) = heap_cache.get(&target.room_name()) {
+                if let Some(cachable_room_positions) = heap_cache.get(&target_pos.room_name()) {
                     // TODO:
                     // They arent saying anything other than HAS, I dont think its caching it...
                     //self.bsay("HAS", false);
                     // If we can cache to that position, then we do the funni.
-                    if cachable_positions.contains(&target) {
+                    if cachable_room_positions.contains(&target_pos) {
                         //self.bsay("HAS", false);
                         let mut heap_cache = heap().flow_cache.lock().unwrap();
 
@@ -211,7 +208,7 @@ impl CreepExtensions for screeps::Creep {
                         // If there is a cached path to the target, we use it.
                         let path = flow_cache
                             .paths
-                            .entry(target)
+                            .entry(target_pos)
                             .or_insert_with(CompressedMatrix::new);
 
                         if self.is_stuck(cache) {
@@ -241,7 +238,7 @@ impl CreepExtensions for screeps::Creep {
                             // If not, we generate a path to said target, and cache it.
                             // This is a flow fill though, so over time, it will be cached.
                             let target = MoveTarget {
-                                pos: target,
+                                pos: target_pos,
                                 range: range.into(),
                             }
                             .caching_pathfind(self.pos(), memory);
@@ -268,6 +265,13 @@ impl CreepExtensions for screeps::Creep {
                                         break;
                                     }
 
+                                    // TODO: Make it do it for every step, even across rooms
+                                    // Because it currently only works for the room the creep is in.
+                                    // P.S. This was fixed by xTwistedx. (The guy with the bad bot.)
+                                    if target_pos.room_name() != step.room_name() {
+                                        break;
+                                    }
+
                                     if let Some(next) = target.path().get(index + 1) {
                                         let dir = step.get_direction_to(*next);
 
@@ -291,8 +295,8 @@ impl CreepExtensions for screeps::Creep {
 
                     let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
 
-                    if !locked.contains(&target.room_name()) {
-                        locked.push(target.room_name());
+                    if !locked.contains(&target_pos.room_name()) {
+                        locked.push(target_pos.room_name());
                     }
                 }
             }
@@ -317,10 +321,12 @@ impl CreepExtensions for screeps::Creep {
             }
             None => {
                 let (target, incomplete) = MoveTarget {
-                    pos: target,
+                    pos: target_pos,
                     range: range.into(),
                 }
                 .find_path_to(self.pos(), memory, move_options);
+
+                //self.bsay("PTHFIND", false);
 
                 if incomplete {
                     self.bsay("INCMPLT", false);
@@ -415,6 +421,7 @@ impl CreepExtensions for screeps::Creep {
         let terrain = room_cache.structures.terrain.clone();
 
         let s_at_pos = &room_cache.structures.structures_at_pos;
+        let cs_at_pos = &room_cache.structures.csites_at_pos;
 
         for dir in Direction::iter() {
             let pos = dir_to_coords(*dir, self.pos().x().u8(), self.pos().y().u8());
@@ -429,6 +436,12 @@ impl CreepExtensions for screeps::Creep {
             let mut can_run = true;
             for structure in s_at_pos.get(&xy).unwrap_or(&vec![]) {
                 if !WALKABLE_STRUCTURES.contains(structure) {
+                    can_run = false;
+                }
+            }
+
+            for csite in cs_at_pos.get(&xy).unwrap_or(&vec![]) {
+                if !WALKABLE_STRUCTURES.contains(csite) {
                     can_run = false;
                 }
             }

@@ -371,9 +371,9 @@ checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
 
 [[package]]
 name = "screeps-game-api"
-version = "0.21.1"
+version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a388c726189c38098ebadcb47aa0e6a150afb39845c6fdc8602c2fda60852c1"
+checksum = "fd695e85187b17de360f0e70db31ea414ec30c3e3e5c995e9ed6ec198c85db50"
 dependencies = [
  "arrayvec",
  "enum-iterator",

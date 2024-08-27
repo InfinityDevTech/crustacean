@@ -33,5 +33,13 @@ nbproject
 *.iws
 *.sublime-project
 *.sublime-workspace
+
+screeps.yaml
+
+# Node JS specific stuffs.
+node_modules/
+package-lock.json
+package.json
+
+# Remnants of pre-(0.22) screeps-game-api
 screeps.toml
-#screeps.toml

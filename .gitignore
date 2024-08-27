@@ -39,7 +39,7 @@ screeps.yaml
 # Node JS specific stuffs.
 node_modules/
 package-lock.json
-package.json
+#package.json
 
 # Remnants of pre-(0.22) screeps-game-api
 screeps.toml

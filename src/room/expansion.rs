@@ -60,7 +60,12 @@ pub fn can_expand(memory: &ScreepsMemory) -> bool {
     let gcl = game::gcl::level() as usize;
     let claim_goals = memory.goals.room_claim.len();
 
-    if memory.goals.room_claim.len() > 0 {
+    // Newbieland has a max of 3 rooms.
+    if game::shard::name() == "newbieland" && memory.goals.room_claim.len() + memory.rooms.len() >= 3 {
+        return false;
+    }
+
+    if !memory.goals.room_claim.is_empty() {
         return false;
     }
 

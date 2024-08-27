@@ -34,7 +34,7 @@ nbproject
 *.sublime-project
 *.sublime-workspace
 
-screeps.yaml
+.screeps.yaml
 
 # Node JS specific stuffs.
 node_modules/

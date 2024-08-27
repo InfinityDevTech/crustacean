@@ -4,7 +4,7 @@ servers:
   mmo:
     host: screeps.com
     secure: true
-    token: your-auth-token-here
+    token: "d01311d1-1525-45a0-90ab-f4875cb38fae"
     branch: default
   # The public test realm can be a good place to test your code
   ptr:
@@ -18,9 +18,26 @@ servers:
   season:
     host: screeps.com
     secure: true
-    token: your-auth-token-here
+    token: "d01311d1-1525-45a0-90ab-f4875cb38fae"
     path: /season
     branch: default
+
+  twisted:
+    host: "65.49.185.211"
+    port: 21025
+    secure: false
+    username: "InfDev"
+    password: "testpass"
+    branch: default
+
+  newbie:
+    host: screeps.newbieland.net
+    port: 21025
+    secure: false
+    username: "infinity@infinity-dev.xyz"
+    password: testpass
+    branch: default
+
   jaysee:
     host: jayseegames.com
     port: 21025
@@ -40,7 +57,7 @@ configs:
   wasm-pack-options:
     # The special '*'' key sets flags applied to all servers, which
     # will be **concatenated** with any applicable per-server config
-    '*': []
+    '*': ["--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort"]
     # This setting enables the `mmo` crate feature for these destinations,
     # which enables the API functions for intershard communication and pixel
     # generation, which are specific to MMO

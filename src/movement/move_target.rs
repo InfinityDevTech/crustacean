@@ -245,9 +245,6 @@ impl MoveTarget {
 }
 
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
-
-// TODO:
-// GetRawTerrainBuffer possibly for perforamnce reasons.
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(
     room_name: RoomName,

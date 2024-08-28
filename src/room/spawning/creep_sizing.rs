@@ -335,8 +335,8 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
         3 => 22,
         4 => 30,
         5 => 32,
-        6 => 40,
-        7 => 45,
+        6 => 48,
+        7 => 60,
         8 => 5,
         _ => 1,
     };

@@ -13,6 +13,7 @@ use constants::{MAX_BUCKET, MMO_SHARD_NAMES};
 use formation::formations::run_formations;
 use heap_cache::GlobalHeapCache;
 use log::*;
+use memory::Role;
 use movement::caching::generate_pathing_targets;
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -135,8 +136,6 @@ pub fn game_loop() {
 
         start_government(game_room, &mut memory, &mut cache);
     }
-
-    info!("[GOVERNMENT] Non owned rooms took {:.2} CPU!", cache.non_owned_cpu);
 
     if game::time() % 1500 == 0 {
         for room in memory.rooms.clone().keys() {
@@ -321,6 +320,37 @@ pub fn game_loop() {
         intents_used,
         intents_used as f32 * 0.2,
         game::cpu::get_used() - (intents_used as f64 * 0.2)
+    );
+    let mut highest_cpu_user = None;
+    let mut highest = 0.0;
+    let mut total_highest = 0.0;
+    let mut total_highest_count = 0;
+
+    for (role, role_used) in cache.creep_cpu_by_role {
+        let role_count = *cache.creep_count_by_role.get(&role).unwrap_or(&0) as f64;
+
+        if role == Role::BaseHauler {
+            continue;
+        }
+
+        if (role_used / role_count) > highest {
+            highest_cpu_user = Some(role);
+            highest = role_used / role_count;
+            total_highest = role_used;
+            total_highest_count = role_count as u32;
+        }
+    }
+
+    info!(
+        "  {} non-owned rooms took {:.2} CPU. {} creeps took {:.2} CPU. - Highest role: {:?} with a whopping {:.2} AVG ({:.2} CPU across {} creeps)",
+        cache.non_owned_count,
+        cache.non_owned_cpu,
+        cache.creep_count,
+        cache.creep_cpu,
+        highest_cpu_user.unwrap_or(Role::Recycler),
+        highest,
+        total_highest,
+        total_highest_count
     );
     info!("  Bucket: {}", game::cpu::bucket());
     info!("  Heap: {:.2}%", used);

@@ -42,6 +42,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     let starting_cpu = game::cpu::get_used();
+    let starting_creep_cpu = cache.creep_cpu.clone();
 
     let pos = Position::new(
         RoomCoordinate::new(4).unwrap(),
@@ -76,12 +77,11 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             room.name()
         );
 
-        // TODO: Make it so that I dont have to make a cache.
-        // Its about saving CPU.
         cache.create_if_not_exists(&room, memory, None);
         organizer::run_creeps(&room, memory, cache);
 
-        cache.non_owned_cpu += game::cpu::get_used() - starting_cpu;
+        cache.non_owned_cpu += (game::cpu::get_used() - starting_cpu) - (cache.creep_cpu - starting_creep_cpu);
+        cache.non_owned_count += 1;
 
         return;
     }
@@ -293,7 +293,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             end_cpu - starting_cpu
         );
     } else {
-        cache.non_owned_cpu += game::cpu::get_used() - starting_cpu;
+        cache.non_owned_cpu += (game::cpu::get_used() - starting_cpu) - (cache.creep_cpu - starting_creep_cpu);
+        cache.non_owned_count += 1;
     }
 }
 

@@ -1,7 +1,8 @@
 use js_sys::JsString;
 use log::info;
 use screeps::{
-    game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, ObjectId, Resource, ResourceType, SharedCreepProperties, StructureStorage
+    game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, ObjectId, Resource, ResourceType,
+    SharedCreepProperties, StructureStorage,
 };
 
 use wasm_bindgen::JsCast;
@@ -14,11 +15,17 @@ use crate::{
         hauling::{HaulTaskRequest, HaulingType},
         CachedRoom, RoomCache,
     },
-    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils,
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
+    utils,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache, relay_run: Option<bool>) {
+pub fn run_hauler(
+    creep: &Creep,
+    memory: &mut ScreepsMemory,
+    cache: &mut RoomCache,
+    relay_run: Option<bool>,
+) {
     if creep.spawning() || creep.tired() {
         creep.bsay("😴", false);
         return;
@@ -48,33 +55,23 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     if creep_memory.hauling_task.is_none() {
         if creep_memory.needs_energy.unwrap_or(false) {
             creep.bsay("📋", false);
-            let room_cache = cache
-            .rooms
-            .get_mut(&creep_memory.owning_room)
-            .unwrap();
+            let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
             room_cache.idle_haulers += 1;
 
-
-            room_cache
-                .hauling
-                .wanting_orders
-                .push(
-                    HaulTaskRequest::default()
-                        .creep_name(creep.name())
-                        .haul_type(vec![
-                            HaulingType::Pickup,
-                            HaulingType::Withdraw,
-                            HaulingType::Offer,
-                        ])
-                        .finish(),
-                );
+            room_cache.hauling.wanting_orders.push(
+                HaulTaskRequest::default()
+                    .creep_name(creep.name())
+                    .haul_type(vec![
+                        HaulingType::Pickup,
+                        HaulingType::Withdraw,
+                        HaulingType::Offer,
+                    ])
+                    .finish(),
+            );
         } else {
             creep.bsay("🔋", false);
-            let room_cache = cache
-            .rooms
-            .get_mut(&creep_memory.owning_room)
-            .unwrap();
+            let room_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
 
             room_cache.idle_haulers += 1;
 
@@ -98,16 +95,13 @@ pub fn run_hauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                 ResourceType::Energy
             };
 
-            room_cache
-                .hauling
-                .wanting_orders
-                .push(
-                    HaulTaskRequest::default()
-                        .creep_name(creep.name())
-                        .resource_type(resource)
-                        .haul_type(vec![HaulingType::Transfer])
-                        .finish(),
-                );
+            room_cache.hauling.wanting_orders.push(
+                HaulTaskRequest::default()
+                    .creep_name(creep.name())
+                    .resource_type(resource)
+                    .haul_type(vec![HaulingType::Transfer])
+                    .finish(),
+            );
         }
     }
 }
@@ -117,7 +111,8 @@ pub fn decide_energy_need(creep: &Creep, memory: &mut ScreepsMemory, _cache: &mu
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     if creep_memory.role == Role::Hauler {
         let half_capcaity = creep.store().get_capacity(None) as f32 * 0.5;
-        let has_other_than_energy = utils::contains_other_than(&creep.store(), ResourceType::Energy);
+        let has_other_than_energy =
+            utils::contains_other_than(&creep.store(), ResourceType::Energy);
 
         if creep.store().get_used_capacity(None) as f32 > half_capcaity || has_other_than_energy {
             if creep_memory.needs_energy.is_none() {
@@ -161,100 +156,129 @@ pub fn execute_order(
         return true;
     }
 
-    cache.rooms.get_mut(&creep_memory.owning_room).unwrap().stats.energy.in_haulers += creep.store().get_used_capacity(Some(ResourceType::Energy));
+    cache
+        .rooms
+        .get_mut(&creep_memory.owning_room)
+        .unwrap()
+        .stats
+        .energy
+        .in_haulers += creep.store().get_used_capacity(Some(ResourceType::Energy));
 
     let current_room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
-    let t = current_room_cache.resources.dropped_energy.clone();
-    let mut close_dropped_resources = t.iter().filter(|r| r.pos().is_near_to(creep.pos()));
-    if let Some(resource) = close_dropped_resources.next() {
-        let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
+    // Nearby pickup.
+    if creep.store().get_free_capacity(None) > 0 {
+        let t = current_room_cache.resources.dropped_energy.clone();
+        let mut close_dropped_resources = t.iter().filter(|r| r.pos().is_near_to(creep.pos()));
+        if let Some(resource) = close_dropped_resources.next() {
+            let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
 
-        if free_capacity > 0 {
-            let _ = creep.ITpickup(resource);
-
-            // If our free capacity is less than the resource, e.g. we can't pick it all up
-            // Drop our hauling task, drop our reservation, and drop the path.
-            if free_capacity < resource.amount().try_into().unwrap() {
-                creep_memory.path = None;
-                creep_memory.hauling_task = None;
-
-                release_reservation(
-                    creep,
-                    cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
-                    order,
-                    resource.amount().try_into().unwrap(),
-                );
-
-                cache.creeps_moving_stuff.insert(creep.name(), true);
-
-                return true;
-            } else {
-                current_room_cache
-                    .resources
-                    .dropped_energy
-                    .retain(|x| x.id() != resource.id());
-
-                creep.bsay("PKUP", false);
+            if free_capacity > 0 {
                 let _ = creep.ITpickup(resource);
 
-                if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
-                    creep_memory.hauling_task.as_mut().unwrap().amount =
-                        Some(haul_task - free_capacity as u32);
-                }
-
-                release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, free_capacity);
-
-                cache.creeps_moving_stuff.insert(creep.name(), true);
-
-                return true;
-            }
-        }
-    }
-
-    // TODO: Make this a funciton
-    // also, only run it if we have free capacity
-    let mut tombstones = current_room_cache.structures.tombstones().values().filter(|t| {
-        t.store().get_used_capacity(Some(ResourceType::Energy)) > 0
-            && t.pos().is_near_to(creep.pos())
-    });
-    if let Some(tombstone) = tombstones.next() {
-        let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
-        let amount = std::cmp::min(
-            free_capacity,
-            tombstone
-                .store()
-                .get_used_capacity(Some(ResourceType::Energy)) as i32,
-        );
-
-        if creep.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
-            if free_capacity > amount {
-                let _ = creep.ITwithdraw(tombstone, ResourceType::Energy, Some(amount as u32));
-
-                cache.creeps_moving_stuff.insert(creep.name(), true);
-
-                if amount == free_capacity {
+                // If our free capacity is less than the resource, e.g. we can't pick it all up
+                // Drop our hauling task, drop our reservation, and drop the path.
+                if free_capacity < resource.amount().try_into().unwrap() {
                     creep_memory.path = None;
                     creep_memory.hauling_task = None;
 
-                    release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, amount);
+                    release_reservation(
+                        creep,
+                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
+                        order,
+                        resource.amount().try_into().unwrap(),
+                    );
+
+                    cache.creeps_moving_stuff.insert(creep.name(), true);
+
+                    return true;
+                } else {
+                    current_room_cache
+                        .resources
+                        .dropped_energy
+                        .retain(|x| x.id() != resource.id());
+
+                    creep.bsay("PKUP", false);
+                    let _ = creep.ITpickup(resource);
+
+                    if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
+                        creep_memory.hauling_task.as_mut().unwrap().amount =
+                            Some(haul_task - free_capacity as u32);
+                    }
+
+                    release_reservation(
+                        creep,
+                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
+                        order,
+                        free_capacity,
+                    );
+
+                    cache.creeps_moving_stuff.insert(creep.name(), true);
 
                     return true;
                 }
-            } else {
-                creep.bsay("WTHDW", false);
+            }
+        }
 
-                let _ = creep.ITwithdraw(tombstone, ResourceType::Energy, None);
+        // TODO: Make this a funciton
+        // TODO: Make this do MORE than energy.
+        // also, only run it if we have free capacity
+        let mut tombstones = current_room_cache
+            .structures
+            .tombstones()
+            .values()
+            .filter(|t| {
+                t.pos().is_near_to(creep.pos())
+                && t.store().get_used_capacity(Some(ResourceType::Energy)) > 0
+            });
+        if let Some(tombstone) = tombstones.next() {
+            let free_capacity = creep.store().get_free_capacity(Some(ResourceType::Energy));
+            let amount = std::cmp::min(
+                free_capacity,
+                tombstone
+                    .store()
+                    .get_used_capacity(Some(ResourceType::Energy)) as i32,
+            );
 
-                if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
-                    creep_memory.hauling_task.as_mut().unwrap().amount =
-                        Some(haul_task - amount as u32);
+            if creep.store().get_free_capacity(Some(ResourceType::Energy)) > 0 {
+                if free_capacity > amount {
+                    let _ = creep.ITwithdraw(tombstone, ResourceType::Energy, Some(amount as u32));
+
+                    cache.creeps_moving_stuff.insert(creep.name(), true);
+
+                    if amount == free_capacity {
+                        creep_memory.path = None;
+                        creep_memory.hauling_task = None;
+
+                        release_reservation(
+                            creep,
+                            cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
+                            order,
+                            amount,
+                        );
+
+                        return true;
+                    }
+                } else {
+                    creep.bsay("WTHDW", false);
+
+                    let _ = creep.ITwithdraw(tombstone, ResourceType::Energy, None);
+
+                    if let Some(haul_task) = &creep_memory.hauling_task.as_ref().unwrap().amount {
+                        creep_memory.hauling_task.as_mut().unwrap().amount =
+                            Some(haul_task - amount as u32);
+                    }
+
+                    cache.creeps_moving_stuff.insert(creep.name(), true);
+
+                    release_reservation(
+                        creep,
+                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
+                        order,
+                        amount,
+                    );
+                    return true;
                 }
-
-                cache.creeps_moving_stuff.insert(creep.name(), true);
-
-                release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, amount);
-                return true;
             }
         }
     }
@@ -267,7 +291,12 @@ pub fn execute_order(
                 creep_memory.hauling_task = None;
                 creep_memory.path = None;
 
-                release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, 0);
+                release_reservation(
+                    creep,
+                    cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
+                    order,
+                    0,
+                );
 
                 return true;
             }
@@ -280,7 +309,12 @@ pub fn execute_order(
                 creep_memory.hauling_task = None;
                 creep_memory.path = None;
 
-                release_reservation(creep, cache.rooms.get_mut(&creep_memory.owning_room).unwrap(), order, 0);
+                release_reservation(
+                    creep,
+                    cache.rooms.get_mut(&creep_memory.owning_room).unwrap(),
+                    order,
+                    0,
+                );
 
                 return true;
             }
@@ -302,7 +336,12 @@ pub fn execute_order(
             cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
             position.unwrap(),
             1,
-            MoveOptions::default().path_age(6).avoid_enemies(true).avoid_creeps(true).avoid_hostile_rooms(true).avoid_sitters(true),
+            MoveOptions::default()
+                .path_age(6)
+                .avoid_enemies(true)
+                .avoid_creeps(true)
+                .avoid_hostile_rooms(true)
+                .avoid_sitters(true),
         );
         return false;
     }
@@ -377,7 +416,13 @@ pub fn execute_order(
                     );
 
                     if result.is_ok() {
-                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap().stats.energy.deposited_energy += amount;
+                        cache
+                            .rooms
+                            .get_mut(&creep_memory.owning_room)
+                            .unwrap()
+                            .stats
+                            .energy
+                            .deposited_energy += amount;
                     }
 
                     (amount as i32, result)
@@ -389,7 +434,14 @@ pub fn execute_order(
                     );
 
                     if result.is_ok() {
-                        cache.rooms.get_mut(&creep_memory.owning_room).unwrap().stats.energy.deposited_energy += creep.store().get_used_capacity(Some(order.resource)) ;
+                        cache
+                            .rooms
+                            .get_mut(&creep_memory.owning_room)
+                            .unwrap()
+                            .stats
+                            .energy
+                            .deposited_energy +=
+                            creep.store().get_used_capacity(Some(order.resource));
                     }
 
                     (0, result)
@@ -419,7 +471,7 @@ pub fn execute_order(
 
                     let amount = std::cmp::min(
                         offer_creep.store().get_used_capacity(Some(order.resource)),
-                        creep.store().get_used_capacity(Some(order.resource))
+                        creep.store().get_used_capacity(Some(order.resource)),
                     );
 
                     let res = offer_creep.transfer(creep, order.resource, None);
@@ -533,16 +585,25 @@ pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     room_cache.creep_checked_relay.insert(creep.name(), true);
 
-    let creep_moving_to = room_cache.traffic.intended_move.get(&creep.try_id().unwrap());
+    let creep_moving_to = room_cache
+        .traffic
+        .intended_move
+        .get(&creep.try_id().unwrap());
     if let Some(moving_dir) = creep_moving_to {
         let creeps_at_pos = room_cache.creeps.creeps_at_pos.get(moving_dir);
 
         if let Some(creep_at_pos) = creeps_at_pos {
-            let other_free_capacity = creep_at_pos.store().get_free_capacity(Some(ResourceType::Energy)) as i64;
-            let my_used_capacity = creep.store().get_used_capacity(Some(ResourceType::Energy)) as i64;
+            let other_free_capacity = creep_at_pos
+                .store()
+                .get_free_capacity(Some(ResourceType::Energy))
+                as i64;
+            let my_used_capacity =
+                creep.store().get_used_capacity(Some(ResourceType::Energy)) as i64;
 
             if other_free_capacity >= my_used_capacity {
-                let creeps = memory.creeps.get_many_mut([&creep_at_pos.name(), &creep.name()]);
+                let creeps = memory
+                    .creeps
+                    .get_many_mut([&creep_at_pos.name(), &creep.name()]);
                 if creeps.is_none() {
                     return;
                 }
@@ -573,8 +634,14 @@ pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                 let _ = creep.transfer(&at_pos, ResourceType::Energy, None);
 
                 // Remove the creeps from the intended move
-                room_cache.traffic.intended_move.remove(&creep.try_id().unwrap());
-                room_cache.traffic.intended_move.remove(&creep_at_pos.try_id().unwrap());
+                room_cache
+                    .traffic
+                    .intended_move
+                    .remove(&creep.try_id().unwrap());
+                room_cache
+                    .traffic
+                    .intended_move
+                    .remove(&creep_at_pos.try_id().unwrap());
 
                 // Cancel any movement intents
                 let _ = creep.cancel_order(&JsString::from("move"));

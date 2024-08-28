@@ -20,7 +20,6 @@ pub fn generate_pathing_targets(room: &Room, _memory: &ScreepsMemory, room_cache
     }
 
     // Source and its containers.
-    // TODO: Actually cache source.
     for source in &room_cache.resources.sources {
         if source.container.is_some() {
             positions.push(source.container.as_ref().unwrap().pos());

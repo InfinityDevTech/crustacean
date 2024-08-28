@@ -5,7 +5,7 @@ use stats::StatsCache;
 use terminals::TerminalCache;
 use traffic::traffic_cache::TrafficCache;
 
-use crate::{heap, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory, room::spawning::spawn_manager::SpawnManager};
+use crate::{heap, heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, room::spawning::spawn_manager::SpawnManager};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache};
 
@@ -27,7 +27,12 @@ pub struct RoomCache {
     pub terminals: TerminalCache,
 
     pub creeps_moving_stuff: HashMap<String, bool>,
+    pub creep_cpu_by_role: HashMap<Role, f64>,
+    pub creep_count_by_role: HashMap<Role, u32>,
+    pub creep_cpu: f64,
+    pub creep_count: u32,
     pub non_owned_cpu: f64,
+    pub non_owned_count: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -51,7 +56,13 @@ impl RoomCache {
 
             spawning: spawn_manager,
             creeps_moving_stuff: HashMap::new(),
+
+            creep_cpu_by_role: HashMap::new(),
+            creep_count_by_role: HashMap::new(),
+            creep_cpu: 0.0,
+            creep_count: 0,
             non_owned_cpu: 0.0,
+            non_owned_count: 0
         }
     }
 

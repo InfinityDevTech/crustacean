@@ -61,6 +61,21 @@ pub fn can_expand(memory: &ScreepsMemory) -> bool {
         return false;
     }
 
+    for flag in game::flags().values() {
+        if flag.name().starts_with("capExpansion") {
+            let name = flag.name();
+            let split = name.split("-").collect::<Vec<&str>>();
+
+            if split.len() >= 2 {
+                info!("[EXPANSION] Expansion capped forcibly to {}", { split[1].parse::<u32>().unwrap() });
+            }
+
+            if split.len() >= 2 && memory.goals.room_claim.len() + memory.rooms.len() >= split[1].parse().unwrap() {
+                return false;
+            }
+        }
+    }
+
     if !memory.goals.room_claim.is_empty() {
         return false;
     }

@@ -186,7 +186,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
 
         // We have two spawns, eco creeps can cope.
         if room.controller().unwrap().level() >= 7 {
-            if under_storage_gate(cache.rooms.get_mut(&best_spawned).unwrap(), 0.5) {
+            if under_storage_gate(cache.rooms.get_mut(&best_spawned).unwrap(), 0.1) {
                 priority *= 2.0;
             } else {
                 priority = f64::MAX;

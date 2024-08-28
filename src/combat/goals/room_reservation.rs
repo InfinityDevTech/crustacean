@@ -2,7 +2,7 @@ use log::info;
 use screeps::{game, Part, RoomName, SharedCreepProperties};
 
 use crate::{
-    config, goal_memory::RoomReservationGoal, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}
+    config, goal_memory::RoomReservationGoal, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -168,11 +168,6 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             }
         }
 
-        // We have two spawns, eco creeps can cope.
-        if room.controller().unwrap().level() >= 7 {
-            priority *= 2.0;
-        }
-
         // if we have one claim part, its doing nothing.
         // So we can bump the priority to assist the 1 part creep
         if get_claim_parts(goal) == 1 {
@@ -188,7 +183,16 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
                 }
             }
         }
-        
+
+        // We have two spawns, eco creeps can cope.
+        if room.controller().unwrap().level() >= 7 {
+            if under_storage_gate(cache.rooms.get_mut(&best_spawned).unwrap(), 0.5) {
+                priority *= 2.0;
+            } else {
+                priority = f64::MAX;
+            }
+        }
+
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,
             body,

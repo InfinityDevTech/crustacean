@@ -1,13 +1,12 @@
 use log::info;
 use screeps::{
-    Creep, HasHits, HasPosition, Part, ResourceType, SharedCreepProperties, Source,
-    StructureContainer,
+    Creep, HasHits, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties, Source, StructureContainer
 };
 
 use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
-    room::cache::{resources::CachedSource, CachedRoom, RoomCache},
+    room::cache::{hauling::HaulingType, resources::CachedSource, CachedRoom, RoomCache},
     traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking, room::RoomExtensions},
 };
 
@@ -72,6 +71,7 @@ pub fn harvest_source(
 
         None
     } else {
+        creep.set_working_area(cache, source.source.pos(), 1);
         if source.source.energy() == 0 {
             return None;
         }
@@ -101,6 +101,10 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Cac
 
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
     let source = &cache.resources.sources[creep_memory.task_id.unwrap() as usize];
+
+    if source.link.is_none() && (source.container.is_none() || source.container.as_ref().unwrap().store().get_used_capacity(Some(ResourceType::Energy)) >= source.container.as_ref().unwrap().store().get_capacity(Some(ResourceType::Energy))) {
+        cache.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_used_capacity(Some(ResourceType::Energy))), -(creep.store().get_used_capacity(Some(ResourceType::Energy)) as f32), HaulingType::Offer);
+    }
 
     if let Some(container) = &source.container {
         if (cache.rcl < 4 || source.link.is_none()) && container.hits() < container.hits_max() {

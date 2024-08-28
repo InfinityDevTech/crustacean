@@ -57,18 +57,15 @@ pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
 
     if controller.pos().get_range_to(creep.pos()) > 3 {
         creep.bsay("🚚 CTRL", false);
-        creep.better_move_to(
-            memory,
-            cached_room,
-            controller.pos(),
-            3,
-            MoveOptions::default(),
-        );
+        //pack_in_position(creep, memory, cached_room, controller.pos(), 3);
+        creep.better_move_to(memory, cached_room, controller.pos(), 3, MoveOptions::default());
     } else {
         creep.bsay("⚡", false);
         let _ = creep.upgrade_controller(controller);
 
         cached_room.stats.energy.spending_upgrading += energy_spent_upgrading(creep);
+
+        creep.set_working_area(cached_room, controller.pos(), 3);
     }
 }
 

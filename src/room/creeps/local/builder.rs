@@ -1,6 +1,6 @@
 use log::info;
 use screeps::{
-    ConstructionSite, Creep, HasPosition, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties
+    ConstructionSite, Creep, HasPosition, MaybeHasId, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties
 };
 
 use crate::{
@@ -209,6 +209,12 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                 return;
             }
         }
+    }
+
+    if room_cache.structures.containers().fast_filler.is_none() && room_cache.rcl >= 2 {
+        room_cache.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_capacity(Some(ResourceType::Energy))), 25.0, HaulingType::Transfer);
+
+        return;
     }
 
     if let Some(task) = task {

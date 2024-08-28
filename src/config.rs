@@ -22,10 +22,10 @@ pub fn REMOTES_FOR_RCL(room_cache: &CachedRoom) -> u8 {
     }
 
     match room_cache.rcl {
-        1 => 3,
-        2 => 4,
-        3 => 5,
-        4 => 5,
+        1 => 4,
+        2 => 6,
+        3 => 6,
+        4 => 6,
         5 => 7,
         6 => 7,
         7 => 5,

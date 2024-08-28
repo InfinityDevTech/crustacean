@@ -402,7 +402,32 @@ pub fn execute_order(
             creep.bsay("OFFR", false);
 
             if let Some(target) = target {
-                if let Some(amount) = order.amount {
+                // Creep specific offer that allows us to withdraw from said creep.
+                // Weird AF hack from Chaosmark that allows me to do this. Kudos to him!
+                let packed_id: u128 = pickup_target.into();
+                let id: ObjectId<Creep> = ObjectId::from_packed(packed_id);
+
+                let state = id.try_resolve();
+
+                let mut can_run = false;
+                if state.is_ok() && state.as_ref().unwrap().is_some() {
+                    can_run = true;
+                }
+
+                if can_run {
+                    let offer_creep = state.unwrap().unwrap();
+
+                    let amount = std::cmp::min(
+                        offer_creep.store().get_used_capacity(Some(order.resource)),
+                        creep.store().get_used_capacity(Some(order.resource))
+                    );
+
+                    let res = offer_creep.transfer(creep, order.resource, None);
+
+                    cache.creeps_moving_stuff.insert(creep.name(), true);
+
+                    (amount as i32, res)
+                } else if let Some(amount) = order.amount {
                     let amount = std::cmp::min(
                         creep.store().get_free_capacity(Some(order.resource)),
                         amount as i32,

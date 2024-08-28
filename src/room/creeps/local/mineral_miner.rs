@@ -39,7 +39,8 @@ pub fn run_mineralminer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut R
         }
     }
 
-    if let Some(mineral) = &room_cache.resources.mineral {
+    if let Some(mineral) = &room_cache.resources.mineral.clone() {
+        creep.set_working_area(room_cache, mineral.pos(), 1);
         if creep.pos().is_near_to(mineral.pos()) {
             let _ = creep.harvest(mineral);
 

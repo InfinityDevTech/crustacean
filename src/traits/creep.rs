@@ -45,6 +45,7 @@ pub trait CreepExtensions {
     fn tired(&self) -> bool;
     fn near_age_death(&self) -> bool;
 
+    fn set_working_area(&self, cache: &mut CachedRoom, pos: Position, range: u8);
     fn move_request(&self, target_delta: Direction, room_cache: &mut CachedRoom);
     fn get_possible_moves_traffic(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY>;
     fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<Direction>;
@@ -139,6 +140,17 @@ impl CreepExtensions for screeps::Creep {
 
             return true;
         }
+    }
+
+    fn set_working_area(
+        &self,
+        cache: &mut CachedRoom,
+        pos: Position,
+        range: u8
+    ) {
+        let entry = cache.traffic.working_areas.entry(self.try_id().unwrap()).or_insert((pos, range));
+
+        *entry = (pos, range)
     }
 
     fn better_move_to(
@@ -489,6 +501,7 @@ impl CreepExtensions for screeps::Creep {
         }
 
         let mut possible_moves = vec![self.pos().xy()];
+        let mut out_of_area = vec![];
         room_cache.traffic.cached_ops.insert(self.try_id().unwrap(), possible_moves.clone());
 
         if self.tired() {
@@ -505,6 +518,8 @@ impl CreepExtensions for screeps::Creep {
         let x = self.pos().x().u8();
         let y = self.pos().y().u8();
 
+        let work = room_cache.traffic.working_areas.get(&self.try_id().unwrap());
+
         for dir in Direction::iter() {
             let pos = dir_to_coords(*dir, x, y);
 
@@ -518,12 +533,22 @@ impl CreepExtensions for screeps::Creep {
                 continue;
             }
 
+            if let Some((working_pos, working_range)) = work {
+                if working_pos.xy().get_range_to(xy) > *working_range as u32 {
+                    out_of_area.push(xy);
+
+                    continue;
+                }
+            }
+
             possible_moves.push(xy);
         }
 
         let mut rand = StdRng::seed_from_u64(game::time() as u64);
         possible_moves.shuffle(&mut rand);
+        out_of_area.shuffle(&mut rand);
 
+        possible_moves.append(&mut out_of_area);
         possible_moves
     }
 }

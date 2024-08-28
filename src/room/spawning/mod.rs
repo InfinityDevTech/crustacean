@@ -672,7 +672,7 @@ pub fn upgrader(
     let max_pos = cache.structures.controller.as_ref().unwrap().pos().get_accessible_positions_around(3);
 
     // TODO: Bandaid fix.
-    if upgrader_count as usize >= max_pos.len() || upgrader_count >= 9 {
+    if upgrader_count as usize >= max_pos.len() {
         return None;
     }
 
@@ -1081,7 +1081,7 @@ pub fn harvester(
                 priority *= 2.1
             }
 
-            if parts_needed_on_source <= 3 && hauler_count >= 3 {
+            if (parts_needed_on_source >= 3 && hauler_count >= 3) || cache.creeps.creeps_of_role(Role::RemoteHarvester) >= 1 {
                 priority = f64::MAX;
             }
 

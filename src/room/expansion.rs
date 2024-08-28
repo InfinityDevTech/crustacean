@@ -1,26 +1,22 @@
-use std::{collections::HashMap, default, intrinsics::sqrtf32};
+use std::collections::HashMap;
 
-use js_sys::Math::sqrt;
 use log::info;
 use screeps::{
     game::{
         self,
-        map::{FindRouteOptions, RoomStatus, RoomStatusResult},
-    }, pathfinder::SearchOptions, MapTextStyle, MapVisual, Position, ResourceType, RoomCoordinate, RoomName, RoomVisual, RoomXY
+        map::{FindRouteOptions, RoomStatus},
+    }, pathfinder::SearchOptions, Position, ResourceType, RoomCoordinate, RoomName, RoomXY
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config, constants::ROOM_SIZE, goal_memory::RoomClaimGoal, memory::ScreepsMemory, movement::move_target::{MoveOptions, MoveTarget}, traits::{
+    config, constants::ROOM_SIZE, goal_memory::RoomClaimGoal, memory::ScreepsMemory, movement::move_target::MoveTarget, traits::{
         position::RoomXYExtensions,
         room::{RoomNameExtensions, RoomType},
     }, utils
 };
 
-use super::{
-    cache::RoomCache,
-    planning::room::{self, remotes::rank_remote_room},
-};
+use super::cache::RoomCache;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum ExpansionStatus {
@@ -144,7 +140,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             expansion_memory.scored_rooms = scored_rooms;
         }
         ExpansionStatus::FinalTouches => {
-            let mut scores = expansion_memory.scored_rooms.clone();
+            let scores = expansion_memory.scored_rooms.clone();
             let mut fittable = expansion_memory.rooms_can_fit.clone();
             let mut status = ExpansionStatus::FinalTouches;
 
@@ -181,8 +177,8 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             expansion_memory.current_status = status;
         }
         ExpansionStatus::Expanding => {
-            let mut scores = expansion_memory.scored_rooms.clone();
-            let mut fittable = expansion_memory.rooms_can_fit.clone();
+            let scores = expansion_memory.scored_rooms.clone();
+            let fittable = expansion_memory.rooms_can_fit.clone();
 
             let mut sorted_scores = scores.iter().collect::<Vec<_>>();
             sorted_scores.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
@@ -303,13 +299,13 @@ pub fn get_needed_minerals(memory: &ScreepsMemory, cache: &RoomCache) -> Vec<Res
         }
     }
 
-    let mut has_basics = current_minerals.contains(&ResourceType::Hydrogen)
+    let has_basics = current_minerals.contains(&ResourceType::Hydrogen)
         && current_minerals.contains(&ResourceType::Oxygen);
-    let mut has_t1_boosts = current_minerals.contains(&ResourceType::Zynthium)
+    let has_t1_boosts = current_minerals.contains(&ResourceType::Zynthium)
         && current_minerals.contains(&ResourceType::Keanium)
         && current_minerals.contains(&ResourceType::Utrium)
         && current_minerals.contains(&ResourceType::Lemergium);
-    let mut has_t3 = has_basics && has_t1_boosts;
+    let has_t3 = has_basics && has_t1_boosts;
 
     let mut needed_minerals = Vec::new();
 

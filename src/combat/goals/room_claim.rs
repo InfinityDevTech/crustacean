@@ -1,9 +1,7 @@
-use std::{str::FromStr, u32, vec};
+use std::{u32, vec};
 
-use js_sys::JsString;
-use log::info;
 use screeps::{
-    find, game, Flag, HasPosition, MapTextStyle, MapVisual, OwnedStructureProperties, Part, Position, Room, RoomCoordinate, RoomName, SharedCreepProperties, StructureType
+    find, game, HasPosition, MapTextStyle, MapVisual, OwnedStructureProperties, Part, Position, Room, RoomCoordinate, RoomName, SharedCreepProperties, StructureType
 };
 
 use crate::{

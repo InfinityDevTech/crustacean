@@ -1,7 +1,6 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
-use log::info;
 use screeps::{find, game, HasHits, HasId, HasPosition, Part, Position, ResourceType, Room, RoomName, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 
@@ -9,7 +8,7 @@ use crate::{
     formation::duo::duo_utils, memory::{iter_roles, CreepMemory, DuoMemory, Role, ScreepsMemory}, traits::position::PositionExtensions, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}
 };
 
-use super::{cache::{self, CachedRoom, RoomCache}, creeps::remote};
+use super::cache::{CachedRoom, RoomCache};
 
 pub mod creep_sizing;
 pub mod spawn_manager;
@@ -1170,7 +1169,7 @@ pub fn remote_harvester(
         if let Some(remote_cache) = cache.rooms.get(remote_name) {
             for source in &remote_cache.resources.sources {
                 let max_parts_for_source = source.max_work_parts;
-                let mut parts_needed_on_source = source.parts_needed(remote_cache);
+                let parts_needed_on_source = source.parts_needed(remote_cache);
                 //let can_replace = source.can_replace_creep(measure_pos, &game::rooms().get(*remote_name).unwrap());
 
                 if parts_needed_on_source == 0 {
@@ -1189,8 +1188,8 @@ pub fn remote_harvester(
                     .unwrap();
 
                 // If we have enough parts on the source, just skip it.
-                if (parts_needed_on_source == 0
-                    || current_creeps_on_source >= max_mining_positions as usize)
+                if parts_needed_on_source == 0
+                    || current_creeps_on_source >= max_mining_positions as usize
                 {
                     continue;
                 }

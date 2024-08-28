@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 use screeps::{game, Part, ResourceType, Room, RoomName, SharedCreepProperties};
 

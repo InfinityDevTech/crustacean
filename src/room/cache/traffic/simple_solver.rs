@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]use std::collections::HashMap;
 
 use screeps::{
-    game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY, SharedCreepProperties
+    game, Creep, HasPosition, MaybeHasId, ObjectId
 };
 
 use super::{assign_creep_to_coordinate, CachedRoom};
-use crate::{heap, memory::ScreepsMemory, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
+use crate::traits::creep::CreepExtensions;
 
 pub fn solve_traffic_simple(creeps_with_movement_intent: &Vec<ObjectId<Creep>>, room_cache: &mut CachedRoom) {
     let mut visited_creeps = HashMap::new();

@@ -7,7 +7,7 @@ use screeps::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    heap, heap_cache::hauling::HeapHaulingReservation, memory::{CreepHaulTask, Role, ScreepsMemory}, room::creeps::local::hauler::execute_order, traits::creep::CreepExtensions, utils::{self, name_to_role, scale_haul_priority}
+    heap, heap_cache::hauling::HeapHaulingReservation, memory::{CreepHaulTask, Role, ScreepsMemory}, room::creeps::local::hauler::execute_order, utils::{self, name_to_role, scale_haul_priority}
 };
 
 use super::{CachedRoom, RoomCache};

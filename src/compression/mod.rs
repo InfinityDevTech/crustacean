@@ -1,10 +1,8 @@
-use std::{cmp, collections::HashMap, io::{Read, Write}, sync::Mutex};
+use std::io::{Read, Write};
 use flate2::{bufread::GzDecoder, write::GzEncoder, Compression};
-use lazy_static::lazy_static;
 use log::info;
-use screeps::{Position, RoomCoordinate, RoomName, RoomXY};
+use screeps::{Position, RoomCoordinate, RoomName};
 
-use crate::traits::room::RoomNameExtensions;
 
 pub mod compressed_matrix;
 
@@ -31,7 +29,7 @@ pub fn compress_pos_list(list: Vec<Position>) -> String {
 }
 
 pub fn encode_pos_list(list: Vec<Position>) -> String {
-    let mut encoded_pos = compress_pos_list(list);
+    let encoded_pos = compress_pos_list(list);
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(encoded_pos.as_bytes());
     if let Ok(compressed) = encoder.finish() {

@@ -1,5 +1,5 @@
 use log::info;
-use screeps::{game, MapTextStyle, MapVisual, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties, TextStyle};
+use screeps::{game, MapTextStyle, MapVisual, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties};
 
 use crate::{
     goal_memory::RemoteInvaderCleanup,

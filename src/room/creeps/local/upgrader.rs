@@ -1,4 +1,4 @@
-use screeps::{Creep, HasPosition, MaybeHasId, OwnedStructureProperties, Part, ResourceType, SharedCreepProperties};
+use screeps::{Creep, HasPosition, MaybeHasId, Part, ResourceType, SharedCreepProperties};
 
 use crate::{
     memory::ScreepsMemory,

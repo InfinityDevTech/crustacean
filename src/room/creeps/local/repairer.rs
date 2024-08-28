@@ -1,6 +1,6 @@
 use screeps::{game, Creep, HasId, HasPosition, Part, Repairable, ResourceType, SharedCreepProperties, StructureObject, StructureProperties, StructureType};
 
-use crate::{memory::{CreepMemory, ScreepsMemory}, room::{cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, spawning::spawn_manager}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::{get_rampart_repair_rcl, under_storage_gate}};
+use crate::{memory::{CreepMemory, ScreepsMemory}, room::cache::{hauling::{HaulTaskRequest, HaulingType}, CachedRoom, RoomCache}, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::{get_rampart_repair_rcl, under_storage_gate}};
 use super::hauler;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

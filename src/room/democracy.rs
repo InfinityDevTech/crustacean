@@ -14,13 +14,13 @@ use crate::{
         planning::room::{plan_room, remotes, roads::plan_main_room_roads},
         tower,
         visuals::run_full_visuals,
-    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}, utils
+    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
 };
 
 use super::{
-    cache::CachedRoom, creeps::local::builder, links, planning::{
+    links, planning::{
         self,
-        room::{self, construction::{
+        room::{construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
             get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
             plan_remote_containers,

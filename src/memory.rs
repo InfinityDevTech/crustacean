@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, Mineral, ObjectId, Position, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
+use screeps::{game, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;

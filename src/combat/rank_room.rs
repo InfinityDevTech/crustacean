@@ -1,4 +1,4 @@
-use screeps::{find, game, HasId, HasPosition, OwnedStructureProperties, Position, Room, RoomXY, StructureObject};
+use screeps::{find, game, HasPosition, OwnedStructureProperties, Position, Room, RoomXY, StructureObject};
 
 use crate::{
     memory::{EnemyPlayer, ScoutedRoom, ScoutedSource, ScreepsMemory}, room::cache::CachedRoom, traits::position::PositionExtensions, utils

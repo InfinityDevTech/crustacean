@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{game, Creep, HasPosition, MaybeHasId, ObjectId, Position, RoomCoordinate, RoomXY, SharedCreepProperties};
 
 use crate::{heap, memory::ScreepsMemory, traits::intents_tracking::CreepExtensionsTracking};

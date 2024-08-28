@@ -1,4 +1,4 @@
-use std::{collections::HashMap, i32, u32};
+use std::collections::HashMap;
 
 use screeps::{game, Creep, HasPosition, MaybeHasId, ObjectId};
 

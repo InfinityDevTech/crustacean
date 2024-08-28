@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{
     game, pathfinder::{self, MultiRoomCostResult, SearchOptions}, CircleStyle, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, RoomXY, StructureProperties, StructureType
 };
 
 use crate::{
-    compression::{decode_pos_list, encode_pos_list}, constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK}, memory::ScreepsMemory, room::cache::{CachedRoom, RoomCache}, traits::position::RoomXYExtensions
+    compression::{decode_pos_list, encode_pos_list}, constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK}, memory::ScreepsMemory, room::cache::RoomCache, traits::position::RoomXYExtensions
 };
 
 use super::construction::get_all_structure_plans;
@@ -53,8 +52,8 @@ pub fn plan_main_room_roads(room: &Room, cache: &mut RoomCache, memory: &mut Scr
     let mut furthest_to_closest = closest_to_furthest.clone();
     furthest_to_closest.reverse();
 
-    let mut p_c_to_f = path_roads_from_pos(cache, memory, measure_pos, closest_to_furthest);
-    let mut p_f_to_c = path_roads_from_pos(cache, memory, measure_pos, furthest_to_closest);
+    let p_c_to_f = path_roads_from_pos(cache, memory, measure_pos, closest_to_furthest);
+    let p_f_to_c = path_roads_from_pos(cache, memory, measure_pos, furthest_to_closest);
 
     let total_c_to_f = count_total_roads(p_c_to_f.clone());
     let total_f_to_c = count_total_roads(p_f_to_c.clone());
@@ -116,7 +115,7 @@ pub fn get_all_cached_positions(room_name: &RoomName, memory: &ScreepsMemory) ->
 
     if let Some(room_memory) = memory.rooms.get(room_name) {
         for (room_name, encoded_pos) in &room_memory.planned_paths {
-            let mut positions = decode_pos_list(encoded_pos.to_string());
+            let positions = decode_pos_list(encoded_pos.to_string());
 
             rooms.insert(room_name.clone(), positions);
         }
@@ -134,7 +133,7 @@ pub fn path_roads_from_pos(
     let mut new_roads = HashMap::new();
     let mut paths = HashMap::new();
 
-    let mut all = get_all_cached_positions(&source.room_name(), memory);
+    let all = get_all_cached_positions(&source.room_name(), memory);
 
     for destination in destinations {
         let result = pathfinder::search(

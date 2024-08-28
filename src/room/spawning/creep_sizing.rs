@@ -4,7 +4,7 @@ use screeps::{game, Part, ResourceType, Room};
 use crate::{
     constants::{part_costs, PartsCost},
     memory::Role,
-    room::{cache::CachedRoom, creeps::local::hauler},
+    room::cache::CachedRoom,
     utils::{self, get_body_cost, under_storage_gate},
 };
 
@@ -75,8 +75,8 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, forc
 
 pub fn mineral_miner_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut body = Vec::new();
-    let mut stamp = vec![Part::Work, Part::Work, Part::Work, Part::Work, Part::Move];
-    let mut cost = get_body_cost(&stamp);
+    let stamp = vec![Part::Work, Part::Work, Part::Work, Part::Work, Part::Move];
+    let cost = get_body_cost(&stamp);
 
     let max_cost = room.energy_capacity_available();
     let mut current_cost = cost;

@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{
     ConstructionSite, Creep, HasPosition, MaybeHasId, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties
 };
@@ -7,7 +6,6 @@ use crate::{
     memory::ScreepsMemory,
     movement::move_target::MoveOptions,
     room::cache::{
-        self,
         hauling::{HaulTaskRequest, HaulingType},
         RoomCache,
     },
@@ -47,7 +45,7 @@ pub fn get_all_remote_csites(
     if let Some(memory) = memory.rooms.get(main_room) {
         for remote in &memory.remotes {
             if let Some(cache) = room_cache.rooms.get(remote) {
-                let mut remote_sites = cache.structures.construction_sites.clone();
+                let remote_sites = cache.structures.construction_sites.clone();
 
                 sites.extend(remote_sites);
             }
@@ -61,7 +59,7 @@ pub fn get_all_remote_csites(
 pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creepmem = memory.creeps.get_mut(&creep.name()).unwrap();
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
-    let mut sites = room_cache.structures.construction_sites.clone();
+    let sites = room_cache.structures.construction_sites.clone();
     //sites.sort_by_key(|s| s.pos().get_range_to(creep.pos()));
 
     let owning_room = creepmem.owning_room;

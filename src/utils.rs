@@ -3,14 +3,13 @@
 
 use std::{collections::HashMap, f32::consts::E};
 
-use log::info;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
     constants, game, pathfinder::SearchOptions, BodyPart, LocalCostMatrix, OwnedStructureProperties, Part, Position, RectStyle, ResourceType, RoomCoordinate, RoomName, RoomXY, Source, Store, Terrain
 };
 
 use crate::{
-    config, constants::{SWAMP_MASK, WALL_MASK}, heap, memory::Role, movement::move_target::MoveTarget, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType
+    config, heap, memory::Role, movement::move_target::MoveTarget, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -404,7 +403,7 @@ pub fn new_xy(x: u8, y: u8) -> RoomXY {
 pub fn distance_transform(room_name: &RoomName, visual: bool) -> LocalCostMatrix {
     let mut cm = LocalCostMatrix::new();
 
-    let mut terrain = game::map::get_room_terrain(*room_name).unwrap();
+    let terrain = game::map::get_room_terrain(*room_name).unwrap();
 
     let x: u8;
     let y: u8;

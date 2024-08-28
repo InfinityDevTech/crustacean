@@ -1,5 +1,4 @@
 use js_sys::JsString;
-use log::info;
 use screeps::{
     game, Creep, ErrorCode, HasId, HasPosition, MaybeHasId, ObjectId, Resource, ResourceType,
     SharedCreepProperties, StructureStorage,
@@ -474,7 +473,7 @@ pub fn execute_order(
                         creep.store().get_used_capacity(Some(order.resource)),
                     );
 
-                    let res = offer_creep.transfer(creep, order.resource, None);
+                    let res = offer_creep.ITtransfer(creep, order.resource, None);
 
                     cache.creeps_moving_stuff.insert(creep.name(), true);
 
@@ -631,7 +630,7 @@ pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
                 let at_pos = creep_at_pos.clone();
                 // Transfer the energy
-                let _ = creep.transfer(&at_pos, ResourceType::Energy, None);
+                let _ = creep.ITtransfer(&at_pos, ResourceType::Energy, None);
 
                 // Remove the creeps from the intended move
                 room_cache

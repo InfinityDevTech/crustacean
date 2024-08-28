@@ -9,7 +9,7 @@ use crate::{
     movement::{
         caching::generate_storage_path,
         move_target::{MoveOptions, MoveTarget},
-        movement_utils::{dir_to_coords, num_to_dir, visualise_path},
+        movement_utils::{dir_to_coords, num_to_dir},
     },
     room::cache::CachedRoom,
     utils::new_xy,
@@ -18,7 +18,7 @@ use crate::{
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    creep, find, game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomCoordinate, RoomName, RoomXY, SharedCreepProperties, StructureProperties, Terrain
+    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
 };
 
 use super::intents_tracking::CreepExtensionsTracking;

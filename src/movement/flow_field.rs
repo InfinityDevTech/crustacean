@@ -89,7 +89,7 @@ impl FlowField {
         for x in 0..self.width {
             for y in 0..self.height {
                 let index = (y as u16 * self.width as u16 + x as u16) as usize;
-                let mut dir = self.directions.as_ref().unwrap()[index];
+                let dir = self.directions.as_ref().unwrap()[index];
 
                 let (dx, dy) = dir_to_coords(num_to_dir(dir), x, y);
                 let pointing_to_exit = is_next_to_exit(dx, dy);

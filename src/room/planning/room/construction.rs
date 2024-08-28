@@ -7,7 +7,7 @@ use crate::{
     heap,
     memory::ScreepsMemory,
     room::cache::{CachedRoom, RoomCache},
-    traits::{creep::CreepExtensions, position::PositionExtensions},
+    traits::position::PositionExtensions,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

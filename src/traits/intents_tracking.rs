@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+#![allow(unused)]
 use js_sys::{Array, JsString};
 use screeps::{Attackable, Color, ConstructionSite, Creep, Direction, Dismantleable, ErrorCode, Harvestable, Healable, Repairable, Resource, ResourceType, Room, RoomName, RoomPosition, SharedCreepProperties, SpawnOptions, Structure, StructureController, StructureFactory, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureTower, StructureType, Transferable, Withdrawable};
 

@@ -1,5 +1,3 @@
-use rand::prelude::SliceRandom;
-use rand::{rngs::StdRng, SeedableRng};
 use screeps::game::map::RoomStatus;
 use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
@@ -92,7 +90,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         out_of_date_scouted.sort_by_key(|x| x.1);
         last_scouted.sort_by_key(|x| x.1);
 
-        let mut exit = if game::flags().get("force_scout".to_string()).is_some() {
+        let exit = if game::flags().get("force_scout".to_string()).is_some() {
             &game::flags().get("force_scout".to_string()).unwrap().pos().room_name()
         } else if let Some(exit) = not_scouted.first() {
             exit

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{find, game, Creep, HasPosition, Part, Room, RoomName, RoomXY, SharedCreepProperties};
 
 use crate::{

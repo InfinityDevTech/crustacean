@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::warn;
 use screeps::{
     find, game,
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
@@ -10,7 +10,6 @@ use crate::{
     constants::{SWAMP_MASK, WALL_MASK},
     heap,
     memory::ScreepsMemory,
-    room::cache::RoomCache,
     utils::get_my_username,
 };
 

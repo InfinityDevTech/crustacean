@@ -6,7 +6,6 @@ use rand::prelude::SliceRandom;
 use screeps::{game, look, Creep, Direction, ErrorCode, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::movement::move_target::{MoveOptions, MoveTarget};
-use crate::movement::movement_utils::dir_to_other_coord;
 use crate::room::cache::RoomCache;
 use crate::traits::creep::CreepExtensions;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
@@ -492,7 +491,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
             }
         }
 
-        let mut room_memory = memory.rooms.get_mut(&room.name()).unwrap();
+        let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
         room_memory.avg_spawn_expense = utils::moving_average(room_memory.avg_spawn_expense, spawned_creep_cost as f64, 1.0 / 1500.0);
 
         let post_check = game::cpu::get_used();

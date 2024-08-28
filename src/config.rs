@@ -1,4 +1,4 @@
-use screeps::{ResourceType, ROOM_SIZE};
+use screeps::ROOM_SIZE;
 
 use crate::{constants::CLAIM_LIFETIME, room::cache::CachedRoom, utils};
 

@@ -3,7 +3,7 @@ use screeps::{Creep, HasPosition, SharedCreepProperties};
 use crate::{
     memory::ScreepsMemory,
     room::cache::{CachedRoom, RoomCache},
-    traits::creep::CreepExtensions,
+    traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking},
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -42,7 +42,7 @@ pub fn run_mineralminer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut R
     if let Some(mineral) = &room_cache.resources.mineral.clone() {
         creep.set_working_area(room_cache, mineral.pos(), 1);
         if creep.pos().is_near_to(mineral.pos()) {
-            let _ = creep.harvest(mineral);
+            let _ = creep.ITharvest(mineral);
 
             creep.bsay("⛏️", false);
 
@@ -68,7 +68,7 @@ fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mut Ca
 
 
             if creep.pos().is_near_to(mineral_container.pos()) {
-                let _ = creep.transfer(mineral_container, mineral.mineral_type(), None);
+                let _ = creep.ITtransfer(mineral_container, mineral.mineral_type(), None);
             } else {
                 creep.better_move_to(
                     memory,

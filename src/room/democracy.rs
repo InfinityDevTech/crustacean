@@ -11,7 +11,7 @@ use crate::{
     combat::{hate_handler, rank_room}, compression::decode_pos_list, config::{self, REMOTE_SCAN_FOR_RCL}, heap, memory::{Role, ScreepsMemory}, room::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
-        planning::room::{plan_room, remotes, roads::plan_main_room_roads},
+        planning::room::{plan_room, remotes, roads::plan_main_room_roads, skippy_base::run_planner},
         tower,
         visuals::run_full_visuals,
     }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
@@ -121,6 +121,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
                 path_heap.paths.clear();
             }
+        }
+
+        if game::cpu::bucket() >= 5000 {
+            run_planner(&room, memory.rooms.get_mut(&room.name()).unwrap());
         }
 
         if !memory.rooms.contains_key(&room.name()) || !cache.rooms.contains_key(&room.name()) {

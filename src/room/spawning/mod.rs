@@ -1,6 +1,7 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
+use log::info;
 use screeps::{find, game, HasHits, HasId, HasPosition, Part, Position, ResourceType, Room, RoomName, SharedCreepProperties};
 use spawn_manager::{SpawnManager, SpawnRequest};
 
@@ -678,8 +679,23 @@ pub fn upgrader(
     if harvester_count == 0 {
         return None;
     }
-    let body = crate::room::spawning::creep_sizing::upgrader_body(room, cache);
+
+    let mut target_work_parts = match cache.rcl {
+        1 => 5,
+        2 => 15,
+        3 => 22,
+        4 => 30,
+        5 => 32,
+        6 => 48,
+        7 => 60,
+        8 => 5,
+        _ => 1,
+    };
+
+    let body = crate::room::spawning::creep_sizing::upgrader_body(room, cache, target_work_parts);
     let cost = get_body_cost(&body);
+
+    info!("Upgrader body cost {}", cost);
 
     if body.is_empty() {
         return None;
@@ -697,11 +713,13 @@ pub fn upgrader(
     }
 
     let mut priority = 4.0;
-    priority += (body.len() as f64 / 3.0).round();
+    priority += ((1 - body.iter().filter(|p| *p == &Part::Work).count() / target_work_parts) as f64) * 6.0;
 
     if !under_storage_gate(cache, 1.5) {
         priority *= 1.5;
     }
+
+    info!("Prio... {}", priority);
 
     Some(spawn_manager.create_room_spawn_request(
         Role::Upgrader,
@@ -770,9 +788,9 @@ pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn
         400000.0
     // If we have more than half of the wanted count.
     } else {
-        let cnt = (1.0 - harvester_count as f64 / wanted_count as f64).round();
+        let cnt = (1.0 - hauler_count as f64 / wanted_count as f64).round();
 
-        cnt * 10.0
+        cnt * 8.0
     };
 
     if (hauler_count as u32) < wanted_count as u32 / 2 {
@@ -785,6 +803,10 @@ pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn
     if cache.idle_haulers >= 3 {
         return None;
     }
+
+    //if !under_storage_gate(cache, 2.5) {
+    //    prio /= 2.0;
+    //}
 
     Some(spawn_manager.create_room_spawn_request(
         Role::Hauler,

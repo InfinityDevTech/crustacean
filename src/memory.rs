@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use log::error;
-use screeps::{game, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Structure, StructureContainer, StructureLink};
+use screeps::{game, ObjectId, RawObjectId, ResourceType, RoomName, RoomXY, Source, Structure, StructureContainer, StructureLink};
 use serde::{Deserialize, Serialize};
 
 use js_sys::JsString;
@@ -192,6 +192,20 @@ pub struct RoomMemory{
     pub spawn_center: RoomXY,
     pub storage_center: RoomXY,
     pub planned_paths: HashMap<RoomName, String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub skippy_planner: Option<pub struct SkippyMem {
+        pub step: u8,
+        pub map: Vec<char>,
+        pub source_fills: HashMap<ObjectId<Source>, HashMap<i32, i32>>,
+        pub controller_fill: HashMap<i32, i32>,
+        pub orth_wall_fill: HashMap<i32, i32>,
+
+        pub stamp_index: Option<i32>,
+        pub source_labs: [i32; 2],
+        pub core: i32,
+        pub planned: bool,
+    }>,
 
     pub avg_spawn_expense: f64,
     pub income: u32,

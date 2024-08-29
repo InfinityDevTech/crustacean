@@ -318,7 +318,7 @@ pub fn repairer_body(room: &Room, parts_needed: u8, cache: &CachedRoom) -> Vec<P
 
 /// Returns the parts needed for a upgrader creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+pub fn upgrader_body(room: &Room, cache: &CachedRoom, mut target_work_parts: usize) -> Vec<Part> {
     let mut parts = Vec::new();
     let level = cache
     .structures
@@ -328,18 +328,6 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     .level();
 
     let current_upgraders = cache.creeps.creeps_of_role(Role::Upgrader);
-
-    let mut target_work_parts = match level {
-        1 => 5,
-        2 => 15,
-        3 => 22,
-        4 => 30,
-        5 => 32,
-        6 => 48,
-        7 => 60,
-        8 => 5,
-        _ => 1,
-    };
 
     if !under_storage_gate(cache, 3.0) && current_upgraders >= 1 {
         target_work_parts *= 3;

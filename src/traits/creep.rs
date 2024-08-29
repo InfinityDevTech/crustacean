@@ -534,7 +534,7 @@ impl CreepExtensions for screeps::Creep {
             }
 
             if let Some((working_pos, working_range)) = work {
-                if working_pos.xy().get_range_to(xy) > *working_range as u32 {
+                if working_pos.xy().get_range_to(xy) > *working_range as u8 {
                     out_of_area.push(xy);
 
                     continue;

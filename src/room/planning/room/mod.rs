@@ -9,6 +9,7 @@ pub mod construction;
 pub mod structure_visuals;
 pub mod remotes;
 pub mod roads;
+pub mod skippy_base;
 pub mod economy;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -64,6 +65,8 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
         spawn_center: spawn_pos,
         storage_center: store_pos,
         planned_paths: HashMap::new(),
+
+        skippy_planner: None,
 
         avg_spawn_expense: 0.0,
         income: 0,

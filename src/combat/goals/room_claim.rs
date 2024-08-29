@@ -279,10 +279,14 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                     break;
                 }
 
-                if total_dist < lowest {
-                    lowest = total_dist;
+                if (total_dist as u32) < lowest {
+                    lowest = total_dist as u32;
                     lowest_pos = Some(xy);
                 }
+            }
+
+            if lowest_pos.is_none() {
+                return;
             }
 
             //let flag = lowest_pos.unwrap().create_flag(

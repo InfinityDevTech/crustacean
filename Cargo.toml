@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 js-sys = "0.3"
 log = "0.4"
 fern = "0.6"
-screeps-game-api = { version = "0.21.3", features = ["mmo"] }
+screeps-game-api = { version = "0.22.0", features = ["mmo"] }
 wasm-bindgen = {version = "0.2", features=[]}
 web-sys = { version = "0.3", features = ["console"] }
 structstruck = "0.4.1"
@@ -23,7 +23,7 @@ getrandom = { version = "0.2.15", features = ["js"] }
 enum-map = "2.7.3"
 screeps-timing-annotate = { git = "https://github.com/InfinityDevTech/screeps-timing-annotate", optional = true }
 lazy_static = "1.5.0"
-screeps-game-utils = "0.21.1"
+screeps-game-utils = "0.22.0"
 base65536 = "1.0.1"
 flate2 = "1.0.31"
 

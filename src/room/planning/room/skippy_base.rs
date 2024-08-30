@@ -16,11 +16,11 @@
 use std::collections::HashMap;
 
 use log::info;
-use screeps::{find, game, CircleStyle, HasId, HasPosition, Room, StructureType, TextStyle};
+use screeps::{find, game, CircleStyle, CostMatrixSet, HasId, HasPosition, LocalCostMatrix, Room, StructureType, Terrain, TextStyle};
 
 use crate::{
     memory::{RoomMemory, ScreepsMemory, SkippyMem},
-    room::visuals,
+    room::visuals, utils::{self, new_xy},
 };
 
 use super::structure_visuals::{self, RoomVisualExt};
@@ -55,8 +55,10 @@ pub fn large_ext_stamp() -> Vec<Vec<char>> {
 pub fn ff_stamp() -> Vec<Vec<char>> {
     vec![
         vec!['r', 'r', 'r', 'r', 'r', 'r', 'r'],
-        vec!['r', 'e', 'p', 'e', 'p', 'e', 'r'],
-        vec!['r', 'c', ' ', 'l', ' ', 'c', 'r'],
+        vec!['r', 'e', 'e', 'e', 'e', 'e', 'r'],
+        vec!['r', 'p', ' ', 'e', ' ', 'p', 'r'],
+        vec!['r', 'c', 'e', 'l', 'e', 'c', 'r'],
+        vec!['r', 'e', ' ', 'e', ' ', 'e', 'r'],
         vec!['r', 'e', 'e', 'p', 'e', 'e', 'r'],
         vec!['r', 'r', 'r', 'r', 'r', 'r', 'r'],
     ]
@@ -112,7 +114,7 @@ pub fn setup_plan_room(room: &Room, memory: &mut SkippyMem) -> bool {
             if terrain[j] & 1 != 1 {
                 plan_arr[j] = 'E';
                 for offset in &offsets {
-                    if j as i32 + offset > plan_arr.len() as i32 {
+                    if (j as i32 + offset) as usize > plan_arr.len() {
                         continue;
                     }
 
@@ -159,7 +161,7 @@ pub fn run_planner(room: &Room, memory: &mut RoomMemory) {
                     let non_red = (255 - (255).min(fill[&i] * 5)).to_string();
                     room.visual().text(
                         (i % 50) as f32,
-                        (i as f32 / 50.0).round(),
+                        (i as f32 / 50.0).floor(),
                         fill[&i].to_string(),
                         Some(
                             TextStyle::default()
@@ -231,12 +233,20 @@ pub fn source_fills(room: &Room, memory: &mut SkippyMem) -> bool {
         {
             let mut fill: HashMap<i32, i32> = HashMap::new();
 
-            let terrain = room.get_terrain().get_raw_buffer().to_vec();
-            for (index, t) in terrain.iter().enumerate().take(2500) {
-                if *t & 1 == 1 {
-                    fill.insert(index as i32, 255);
-                } else {
-                    fill.insert(index as i32, 0);
+            let mut terrain = room.get_terrain();
+            for i in 0..2500_i32 {
+                let x = i % 50;
+                let y = (i as f32 / 50.0).floor() as i32;
+        
+                let xy = utils::new_xy(x as u8, y as u8);
+        
+                match terrain.get_xy(xy) {
+                    Terrain::Wall => {
+                        fill.insert(i, 255);
+                    },
+                    _ => {
+                        fill.insert(i, 0);
+                    }
                 }
             }
 
@@ -249,10 +259,10 @@ pub fn source_fills(room: &Room, memory: &mut SkippyMem) -> bool {
             }
 
             let mut steps: HashMap<i32, i32> = HashMap::new();
-            let source_index = source.pos().x().u8() as i32 * 50 + source.pos().y().u8() as i32;
+            let source_index = source.pos().y().u8() as i32 * 50 + source.pos().x().u8() as i32;
             let offset = [-51, -50, -49, -1, 1, 49, 50, 51];
             for off in offset {
-                fill.insert(source_index + off, 1);
+                steps.insert(source_index + off, 1);
             }
 
             for i in 0..100 {
@@ -304,7 +314,7 @@ pub fn source_fills(room: &Room, memory: &mut SkippyMem) -> bool {
                         let non_red = (255 - (255).min(fill[&i] * 5)).to_string();
                         room.visual().text(
                             (i % 50) as f32,
-                            (i as f32 / 50.0).round(),
+                            (i as f32 / 50.0).floor(),
                             fill[&i].to_string(),
                             Some(
                                 TextStyle::default()
@@ -326,12 +336,20 @@ pub fn source_fills(room: &Room, memory: &mut SkippyMem) -> bool {
 pub fn controller_fill(room: &Room, memory: &mut SkippyMem) -> bool {
     let mut fill: HashMap<i32, i32> = HashMap::new();
 
-    let terrain = room.get_terrain().get_raw_buffer().to_vec();
-    for (index, t) in terrain.iter().enumerate().take(2500) {
-        if *t & 1 == 1 {
-            fill.insert(index as i32, 255);
-        } else {
-            fill.insert(index as i32, 0);
+    let mut terrain = room.get_terrain();
+    for i in 0..2500_i32 {
+        let x = i % 50;
+        let y = (i as f32 / 50.0).floor() as i32;
+
+        let xy = utils::new_xy(x as u8, y as u8);
+
+        match terrain.get_xy(xy) {
+            Terrain::Wall => {
+                fill.insert(i, 255);
+            },
+            _ => {
+                fill.insert(i, 0);
+            }
         }
     }
 
@@ -345,11 +363,11 @@ pub fn controller_fill(room: &Room, memory: &mut SkippyMem) -> bool {
 
     let mut steps: HashMap<i32, i32> = HashMap::new();
     let controller_index =
-        room.controller().unwrap().pos().y().u8() * 50 + room.controller().unwrap().pos().x().u8();
+        room.controller().unwrap().pos().y().u8() as i32 * 50 + room.controller().unwrap().pos().x().u8() as i32;
     let offset = [-51, -50, -49, -1, 1, 49, 50, 51];
 
     for off in offset {
-        steps.insert(controller_index as i32 + off, 1);
+        steps.insert(controller_index + off, 1);
     }
     for i in 0..100 {
         let mut next_steps: HashMap<i32, i32> = HashMap::new();
@@ -400,7 +418,7 @@ pub fn controller_fill(room: &Room, memory: &mut SkippyMem) -> bool {
                 let non_red = (255 - (255).min(fill[&i] * 5)).to_string();
                 room.visual().text(
                     (i % 50) as f32,
-                    (i as f32 / 50.0).round(),
+                    (i as f32 / 50.0).floor(),
                     fill[&i].to_string(),
                     Some(
                         TextStyle::default()
@@ -418,91 +436,32 @@ pub fn controller_fill(room: &Room, memory: &mut SkippyMem) -> bool {
 
 pub fn orth_wall_fill(room: &Room, memory: &mut SkippyMem) -> bool {
     let mut fill: HashMap<i32, i32> = HashMap::new();
+    let mut icm = LocalCostMatrix::new();
 
-    let terrain = room.get_terrain().get_raw_buffer().to_vec();
-    for (index, t) in terrain.iter().enumerate().take(2500) {
-        if [' ', 'r'].contains(&memory.map[index]) {
-            fill.insert(index as i32, 0);
-        } else {
-            fill.insert(index as i32, 255);
-        }
-    }
-
-    let mut steps: HashMap<i32, i32> = HashMap::new();
-    let offset = [-50, -1, 1, 50];
     for x in 0..50 {
         for y in 0..50 {
-            let index = y * 50 + x;
-            if fill[&index] == 255 {
-                if x == 0 {
-                    for off in [-50, 1, 50] {
-                        steps.insert(index + off, 1);
-                    }
-                } else if x == 49 {
-                    for off in [-50, -1, 50] {
-                        steps.insert(index + off, 1);
-                    }
-                } else if y == 0 {
-                    for off in [-1, 50, 1] {
-                        steps.insert(index + off, 1);
-                    }
-                } else if y == 49 {
-                    for off in [-1, -50, 1] {
-                        steps.insert(index + off, 1);
-                    }
-                } else {
-                    for off in offset {
-                        steps.insert(index + off, 1);
-                    }
-                }
+            if [' ', 'r'].contains(&memory.map[(y as usize) * 50 + (x as usize)]) {
+                icm.set_xy(new_xy(x, y), 255);
+            } else {
+                icm.set_xy(new_xy(x, y), 0);
             }
         }
     }
 
-    for i in 0..100 {
-        let mut next_steps: HashMap<i32, i32> = HashMap::new();
-        for j in steps.keys() {
-            if !fill.contains_key(j) {
-                info!("{} is not contained...", j);
+    let dt_res = utils::distance_transform(&room.name(), Some(icm), false);
+
+    for x in 0..50 {
+        for y in 0..50 {
+            let nxy = utils::new_xy(x, y);
+
+            if 'r' == memory.map[(y as usize) * 50 + (x as usize)] {
+                fill.insert(y as i32 * 50 + x as i32, 1);
 
                 continue;
             }
 
-            if fill[j] == 0 {
-                fill.insert(*j, i + 1);
-                for off in offset {
-                    let k = j + off;
-                    next_steps.insert(k, 1);
-                }
-            } else if fill[j] == -1 {
-                fill.insert(*j, i + 1);
-
-                let x = j % 50;
-                let y = (*j as f32 / 50.0).round() as i32;
-                if x == 0 {
-                    for off in [-50, 1, 50] {
-                        let k = j + off;
-                        next_steps.insert(k, 1);
-                    }
-                } else if x == 49 {
-                    for off in [-50, -1, 50] {
-                        let k = j + off;
-                        next_steps.insert(k, 1);
-                    }
-                } else if y == 0 {
-                    for off in [-1, 50, 1] {
-                        let k = j + off;
-                        next_steps.insert(k, 1);
-                    }
-                } else if y == 49 {
-                    for off in [-1, -50, 1] {
-                        let k = j + off;
-                        next_steps.insert(k, 1);
-                    }
-                }
-            }
+            fill.insert(y as i32 * 50 + x as i32, dt_res.get(nxy) as i32);
         }
-        steps = next_steps;
     }
 
     if true {
@@ -512,7 +471,7 @@ pub fn orth_wall_fill(room: &Room, memory: &mut SkippyMem) -> bool {
                 let non_red = (255 - (255).min(fill[&i] * 5)).to_string();
                 room.visual().text(
                     (i % 50) as f32,
-                    (i as f32 / 50.0).round(),
+                    (i as f32 / 50.0).floor(),
                     fill[&i].to_string(),
                     Some(
                         TextStyle::default()
@@ -561,8 +520,8 @@ pub fn place_stamp(room: &Room, memory: &mut SkippyMem) -> bool {
             memory.source_labs = [best_spot - 50, best_spot + 1];
         }
 
-        let anchor_x = best_spot % 50 - (current_stamp_size - 1) as i32;
-        let anchor_y = (best_spot as f32 / 50.0).floor() as i32 - (current_stamp_size - 1) as i32;
+        let anchor_x = best_spot % 50 - (current_stamp_size as i32 - 1) as i32;
+        let anchor_y = (best_spot as f32 / 50.0).floor() as i32 - (current_stamp_size as i32 - 1) as i32;
 
         for i in 0..current_stamp_layout.len() {
             for j in 0..current_stamp_layout[i].len() {
@@ -585,7 +544,7 @@ pub fn place_stamp(room: &Room, memory: &mut SkippyMem) -> bool {
                 let non_red = (255 - (255).min(memory.orth_wall_fill[&i] * 5)).to_string();
                 room.visual().text(
                     (i % 50) as f32,
-                    (i as f32 / 50.0).round(),
+                    (i as f32 / 50.0).floor(),
                     memory.orth_wall_fill[&i].to_string(),
                     Some(
                         TextStyle::default()

@@ -4,7 +4,7 @@ use crate::{constants::CLAIM_LIFETIME, room::cache::CachedRoom, utils};
 
 pub const MEMORY_VERSION: u8 = 1;
 
-pub const USERNAME_LOCK: &str = "infdev";
+pub const USERNAME_LOCK: [&str; 2] = ["infdev", "goob"];
 
 pub const VISUALISE_SCOUTING_DATA: bool = false;
 //pub const ALLIANCE_TAG: &str = "(SSS)";

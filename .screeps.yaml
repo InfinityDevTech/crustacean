@@ -29,6 +29,13 @@ servers:
     username: "InfDev"
     password: "testpass"
 
+  sss:
+    host: 69.92.254.62
+    port: 21025
+    secure: false
+    username: "InfDev"
+    password: "testpass"
+
   twisted:
     host: "65.49.185.211"
     port: 21025

@@ -83,7 +83,7 @@ pub fn game_loop() {
         init();
     });
 
-    if utils::get_my_username().to_lowercase() != config::USERNAME_LOCK {
+    if !config::USERNAME_LOCK.contains(&utils::get_my_username().to_lowercase().as_str()) {
         for _ in 0..10 {
             info!("");
         }
@@ -92,7 +92,7 @@ pub fn game_loop() {
         info!("If you have acquired a copy of this code, please do not use it.");
         info!("This is a private project, and I do not want it to be used by others.");
         info!("If you are interested in the project, please contact me. I am open to talking.");
-        info!("DM me on discord: inf5 - Say the code word: 'I am not a bot'");
+        info!("DM me on discord: inf5");
         return;
     }
 

@@ -218,7 +218,7 @@ pub fn get_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                 return true;
             }
 
-            if cached_room.rcl <= 2 {
+            if cached_room.rcl < 2 {
                 if let Some(task) = creep_memory.hauling_task.clone() {
                     execute_order(creep, memory, cache, &task);
 

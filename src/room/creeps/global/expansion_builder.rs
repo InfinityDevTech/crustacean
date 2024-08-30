@@ -50,7 +50,11 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
     );
 
     if creep.pos().get_range_to(meet_position) <= 25 {
-        let room_cache = cache.rooms.get_mut(&target_room).unwrap();
+        let room_cache = cache.rooms.get_mut(&target_room);
+        if room_cache.is_none() {
+            return;
+        }
+        let room_cache = room_cache.unwrap();
         let needs_energy = creep_memory.needs_energy.unwrap_or(false);
 
         if needs_energy {

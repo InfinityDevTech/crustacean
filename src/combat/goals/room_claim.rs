@@ -230,7 +230,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             );
             let cached_room = cache.rooms.get_mut(&responsible_room.unwrap()).unwrap();
 
-            let available_positions = distance_transform(goal_room, false);
+            let available_positions = distance_transform(goal_room, None, false);
             let mut available_xy = Vec::new();
 
             let exits = expansion_game_room.find(find::EXIT, None);

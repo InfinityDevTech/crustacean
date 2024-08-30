@@ -713,7 +713,7 @@ pub fn upgrader(
     }
 
     let mut priority = 4.0;
-    priority += ((1 - body.iter().filter(|p| *p == &Part::Work).count() / target_work_parts) as f64) * 6.0;
+    priority += ((1 - body.iter().filter(|p| *p == &Part::Work).count() / target_work_parts) as f64) * 5.0;
 
     if !under_storage_gate(cache, 1.5) {
         priority *= 1.5;
@@ -790,7 +790,7 @@ pub fn hauler(room: &Room, cache: &CachedRoom, memory: &mut ScreepsMemory, spawn
     } else {
         let cnt = (1.0 - hauler_count as f64 / wanted_count as f64).round();
 
-        cnt * 8.0
+        cnt * 9.0
     };
 
     if (hauler_count as u32) < wanted_count as u32 / 2 {

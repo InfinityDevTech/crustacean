@@ -5,11 +5,17 @@ use std::{collections::HashMap, f32::consts::E};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
-    constants, game, pathfinder::SearchOptions, BodyPart, LocalCostMatrix, OwnedStructureProperties, Part, Position, RectStyle, ResourceType, RoomCoordinate, RoomName, RoomXY, Source, Store, Terrain
+    constants, game, pathfinder::SearchOptions, BodyPart, LocalCostMatrix,
+    OwnedStructureProperties, Part, Position, RectStyle, ResourceType, RoomCoordinate, RoomName,
+    RoomXY, Source, Store, Terrain,
 };
 
 use crate::{
-    config, heap, memory::Role, movement::move_target::MoveTarget, room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache}, traits::room::RoomType
+    config, heap,
+    memory::Role,
+    movement::move_target::MoveTarget,
+    room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache},
+    traits::room::RoomType,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -330,10 +336,7 @@ pub fn get_part_count(parts: &Vec<BodyPart>, part_type: Option<Part>) -> u8 {
 }
 
 pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
-    let path = MoveTarget {
-        pos,
-        range: 1,
-    }.pathfind(target, Some(SearchOptions::default()));
+    let path = MoveTarget { pos, range: 1 }.pathfind(target, Some(SearchOptions::default()));
 
     if path.incomplete() {
         return pos.get_range_to(target) * 2;
@@ -395,30 +398,37 @@ pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
 
 pub fn new_xy(x: u8, y: u8) -> RoomXY {
     RoomXY::new(
-        RoomCoordinate::new(x).unwrap(),
-        RoomCoordinate::new(y).unwrap(),
+        RoomCoordinate::new(x.clamp(0, 49)).unwrap(),
+        RoomCoordinate::new(y.clamp(0, 49)).unwrap(),
     )
 }
 
-pub fn distance_transform(room_name: &RoomName, visual: bool) -> LocalCostMatrix {
-    let mut cm = LocalCostMatrix::new();
+pub fn distance_transform(
+    room_name: &RoomName,
+    input_cm: Option<LocalCostMatrix>,
+    visual: bool,
+) -> LocalCostMatrix {
+    let mut cm = if let Some(input) = input_cm {
+        input
+    } else {
+        let terrain = game::map::get_room_terrain(*room_name).unwrap();
 
-    let terrain = game::map::get_room_terrain(*room_name).unwrap();
+        let mut cm = LocalCostMatrix::new();
 
-    let x: u8;
-    let y: u8;
+        for x in 0..50 {
+            for y in 0..50 {
+                let score = if terrain.get(x, y) == Terrain::Wall {
+                    0
+                } else {
+                    255
+                };
 
-    for x in 1..49 {
-        for y in 1..49 {
-            let score = if terrain.get(x, y) == Terrain::Wall {
-                0
-            } else {
-                255
-            };
-
-            cm.set(new_xy(x, y), score)
+                cm.set(new_xy(x, y), score)
+            }
         }
-    }
+
+        cm
+    };
 
     let mut top: u8;
     let mut left: u8;
@@ -426,9 +436,8 @@ pub fn distance_transform(room_name: &RoomName, visual: bool) -> LocalCostMatrix
     let mut top_right: u8;
     let mut bottom_left: u8;
 
-
-    for x in 1..49 {
-        for y in 1..49 {
+    for x in 0..50 {
+        for y in 0..50 {
             top = cm.get(new_xy(x, y - 1));
             left = cm.get(new_xy(x - 1, y));
             top_left = cm.get(new_xy(x - 1, y - 1));
@@ -443,20 +452,24 @@ pub fn distance_transform(room_name: &RoomName, visual: bool) -> LocalCostMatrix
         }
     }
 
-
     let mut bottom;
     let mut right;
     let mut bottom_right;
 
-    for x in (1..49).rev() {
-        for y in (1..49).rev() {
+    for x in (0..50).rev() {
+        for y in (0..50).rev() {
             bottom = cm.get(new_xy(x, y + 1));
             right = cm.get(new_xy(x + 1, y));
             bottom_right = cm.get(new_xy(x + 1, y + 1));
             top_right = cm.get(new_xy(x + 1, y - 1));
             bottom_left = cm.get(new_xy(x - 1, y + 1));
 
-            let num1 = bottom.min(right).min(bottom_right).min(top_right).min(bottom_left) + 1;
+            let num1 = bottom
+                .min(right)
+                .min(bottom_right)
+                .min(top_right)
+                .min(bottom_left)
+                + 1;
             let num2 = cm.get(new_xy(x, y));
             cm.set(new_xy(x, y), num1.min(num2) as u8);
         }
@@ -473,8 +486,27 @@ pub fn distance_transform(room_name: &RoomName, visual: bool) -> LocalCostMatrix
                         continue;
                     }
 
-                    vis.rect(x as f32 - 0.5, y as f32 - 0.5, 1.0, 1.0, Some(RectStyle::default().fill(&format!("hsl({}, 100%, 60%)", 200 * cm.get(new_xy(x as u8, y as u8)) / 10).as_str())));
-                    vis.text(x as f32, y as f32 , cm.get(new_xy(x, y)).to_string(), Some(Default::default()));
+                    vis.rect(
+                        x as f32 - 0.5,
+                        y as f32 - 0.5,
+                        1.0,
+                        1.0,
+                        Some(
+                            RectStyle::default().fill(
+                                &format!(
+                                    "hsl({}, 100%, 60%)",
+                                    200 * cm.get(new_xy(x as u8, y as u8)) / 10
+                                )
+                                .as_str(),
+                            ),
+                        ),
+                    );
+                    vis.text(
+                        x as f32,
+                        y as f32,
+                        cm.get(new_xy(x, y)).to_string(),
+                        Some(Default::default()),
+                    );
                 }
             }
         }

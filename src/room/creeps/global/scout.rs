@@ -1,3 +1,7 @@
+use log::info;
+use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use screeps::game::map::RoomStatus;
 use screeps::{game, Creep, HasPosition, RoomPosition, SharedCreepProperties};
 
@@ -50,7 +54,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
                 );
             }
         } else {
-            creep.bsay("🔍 😛", true);
+            creep.bsay(format!("🔍 {}", scout_target.room_name()).as_str(), true);
             creep.better_move_to(
                 memory,
                 cached_room,
@@ -66,11 +70,15 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
         let mut not_scouted = Vec::new();
         let mut out_of_date_scouted = Vec::new();
         let mut last_scouted = Vec::new();
+        let mut status_unavailable = Vec::new();
 
-        for exit in exits {
+        for exit in exits.clone() {
             let room_status = game::map::get_room_status(exit);
 
             if room_status.is_none() || room_status.unwrap().status() != RoomStatus::Normal || memory.rooms.contains_key(&exit) {
+                if !memory.rooms.contains_key(&exit) {
+                    status_unavailable.push(exit);
+                }
                 continue;
             }
 
@@ -92,13 +100,21 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
 
         let exit = if game::flags().get("force_scout".to_string()).is_some() {
             &game::flags().get("force_scout".to_string()).unwrap().pos().room_name()
+        } else if exits.len() == 1 {
+            exits.first().unwrap()
         } else if let Some(exit) = not_scouted.first() {
             exit
         } else if let Some(exit) = out_of_date_scouted.first() {
             &exit.0
         } else if let Some(exit) = last_scouted.first() {
             &exit.0
+        } else if let Some(exit) = status_unavailable.first() {
+            let mut rng = StdRng::seed_from_u64(game::time() as u64);
+            status_unavailable.shuffle(&mut rng);
+
+            status_unavailable.first().unwrap()
         } else {
+            creep.bsay("NO-EXIT", false);
             return;
         };
 

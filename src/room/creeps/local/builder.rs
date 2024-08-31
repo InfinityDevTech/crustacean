@@ -210,9 +210,9 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     }
 
     if room_cache.structures.containers().fast_filler.is_none() && room_cache.rcl >= 2 {
-        room_cache.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_capacity(Some(ResourceType::Energy))), 25.0, HaulingType::Transfer);
+        //room_cache.hauling.create_order(creep.try_raw_id().unwrap(), None, Some(ResourceType::Energy), Some(creep.store().get_capacity(Some(ResourceType::Energy))), 25.0, HaulingType::Transfer);
 
-        return;
+        //return;
     }
 
     if let Some(task) = task {
@@ -231,6 +231,7 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                     HaulingType::Withdraw,
                     HaulingType::Offer,
                 ])
+                .maintain_room(creepmem.owning_room)
                 .finish(),
         );
     }

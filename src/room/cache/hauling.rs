@@ -62,11 +62,17 @@ pub struct HaulTaskRequest {
 
     pub haul_type: Vec<HaulingType>,
     pub resource_type: Option<ResourceType>,
+    pub maintain_room: Option<RoomName>,
 }
 
 impl HaulTaskRequest {
     pub fn creep_name(&mut self, creep_name: String) -> &mut Self {
         self.creep_name = creep_name;
+        self
+    }
+
+    pub fn maintain_room(&mut self, maintain_room: RoomName) -> &mut Self {
+        self.maintain_room = Some(maintain_room);
         self
     }
 
@@ -95,6 +101,7 @@ impl Default for HaulTaskRequest {
                 HaulingType::Pickup,
                 HaulingType::Transfer,
             ],
+            maintain_room: None,
             resource_type: None,
         }
     }
@@ -291,6 +298,14 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
                     && base_hauler_count >= 1
                 {
                     continue;
+                }
+
+                if hauler.maintain_room.is_some() {
+                    if let Some(target_pos) = order.get_target_position() {
+                        if target_pos.room_name() != hauler.maintain_room.unwrap() {
+                            continue;
+                        }
+                    }
                 }
 
                 // Check if the haul type actually matches what we want

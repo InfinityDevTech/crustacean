@@ -2,7 +2,6 @@
 #![allow(clippy::comparison_to_empty)]
 
 use log::info;
-use regex::Regex;
 use screeps::{CostMatrix, OwnedStructureProperties, Position, RoomCoordinate, RoomName, Terrain};
 use serde::{Deserialize, Serialize};
 
@@ -44,18 +43,40 @@ impl RoomExtensions for screeps::Room {
         self.name().to_string()
     }
     fn split_name(&self) -> (String, u32, String, u32) {
-        let room_regex = Regex::new("^([WE]{1})([0-9]{1,2})([NS]{1})([0-9]{1,2})$").unwrap();
-        let room_name = self.name_str();
+        let x_coord = self.name().x_coord();
+        let x_mod = if x_coord < 0 {
+            (x_coord.abs() - 1) % 10
+        } else {
+            x_coord % 10
+        };
 
-        let captures = room_regex.captures(&room_name).unwrap();
+        let y_coord = self.name().y_coord();
+        let y_mod = if y_coord < 0 {
+            (y_coord.abs() - 1) % 10
+        } else {
+            y_coord % 10
+        };
+
+        let ew = if x_coord < 0 {
+            "W"
+        } else {
+            "E"
+        };
+
+        let ns = if y_coord < 0 {
+            "N"
+        } else {
+            "S"
+        };
 
         (
-            captures[1].to_string(),
-            captures[2].to_string().parse::<u32>().unwrap(),
-            captures[3].to_string(),
-            captures[4].to_string().parse::<u32>().unwrap(),
+            ew.to_string(),
+            x_mod as u32,
+            ns.to_string(),
+            y_mod as u32,
         )
     }
+
     fn center_pos(&self) -> Position {
         Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), self.name())
     }
@@ -281,16 +302,37 @@ pub trait RoomNameExtensions {
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomNameExtensions for RoomName {
     fn split_name(&self) -> (String, u32, String, u32) {
-        let room_regex = Regex::new("^([WE]{1})([0-9]{1,2})([NS]{1})([0-9]{1,2})$").unwrap();
-        let room_name = self.to_string();
+        let x_coord = self.x_coord();
+        let x_mod = if x_coord < 0 {
+            (x_coord.abs() - 1) % 10
+        } else {
+            x_coord % 10
+        };
 
-        let captures = room_regex.captures(&room_name).unwrap();
+        let y_coord = self.y_coord();
+        let y_mod = if y_coord < 0 {
+            (y_coord.abs() - 1) % 10
+        } else {
+            y_coord % 10
+        };
+
+        let ew = if x_coord < 0 {
+            "W"
+        } else {
+            "E"
+        };
+
+        let ns = if y_coord < 0 {
+            "N"
+        } else {
+            "S"
+        };
 
         (
-            captures[1].to_string(),
-            captures[2].to_string().parse::<u32>().unwrap(),
-            captures[3].to_string(),
-            captures[4].to_string().parse::<u32>().unwrap(),
+            ew.to_string(),
+            x_mod as u32,
+            ns.to_string(),
+            y_mod as u32,
         )
     }
 

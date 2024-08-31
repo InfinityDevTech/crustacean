@@ -139,6 +139,10 @@ pub fn rank_remote_room(
     let path: Result<Vec<game::map::RouteStep>, screeps::ErrorCode> = game::map::find_route(measure_pos.room_name(), *remote_room, Some(FindRouteOptions::default()));
 
     if let Ok(path) = path {
+        if path.len() >= 4 {
+            return u32::MAX;
+        }
+        
         for step in path {
             let room = step.room;
 

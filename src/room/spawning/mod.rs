@@ -707,6 +707,10 @@ pub fn upgrader(
         return None;
     }
 
+    if !cache.structures.construction_sites.is_empty() && cache.rcl < 5 && (upgrader_count >= 3 || controller.ticks_to_downgrade() > Some(50000)) {
+        return None;
+    }
+
     // Dont need em if we are level 8 and have a lot of ticks to downgrade.
     if controller.level() == 8 && controller.ticks_to_downgrade() > Some(120000) {
         return None;
@@ -1171,6 +1175,10 @@ pub fn remote_harvester(
     let mut requests = Vec::new();
 
     let measure_pos = Position::new(owning_cache.spawn_center.unwrap().x, owning_cache.spawn_center.unwrap().y, owning_cache.room.name());
+
+    if game::cpu::bucket() < 500 {
+        return vec![];
+    }
 
     let harvester_count = owning_cache.creeps.creeps_of_role(Role::Harvester);
 

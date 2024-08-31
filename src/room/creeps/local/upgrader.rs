@@ -251,7 +251,7 @@ pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Ro
     let room = creep.room().unwrap();
     let cache = cache.rooms.get_mut(&room.name()).unwrap();
 
-    if cache.structures.controller.is_none() {
+    if cache.structures.controller.is_none() || (!memory.rooms.contains_key(&room.name()) && !memory.remote_rooms.contains_key(&room.name())) {
         return false;
     }
 
@@ -275,6 +275,7 @@ pub fn sign_controller(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Ro
                     MoveOptions::default(),
                 );
             }
+            creep.bsay("SIGN", false);
             return true;
         }
     }

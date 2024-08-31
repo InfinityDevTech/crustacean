@@ -104,8 +104,8 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             }
         }
 
-        // Only at RCL 4 do we really start to care about reserving rooms
-        if room.controller().unwrap().level() < 4 {
+        // Only at RCL 3 do we really start to care about reserving rooms
+        if room.controller().unwrap().level() < 3 {
             return None;
         }
 

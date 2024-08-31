@@ -36,7 +36,7 @@ pub fn run_invadercleaner(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
                 cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
                 pos,
                 1,
-                MoveOptions::default(),
+                MoveOptions::default().avoid_enemies(false).avoid_hostile_rooms(false),
             );
         } else {
             if game::time() % 2 == 0 {

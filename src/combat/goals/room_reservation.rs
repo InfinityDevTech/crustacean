@@ -53,7 +53,7 @@ pub fn attain_reservation(
         return;
     }
 
-    if (current_parts < 2 && goal.accessible_reservation_spots > 1) && goal.creeps_assigned.len() < goal.accessible_reservation_spots as usize {
+    if (current_parts < 2 && goal.accessible_reservation_spots >= 1) && goal.creeps_assigned.len() < goal.accessible_reservation_spots as usize {
         let new_creep = spawn_creep(goal, cache);
         if let Some(new) = new_creep {
             goal.creeps_assigned.push(new);
@@ -65,7 +65,7 @@ pub fn attain_reservation(
         if let Some(reservation) = reservation_status {
             // Basically, we completed the goal. Soooo, we can remove it
             if reservation.username() == utils::get_my_username()
-                && reservation.ticks_to_end() > config::RESERVATION_GOAL_THRESHOLD.into()
+                && reservation.ticks_to_end() > config::RESERVATION_GOAL_THRESHOLD
             {
                 info!("[{}] Successfully reserved remote to satisfactory levels. Removing goal", target_room);
                 memory.goals.room_reservation.remove(target_room);
@@ -112,8 +112,9 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         let energy_storage = room.energy_capacity_available();
         let mut current_claim = 0;
 
-        let body = if energy_storage > 1300 {
+        let body = if energy_storage >= 1300 {
             let mut body = vec![Part::Claim, Part::Move];
+            current_claim += 1;
 
             let stamp_cost = 650;
             let mut current_cost = 650;
@@ -134,6 +135,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         } else {
             vec![Part::Claim, Part::Move]
         };
+        info!("Reserver body {:?}", body);
         let cost = get_body_cost(&body);
 
         // If we can only make one part, and we cant have 2 creeps, then we dont spawn
@@ -164,7 +166,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
 
                 priority += percentage;
             } else {
-                priority += 6.0;
+                priority += 10.0;
             }
         }
 
@@ -176,7 +178,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
 
         if let Some(goal_cache) = cache.rooms.get_mut(&best_spawned) {
             if let Some(storage) = &goal_cache.structures.storage {
-                if storage.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy)) < 10_000 {
+                if under_storage_gate(&goal_cache, 0.5) {
                     return None;
                 } else if storage.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy)) > 30_000 {
                     priority *= 2.0;
@@ -192,6 +194,8 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
                 priority = f64::MAX;
             }
         }
+
+        info!("Reserver prio {}", priority);
 
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,

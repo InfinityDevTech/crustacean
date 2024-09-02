@@ -311,7 +311,7 @@ pub fn flag_attacker(
             }
         }
 
-        if attackers >= 4 && unclaimer >= 1 {
+        if attackers >= 4 || unclaimer >= 1 {
             return None;
         }
 
@@ -333,10 +333,16 @@ pub fn flag_attacker(
 
                 let cost = get_body_cost(&body);
 
+                let prio = if !utils::under_storage_gate(cache, 1.5) {
+                    f64::MAX - 20.0
+                } else {
+                    10.0
+                };
+
                 return Some(spawn_manager.create_room_spawn_request(
                     Role::Bulldozer,
                     body,
-                    4.0,
+                prio,
                     cost,
                     room.name(),
                     None,
@@ -359,14 +365,21 @@ pub fn flag_attacker(
 
                     body.push(Part::Attack);
                     body.push(Part::Move);
+
                     cost += 130;
                 }
+
+                let prio = if !utils::under_storage_gate(cache, 1.5) {
+                    f64::MAX - 20.0
+                } else {
+                    10.0
+                };
 
                 if isnt_potato {
                     return Some(spawn_manager.create_room_spawn_request(
                         Role::Bulldozer,
                         body,
-                        10.0,
+                        prio,
                         cost,
                         room.name(),
                         None,
@@ -525,6 +538,12 @@ pub fn repairer(
     let spawn_needs_repair = cache.structures.spawns.iter().any(|(_, s)| s.hits() < s.hits_max());
 
     if (cache.rcl < 3 || cache.structures.needs_repair.is_empty()) && repairing_work_parts >= 1 && !spawn_needs_repair {
+        return None;
+    }
+
+    // TODO:
+    // Make this check for combat as well...
+    if cache.creeps.creeps_of_role(Role::Repairer) >= 3 {
         return None;
     }
 
@@ -687,10 +706,28 @@ pub fn upgrader(
         4 => 30,
         5 => 32,
         6 => 48,
-        7 => 60,
+        7 => 50,
         8 => 5,
         _ => 1,
     };
+
+    let current_work_parts = cache
+    .creeps
+    .creeps_of_role
+    .get(&Role::Upgrader)
+    .unwrap_or(&Vec::new())
+    .iter()
+    .map(|creep| {
+        let creep = game::creeps().get(creep.as_str().to_owned()).unwrap();
+        let parts = creep
+            .body()
+            .iter()
+            .map(|part| part.part())
+            .collect::<Vec<Part>>();
+
+        parts.iter().filter(|part| **part == Part::Work).count()
+    })
+    .sum::<usize>() as f32;
 
     let body = crate::room::spawning::creep_sizing::upgrader_body(room, cache, target_work_parts);
     let cost = get_body_cost(&body);
@@ -717,10 +754,14 @@ pub fn upgrader(
     }
 
     let mut priority = 4.0;
-    priority += ((1 - body.iter().filter(|p| *p == &Part::Work).count() / target_work_parts) as f64) * 5.0;
+    priority += ((1.0 - current_work_parts / target_work_parts as f32) as f64) * 7.0;
 
-    if !under_storage_gate(cache, 1.5) {
-        priority *= 1.5;
+    if !under_storage_gate(cache, 2.0) {
+        priority *= 2.0;
+    }
+
+    if !under_storage_gate(cache, 5.0) {
+        priority *= 10.0;
     }
 
     info!("Prio... {}", priority);

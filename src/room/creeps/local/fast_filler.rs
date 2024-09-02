@@ -197,6 +197,10 @@ pub fn check_current_position(
     cache: &mut CachedRoom,
 ) -> bool {
     let current_pos = creep.pos().xy();
+    if cache.spawn_center.is_none() || cache.storage_center.is_none() {
+        return true;
+    }
+
     let spawn_pos = cache.spawn_center.unwrap();
 
     let position_1 = RoomPosition::new(

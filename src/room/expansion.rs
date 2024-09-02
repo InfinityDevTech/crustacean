@@ -5,7 +5,7 @@ use screeps::{
     game::{
         self,
         map::{FindRouteOptions, RoomStatus},
-    }, pathfinder::SearchOptions, Position, ResourceType, RoomCoordinate, RoomName, RoomXY
+    }, pathfinder::SearchOptions, HasPosition, Position, ResourceType, RoomCoordinate, RoomName, RoomXY
 };
 use serde::{Deserialize, Serialize};
 
@@ -91,6 +91,11 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
     };
 
     info!("[EXPANSION] Expansion status: {:?}", expansion_memory.current_status);
+
+    if game::flags().get("claim".to_string()).is_some() {
+        info!("[EXPANSION] Found a forced claim flag, skipping...");
+        return;
+    }
 
     match expansion_memory.current_status {
         ExpansionStatus::FindingCapable => {
@@ -258,6 +263,8 @@ pub fn find_expandable_rooms(
         available_rooms.append(&mut room_name.get_adjacent(config::MAX_CLAIM_DISTANCE as i32));
     }
 
+    let force_expand_dir = game::flags().get("forceExpansionDirection".to_string());
+
     for possible_name in available_rooms {
         let closest_room = utils::find_closest_owned_room(&possible_name, cache, None);
 
@@ -275,6 +282,16 @@ pub fn find_expandable_rooms(
 
             if !memory.rooms.contains_key(&possible_name) {
                 if let Some(scouting_data) = memory.scouted_rooms.get(&possible_name) {
+                    if let Some(ref force_expand_dir_flag) = force_expand_dir {
+                        let closest_dist = utils::calc_room_distance(&possible_name, &closest_room, false);
+                        let my_dist = utils::calc_room_distance(&possible_name, &force_expand_dir_flag.pos().room_name(), false);
+
+                        if my_dist > closest_dist {
+                            continue;
+                        }
+                    }
+
+
                     if scouting_data.room_type == RoomType::Normal
                         && scouting_data.sources.is_some()
                         && scouting_data.mineral.is_some()

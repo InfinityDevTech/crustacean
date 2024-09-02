@@ -363,7 +363,6 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom, mut target_work_parts: usi
 
     parts.push(Part::Carry);
     parts.push(Part::Move);
-    parts.push(Part::Move);
     let mut current_cost = get_body_cost(&parts);
     let mut cost_capable = room.energy_available();
     let mut max_cost = room.energy_capacity_available();
@@ -412,7 +411,9 @@ pub fn upgrader_body(room: &Room, cache: &CachedRoom, mut target_work_parts: usi
             }
 
             parts.push(Part::Work);
-            parts.push(Part::Move);
+            if current_work_count % 2 == 0 {
+                parts.push(Part::Move);
+            }
             current_work_count += 1;
             current_cost += no_link_cost;
         }

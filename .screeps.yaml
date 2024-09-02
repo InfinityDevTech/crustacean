@@ -77,5 +77,6 @@ configs:
     # generation, which are specific to MMO
     mmo: ["--features", "mmo"]
     ptr: ["--features", "mmo"]
+    season: ["--features", "season1"]
     # Other servers can each have their own build flags, including crate features:
     #season: ["--features", "my-season-7-feature"]

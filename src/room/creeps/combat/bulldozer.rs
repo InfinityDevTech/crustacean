@@ -50,6 +50,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     let mut structure = creep.room().unwrap().find(find::HOSTILE_STRUCTURES, None);
+    structure.retain(|x| x.structure_type() != StructureType::Controller);
     let ramparts = creep.room().unwrap().find(find::STRUCTURES, None);
     let ramparts = ramparts.iter().filter(|s| s.structure_type() == StructureType::Rampart).collect::<Vec<&StructureObject>>();
 

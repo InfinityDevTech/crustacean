@@ -147,6 +147,18 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
     let room_cache = cache.rooms.get_mut(&creepmem.owning_room).unwrap();
 
+    /*for resource in &room_cache.resources.dropped_energy {
+        if creep.pos().get_range_to(resource.pos()) <= 3 && resource.resource_type() == ResourceType::Energy {
+            if creep.pos().is_near_to(resource.pos()) {
+                let _ = creep.pickup(resource);
+            } else {
+                creep.better_move_to(memory, room_cache, resource.pos(), 1, MoveOptions::default());
+
+                return;
+            }
+        }
+    }*/
+
     if let Some(storage) = &room_cache.structures.storage {
         if !under_storage_gate(room_cache, 0.7) {
             if !creep.pos().is_near_to(storage.pos()) {

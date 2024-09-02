@@ -146,7 +146,10 @@ impl MoveTarget {
             visualise_path(search.path().clone(), from, "#ff0000");
         }
 
-        (self.serialize_path(from, search.path(), move_options, false), search.incomplete())
+        (
+            self.serialize_path(from, search.path(), move_options, false),
+            search.incomplete(),
+        )
     }
 
     pub fn caching_pathfind(
@@ -414,6 +417,29 @@ pub fn path_call(
                         let xy = unsafe { RoomXY::unchecked_new(x, y) };
 
                         matrix.set(xy, 255);
+                    }
+                }
+            }
+
+            if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+                if let Some(source_keepers) = &scouting_data.source_keepers {
+                    for sk in source_keepers {
+                        let radius = 3;
+
+                        let start_x = sk.x.u8();
+                        let start_y = sk.y.u8();
+
+                        for x in start_x - radius..=start_x + radius {
+                            for y in start_y - radius..=start_y + radius {
+                                if x == start_x && y == start_y {
+                                    continue;
+                                }
+
+                                let xy = unsafe { RoomXY::unchecked_new(x, y) };
+
+                                matrix.set(xy, 255);
+                            }
+                        }
                     }
                 }
             }

@@ -1,3 +1,4 @@
+use log::info;
 use screeps::{game, Part, SharedCreepProperties};
 
 use crate::{allies, combat::goals::determine_single_attack_power, constants::{self, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::RoomCache};
@@ -62,6 +63,7 @@ pub fn determine_remote_defense_needs(cache: &mut RoomCache, memory: &mut Screep
     for room_name in mark_dangerous {
         if let Some(remote_memory) = memory.remote_rooms.get_mut(room_name) {
             remote_memory.under_attack = true;
+            remote_memory.last_attack_time = Some(game::time());
         }
     }
 }

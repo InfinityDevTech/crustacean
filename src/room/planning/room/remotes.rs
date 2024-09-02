@@ -83,6 +83,7 @@ pub fn fetch_possible_remotes(
                 sources: sroom_memory.sources.as_ref().unwrap().to_vec(),
 
                 creeps: Vec::new(),
+                last_attack_time: None,
                 under_attack: false
             };
 
@@ -142,7 +143,7 @@ pub fn rank_remote_room(
         if path.len() >= 4 {
             return u32::MAX;
         }
-        
+
         for step in path {
             let room = step.room;
 

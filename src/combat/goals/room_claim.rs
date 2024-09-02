@@ -52,7 +52,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
     clear_creeps(goal);
 
-    if memory.rooms.len() > game::gcl::level() as usize {
+    if memory.rooms.len() >= game::gcl::level() as usize {
         return;
     }
 

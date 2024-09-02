@@ -50,8 +50,10 @@ lto = true
 wasm-opt = ["-O4", "--signext-lowering"]
 
 [features]
-#default = ["profile"]
+#default = ["season1"]
 profile = ["screeps-timing-annotate"]
+
+season1 = ["screeps-game-api/seasonal-season-1"]
 
 sim = ["screeps-game-api/sim"]
 mmo = ["screeps-game-api/mmo"]

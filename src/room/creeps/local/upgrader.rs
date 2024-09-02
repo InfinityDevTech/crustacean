@@ -19,7 +19,7 @@ use super::hauler::execute_order;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_upgrader(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    if creep.spawning() || creep.tired() {
+    if creep.spawning() {//|| creep.tired() {
         creep.bsay("😴", false);
         return;
     }

@@ -5,3 +5,4 @@ pub mod ally;
 pub mod goals;
 pub mod setters;
 pub mod global;
+pub mod safemode;

@@ -125,7 +125,7 @@ impl CreepExtensions for screeps::Creep {
 
             return true;
         } else {
-            if game::cpu::bucket() > 500 {
+            if game::cpu::bucket() > 1000 {
                 let steps = generate_storage_path(&self.room().unwrap(), cache);
 
                 room_ff_cache.storage = Some(steps.clone());

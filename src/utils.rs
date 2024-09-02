@@ -283,6 +283,16 @@ pub fn find_closest_owned_room(
     let mut closest_room = None;
     let mut closest_distance = 0;
 
+    if cache.my_rooms.contains(target_room) {
+        if let Some(min_rcl) = min_rcl {
+            if cache.rooms.get(target_room).unwrap().rcl >= min_rcl {
+                return Some(*target_room);
+            }
+        } else {
+            return Some(*target_room);
+        }
+    }
+
     let coord = RoomCoordinate::new(25).unwrap();
     let target_position = Position::new(coord, coord, *target_room);
 

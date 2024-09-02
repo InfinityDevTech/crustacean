@@ -7,6 +7,9 @@ use screeps::{
 
 use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
 
+#[cfg(feature = "season1")]
+use screeps::ScoreCollector;
+
 use super::resources::RoomResourceCache;
 
 #[derive(Debug, Clone)]
@@ -73,6 +76,9 @@ pub struct RoomStructureCache {
     pub extractor: Option<StructureExtractor>,
     pub labs: HashMap<ObjectId<StructureLab>, StructureLab>,
 
+    #[cfg(feature = "season1")]
+    pub season1_score_collectors: Vec<ScoreCollector>,
+
     pub terrain: LocalRoomTerrain,
     pub roads: HashMap<ObjectId<StructureRoad>, StructureRoad>,
 
@@ -121,6 +127,9 @@ impl RoomStructureCache {
             extractor: None,
             labs: HashMap::new(),
 
+            #[cfg(feature = "season1")]
+            season1_score_collectors: Vec::new(),
+
             terrain: LocalRoomTerrain::from(room.get_terrain()),
             roads: HashMap::new(),
 
@@ -148,6 +157,10 @@ impl RoomStructureCache {
         }
 
         cache.refresh_structure_cache(resource_cache, memory);
+
+        #[cfg(feature = "season1")] {
+            cache.season_score_collector();
+        }
 
         cache
     }
@@ -208,6 +221,11 @@ impl RoomStructureCache {
         vec.extend(self.inactive_structures.iter().cloned());
 
         vec
+    }
+
+    #[cfg(feature = "season1")]
+    fn season_score_collector(&mut self) {
+        self.season1_score_collectors = self.room.find(find::SCORE_COLLECTORS, None);
     }
 
     fn run_structure_find(&mut self) -> Vec<StructureObject> {
@@ -303,6 +321,7 @@ impl RoomStructureCache {
             StructureObject::StructureKeeperLair(keeper_lair) => {
                 self.keeper_lairs.insert(keeper_lair.id(), keeper_lair);
             }
+
             _ => {}
         }
     }

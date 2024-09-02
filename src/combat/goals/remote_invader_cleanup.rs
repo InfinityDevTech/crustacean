@@ -69,6 +69,12 @@ pub fn achieve_goal(target_room: &RoomName, memory: &mut ScreepsMemory, cache: &
         if let Some(responsible_room) = responsible_room {
             let mut reservation = 0.0;
 
+            if utils::calc_room_distance(target_room, &responsible_room, false) >= 5 {
+                memory.goals.remote_invader_cleanup.remove(target_room);
+
+                return;
+            }
+
             if let Some(room_cache) = cache.rooms.get(target_room) {
                 reservation = room_cache.reservation as f32;
 

@@ -2,13 +2,13 @@ use core::f32;
 use std::collections::HashMap;
 
 use screeps::{
-    find, game,
-    look::{self, LookResult},
-    ConstructionSite, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral,
-    ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY,
-    SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties,
-    StructureType, Terrain,
+    find, game, look::{self, LookResult}, ConstructionSite, RoomName, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, StructureType, Terrain
 };
+
+#[cfg(feature = "season1")]
+use screeps::resource::ResourceType::Score;
+#[cfg(feature = "season1")]
+use screeps::ScoreContainer;
 
 use crate::{
     heap_cache::heap_room::HeapRoom,
@@ -49,6 +49,9 @@ pub struct RoomResourceCache {
     pub total_energy: u32,
     pub dropped_energy_amount: u32,
     pub energy_in_storing_structures: u32,
+
+    #[cfg(feature = "season1")]
+    pub season1_score: Vec<ScoreContainer>,
 }
 
 impl RoomResourceCache {
@@ -67,11 +70,20 @@ impl RoomResourceCache {
 
             dropped_energy: Vec::new(),
             dropped_resources: HashMap::new(),
+
+            #[cfg(feature = "season1")]
+            season1_score: Vec::new(),
         };
 
         cache.refresh_resource_cache(room);
         cache.refresh_source_cache(room, heap_cache);
         cache.refresh_minerals(room);
+
+        #[cfg(feature = "season1")]
+        {
+            cache.refresh_score_cache(room);
+        }
+
         cache
     }
 
@@ -142,6 +154,13 @@ impl RoomResourceCache {
 
             self.sources.push(constructed_source);
         }
+    }
+
+    #[cfg(feature = "season1")]
+    pub fn refresh_score_cache(&mut self, room: &Room) {
+        let score_resources = room.find(find::SCORE_CONTAINERS, None);
+
+        self.season1_score = score_resources;
     }
 }
 
@@ -603,5 +622,30 @@ pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
             priority,
             HaulingType::NoDistanceCalcPickup,
         );
+    }
+}
+
+#[cfg(feature = "season1")]
+pub fn haul_score_resources(room_name: &RoomName, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
+    let responsible_room = utils::find_closest_owned_room(room_name, cache, Some(3));
+
+    if let Some(responsible_room) = responsible_room {
+        let my_score_resource = cache.rooms.get(room_name).unwrap().resources.season1_score.clone();
+
+        cache.create_if_not_exists(&game::rooms().get(responsible_room).unwrap(), memory, None);
+
+        let responsible_cache = cache.rooms.get_mut(&responsible_room).unwrap();
+
+        if let Some(storage) = &responsible_cache.structures.storage {
+            if storage.store().get_used_capacity(Some(ResourceType::Score)) > 250_000 {
+                return;
+            }
+
+            for resource in my_score_resource {
+                let amt = resource.store().get_used_capacity(Some(ResourceType::Score));
+                let prio = amt * 5;
+                responsible_cache.hauling.create_order(resource.raw_id(), Some(StructureType::Container), Some(ResourceType::Score), Some(amt), f32::MIN, HaulingType::NoDistanceCalcOffer);
+            }
+        }
     }
 }

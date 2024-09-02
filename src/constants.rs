@@ -112,7 +112,7 @@ pub static REPAIR_POWER: u8 = 100;
 pub static DISMANTLE_POWER: u8 = 50;
 pub static BUILD_POWER: u8 = 5;
 pub static UPGRADE_POWER: u8 = 1;
-pub static HOSTILE_PARTS: [Part; 3] = [Part::Attack, Part::RangedAttack, Part::Heal];
+pub static HOSTILE_PARTS: [Part; 4] = [Part::Attack, Part::RangedAttack, Part::Heal, Part::Work];
 
 pub static CLAIM_LIFETIME: u32 = 600;
 pub static CREEP_LIFETIME: u32 = 1500;

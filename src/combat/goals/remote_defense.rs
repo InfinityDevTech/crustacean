@@ -1,4 +1,5 @@
 
+use log::info;
 use screeps::{game, Part, ResourceType, Room, RoomName, SharedCreepProperties};
 
 use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
@@ -35,6 +36,7 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
     if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
         remote_mem.under_attack = true;
     } else {
+        info!("{} is not a remote, removing goal...", goal_room);
         memory.goals.remote_defense.remove(goal_room);
 
         return;
@@ -44,8 +46,11 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
         if flag.name() == "cancel" {
             memory.goals.remote_defense.remove(goal_room);
 
-            if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+            info!("{} has cancel flag, removing goal...", goal_room);
+
+            if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
                 remote_mem.under_attack = false;
+                remote_mem.last_attack_time = None;
             }
 
             return;
@@ -78,12 +83,17 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
 
                 if hostile_creeps.is_empty() {
                     memory.goals.remote_defense.remove(goal_room);
+                    info!("No hostiles, removing... {}", goal_room);
 
-                    if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+                    if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
                         remote_mem.under_attack = false;
+                        remote_mem.last_attack_time = None;
                     }
 
                     return;
+                } else if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
+                    remote_mem.under_attack = true;
+                    remote_mem.last_attack_time = Some(game::time());
                 }
 
                 for creep in hostile_creeps {
@@ -117,8 +127,11 @@ fn attain_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Roo
             if hostile_creeps.is_empty() {
                 memory.goals.remote_defense.remove(goal_room);
 
-                if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+                info!("No hostiles, removing... {}", goal_room);
+
+                if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
                     remote_mem.under_attack = false;
+                    remote_mem.last_attack_time = None;
                 }
 
                 return;
@@ -170,8 +183,11 @@ fn decrease_ttl(goal_room: &RoomName, memory: &mut ScreepsMemory) -> bool {
     if new_creeps.is_empty() {
         memory.goals.remote_defense.remove(goal_room);
 
-        if let Some(remote_mem) = memory.rooms.get_mut(goal_room) {
+        info!("No new creeps {}, removing...", goal_room);
+
+        if let Some(remote_mem) = memory.remote_rooms.get_mut(goal_room) {
             remote_mem.under_attack = false;
+            remote_mem.last_attack_time = None;
         }
 
         return true;

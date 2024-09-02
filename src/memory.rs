@@ -225,6 +225,8 @@ structstruck::strike! {
         pub creeps: Vec<String>,
         pub sources: Vec<ScoutedSource>,
 
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub last_attack_time: Option<u32>,
         pub under_attack: bool,
     }
 }

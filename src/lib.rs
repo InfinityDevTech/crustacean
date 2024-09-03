@@ -8,6 +8,7 @@ use std::{
     sync::{Mutex, Once, OnceLock},
 };
 
+use alloc::ALLOCATOR;
 use combat::{ally::Allies, global::run_global_goal_setters, goals::run_goal_handlers, hate_handler::decay_hate};
 use constants::{MAX_BUCKET, MMO_SHARD_NAMES};
 use formation::formations::run_formations;
@@ -18,7 +19,7 @@ use movement::caching::generate_pathing_targets;
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::{hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
+    cache::{self, hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
 use screeps::{find, game, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
@@ -29,6 +30,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
+mod alloc;
 mod allies;
 mod combat;
 mod config;
@@ -162,6 +164,10 @@ pub fn game_loop() {
             &mut memory,
             &mut cache,
         );
+
+        if !cache.rooms.contains_key(room) || !memory.rooms.contains_key(room) {
+            continue;
+        }
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
         let room_memory = memory.rooms.get_mut(room).unwrap();
@@ -353,7 +359,9 @@ pub fn game_loop() {
         total_highest_count
     );
     info!("  Bucket: {}", game::cpu::bucket());
-    info!("  Heap: {:.2}%", used);
+    info!("  Heap: {:.2}% ({:.2} mb)", used, ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64) / 1024.0 / 1024.0));
+    info!("  Allocated now: {:?} bytes", ALLOCATOR.allocated_now());
+    info!("  Allocated now: {:.2} mb", (ALLOCATOR.allocated_now() as f64 / 1024.0 / 1024.0));
     info!("  Time since last reset: {}", heap_lifetime);
     *heap_lifetime += 1;
 

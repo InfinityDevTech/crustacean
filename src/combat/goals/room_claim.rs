@@ -252,7 +252,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                         }
                     }
 
-                    if score >= 8 {
+                    if score >= 7 {
                         available_xy.push(xy);
                     }
                 }

@@ -178,6 +178,10 @@ impl SpawnManager {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    if !memory.rooms.contains_key(&room.name()) {
+        return;
+    }
+
     let room_memory = memory.rooms.get(&room.name()).unwrap().clone();
     let owning_cache = cache.rooms.get(&room.name()).unwrap();
 

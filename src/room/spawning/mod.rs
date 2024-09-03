@@ -704,8 +704,8 @@ pub fn upgrader(
         2 => 15,
         3 => 22,
         4 => 30,
-        5 => 32,
-        6 => 48,
+        5 => 30,
+        6 => 45,
         7 => 50,
         8 => 5,
         _ => 1,
@@ -756,7 +756,7 @@ pub fn upgrader(
     let mut priority = 4.0;
     priority += ((1.0 - current_work_parts / target_work_parts as f32) as f64) * 7.0;
 
-    if !under_storage_gate(cache, 2.0) {
+    if !under_storage_gate(cache, 1.5) {
         priority *= 2.0;
     }
 

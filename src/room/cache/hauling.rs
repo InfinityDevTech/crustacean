@@ -256,6 +256,10 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
     let starting_cpu = game::cpu::get_used();
     let mut matched_creeps = Vec::new();
 
+    if !room_cache.rooms.contains_key(room_name) {
+        return;
+    }
+
     let cache = &mut room_cache.rooms.get_mut(room_name).unwrap();
     let count = cache.hauling.new_orders.len();
     let mut saved = Vec::new();

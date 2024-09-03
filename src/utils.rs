@@ -285,7 +285,7 @@ pub fn find_closest_owned_room(
 
     if cache.my_rooms.contains(target_room) {
         if let Some(min_rcl) = min_rcl {
-            if cache.rooms.get(target_room).unwrap().rcl >= min_rcl {
+            if cache.rooms.contains_key(target_room) && cache.rooms.get(target_room).unwrap().rcl >= min_rcl {
                 return Some(*target_room);
             }
         } else {

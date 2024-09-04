@@ -627,6 +627,8 @@ pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
 
 #[cfg(feature = "season1")]
 pub fn haul_score_resources(room_name: &RoomName, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
+    use crate::utils::under_storage_gate;
+
     let responsible_room = utils::find_closest_owned_room(room_name, cache, Some(3));
 
     if let Some(responsible_room) = responsible_room {
@@ -643,8 +645,13 @@ pub fn haul_score_resources(room_name: &RoomName, cache: &mut RoomCache, memory:
 
             for resource in my_score_resource {
                 let amt = resource.store().get_used_capacity(Some(ResourceType::Score));
-                let prio = amt * 5;
-                responsible_cache.hauling.create_order(resource.raw_id(), Some(StructureType::Container), Some(ResourceType::Score), Some(amt), f32::MIN, HaulingType::NoDistanceCalcOffer);
+                let prio = if under_storage_gate(responsible_cache, 1.0) {
+                    amt as f32 * 3.0
+                } else {
+                    f32::MIN
+                };
+
+                responsible_cache.hauling.create_order(resource.raw_id(), Some(StructureType::Container), Some(ResourceType::Score), Some(amt), prio, HaulingType::NoDistanceCalcOffer);
             }
         }
     }

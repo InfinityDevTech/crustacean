@@ -71,7 +71,7 @@ configs:
   wasm-pack-options:
     # The special '*'' key sets flags applied to all servers, which
     # will be **concatenated** with any applicable per-server config
-    '*': ["--config", "build.rustflags=['-Ctarget-cpu=mvp']", "-Z", "build-std=std,panic_abort"]
+    '*': ["--config", "build.rustflags=['-Ctarget-cpu=mvp']", "--target=wasm32-unknown-unknown", "-Z", "build-std=std,panic_abort"]
     # This setting enables the `mmo` crate feature for these destinations,
     # which enables the API functions for intershard communication and pixel
     # generation, which are specific to MMO

@@ -2,6 +2,7 @@
 name = "crustacean"
 version = "0.0.0"
 authors = []
+target_family = "wasm"
 edition = "2021"
 
 [lib]
@@ -25,6 +26,7 @@ lazy_static = "1.5.0"
 screeps-game-utils = "0.22.0"
 base65536 = "1.0.1"
 flate2 = "1.0.31"
+talc = { version = "4.4.1", features = ["counters", "lock_api"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
@@ -32,6 +34,7 @@ wasm-bindgen-test = "0.3"
 [profile.release]
 panic = "abort"
 opt-level = 3
+target_family = "wasm"
 lto = true
 
 [package.metadata.wasm-pack.profile.release]
@@ -47,6 +50,7 @@ lto = true
 # --signext-lowering - removes opcodes that the screeps servers can't load (see 
 # https://github.com/rustyscreeps/screeps-game-api/issues/391)
 #wasm-opt = ["-O4", "--disable-sign-ext"]
+target_family = "wasm"
 wasm-opt = ["-O4", "--signext-lowering"]
 
 [features]

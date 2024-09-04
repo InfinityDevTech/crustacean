@@ -1,3 +1,4 @@
+//#![cfg(target_family = "wasm")]
 #![allow(internal_features)]
 #![feature(map_many_mut)]
 #![feature(core_intrinsics)]
@@ -8,7 +9,6 @@ use std::{
     sync::{Mutex, Once, OnceLock},
 };
 
-use alloc::ALLOCATOR;
 use combat::{ally::Allies, global::run_global_goal_setters, goals::run_goal_handlers, hate_handler::decay_hate};
 use constants::{MAX_BUCKET, MMO_SHARD_NAMES};
 use formation::formations::run_formations;
@@ -30,7 +30,15 @@ use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
-mod alloc;
+use talc::*;
+
+#[global_allocator]
+static ALLOCATOR: talc::Talck<talc::locking::AssumeUnlockable, talc::ClaimOnOom> = unsafe {
+    static mut MEMORY: [u8; 0x1F000000] = [0; 0x1F000000];
+    let span = talc::Span::from_const_array(std::ptr::addr_of!(MEMORY));
+    talc::Talc::new(unsafe { talc::ClaimOnOom::new(span) }).lock()
+};
+
 mod allies;
 mod combat;
 mod config;
@@ -360,8 +368,9 @@ pub fn game_loop() {
     );
     info!("  Bucket: {}", game::cpu::bucket());
     info!("  Heap: {:.2}% ({:.2} mb)", used, ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64) / 1024.0 / 1024.0));
-    info!("  Allocated now: {:?} bytes", ALLOCATOR.allocated_now());
-    info!("  Allocated now: {:.2} mb", (ALLOCATOR.allocated_now() as f64 / 1024.0 / 1024.0));
+    info!("  Allocated now: {:?} bytes / {:?} bytes", ALLOCATOR.lock().get_counters().allocated_bytes, ALLOCATOR.lock().get_counters().available_bytes);
+    //ALLOCATOR.lock().get_counters().
+    info!("  Allocated now: {:.2} mb / {:.2} mb", (ALLOCATOR.lock().get_counters().allocated_bytes as f64 / 1024.0 / 1024.0), (ALLOCATOR.lock().get_counters().available_bytes as f64 / 1024.0 / 1024.0));
     info!("  Time since last reset: {}", heap_lifetime);
     *heap_lifetime += 1;
 

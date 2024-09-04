@@ -135,7 +135,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         } else {
             vec![Part::Claim, Part::Move]
         };
-        info!("Reserver body {:?}", body);
+
         let cost = get_body_cost(&body);
 
         // If we can only make one part, and we cant have 2 creeps, then we dont spawn
@@ -194,8 +194,6 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
                 priority = f64::MAX;
             }
         }
-
-        info!("Reserver prio {}", priority);
 
         let req = cache.spawning.create_room_spawn_request(
             Role::Reserver,

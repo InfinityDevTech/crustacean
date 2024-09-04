@@ -3,6 +3,7 @@ use crate::logging::panic::PanicInfo;
 use js_sys::JsString;
 use log::*;
 use screeps::game;
+use talc::{OomHandler, Span};
 use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::console;
 
@@ -101,4 +102,32 @@ fn panic_hook(info: &PanicInfo) {
     }
 
     error!("{}", fmt_error);
+}
+
+struct NotifyOOMHandler {
+    heap: Span,
+}
+
+impl OomHandler for NotifyOOMHandler {
+    fn handle_oom(talc: &mut talc::Talc<Self>, layout: std::alloc::Layout) -> Result<(), ()> {
+        // We dont have enough memory.
+        // Well, fuck
+
+        // TODO:
+        // Attempt recovery?, Possibly?
+
+        let used_heap = talc.get_counters().allocated_bytes;
+        let max_heap = talc.get_counters().available_bytes;
+
+        let allocated_mb = used_heap as f64 / 1024.0 / 1024.0;
+        let max_mb = max_heap as f64 / 1024.0 / 1024.0;
+
+        let stri = format!("Hey, im out of memory here on shard [{}], feed me! [{} mb / {} mb] max  -  In bytes: {} / {}", game::shard::name(), allocated_mb, max_mb, used_heap, max_heap);
+
+        game::notify(&stri, Some(1));
+
+        game::cpu::halt();
+
+        Err(())
+    }
 }

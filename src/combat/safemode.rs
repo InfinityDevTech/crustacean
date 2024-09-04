@@ -2,9 +2,21 @@ use std::collections::HashMap;
 
 use screeps::{find, game, HasHits, HasPosition, LocalCostMatrix, Room, RoomXY, Terrain};
 
-use crate::{memory::ScreepsMemory, room::cache::CachedRoom, traits::{position::PositionExtensions, room::find_pos_in_rect}, utils};
+use crate::{constants, memory::ScreepsMemory, room::cache::CachedRoom, traits::{position::PositionExtensions, room::find_pos_in_rect}, utils};
 
 pub fn should_safemode(room: &Room, room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) -> bool {
+    let mut only_invader = true;
+    for attacker in &room_cache.creeps.enemy_creeps_with_attack {
+        if attacker.owner().username() != constants::INVADER_USERNAME {
+            only_invader = false;
+            break;
+        }
+    }
+
+    if only_invader {
+        return false;
+    }
+
     // Jank but works ig, if spawn is below max health
     // and there are attackers, just safemode.
     for spawn in room_cache.structures.spawns.values() {

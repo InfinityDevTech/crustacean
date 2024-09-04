@@ -1,5 +1,6 @@
 use std::{u32, vec};
 
+use log::info;
 use screeps::{
     find, game, HasPosition, MapTextStyle, MapVisual, OwnedStructureProperties, Part, Position, Room, RoomCoordinate, RoomName, SharedCreepProperties, StructureType
 };
@@ -52,7 +53,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
 
     clear_creeps(goal);
 
-    if memory.rooms.len() >= game::gcl::level() as usize {
+    if memory.rooms.len() > game::gcl::level() as usize {
         return;
     }
 
@@ -68,6 +69,8 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
     if responsible_room.is_none() {
         return;
     }
+
+    info!("Claimed, {}, assigned {}", claimed, goal.creeps_assigned.len());
 
     let pos = Position::new(RoomCoordinate::new(5).unwrap(), RoomCoordinate::new(5).unwrap(), *goal_room);
     MapVisual::text(pos, "🚩".to_string(), MapTextStyle::default());
@@ -162,6 +165,8 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             if !under_storage_gate(cache.rooms.get(&responsible_room.unwrap()).unwrap(), 1.0) {
                 priority = f64::MAX - 5.0;
             }
+
+            info!("Spawning expansion dude with prio {:?}", priority);
 
             goal.creeps_assigned.push(name.clone());
 

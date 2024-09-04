@@ -93,6 +93,19 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
             if creep.store().get_free_capacity(None) == 0 {
                 creep_memory.needs_energy = Some(false);
             }
+
+        } else if room_cache.rcl < 2 {
+            if let Some(controller) = &room_cache.structures.controller {
+                if creep.store().get_used_capacity(None) == 0 {
+                    creep_memory.needs_energy = None;
+                }
+
+                if creep.pos().get_range_to(controller.pos()) <= 3 {
+                    creep.upgrade_controller(controller);
+                } else {
+                    creep.better_move_to(memory, room_cache, controller.pos(), 3, MoveOptions::default());
+                }
+            }
         } else if non_road_csite_count.clone().count() >= 1 {
             if let Some(spawn) = room_cache.structures.spawns.values().next() {
                 if spawn.store().get_free_capacity(None) > 0 {

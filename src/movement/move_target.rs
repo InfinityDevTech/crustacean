@@ -1,16 +1,18 @@
-use log::warn;
+use log::{info, warn};
 use screeps::{
     find, game,
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
     HasPosition, LocalCostMatrix, OwnedStructureProperties, Part, Position, RoomName, RoomXY,
     StructureObject, StructureProperties, StructureType,
 };
+use screeps_utils::room_xy::{chebyshev_range_iter, GridIter, Order};
 
 use crate::{
     constants::{SWAMP_MASK, WALL_MASK},
     heap,
     memory::ScreepsMemory,
-    utils::get_my_username,
+    traits::position::RoomXYExtensions,
+    utils::{self, get_my_username, new_xy},
 };
 
 use super::movement_utils::visualise_path;
@@ -313,8 +315,8 @@ pub fn path_call(
         };
 
         // This might be redundant. I might be a dunce.
-        for x in 0..50 {
-            for y in 0..50 {
+        for x in 0..49 {
+            for y in 0..49 {
                 let tile = terrain[y * 50 + x];
 
                 // FUCK pservers dude, like, what the hell.
@@ -403,42 +405,19 @@ pub fn path_call(
                     continue;
                 }
 
-                let radius = 3;
+                let center = enemy.pos().xy();
 
-                let start_x = enemy.pos().x().u8();
-                let start_y = enemy.pos().y().u8();
-
-                for x in start_x - radius..=start_x + radius {
-                    for y in start_y - radius..=start_y + radius {
-                        if x == start_x && y == start_y {
-                            continue;
-                        }
-
-                        let xy = unsafe { RoomXY::unchecked_new(x, y) };
-
-                        matrix.set(xy, 255);
-                    }
-                }
+                chebyshev_range_iter(center, 3).filter(|&xy| xy != center).for_each(|xy| matrix.set(xy, 255));
             }
 
             if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
                 if let Some(source_keepers) = &scouting_data.source_keepers {
                     for sk in source_keepers {
-                        let radius = 3;
+                        let tl = sk.saturating_add((-3, -3));
+                        let br = sk.saturating_add((3, 3));
 
-                        let start_x = sk.x.u8();
-                        let start_y = sk.y.u8();
-
-                        for x in start_x - radius..=start_x + radius {
-                            for y in start_y - radius..=start_y + radius {
-                                if x == start_x && y == start_y {
-                                    continue;
-                                }
-
-                                let xy = unsafe { RoomXY::unchecked_new(x, y) };
-
-                                matrix.set(xy, 255);
-                            }
+                        for xy in GridIter::new(tl, br, Order::RowMajor) {
+                            matrix.set(xy, 255);
                         }
                     }
                 }
@@ -454,10 +433,8 @@ pub fn path_call(
 
                 let y = room_memory.spawn_center.y;
 
-                let pos1 =
-                    unsafe { RoomXY::unchecked_new(room_memory.spawn_center.x.u8() + 1, y.into()) };
-                let pos2 =
-                    unsafe { RoomXY::unchecked_new(room_memory.spawn_center.x.u8() - 1, y.into()) };
+                let pos1 = utils::new_xy(room_memory.spawn_center.x.u8() + 1, y.into());
+                let pos2 = utils::new_xy(room_memory.spawn_center.x.u8() - 1, y.into());
 
                 matrix.set(pos1, 255);
                 matrix.set(pos2, 255);

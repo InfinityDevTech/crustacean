@@ -62,7 +62,7 @@ pub const REMOTE_SIGNS: [&str; 3] = [
 "liaohuo isnt gone. Just ask lp136. - Infinity Dev",
 ];
 
-pub const ROOM_SIGNS: [&str; 15] = [
+pub const ROOM_SIGNS: [&str; 14] = [
 "Marx would be dissapointed.",
 "If your name end with 'in', time to get out.",
 "Made a mess and the war got cold.",
@@ -70,13 +70,12 @@ pub const ROOM_SIGNS: [&str; 15] = [
 "Pride of Lenin took Trotsky out of the picture.",
 "Stop the red iceberg!",
 "Cease the Collectivization!",
-"Its not Communism, its Marvinism!",
 "Communism != Collectivization",
-"Why did the creeps cross the road? They were under Marvin's collectivized control.",
-"The top 1% dont control as much as Marvin. Stop the collectivization!",
-"Marvin is a collectivized menace.",
-"Workers of the world, unite! Against Marvin.",
-"Screeps bots spend a combined 13 years of ther life under a dictatorship: Marvin.",
+"Why did the creeps cross the road? They were under Commie's collectivized control.",
+"The top 1% dont control as much as CommieBot. Stop the collectivization!",
+"Commiebot is a collectivized menace.",
+"Workers of the world, unite! Against Commiebot.",
+"Screeps bots spend a combined 13 years of ther life under a dictatorship: Commiebot.",
 "We already eat from the trashcan all the time. The name of this trash is collectivization - Infinity Dev"
 ];
 

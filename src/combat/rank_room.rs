@@ -65,6 +65,8 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
         keeper_lairs.push(keeper.pos().xy());
     }
 
+    let xy = cached_room.structures.controller.as_ref().map(|controller| controller.pos().xy());
+
     let scouted_room = ScoutedRoom {
         name: room_name,
         room_type: utils::room_type(&room_name),
@@ -75,6 +77,7 @@ pub fn scout_room(room: &Room, memory: &mut ScreepsMemory, cached_room: &mut Cac
         reserved: reserved.clone(),
         defense_capability: 0,
         sources: sources.clone(),
+        controller: xy,
         mineral: mineral_id,
         last_scouted: game::time(),
     };

@@ -78,7 +78,6 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
 
                 if !damaged.is_empty() {
                     let target = damaged.first().unwrap();
-                    info!("Attempting to heal: {:?}", target.1);
                     let _ = tower.ITheal(target.1);
                     continue;
                 }
@@ -92,7 +91,6 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
 
                 if !damaged.is_empty() {
                     let target = damaged.first().unwrap();
-                    info!("Attempting to heal ally: {:?}", target);
                     let _ = tower.ITheal(*target);
                     continue;
                 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, i32};
 
 use log::info;
 use screeps::{
@@ -203,7 +203,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             let mut sorted_scores = scores.iter().collect::<Vec<_>>();
             sorted_scores.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
 
-            let mut highest_score = 0.0;
+            let mut highest_score = f64::MIN;
             let mut top_scorer = None;
 
             for (room_name, score) in sorted_scores {
@@ -417,6 +417,34 @@ pub fn score_room(
     score -= nearby_source_keepers(room_name) * 10.0;
     score -= scan_remote_accessibility(room_name) as f64 * 3.0;
     let swamp_percent = utils::calculate_swamp_percentage(room_name);
+
+    let range_3 = room_name.get_adjacent(11);
+
+    let mut lowest_range = i32::MAX;
+    let mut lowest = None;
+
+    for other_room in range_3 {
+        let dist = utils::calc_room_distance(&other_room, room_name, false);
+
+        if let Some(scouting_data) = memory.scouted_rooms.get(&other_room) {
+            let owner = &scouting_data.owner;
+
+            if owner.is_some() && *owner.as_ref().unwrap() != utils::get_my_username() {
+                if dist <= 1 {
+                    return 0.0;
+                }
+
+                if dist < lowest_range {
+                    lowest_range = dist;
+                    lowest = Some(other_room)
+                }
+            }
+        }
+    }
+
+    if let Some(dist) = lowest {
+        score += lowest_range as f64 * 10.0;
+    }
 
     let closest_room = utils::find_closest_owned_room(room_name, cache, None);
     if let Some(closest_room) = closest_room {

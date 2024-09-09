@@ -33,16 +33,17 @@ pub fn run_hauler(
 
     let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
 
+    if relay_run.is_some() || cache.creeps_ran_post_relay.contains_key(&creep_name) {
+        let v = cache.creeps_ran_post_relay.entry(creep_name.clone()).or_insert(true);
+        *v = true;
+    }
+
     if let Some(order) = &creep_memory.hauling_task.clone() {
         creep.bsay("EXEC", false);
 
         execute_order(creep, memory, cache, order);
 
         decide_energy_need(creep, memory, cache);
-
-        if order.haul_type == HaulingType::Transfer && relay_run.is_none() {
-            //check_relay(creep, memory, cache);
-        }
 
         return;
     }
@@ -621,6 +622,8 @@ pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
 
                 let my_task = &my_creep.hauling_task.clone();
                 let other_task = &other_creep.hauling_task.clone();
+
+                let reserved_orders = heap().hauling.lock().unwrap();
 
                 other_creep.hauling_task = my_task.clone();
                 my_creep.hauling_task = other_task.clone();

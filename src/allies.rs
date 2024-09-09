@@ -1,4 +1,4 @@
-use screeps::RoomName;
+use screeps::{game, RoomName};
 
 pub fn is_ally(user: &str, room_name: Option<RoomName>) -> bool {
     if let Some(room_name) = room_name {
@@ -6,6 +6,12 @@ pub fn is_ally(user: &str, room_name: Option<RoomName>) -> bool {
     }
 
     let user = user.to_lowercase();
+
+    if game::shard::name() == "shardSeason" {
+        if user == "volotsyouga" {
+            return true;
+        }
+    }
 
     // This is an operation against all S0 OM users.
     if user == "droidfreak" || user == "v1king" {

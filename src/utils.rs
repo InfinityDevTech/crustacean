@@ -3,6 +3,8 @@
 
 use std::{collections::HashMap, f32::consts::E};
 
+use enum_map::{enum_map, EnumMap};
+use lazy_static::lazy_static;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
     constants, game, pathfinder::SearchOptions, BodyPart, LocalCostMatrix,
@@ -12,7 +14,7 @@ use screeps::{
 
 use crate::{
     config, heap,
-    memory::Role,
+    memory::{self, Role},
     movement::move_target::MoveTarget,
     room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache},
     traits::room::RoomType,
@@ -134,33 +136,7 @@ pub fn scale_haul_priority(
 /// **Example:** Hauler **=** mb
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn role_to_name(role: Role) -> String {
-    let data = match role {
-        Role::Harvester => "sm",
-        Role::MineralMiner => "mm",
-        Role::Hauler => "mb",
-        Role::Repairer => "rb",
-        Role::BaseHauler => "bh",
-        Role::StorageSitter => "ss",
-        Role::Upgrader => "ud",
-        Role::Builder => "bd",
-        Role::Scout => "fg",
-        Role::FastFiller => "ff",
-        Role::Bulldozer => "sa",
-        Role::GiftBasket => "gb",
-        Role::RemoteHarvester => "rm",
-        Role::PhysicalObserver => "po",
-        Role::Unclaimer => "uc",
-        Role::Recycler => "rc",
-        Role::ExpansionBuilder => "eb",
-
-        Role::Claimer => "cl",
-        Role::Reserver => "rs",
-        Role::RemoteDefender => "rd",
-        Role::InvaderCoreCleaner => "ic",
-        Role::InvaderDuoAttacker => "ia",
-        Role::InvaderDuoHealer => "ih",
-    };
-    data.to_string()
+    ROLE_MAP[role].to_string()
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -239,39 +215,57 @@ pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
     map
 }
 
+lazy_static! {
+    pub static ref ROLE_MAP: EnumMap<Role, &'static str> = enum_map! {
+            Role::Harvester => "sm",
+            Role::Hauler => "mb",
+            Role::MineralMiner => "mm",
+            Role::Repairer => "rb",
+            Role::BaseHauler => "bh",
+            Role::StorageSitter => "ss",
+            Role::Upgrader => "ud",
+            Role::Builder => "bd",
+            Role::Scout => "fg",
+            Role::FastFiller => "ff",
+            Role::Bulldozer => "sa",
+            Role::GiftBasket => "gb",
+            Role::RemoteHarvester => "rm",
+            Role::Unclaimer => "uc",
+            Role::Recycler => "rc",
+            Role::PhysicalObserver => "po",
+            Role::Claimer => "cl",
+            Role::Reserver => "rs",
+            Role::RemoteDefender => "rd",
+            Role::InvaderCoreCleaner => "ic",
+            Role::InvaderDuoAttacker => "ia",
+            Role::InvaderDuoHealer => "ih",
+
+            Role::ExpansionBuilder => "eb",
+
+            #[cfg(feature = "season1")]
+            Role::Season1Digger => "s1d",
+    };
+}
+
 /// Convert a string to its respective role
 /// **Example:** sm **=** Miner
 /// **Example:** mb **=** Hauler
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn name_to_role(name: &str) -> Option<Role> {
     let role_tag = name.split("-").next().unwrap();
-    match role_tag {
-        "sm" => Some(Role::Harvester),
-        "mb" => Some(Role::Hauler),
-        "mm" => Some(Role::MineralMiner),
-        "rb" => Some(Role::Repairer),
-        "bh" => Some(Role::BaseHauler),
-        "ss" => Some(Role::StorageSitter),
-        "ud" => Some(Role::Upgrader),
-        "bd" => Some(Role::Builder),
-        "fg" => Some(Role::Scout),
-        "ff" => Some(Role::FastFiller),
-        "sa" => Some(Role::Bulldozer),
-        "gb" => Some(Role::GiftBasket),
-        "rm" => Some(Role::RemoteHarvester),
-        "uc" => Some(Role::Unclaimer),
-        "rc" => Some(Role::Recycler),
-        "po" => Some(Role::PhysicalObserver),
-        "cl" => Some(Role::Claimer),
-        "rs" => Some(Role::Reserver),
-        "rd" => Some(Role::RemoteDefender),
-        "ic" => Some(Role::InvaderCoreCleaner),
-        "ia" => Some(Role::InvaderDuoAttacker),
-        "ih" => Some(Role::InvaderDuoHealer),
-
-        "eb" => Some(Role::ExpansionBuilder),
-        _ => None,
+    for (role, tag) in ROLE_MAP.into_iter() {
+        if role_tag == tag {
+            return Some(role);
+        }
     }
+
+    None
+}
+
+pub fn ticks_to_fill_bucket(bucket: i32) -> u32 {
+    let max_cpu = game::cpu::tick_limit();
+
+    (10000.0 / max_cpu).ceil() as u32
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -285,7 +279,9 @@ pub fn find_closest_owned_room(
 
     if cache.my_rooms.contains(target_room) {
         if let Some(min_rcl) = min_rcl {
-            if cache.rooms.contains_key(target_room) && cache.rooms.get(target_room).unwrap().rcl >= min_rcl {
+            if cache.rooms.contains_key(target_room)
+                && cache.rooms.get(target_room).unwrap().rcl >= min_rcl
+            {
                 return Some(*target_room);
             }
         } else {

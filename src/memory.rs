@@ -22,44 +22,47 @@ pub fn segment_ids() -> EnumMap<SegmentIDs, u8> {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Copy, Enum)]
 // The roles listed in creep memory
 // The order of this also is the order in which
 // Traffic Priority is handled.
 pub enum Role {
     // Mining industry
-    Harvester = 0,
-    MineralMiner = 1,
-    Hauler = 2,
+    Harvester,
+    MineralMiner,
+    Hauler,
 
-    FastFiller = 3,
-    BaseHauler = 4,
-    StorageSitter = 5,
+    FastFiller,
+    BaseHauler,
+    StorageSitter,
 
-    Upgrader = 6,
-    Repairer = 7,
-    Scout = 8,
-    Builder = 9,
+    Upgrader,
+    Repairer,
+    Scout,
+    Builder,
 
-    RemoteHarvester = 10,
-    PhysicalObserver = 11,
+    RemoteHarvester,
+    PhysicalObserver,
 
-    Bulldozer = 12,
-    Unclaimer = 13,
+    Bulldozer,
+    Unclaimer,
 
-    ExpansionBuilder = 14,
+    ExpansionBuilder,
 
-    Claimer = 50,
-    Reserver = 51,
-    RemoteDefender = 52,
-    InvaderCoreCleaner = 53,
+    Claimer,
+    Reserver,
+    RemoteDefender,
+    InvaderCoreCleaner,
 
-    InvaderDuoAttacker = 54,
-    InvaderDuoHealer = 55,
+    InvaderDuoAttacker,
+    InvaderDuoHealer,
+
+    #[cfg(feature = "season1")]
+    Season1Digger,
 
     // Assorted junk roles, recycler just recycles itself
-    Recycler = 99,
-    GiftBasket = 100,
+    Recycler,
+    GiftBasket,
 }
 
 pub fn iter_roles() -> Vec<Role> {
@@ -275,7 +278,8 @@ structstruck::strike! {
             pub pos: RoomXY,
             pub pos_av: u8,
         }>>,
-
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub controller: Option<RoomXY>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub source_keepers: Option<Vec<RoomXY>>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -377,6 +381,8 @@ structstruck::strike! {
         pub creep_say: bool,
         pub subtract_intents_profiler: bool,
 
+        pub last_generated_pixel: u32,
+
         pub id_index: u128,
         pub mem_version: u8,
         pub rooms: HashMap<RoomName, RoomMemory>,
@@ -407,6 +413,8 @@ impl ScreepsMemory {
             let mut memory = ScreepsMemory {
                 creep_say: true,
                 subtract_intents_profiler: true,
+
+                last_generated_pixel: 0,
 
                 id_index: 0,
                 mem_version: MEMORY_VERSION,
@@ -441,6 +449,8 @@ impl ScreepsMemory {
                     let mut memory = ScreepsMemory {
                         creep_say: true,
                         subtract_intents_profiler: true,
+
+                        last_generated_pixel: 0,
 
                         id_index: 0,
                         mem_version: MEMORY_VERSION,

@@ -646,12 +646,12 @@ pub fn haul_score_resources(room_name: &RoomName, cache: &mut RoomCache, memory:
             for resource in my_score_resource {
                 let amt = resource.store().get_used_capacity(Some(ResourceType::Score));
                 let prio = if under_storage_gate(responsible_cache, 1.0) {
-                    amt as f32 * 3.0
+                    amt as f32
                 } else {
                     f32::MIN
                 };
 
-                responsible_cache.hauling.create_order(resource.raw_id(), Some(StructureType::Container), Some(ResourceType::Score), Some(amt), prio, HaulingType::NoDistanceCalcOffer);
+                responsible_cache.hauling.create_order(resource.raw_id(), Some(StructureType::Container), Some(ResourceType::Score), Some(amt), prio, HaulingType::Offer);
             }
         }
     }

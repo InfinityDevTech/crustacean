@@ -46,6 +46,10 @@ pub fn attain_reservation(
             //info!("[{}] Room is under attack. Pausing reservation goal...", target_room);
             return;
         }
+    } else {
+        memory.goals.room_reservation.remove(target_room);
+
+        return;
     }
 
     if goal.accessible_reservation_spots == 0 {

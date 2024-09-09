@@ -1,4 +1,4 @@
-use screeps::{Creep, HasPosition, OwnedStructureProperties, Position, RoomCoordinate, SharedCreepProperties};
+use screeps::{game, Creep, HasPosition, OwnedStructureProperties, Position, RoomCoordinate, SharedCreepProperties};
 
 use crate::{
     memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}
@@ -26,6 +26,22 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         }, unsafe {
             RoomCoordinate::unchecked_new(25)
         }, creep_memory.target_room.unwrap());
+
+        if let Some(flag) = game::flags().get("forceClaimerPath".to_string()) {
+            creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(200));
+
+            return;
+        }
+
+        if let Some(scouting_data) = memory.scouted_rooms.get(&creep_memory.target_room.unwrap()) {
+            if scouting_data.controller.is_some() {
+                let pos = Position::new(scouting_data.controller.unwrap().x, scouting_data.controller.unwrap().y, creep_memory.scout_target.unwrap());
+
+                creep.better_move_to(memory, room_cache, pos, 1, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(200));
+
+                return;
+            }
+        }
 
         creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(200));
     } else {

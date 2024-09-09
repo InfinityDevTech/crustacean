@@ -1,3 +1,5 @@
+use std::mem;
+
 use log::info;
 use screeps::{
     game,
@@ -8,24 +10,35 @@ use screeps::{
 };
 
 use crate::{
-    combat::{hate_handler, rank_room, safemode::should_safemode}, compression::decode_pos_list, config::{self, REMOTE_SCAN_FOR_RCL}, heap, memory::{Role, ScreepsMemory}, room::{
+    combat::{hate_handler, rank_room, safemode::should_safemode},
+    compression::decode_pos_list,
+    config::{self, REMOTE_SCAN_FOR_RCL},
+    heap,
+    memory::{Role, ScreepsMemory},
+    room::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
-        planning::room::{plan_room, remotes, roads::plan_main_room_roads, skippy_base::run_planner},
+        planning::room::{
+            plan_room, remotes, roads::plan_main_room_roads, skippy_base::run_planner,
+        },
         tower,
         visuals::run_full_visuals,
-    }, traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions}
+    },
+    traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
+    utils,
 };
 
 use super::{
-    links, planning::{
+    links,
+    planning::{
         self,
-        room::{construction::{
+        room::construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
             get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
             plan_remote_containers,
-        }},
-    }, visuals::visualise_room_visual
+        },
+    },
+    visuals::visualise_room_visual,
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -39,10 +52,6 @@ use super::{
 pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if game::cpu::bucket() < 500 && !room.my() {
         return;
-    }
-
-    if room.my() {
-        cache.my_rooms.push(room.name());
     }
 
     let starting_cpu = game::cpu::get_used();
@@ -71,23 +80,36 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         return;
     }
 
-    if !room.my() && !memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
-        //info!("[{}] Skipping execution, bucket is too low...", room.name());
+    info!(
+        "Last generated: {}, ticks to fill: {}, time: {}",
+        memory.last_generated_pixel,
+        utils::ticks_to_fill_bucket(1000),
+        game::time()
+    );
 
-        return;
-    } else if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
-        info!(
-            "[REMOTE] Room {} running in low-power mode, to fix some bugs...",
-            room.name()
-        );
+    if memory.last_generated_pixel + utils::ticks_to_fill_bucket(1000) <= game::time() {
+        if !room.my()
+            && !memory.remote_rooms.contains_key(&room.name())
+            && game::cpu::bucket() < 1000
+        {
+            //info!("[{}] Skipping execution, bucket is too low...", room.name());
 
-        cache.create_if_not_exists(&room, memory, None);
-        organizer::run_creeps(&room, memory, cache);
+            return;
+        } else if memory.remote_rooms.contains_key(&room.name()) && game::cpu::bucket() < 1000 {
+            info!(
+                "[REMOTE] Room {} running in low-power mode, to fix some bugs...",
+                room.name()
+            );
 
-        cache.non_owned_cpu += (game::cpu::get_used() - starting_cpu) - (cache.creep_cpu - starting_creep_cpu);
-        cache.non_owned_count += 1;
+            cache.create_if_not_exists(&room, memory, None);
+            organizer::run_creeps(&room, memory, cache);
 
-        return;
+            cache.non_owned_cpu +=
+                (game::cpu::get_used() - starting_cpu) - (cache.creep_cpu - starting_creep_cpu);
+            cache.non_owned_count += 1;
+
+            return;
+        }
     }
 
     if room.my() && !memory.rooms.contains_key(&room.name()) && !plan_room(&room, memory, cache) {
@@ -251,7 +273,10 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             // If we just pushed code, or the heap reset, scan.
             if ((room_memory.remotes.len() < config::REMOTES_FOR_RCL(room_cache).into()
                 && game::time() % 10 == 0)
-                || game::time() % REMOTE_SCAN_FOR_RCL(room_cache) == 0 || lifetime == 0) && game::cpu::bucket() > 500 {
+                || game::time() % REMOTE_SCAN_FOR_RCL(room_cache) == 0
+                || lifetime == 0)
+                && game::cpu::bucket() > 500
+            {
                 let remotes = remotes::fetch_possible_remotes(&room, memory, cache);
                 info!(
                     "  [REMOTES] Remote re-scan triggered, found {} remotes",
@@ -275,7 +300,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
                 memory.goals.remote_defense.remove(&remote_memory.name);
             }
 
-            if remote_memory.last_attack_time.is_some() && remote_memory.last_attack_time.unwrap() + 1000 < game::time() {
+            if remote_memory.last_attack_time.is_some()
+                && remote_memory.last_attack_time.unwrap() + 1000 < game::time()
+            {
                 if let Some(remote_cache) = cache.rooms.get(&remote_memory.name) {
                     if remote_cache.creeps.enemy_creeps.is_empty() {
                         remote_memory.under_attack = false;
@@ -305,7 +332,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     //room_cache.hauling.match_haulers(memory, &room.name());
 
     if room.my() {
-        let end_cpu = game::cpu::get_used();
         let room_cache = cache.rooms.get_mut(&room.name()).unwrap();
 
         let controller = room.controller().unwrap();
@@ -315,15 +341,16 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         room_cache
             .stats
-            .write_to_memory(memory, room.name(), end_cpu - starting_cpu);
+            .write_to_memory(memory, room.name(), game::cpu::get_used() - starting_cpu);
 
         info!(
             "  [GOVERNMENT] Finished government for room: {} - CPU: {:.2}",
             room.name(),
-            end_cpu - starting_cpu
+            game::cpu::get_used() - starting_cpu
         );
     } else {
-        cache.non_owned_cpu += (game::cpu::get_used() - starting_cpu) - (cache.creep_cpu - starting_creep_cpu);
+        cache.non_owned_cpu +=
+            (game::cpu::get_used() - starting_cpu) - (cache.creep_cpu - starting_creep_cpu);
         cache.non_owned_count += 1;
     }
 }
@@ -351,14 +378,16 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
             || (room_memory.rcl != room.controller().unwrap().level())
             || game::time() % 300 == 0
         {
-            heap().cachable_positions.lock().unwrap().remove(&room.name());
+            heap()
+                .cachable_positions
+                .lock()
+                .unwrap()
+                .remove(&room.name());
             heap().flow_cache.lock().unwrap().remove(&room.name());
 
             let level = room.controller().unwrap().level();
 
-            room_memory
-                .rcl_times
-                .insert(level, game::time());
+            room_memory.rcl_times.insert(level, game::time());
 
             let structures = match room.controller().unwrap().level() {
                 2 => get_rcl_2_plan(),
@@ -379,7 +408,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 if !should_rampart && structure.2 == StructureType::Rampart {
                     continue;
                 }
-    
+
                 if !should_road && structure.2 == StructureType::Road {
                     continue;
                 }
@@ -486,7 +515,8 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
 
         info!(
             "[PLANNER]  Planning roads for room: {} - Count: {}",
-            room.name(), road_count
+            room.name(),
+            road_count
         );
 
         if road_count > 50 {
@@ -514,7 +544,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 planning::room::construction::plan_containers_and_links(room, room_cache);
             }
 
-            let planned_paths = memory.rooms.get(&room.name()).unwrap().planned_paths.clone();
+            let planned_paths = memory
+                .rooms
+                .get(&room.name())
+                .unwrap()
+                .planned_paths
+                .clone();
 
             if let Some(owning_room) = planned_paths.get(&room.name()) {
                 for pos in decode_pos_list(owning_room.to_string()) {
@@ -523,7 +558,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                     }
 
                     road_count += 1;
-                    let _ = room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None);
+                    let _ = room.ITcreate_construction_site(
+                        pos.x().u8(),
+                        pos.y().u8(),
+                        StructureType::Road,
+                        None,
+                    );
                 }
             }
 
@@ -585,7 +625,12 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
         if room_cache.rcl >= 6 && room_cache.structures.extractor.is_none() {
             if let Some(mineral) = &room_cache.resources.mineral {
                 let pos = mineral.pos();
-                let _ = room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Extractor, None);
+                let _ = room.ITcreate_construction_site(
+                    pos.x().u8(),
+                    pos.y().u8(),
+                    StructureType::Extractor,
+                    None,
+                );
             }
         }
     }

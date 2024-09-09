@@ -34,14 +34,14 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     if (health_percent < 100.0 || my_health_percent < 100.0) && my_health_percent > health_percent {
         if let Some(creep) = nearby_creeps.first() {
             if creep.pos().is_near_to(creep.pos()) {
-                let _ = creep.ITheal(*creep);
+                //let _ = creep.ITheal(*creep);
             } else {
                 let _ = creep.ITranged_heal(*creep);
                 creep.better_move_to(memory, room_cache, creep.pos(), 1, MoveOptions::default().avoid_enemies(true).path_age(1));
             }
         }
     } else if my_health_percent < 100.0 {
-        let _ = creep.ITheal(creep);
+        //let _ = creep.ITheal(creep);
     }
 
     let creep_memory = memory.creeps.get_mut(&creep.name());
@@ -75,6 +75,28 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     creep.bsay("DIE DIE DIE", true);
                     creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().path_age(1));
                 }
+                return;
+            }
+
+            if flag.color() == Color::Purple {
+                let mut enemies = creep.room().unwrap().find(find::HOSTILE_CREEPS, None);
+                enemies.sort_by_key(|c| c.pos().get_range_to(creep.pos()));
+                enemies.retain(|c| {
+                    for rampart in ramparts.iter() {
+                        if c.pos().is_equal_to(rampart.pos()) {
+                            return false;
+                        }
+                    }
+    
+                    true
+                });
+    
+                if let Some(enemy) = enemies.first() {
+                    if creep.ITattack(enemy) == Err(screeps::ErrorCode::NotInRange) {
+                        creep.better_move_to(memory, room_cache, enemy.pos(), 1, MoveOptions::default().path_age(1));
+                    }
+                }
+
                 return;
             }
 
@@ -122,6 +144,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                     }
                 } else {
                     let mut structures = creep.room().unwrap().find(find::STRUCTURES, None);
+                    structures.retain(| structure | structure.structure_type() != StructureType::Controller);
                     structures.retain(| structure | structure.structure_type() != StructureType::Controller || structure.structure_type() != StructureType::Rampart);
                     structures.sort_by_key(|structure| structure.pos().get_range_to(creep.pos()));
 

@@ -27,6 +27,7 @@ pub struct RoomCache {
     pub terminals: TerminalCache,
 
     pub creeps_moving_stuff: HashMap<String, bool>,
+    pub creeps_ran_post_relay: HashMap<String, bool>,
     pub creep_cpu_by_role: HashMap<Role, f64>,
     pub creep_count_by_role: HashMap<Role, u32>,
     pub creep_cpu: f64,
@@ -47,8 +48,8 @@ pub struct StorageStatus {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomCache {
-    pub fn new(spawn_manager: SpawnManager) -> RoomCache {
-        RoomCache {
+    pub fn new(memory: &mut ScreepsMemory, spawn_manager: SpawnManager) -> RoomCache {
+        let mut cache = RoomCache {
             rooms: HashMap::new(),
             my_rooms: Vec::new(),
 
@@ -56,6 +57,7 @@ impl RoomCache {
 
             spawning: spawn_manager,
             creeps_moving_stuff: HashMap::new(),
+            creeps_ran_post_relay: HashMap::new(),
 
             creep_cpu_by_role: HashMap::new(),
             creep_count_by_role: HashMap::new(),
@@ -63,7 +65,13 @@ impl RoomCache {
             creep_count: 0,
             non_owned_cpu: 0.0,
             non_owned_count: 0
+        };
+
+        for name in memory.rooms.keys() {
+            cache.my_rooms.push(name.clone());
         }
+
+        cache
     }
 
     pub fn create_if_not_exists(&mut self, room: &Room, memory: &mut ScreepsMemory, remote_manager: Option<RoomName>) {

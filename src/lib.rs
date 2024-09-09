@@ -19,7 +19,7 @@ use movement::caching::generate_pathing_targets;
 use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::{self, hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
+    cache::{self, hauling, traffic, RoomCache}, creeps::local::hauler::check_relay, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
 use screeps::{find, game, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
@@ -122,7 +122,7 @@ pub fn game_loop() {
 
     let mut memory = heap().memory.lock().unwrap();
     let spawn_manager = SpawnManager::new();
-    let mut cache = RoomCache::new(spawn_manager);
+    let mut cache = RoomCache::new(&mut memory, spawn_manager);
     let mut allies = Allies::new(&mut memory);
     allies.sync(&mut memory);
 
@@ -138,14 +138,14 @@ pub fn game_loop() {
     memory.stats.cpu.pathfinding = 0.0;
 
     let pre_room_cpu = game::cpu::get_used();
-    for room in game::rooms().keys() {
-        let game_room = game::rooms().get(room).unwrap();
+    for room in game::rooms().values() {
         if game::cpu::bucket() < 100 && game::cpu::get_used() > game::cpu::limit() as f64 * 0.5 {
             continue;
         }
 
-        start_government(game_room, &mut memory, &mut cache);
+        start_government(room, &mut memory, &mut cache);
     }
+    info!("[GOVERNMENT] Global government execution took {:.2} CPU for {} rooms.", game::cpu::get_used() - pre_room_cpu, game::rooms().keys().count());
 
     if game::time() % 1500 == 0 {
         for room in memory.rooms.clone().keys() {
@@ -207,6 +207,12 @@ pub fn game_loop() {
             random_creep.bsay(chant, true);
             // -- End creep chant stuffs
         }
+
+        //for hauler in room_cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).clone() {
+        //    let creep = game::creeps().get(hauler.to_string()).unwrap();
+
+            //check_relay(&creep, &mut memory, &mut cache);
+        //}
     }
     info!("[HAULING] Government wide hauling took {:.2} CPU.", game::cpu::get_used() - pre_haul_cpu);
 
@@ -252,7 +258,7 @@ pub fn game_loop() {
     let traffic_cpu = game::cpu::get_used() - pre_traffic_cpu;
     info!("[TRAFFIC] Government wide traffic took {:.2} CPU. Without the {} intents {:.2}", traffic_cpu, intent_count, traffic_cpu - (intent_count as f64 * 0.2));
 
-    if game::time() % 10000 == 0 {
+    if game::time() % 50000 == 0 {
         heap().cachable_positions.lock().unwrap().clear();
         heap().flow_cache.lock().unwrap().clear();
     }
@@ -283,6 +289,21 @@ pub fn game_loop() {
         info!("[EXPANSION] Not enough CPU to run! Waiting for 2k in the bucket!");
     } else if memory.expansion.is_some() {
         memory.expansion = None;
+    }
+
+        // TODO:
+    // Make it so we check if we arent in combat either, or we arent going to do anything
+    // High CPU, (like base building) then we can generate pixels.
+    if MMO_SHARD_NAMES.contains(&game::shard::name().as_str()) {
+        let cpu_usage = game::cpu::get_used();
+        let bucket = game::cpu::bucket();
+
+        if cpu_usage < 500.0 && bucket == MAX_BUCKET {
+            info!("[PIXELS] We have enough CPU, generating pixel!");
+            let _ = game::cpu::generate_pixel();
+
+            memory.last_generated_pixel = game::time();
+        }
     }
 
     // Bot is finished, write the stats and local copy of memory.
@@ -373,19 +394,6 @@ pub fn game_loop() {
     info!("  Allocated now: {:.2} mb / {:.2} mb", (ALLOCATOR.lock().get_counters().allocated_bytes as f64 / 1024.0 / 1024.0), (ALLOCATOR.lock().get_counters().available_bytes as f64 / 1024.0 / 1024.0));
     info!("  Time since last reset: {}", heap_lifetime);
     *heap_lifetime += 1;
-
-    // TODO:
-    // Make it so we check if we arent in combat either, or we arent going to do anything
-    // High CPU, (like base building) then we can generate pixels.
-    if MMO_SHARD_NAMES.contains(&game::shard::name().as_str()) {
-        let cpu_usage = game::cpu::get_used();
-        let bucket = game::cpu::bucket();
-
-        if cpu_usage < 500.0 && bucket == MAX_BUCKET {
-            info!("[PIXELS] We have enough CPU, generating pixel!");
-            let _ = game::cpu::generate_pixel();
-        }
-    }
 
     /*if game::cpu::bucket() > 1000 {
     let origin = Position::new(RoomCoordinate::new(37).unwrap(), RoomCoordinate::new(16).unwrap(), RoomName::new("W1N9").unwrap());

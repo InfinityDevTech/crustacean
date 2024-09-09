@@ -127,7 +127,6 @@ impl HaulingCache {
             new_orders: HashMap::new(),
             current_id_index: game::time(),
             haulers: Vec::new(),
-
             wanting_orders: Vec::new(),
 
             orders_matched_to_creeps: HashMap::new(),

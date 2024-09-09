@@ -33,11 +33,16 @@ impl PositionExtensions for Position {
 
 pub trait RoomXYExtensions {
     fn as_position(&self, room_name: &RoomName) -> Position;
+    fn possible(&self) -> bool;
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomXYExtensions for RoomXY {
     fn as_position(&self, room_name: &RoomName) -> Position {
         Position::new(self.x, self.y, *room_name)
+    }
+
+    fn possible(&self) -> bool {
+        RoomCoordinate::new(self.x.u8()).is_ok() && RoomCoordinate::new(self.y.u8()).is_ok()
     }
 }

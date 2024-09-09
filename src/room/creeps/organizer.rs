@@ -14,6 +14,9 @@ use crate::{
 
 use super::{combat, local};
 
+#[cfg(feature = "season1")]
+use super::season1;
+
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) -> f64 {
     let starting_cpu = game::cpu::get_used();
@@ -98,6 +101,9 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
             Role::RemoteDefender => remote::remote_defender::run_remotedefender(&creep, memory, cache),
             Role::InvaderCoreCleaner => remote::invader_cleaner::run_invadercleaner(&creep, memory, cache),
+
+            #[cfg(feature = "season1")]
+            Role::Season1Digger => season1::digger::run_digger(&creep, memory, cache),
 
             _ => {
                 creep.bsay("BAD ROLE", true);

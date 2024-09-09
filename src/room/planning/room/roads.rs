@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::info;
 use screeps::{
     game, pathfinder::{self, MultiRoomCostResult, SearchOptions}, CircleStyle, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, RoomXY, StructureProperties, StructureType
 };
@@ -200,7 +201,7 @@ fn room_callback(room_name: &RoomName, room_cache: &RoomCache, memory: &ScreepsM
 
             if walkable {
                 let xy = structure.pos().xy();
-                matrix.set(xy, 3);
+                matrix.set(xy, 7);
             } else {
                 let xy = structure.pos().xy();
                 matrix.set(xy, 255);
@@ -221,9 +222,9 @@ fn room_callback(room_name: &RoomName, room_cache: &RoomCache, memory: &ScreepsM
             if tile & WALL_MASK != 0 {
                 matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
             } else if tile & SWAMP_MASK != 0 {
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 5);
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 7);
             } else if tile == 0 {
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 3);
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 5);
             } else {
                 // Pserver wackiness
                 // Impassible.

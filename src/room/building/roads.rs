@@ -29,6 +29,7 @@ pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn road_callback(room_name: RoomName) -> MultiRoomCostResult {
+    info!("Road CSITE.");
     let mut matrix = LocalCostMatrix::new();
     if let Some(room) = game::rooms().get(room_name) {
         for road in room.find(find::STRUCTURES, None).into_iter().filter(|s| s.structure_type() == StructureType::Road) {

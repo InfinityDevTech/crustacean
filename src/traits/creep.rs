@@ -29,7 +29,7 @@ pub trait CreepExtensions {
     fn move_to_storage(&self, cache: &mut CachedRoom) -> bool;
     fn better_move_to(
         &self,
-        creep_memory: &mut ScreepsMemory,
+        memory: &mut ScreepsMemory,
         cache: &mut CachedRoom,
         target: Position,
         range: u16,
@@ -38,7 +38,7 @@ pub trait CreepExtensions {
 
     fn is_stuck(&self, cache: &mut CachedRoom) -> bool;
 
-    fn bsay(&self, message: &str, pub_to_room: bool);
+    fn bsay(&self, message: &str, public: bool);
 
     fn parts_of_type(&self, part: screeps::Part) -> u32;
 
@@ -174,7 +174,7 @@ impl CreepExtensions for screeps::Creep {
             && self.pos().y().u8() != 49;
 
         if !move_options.ignore_cache && !move_options.fixing_stuck_creeps && not_on_exit {
-            if let Some(storage) = &cache.structures.storage {
+            /*if let Some(storage) = &cache.structures.storage {
                 if storage.pos() == target_pos && self.move_to_storage(cache) {
                     if self.is_stuck(cache) {
                         self.bsay("ST-STUCK", false);
@@ -188,7 +188,7 @@ impl CreepExtensions for screeps::Creep {
                     //self.bsay(&format!("MV-STOR {}",).to_string(), false);
                     return;
                 }
-            }
+            }*/
 
             let heap_cache = heap().cachable_positions.lock().unwrap();
 

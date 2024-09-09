@@ -275,7 +275,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                 let mut source_dist = 0;
 
                 for source in &cached_room.resources.sources {
-                    source_dist += source.source.pos().xy().get_range_to(pos) / 2;
+                    source_dist += source.source.pos().xy().get_range_to(pos);
                 }
 
                 let total_dist = dist + source_dist;

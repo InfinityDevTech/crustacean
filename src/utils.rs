@@ -301,7 +301,7 @@ pub fn find_closest_owned_room(
 
         if let Some(min_rcl) = min_rcl {
             if let Some(room) = game::rooms().get(*room) {
-                if room.controller().unwrap().level() < min_rcl {
+                if room.controller().is_some() && room.controller().unwrap().level() < min_rcl {
                     continue;
                 }
             } else {

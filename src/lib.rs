@@ -167,8 +167,15 @@ pub fn game_loop() {
     for room in cache.my_rooms.clone().iter() {
         hauling::match_haulers(&mut cache, &mut memory, room);
 
+        let game_room = game::rooms().get(*room);
+        if game_room.is_none() {
+            continue;
+        }
+
+        let game_room = game_room.unwrap();
+
         spawn_manager::calculate_hauler_needs(
-            &game::rooms().get(*room).unwrap(),
+            &game_room,
             &mut memory,
             &mut cache,
         );

@@ -391,7 +391,12 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         let mut spawned_creep_cost = 0;
 
-        let room = game::rooms().get(*room).unwrap();
+        let room = game::rooms().get(*room);
+        if room.is_none() {
+            continue;
+        }
+        let room = room.unwrap();
+        
         let room_cache = cache.rooms.get(&room.name()).unwrap();
 
         let (available_spawns, unavailable_spawns) = room_cache.structures.get_spawns();

@@ -324,7 +324,8 @@ pub fn create_spawn_requests_for_room(
 
     #[cfg(feature = "season1")]
     {
-        requests.push(season_digger(room, cache, memory))
+        requests.push(season_digger(room, cache, memory));
+        requests.push(season_scorer(room, cache, memory));
     }
 
     requests.push(builder(room, cache));
@@ -761,6 +762,10 @@ pub fn upgrader(
     }
 
     if harvester_count == 0 {
+        return None;
+    }
+
+    if cache.rcl < 2 && upgrader_count >= 2 {
         return None;
     }
 
@@ -1213,6 +1218,7 @@ pub fn harvester(
             cache,
             parts_needed_on_source,
             can_replace,
+            true,
             source.container.is_some(),
         );
         let cost = get_body_cost(&body);
@@ -1225,6 +1231,7 @@ pub fn harvester(
                 room,
                 cache,
                 parts_needed_on_source,
+                true,
                 true,
                 source.container.is_some(),
             );
@@ -1364,6 +1371,7 @@ pub fn remote_harvester(
                     remote_cache,
                     parts_needed_on_source,
                     false,
+                    owning_cache.rcl <= 3,
                     source.container.is_some(),
                 );
                 let cost = get_body_cost(&body);
@@ -1377,6 +1385,7 @@ pub fn remote_harvester(
                         remote_cache,
                         parts_needed_on_source,
                         true,
+                        owning_cache.rcl <= 3,
                         source.container.is_some(),
                     );
                     let cost = get_body_cost(&body);
@@ -1428,7 +1437,7 @@ pub fn remote_harvester(
             if let Some(remote_memory) = memory.remote_rooms.get_mut(remote_name) {
                 if let Some(first_source) = remote_memory.sources.first() {
                     let (finished, body) =
-                        creep_sizing::miner_body(room, owning_cache, 3, false, false);
+                        creep_sizing::miner_body(room, owning_cache, 3, false, owning_cache.rcl <= 3, false);
 
                     let priority = 50.0;
                     let cost = get_body_cost(&body);
@@ -1485,6 +1494,10 @@ pub fn season_digger(
             let mut work_count = 0;
             let mut move_count = 0;
 
+            if creep_count >= 2 {
+                return None;
+            }
+
             while current_cost < max_energy {
                 if current_cost + 250 > max_energy {
                     break;
@@ -1535,6 +1548,104 @@ pub fn season_digger(
             if can_repace {
                 return Some(cache.spawning.create_room_spawn_request(
                     Role::Season1Digger,
+                    body,
+                    prio,
+                    current_cost,
+                    room.name(),
+                    None,
+                    None,
+                    None,
+                ));
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(feature = "season1")]
+pub fn season_scorer(
+    room: &Room,
+    cache: &RoomCache,
+    memory: &mut ScreepsMemory,
+) -> Option<SpawnRequest> {
+    use std::u32;
+
+    let flag = game::flags().get("depositScore".to_string());
+
+    if let Some(flag) = flag {
+        let closest_room = utils::find_closest_owned_room(&flag.pos().room_name(), cache, Some(6));
+
+        if closest_room.is_none() || closest_room.unwrap() != room.name() {
+            return None;
+        }
+
+        if let Some(room_cache) = cache.rooms.get(&closest_room.unwrap()) {
+            let creep_count = room_cache.creeps.creeps_of_role(Role::Season1Scorer);
+
+            room_cache.structures.storage.as_ref()?;
+
+            let max_energy = room.energy_capacity_available();
+
+            let mut current_cost = 0;
+
+            let mut carry_count = 0;
+            let mut move_count = 0;
+
+            if creep_count >= 1 {
+                return None;
+            }
+
+            while current_cost < max_energy {
+                if current_cost + 100 > max_energy {
+                    break;
+                }
+
+                carry_count += 1;
+                move_count += 1;
+
+                current_cost += 100;
+            }
+
+            let prio = if !under_storage_gate(room_cache, 1.5) {
+                f64::MAX
+            } else {
+                20.0
+            };
+
+            let mut body = Vec::new();
+
+            for i in 0..carry_count {
+                body.push(Part::Carry)
+            }
+
+            for i in 0..move_count {
+                body.push(Part::Move)
+            }
+
+            let spawn_time = (body.len() * 3) as u32;
+            let can_repace = if let Some(digger) = room_cache
+                .creeps
+                .creeps_of_role
+                .get(&Role::Season1Scorer)
+                .unwrap_or(&Vec::new())
+                .first()
+            {
+                let digger = game::creeps().get(digger.to_string()).unwrap();
+                let range = room_cache
+                    .spawn_center
+                    .unwrap()
+                    .get_range_to(digger.pos().into()) as u32;
+                let ttl = digger.ticks_to_live().unwrap_or(u32::MAX);
+
+                !(ttl > spawn_time + range)
+            } else {
+                true
+            };
+
+            if can_repace {
+                return Some(cache.spawning.create_room_spawn_request(
+                    Role::Season1Scorer,
                     body,
                     prio,
                     current_cost,

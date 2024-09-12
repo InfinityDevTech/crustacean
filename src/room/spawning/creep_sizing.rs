@@ -10,7 +10,7 @@ use crate::{
 
 /// Returns the parts needed for a miner creep
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool, _has_container: bool) -> (bool, Vec<Part>) {
+pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, force_max: bool, can_do_small: bool, _has_container: bool) -> (bool, Vec<Part>) {
     //let mut parts = if has_container && cache.rcl <= 4 {
     //    vec![Part::Work, Part::Move]
     //} else {
@@ -39,6 +39,10 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, forc
 
     let mut current_work_count = 1;
     let mut current_cost = utils::get_body_cost(&parts);
+
+    if cache.rcl < 2 && can_do_small {
+        return (false, vec![Part::Work, Part::Work, Part::Move]);
+    }
 
     let mut energy_to_use = if miner_count < 2 || base_hauler_count == 0 {
         room.energy_available()

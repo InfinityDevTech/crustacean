@@ -22,6 +22,7 @@ pub struct MoveOptions {
     pub avoid_enemies: bool,
     pub avoid_creeps: bool,
     pub avoid_hostile_rooms: bool,
+    pub avoid_hostile_remotes: bool,
     pub avoid_sitters: bool,
     pub ignore_cached_cost_matrix: bool,
     pub visualize_path: bool,
@@ -37,6 +38,7 @@ impl Default for MoveOptions {
             avoid_enemies: false,
             avoid_creeps: true,
             avoid_hostile_rooms: false,
+            avoid_hostile_remotes: false,
             avoid_sitters: true,
             ignore_cached_cost_matrix: false,
             ignore_cache: false,
@@ -87,6 +89,11 @@ impl MoveOptions {
 
     pub fn avoid_hostile_rooms(&mut self, avoid_hostile_rooms: bool) -> Self {
         self.avoid_hostile_rooms = avoid_hostile_rooms;
+        *self
+    }
+
+    pub fn avoid_hostile_remotes(&mut self, avoid_hostile_remotes: bool) -> Self {
+        self.avoid_hostile_remotes = avoid_hostile_remotes;
         *self
     }
 
@@ -266,6 +273,24 @@ pub fn path_call(
             .get(&room_name)
         {
             return MultiRoomCostResult::CostMatrix(cached_matrix.clone().into());
+        }
+    }
+
+    if move_options.avoid_hostile_remotes && from.room_name() != room_name {
+        if let Some(room) = game::rooms().get(room_name) {
+            if let Some(room_controller) = room.controller() {
+                if room_controller.reservation().is_some()
+                    && room_controller.reservation().unwrap().username() != get_my_username()
+                {
+                    return MultiRoomCostResult::Impassable;
+                }
+            }
+        }
+
+        if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+            if scouting_data.reserved.is_some() && *scouting_data.reserved.as_ref().unwrap() != get_my_username() {
+                return MultiRoomCostResult::Impassable;
+            }
         }
     }
 

@@ -7,7 +7,7 @@ use crate::{constants, memory::ScreepsMemory, room::cache::CachedRoom, traits::{
 pub fn should_safemode(room: &Room, room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) -> bool {
     let mut only_invader = true;
     for attacker in &room_cache.creeps.enemy_creeps_with_attack {
-        if attacker.owner().username() != constants::INVADER_USERNAME {
+        if attacker.owner().username().to_lowercase() != constants::INVADER_USERNAME.to_lowercase() {
             only_invader = false;
             break;
         }

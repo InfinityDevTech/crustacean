@@ -1,7 +1,6 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use screeps::{
-    game, Creep, HasPosition, Position, ResourceType, RoomCoordinate,
-    SharedCreepProperties,
+    game, Creep, HasPosition, Position, ResourceType, RoomCoordinate, SharedCreepProperties,
 };
 
 use crate::{
@@ -34,8 +33,7 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         }
 
         if let Some(remote_room) = cache.rooms.get_mut(&remote_room) {
-            remote_room.resources.sources[creep_memory.task_id.unwrap() as usize]
-                .add_creep(creep);
+            remote_room.resources.sources[creep_memory.task_id.unwrap() as usize].add_creep(creep);
         }
 
         if let Some(remote_room_memory) = memory.remote_rooms.get(&remote_room) {
@@ -82,24 +80,35 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         let room_cache = cache.rooms.get_mut(&room_name).unwrap();
 
         if room_name != remote_room {
-            if let Some(remote_room_memory) = memory.remote_rooms.get(&remote_room) {
+            if let Some(remote_cache) = cache.rooms.get(&remote_room) {
+                let source =
+                    &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize];
 
+                let pos = source.source.pos();
+
+                creep.better_move_to(
+                    memory,
+                    cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+                    pos,
+                    1,
+                    MoveOptions::default(),
+                );
+            } else {
+                creep.bsay("🚚", false);
+
+                let x = unsafe { RoomCoordinate::unchecked_new(25) };
+                let y = unsafe { RoomCoordinate::unchecked_new(25) };
+
+                let position = Position::new(x, y, remote_room);
+
+                creep.better_move_to(
+                    memory,
+                    cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
+                    position,
+                    24,
+                    MoveOptions::default(),
+                );
             }
-
-            creep.bsay("🚚", false);
-
-            let x = unsafe { RoomCoordinate::unchecked_new(25) };
-            let y = unsafe { RoomCoordinate::unchecked_new(25) };
-
-            let position = Position::new(x, y, remote_room);
-
-            creep.better_move_to(
-                memory,
-                cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(),
-                position,
-                24,
-                MoveOptions::default(),
-            );
         } else {
             let room = game::rooms().get(remote_room).unwrap();
 
@@ -126,7 +135,13 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
                     }
 
                     if creep.pos().get_range_to(flee_pos) > 24 {
-                        creep.better_move_to(memory, room_cache, flee_pos, 24, MoveOptions::default().avoid_enemies(true));
+                        creep.better_move_to(
+                            memory,
+                            room_cache,
+                            flee_pos,
+                            24,
+                            MoveOptions::default().avoid_enemies(true),
+                        );
 
                         return;
                     } else {
@@ -199,7 +214,9 @@ pub fn build_container(
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn deposit_enegy(creep: &Creep, memory: &mut ScreepsMemory, remote_cache: &mut CachedRoom) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
-    let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize].container.clone();
+    let contianer = &remote_cache.resources.sources[creep_memory.task_id.unwrap() as usize]
+        .container
+        .clone();
 
     if build_container(creep, creep_memory, remote_cache) {
         return;

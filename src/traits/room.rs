@@ -305,16 +305,16 @@ impl RoomNameExtensions for RoomName {
     fn split_name(&self) -> (String, u32, String, u32) {
         let x_coord = self.x_coord();
         let x_mod = if x_coord < 0 {
-            (x_coord.abs() - 1) % 10
+            x_coord.abs() - 1
         } else {
-            x_coord % 10
+            x_coord
         };
 
         let y_coord = self.y_coord();
         let y_mod = if y_coord < 0 {
-            (y_coord.abs() - 1) % 10
+            y_coord.abs() - 1
         } else {
-            y_coord % 10
+            y_coord
         };
 
         let ew = if x_coord < 0 {
@@ -339,6 +339,7 @@ impl RoomNameExtensions for RoomName {
 
     fn get_adjacent(&self, radius: i32) -> Vec<RoomName> {
         let split = self.split_name();
+
         let horizdir = split.0;
         let horiznum = split.1 as i32;
         let vertdir = split.2;

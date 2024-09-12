@@ -104,6 +104,8 @@ pub fn run_creeps(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache
 
             #[cfg(feature = "season1")]
             Role::Season1Digger => season1::digger::run_digger(&creep, memory, cache),
+            #[cfg(feature = "season1")]
+            Role::Season1Scorer => season1::scorer::run_scorer(&creep, memory, cache),
 
             _ => {
                 creep.bsay("BAD ROLE", true);

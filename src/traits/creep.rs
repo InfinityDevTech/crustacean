@@ -303,8 +303,6 @@ impl CreepExtensions for screeps::Creep {
                         }
                     }
                 } else {
-                    self.bsay("PUSHING", false);
-
                     let mut locked = heap().needs_cachable_position_generation.lock().unwrap();
 
                     if !locked.contains(&target_pos.room_name()) {
@@ -314,18 +312,19 @@ impl CreepExtensions for screeps::Creep {
             }
         }
 
+        let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
+
         if self.is_stuck(cache) && !move_options.fixing_stuck_creeps {
             self.bsay("CSTUCK", false);
 
             let possible_moves = self.get_possible_moves(cache);
+            creep_memory.path = None;
 
             if let Some(pos) = possible_moves.first() {
                 self.move_request(*pos, cache);
                 return;
             }
         }
-
-        let creep_memory = memory.creeps.get_mut(&self.name()).unwrap();
 
         match &creep_memory.path {
             Some(path) => {

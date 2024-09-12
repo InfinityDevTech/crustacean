@@ -59,6 +59,8 @@ pub enum Role {
 
     #[cfg(feature = "season1")]
     Season1Digger,
+    #[cfg(feature = "season1")]
+    Season1Scorer,
 
     // Assorted junk roles, recycler just recycles itself
     Recycler,

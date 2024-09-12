@@ -244,6 +244,8 @@ lazy_static! {
 
             #[cfg(feature = "season1")]
             Role::Season1Digger => "s1d",
+            #[cfg(feature = "season1")]
+            Role::Season1Scorer => "s1s",
     };
 }
 

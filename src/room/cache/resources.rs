@@ -347,12 +347,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
             );
         }
 
-        if cached_room
-            .structures
-            .containers()
-            .source_container
-            .is_none()
-        {
+        if cached_room.structures.containers().source_container.is_none() {
             continue;
         }
 

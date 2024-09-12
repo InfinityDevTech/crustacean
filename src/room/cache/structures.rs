@@ -508,7 +508,7 @@ impl RoomStructureCache {
             }
 
             for source in resource_cache.sources.iter_mut() {
-                if container.pos().in_range_to(source.source.pos(), 2) {
+                if container.pos().in_range_to(source.source.pos(), 1) {
                     source.container = Some(container.clone());
                     source_container.push(container.clone());
                 }

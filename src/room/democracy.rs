@@ -80,13 +80,6 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         return;
     }
 
-    info!(
-        "Last generated: {}, ticks to fill: {}, time: {}",
-        memory.last_generated_pixel,
-        utils::ticks_to_fill_bucket(1000),
-        game::time()
-    );
-
     if memory.last_generated_pixel + utils::ticks_to_fill_bucket(1000) <= game::time() {
         if !room.my()
             && !memory.remote_rooms.contains_key(&room.name())

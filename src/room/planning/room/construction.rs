@@ -216,8 +216,20 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
                         info!("Links placed {} / {}", links_placed, max_links);
                     }
                 } else {
+                    if container_pos.is_none() {
+                        let p = find_pos_most_accessible(&container_pos.unwrap(), &measure_pos, 1, vec![]);
+
+                        if let Some(pos) = p {
+                            let res = room.create_construction_site(
+                                pos.x().u8(),
+                                pos.y().u8(),
+                                StructureType::Link,
+                                None,
+                            );
+                        }
+                    }
                     info!("No link pos found for controller");
-                }
+                    }
             }
         }
 

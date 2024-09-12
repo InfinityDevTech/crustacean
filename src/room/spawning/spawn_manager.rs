@@ -200,7 +200,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
 
     let mut carry_requirement = 0;
 
-    if game::cpu::bucket() > 250 && (room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200) {
+    if game::cpu::bucket() > 250 && ((room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200) || (room_memory.rcl < 2 && game::time() % 10 == 0)) {
         for remote in &room_memory.remotes {
                 let sources = if let Some(cache) = cache.rooms.get(remote) {
                     // If we can actually see the sources, we can calculate the EPT

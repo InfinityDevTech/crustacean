@@ -5,7 +5,7 @@ use screeps::{
     game::{
         self,
         map::{FindRouteOptions, RoomStatus},
-    }, pathfinder::SearchOptions, HasPosition, Position, ResourceType, RoomCoordinate, RoomName, RoomXY
+    }, pathfinder::SearchOptions, HasPosition, MapTextStyle, MapVisual, Position, ResourceType, RoomCoordinate, RoomName, RoomXY
 };
 use serde::{Deserialize, Serialize};
 
@@ -111,7 +111,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
 
             // TODO:
             // Improve scouts!!!
-            if percent_unscouted >= 70.0 {
+            if percent_unscouted >= 70.0 && percent_unscouted < 100.0 {
                 info!(
                     "[EXPANSION] We havent scouted around {:.2}% of rooms, pausing expansion until we scout 70%.",
                     percent_unscouted
@@ -122,8 +122,10 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
                 return;
             }
 
-            expansion_memory.current_status = ExpansionStatus::ScoringRooms;
-            expansion_memory.potential_rooms = expandable_rooms;
+            if !expandable_rooms.is_empty() {
+                expansion_memory.current_status = ExpansionStatus::ScoringRooms;
+                expansion_memory.potential_rooms = expandable_rooms;
+            }
         }
         ExpansionStatus::ScoringRooms => {
             let mut scored_rooms = expansion_memory.scored_rooms.clone();
@@ -266,10 +268,11 @@ pub fn find_expandable_rooms(
     let force_expand_dir = game::flags().get("forceExpansionDirection".to_string());
 
     for possible_name in available_rooms {
+        MapVisual::text(Position::new(RoomCoordinate(25), RoomCoordinate(15), possible_name), "PR".to_string(), MapTextStyle::default());
         let closest_room = utils::find_closest_owned_room(&possible_name, cache, None);
 
         if let Some(closest_room) = closest_room {
-            let dist = utils::calc_room_distance(&closest_room, &possible_name, true) as u32;
+            let dist = utils::calc_room_distance(&closest_room, &possible_name, false) as u32;
 
             if !(config::MIN_CLAIM_DISTANCE..=config::MAX_CLAIM_DISTANCE).contains(&dist) {
                 continue;
@@ -280,6 +283,8 @@ pub fn find_expandable_rooms(
                 continue;
             }
 
+            MapVisual::text(Position::new(RoomCoordinate(25), RoomCoordinate(45), possible_name), "Made".to_string(), MapTextStyle::default());
+
             if !memory.rooms.contains_key(&possible_name) {
                 if let Some(scouting_data) = memory.scouted_rooms.get(&possible_name) {
                     if let Some(ref force_expand_dir_flag) = force_expand_dir {
@@ -287,7 +292,10 @@ pub fn find_expandable_rooms(
                         let my_dist = utils::calc_room_distance(&possible_name, &force_expand_dir_flag.pos().room_name(), false);
 
                         if my_dist > closest_dist {
+                            MapVisual::text(Position::new(RoomCoordinate(25), RoomCoordinate(35), possible_name), "InvDist".to_string(), MapTextStyle::default());
                             continue;
+                        } else {
+                            MapVisual::text(Position::new(RoomCoordinate(25), RoomCoordinate(35), possible_name), "NP".to_string(), MapTextStyle::default());
                         }
                     }
 
@@ -299,6 +307,7 @@ pub fn find_expandable_rooms(
                         && scouting_data.reserved.is_none()
                     {
                         scorable_rooms.push(possible_name);
+                        MapVisual::text(Position::new(RoomCoordinate(25), RoomCoordinate(25), possible_name), "AH".to_string(), MapTextStyle::default());
                     }
                 } else {
                     non_scouted_count += 1;
@@ -398,6 +407,8 @@ pub fn score_room(
     {
         return score;
     }
+
+
 
     // Actual Scoring.
 

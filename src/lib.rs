@@ -176,9 +176,15 @@ pub fn game_loop() {
             hauling::match_haulers(&mut cache, &mut memory, room);
         match_cpu += game::cpu::get_used() - pre_match;
 
+        let game_room = game::rooms().get(*room);
+        if game_room.is_none() {
+            continue;
+        }
+        let game_room = game_room.unwrap();
+
         let pre_calc = game::cpu::get_used();
             spawn_manager::calculate_hauler_needs(
-                &game::rooms().get(*room).unwrap(),
+                &game_room,
                 &mut memory,
                 &mut cache,
             );

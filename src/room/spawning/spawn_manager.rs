@@ -190,17 +190,17 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
     //    return;
     //}
 
-    let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache, true);
-    let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
-
-    if carry_count == 0 {
-        info!("  [HAULER SCAN] Room {} has no carry parts, skipping hauler scan", room.name());
-        return;
-    }
-
-    let mut carry_requirement = 0;
-
     if game::cpu::bucket() > 250 && ((room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200) || (room_memory.rcl < 2 && game::time() % 10 == 0)) {
+        let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache, true);
+        let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
+    
+        if carry_count == 0 {
+            info!("  [HAULER SCAN] Room {} has no carry parts, skipping hauler scan", room.name());
+            return;
+        }
+    
+        let mut carry_requirement = 0;
+
         for remote in &room_memory.remotes {
                 let sources = if let Some(cache) = cache.rooms.get(remote) {
                     // If we can actually see the sources, we can calculate the EPT
@@ -391,8 +391,18 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         let mut spawned_creep_cost = 0;
 
-        let room = game::rooms().get(*room).unwrap();
-        let room_cache = cache.rooms.get(&room.name()).unwrap();
+        let room = game::rooms().get(*room);
+        if room.is_none() {
+            continue;
+        }
+
+        let room = room.unwrap();
+        let room_cache = cache.rooms.get(&room.name());
+
+        if room_cache.is_none() {
+            continue;
+        }
+        let room_cache = room_cache.unwrap();
 
         let (available_spawns, unavailable_spawns) = room_cache.structures.get_spawns();
 

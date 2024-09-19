@@ -35,7 +35,6 @@ wasm-bindgen-test = "0.3.43"
 [profile.release]
 panic = "abort"
 opt-level = 3
-target_family = "wasm"
 lto = true
 
 [package.metadata.wasm-pack.profile.release]
@@ -51,11 +50,10 @@ lto = true
 # --signext-lowering - removes opcodes that the screeps servers can't load (see 
 # https://github.com/rustyscreeps/screeps-game-api/issues/391)
 #wasm-opt = ["-O4", "--disable-sign-ext"]
-target_family = "wasm"
 wasm-opt = ["-O4", "--signext-lowering"]
 
 [features]
-#default = ["season1"]
+default = ["season1"]
 profile = ["screeps-timing-annotate"]
 
 season1 = ["screeps-game-api/seasonal-season-1"]

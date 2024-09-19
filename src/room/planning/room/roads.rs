@@ -111,14 +111,14 @@ pub fn count_total_roads(paths: HashMap<RoomName, Vec<Position>>) -> usize {
     total
 }
 
-pub fn get_all_cached_positions(room_name: &RoomName, memory: &ScreepsMemory) -> HashMap<RoomName, Vec<Position>> {
+pub fn get_all_cached_road_positions(room_name: &RoomName, memory: &ScreepsMemory) -> HashMap<RoomName, Vec<Position>> {
     let mut rooms = HashMap::new();
 
     if let Some(room_memory) = memory.rooms.get(room_name) {
         for (room_name, encoded_pos) in &room_memory.planned_paths {
             let positions = decode_pos_list(encoded_pos.to_string());
 
-            rooms.insert(room_name.clone(), positions);
+            rooms.insert(*room_name, positions);
         }
     }
 
@@ -134,7 +134,7 @@ pub fn path_roads_from_pos(
     let mut new_roads = HashMap::new();
     let mut paths = HashMap::new();
 
-    let all = get_all_cached_positions(&source.room_name(), memory);
+    let all = get_all_cached_road_positions(&source.room_name(), memory);
 
     for destination in destinations {
         let result = pathfinder::search(

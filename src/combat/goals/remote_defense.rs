@@ -208,7 +208,7 @@ fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, 
     let mut current_cost = 0;
     let mut current_power = 0;
 
-    let energy_available = responsible_room.energy_available();
+    let energy_available = responsible_room.energy_capacity_available();
 
     if let Some(store) = cache.rooms.get(&responsible_room.name()) {
         if let Some(store) = &store.structures.storage {
@@ -239,7 +239,7 @@ fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, 
             ..Default::default()
         };
 
-        let req = cache.spawning.create_room_spawn_request(Role::RemoteDefender, parts, 4.5, cost, responsible_room.name(), Some(creep_memory), None, Some(creep_name.clone()));
+        let req = cache.spawning.create_room_spawn_request(Role::RemoteDefender, parts, 10.0, cost, responsible_room.name(), Some(creep_memory), None, Some(creep_name.clone()));
 
         if let Some(reqs) = cache.spawning.room_spawn_queue.get_mut(&responsible_room.name()) {
             reqs.push(req);

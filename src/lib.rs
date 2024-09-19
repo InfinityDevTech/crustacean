@@ -163,15 +163,28 @@ pub fn game_loop() {
         }
     }
 
-    let pre_haul_cpu = game::cpu::get_used();
-    for room in cache.my_rooms.clone().iter() {
-        hauling::match_haulers(&mut cache, &mut memory, room);
+    let mut match_cpu = 0.0;
+    let mut calculate_cpu = 0.0;
+    let mut chant_cpu = 0.0;
 
-        spawn_manager::calculate_hauler_needs(
-            &game::rooms().get(*room).unwrap(),
-            &mut memory,
-            &mut cache,
-        );
+    for room in cache.my_rooms.clone().iter() {
+        if game::rooms().get(*room).is_none() || !cache.rooms.contains_key(room) {
+            continue;
+        }
+
+        let pre_match = game::cpu::get_used();
+            hauling::match_haulers(&mut cache, &mut memory, room);
+        match_cpu += game::cpu::get_used() - pre_match;
+
+        let pre_calc = game::cpu::get_used();
+            spawn_manager::calculate_hauler_needs(
+                &game::rooms().get(*room).unwrap(),
+                &mut memory,
+                &mut cache,
+            );
+        calculate_cpu += game::cpu::get_used() - pre_calc;
+
+        let pre_chant = game::cpu::get_used();
 
         if !cache.rooms.contains_key(room) || !memory.rooms.contains_key(room) {
             continue;
@@ -208,13 +221,15 @@ pub fn game_loop() {
             // -- End creep chant stuffs
         }
 
+        chant_cpu += game::cpu::get_used() - pre_chant;
+
         //for hauler in room_cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).clone() {
         //    let creep = game::creeps().get(hauler.to_string()).unwrap();
 
             //check_relay(&creep, &mut memory, &mut cache);
         //}
     }
-    info!("[HAULING] Government wide hauling took {:.2} CPU.", game::cpu::get_used() - pre_haul_cpu);
+    info!("[GOVERNMENT] Government wide haul matching: {:.2}. Hauler needs calculations: {:.2}. Creep chant {:.2}", match_cpu, calculate_cpu, chant_cpu);
 
     run_global_goal_setters(&mut memory, &mut cache);
     run_goal_handlers(&mut memory, &mut cache);

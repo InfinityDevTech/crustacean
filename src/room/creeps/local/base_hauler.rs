@@ -133,14 +133,14 @@ pub fn transfer_fastfiller_containers(creep: &Creep, memory: &mut ScreepsMemory,
 
         if lowest.store().get_free_capacity(None) > 0 {
             if creep.pos().is_near_to(lowest.pos()) {
-                creep.bsay("📋TFERFASTFILL", false);
                 let _ = creep.ITtransfer(lowest, ResourceType::Energy, None);
+                creep.bsay("📋TFERFASTFILL", false);
 
                 return true;
             } else {
-                creep.bsay("🚚TFERFASTFILL", false);
                 let pos = lowest.pos();
                 creep.better_move_to(memory, room_cache, pos, 1, Default::default());
+                creep.bsay("🚚TFERFASTFILL", false);
 
                 return true;
             }
@@ -176,7 +176,6 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mu
                     if creep.pos().get_range_to(next_best_extension.pos()) > 1
                         && creep.store().get_used_capacity(Some(ResourceType::Energy)) > 0
                     {
-                        creep.bsay("🚚TFEREXT", false);
                         creep.better_move_to(
                             memory,
                             room_cache,
@@ -184,6 +183,8 @@ pub fn deposit_energy(creep: &Creep, memory: &mut ScreepsMemory, room_cache: &mu
                             1,
                             Default::default(),
                         );
+
+                        creep.bsay("🚚TFEREXT", false);
                     }
                 }
             } else {

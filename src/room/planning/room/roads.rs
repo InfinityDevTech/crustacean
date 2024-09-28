@@ -9,11 +9,7 @@ use screeps::{
 };
 
 use crate::{
-    compression::{decode_pos_list, encode_pos_list},
-    constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK},
-    memory::ScreepsMemory,
-    room::cache::RoomCache,
-    traits::position::RoomXYExtensions,
+    compression::{decode_pos_list, encode_pos_list}, constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK}, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, room::cache::RoomCache, traits::position::RoomXYExtensions
 };
 
 use super::construction::get_all_structure_plans;

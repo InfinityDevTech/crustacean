@@ -140,7 +140,7 @@ pub fn get_all_cached_positions(
         for (room_name, encoded_pos) in &room_memory.planned_paths {
             let positions = decode_pos_list(encoded_pos.to_string());
 
-            rooms.insert(room_name.clone(), positions);
+            rooms.insert(room_name, positions);
         }
     }
 
@@ -156,9 +156,11 @@ pub fn path_roads_from_pos(
     let mut new_roads = HashMap::new();
     let mut paths = HashMap::new();
 
-    let all = get_all_cached_positions(&source.room_name(), memory);
+    let all = get_all_cached_road_positions(&source.room_name(), memory);
 
     for destination in destinations {
+        let pre_pathfind_cpu = game::cpu::get_used();
+
         let result = pathfinder::search(
             source,
             destination,
@@ -167,6 +169,8 @@ pub fn path_roads_from_pos(
                 room_callback(&room_name, cache, memory, new_roads.clone(), all.clone())
             })),
         );
+
+        *PATHFIND_CPU.lock().unwrap() += game::cpu::get_used() - pre_pathfind_cpu;
 
         let path = result.path();
 

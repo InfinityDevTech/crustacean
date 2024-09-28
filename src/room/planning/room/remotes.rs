@@ -4,7 +4,7 @@ use screeps::{
 };
 
 use crate::{
-    config, constants, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, room::{cache::RoomCache, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
+    config, constants, goal_memory::RemoteInvaderCleanup, memory::{RemoteRoomMemory, ScreepsMemory}, profiling::timing::PATHFIND_CPU, room::{cache::RoomCache, democracy::remote_path_call}, traits::{position::RoomXYExtensions, room::{RoomExtensions, RoomType}}, utils
 };
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -186,7 +186,9 @@ pub fn rank_remote_room(
             *remote_room,
         );
         let options = Some(SearchOptions::new(remote_path_call).max_rooms(16).plain_cost(1).swamp_cost(5));
-        let path = pathfinder::search(*measure_pos, position, 1, options);
+        let pre_pathfind_cpu = game::cpu::get_used();
+            let path = pathfinder::search(*measure_pos, position, 1, options);
+        *PATHFIND_CPU.lock().unwrap() += game::cpu::get_used() - pre_pathfind_cpu;
 
         if path.incomplete() {
             let dist = measure_pos.get_range_to(position);

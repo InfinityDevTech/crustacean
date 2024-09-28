@@ -215,6 +215,30 @@ pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
     map
 }
 
+pub fn get_most_held_resource(store: &Store) -> ResourceType {
+    let resource = if contains_other_than(store, ResourceType::Energy) {
+        let mut most_used = ResourceType::Energy;
+        let mut most_used_amount = 0;
+
+        for (resource, amount) in store_to_hashmap(store) {
+            if resource == ResourceType::Energy {
+                continue;
+            }
+
+            if amount > most_used_amount {
+                most_used = resource;
+                most_used_amount = amount;
+            }
+        }
+
+        most_used
+    } else {
+        ResourceType::Energy
+    };
+
+    resource
+}
+
 lazy_static! {
     pub static ref ROLE_MAP: EnumMap<Role, &'static str> = enum_map! {
             Role::Harvester => "sm",

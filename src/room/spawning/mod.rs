@@ -802,8 +802,6 @@ pub fn upgrader(
     let body = crate::room::spawning::creep_sizing::upgrader_body(room, cache, target_work_parts);
     let cost = get_body_cost(&body);
 
-    info!("Upgrader body cost {}", cost);
-
     if body.is_empty() {
         return None;
     }
@@ -836,8 +834,6 @@ pub fn upgrader(
     if !under_storage_gate(cache, 5.0) {
         priority *= 10.0;
     }
-
-    info!("Prio... {}", priority);
 
     Some(spawn_manager.create_room_spawn_request(
         Role::Upgrader,
@@ -1585,6 +1581,12 @@ pub fn season_scorer(
 
             room_cache.structures.storage.as_ref()?;
 
+            if let Some(storage) = &room_cache.structures.storage {
+                if storage.store().get_used_capacity(Some(ResourceType::Score)) == 0 {
+                    return None;
+                }
+            }
+
             let max_energy = room.energy_capacity_available();
 
             let mut current_cost = 0;
@@ -1592,12 +1594,12 @@ pub fn season_scorer(
             let mut carry_count = 0;
             let mut move_count = 0;
 
-            if creep_count >= 1 {
+            if creep_count >= 3 {
                 return None;
             }
 
             while current_cost < max_energy {
-                if current_cost + 100 > max_energy {
+                if current_cost + 100 > max_energy || carry_count >= 25 {
                     break;
                 }
 
@@ -1623,27 +1625,6 @@ pub fn season_scorer(
                 body.push(Part::Move)
             }
 
-            let spawn_time = (body.len() * 3) as u32;
-            let can_repace = if let Some(digger) = room_cache
-                .creeps
-                .creeps_of_role
-                .get(&Role::Season1Scorer)
-                .unwrap_or(&Vec::new())
-                .first()
-            {
-                let digger = game::creeps().get(digger.to_string()).unwrap();
-                let range = room_cache
-                    .spawn_center
-                    .unwrap()
-                    .get_range_to(digger.pos().into()) as u32;
-                let ttl = digger.ticks_to_live().unwrap_or(u32::MAX);
-
-                !(ttl > spawn_time + range)
-            } else {
-                true
-            };
-
-            if can_repace {
                 return Some(cache.spawning.create_room_spawn_request(
                     Role::Season1Scorer,
                     body,
@@ -1654,7 +1635,6 @@ pub fn season_scorer(
                     None,
                     None,
                 ));
-            }
         }
     }
 

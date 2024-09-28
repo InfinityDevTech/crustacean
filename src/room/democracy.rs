@@ -21,18 +21,18 @@ use crate::{
         visuals::run_full_visuals,
     },
     traits::{intents_tracking::RoomExtensionsTracking, room::RoomExtensions},
-    utils,
+    utils::{self, distance_transform, new_xy},
 };
 
 use super::{
     links,
     planning::{
         self,
-        room::construction::{
+        room::{construction::{
             get_containers, get_rcl_2_plan, get_rcl_3_plan, get_rcl_4_plan, get_rcl_5_plan,
             get_rcl_6_plan, get_rcl_7_plan, get_rcl_8_plan, get_roads_and_ramparts,
             plan_remote_containers,
-        },
+        }, roads::get_all_cached_road_positions},
     },
     visuals::visualise_room_visual,
 };
@@ -125,8 +125,14 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
         }
     }
 
+    if let Some(flag) = game::flags().get("distanceTransform".to_string()) {
+        if flag.pos().room_name() == room.name() {
+            let available_positions = distance_transform(&room.name(), None, true);
+        }
+    }
+
     #[cfg(feature = "season1")]
-    resources::haul_score_resources(&room.name(), cache, memory);
+    //resources::haul_score_resources(&room.name(), cache, memory);
 
     if room.my() {
         info!("[GOVERNMENT] Starting government for room: {}", room.name());
@@ -145,12 +151,19 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             run_planner(&room, memory.rooms.get_mut(&room.name()).unwrap());
         }
 
+        if let Some(flag) = game::flags().get("cleanRoads".to_string()) {
+            if flag.pos().room_name() == room.name() {
+                clean_rooms_roads(&room, memory, cache);
+            }
+        }
+
         if !memory.rooms.contains_key(&room.name()) || !cache.rooms.contains_key(&room.name()) {
             return;
         }
 
         {
             let cached_room = cache.rooms.get_mut(&room.name()).unwrap();
+
 
             if should_safemode(&room, cached_room, memory) {
                 if let Some(controller) = &cached_room.structures.controller {
@@ -654,6 +667,36 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                     None,
                 );
             }
+        }
+    }
+}
+
+pub fn clean_rooms_roads(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    let all_roads = get_all_cached_road_positions(&room.name(), memory);
+    let t = get_roads_and_ramparts();
+    let bunker_roads = t.iter().filter(|s| s.2 == StructureType::Road).collect::<Vec<_>>();
+
+    let room_cache = cache.rooms.get(&room.name()).unwrap();
+
+    let offset_x = room_cache.spawn_center.unwrap().x.u8();
+    let offset_y = room_cache.spawn_center.unwrap().y.u8() + 1;
+
+    let mut all_planned_roads = Vec::new();
+    for road in bunker_roads {
+        all_planned_roads.push(new_xy((road.0 + offset_x as i8) as u8, (road.1 + offset_y as i8) as u8));
+    }
+
+    if let Some(planned_roads) = all_roads.get(&room.name()) {
+        for road in planned_roads {
+            all_planned_roads.push(new_xy(road.x().u8(), road.y().u8()))
+        }
+    }
+
+    for road in room_cache.structures.roads.values() {
+        let pos = road.pos().xy();
+
+        if !all_planned_roads.contains(&pos) {
+            road.destroy();
         }
     }
 }

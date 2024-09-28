@@ -8,11 +8,7 @@ use screeps::{
 use screeps_utils::room_xy::{chebyshev_range_iter, GridIter, Order};
 
 use crate::{
-    constants::{SWAMP_MASK, WALL_MASK},
-    heap,
-    memory::ScreepsMemory,
-    traits::position::RoomXYExtensions,
-    utils::{self, get_my_username, new_xy},
+    constants::{SWAMP_MASK, WALL_MASK}, heap, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, traits::position::RoomXYExtensions, utils::{self, get_my_username, new_xy}
 };
 
 use super::movement_utils::visualise_path;
@@ -208,7 +204,11 @@ impl MoveTarget {
         from: Position,
         opts: Option<SearchOptions<impl FnMut(RoomName) -> MultiRoomCostResult>>,
     ) -> SearchResults {
-        pathfinder::search(from, self.pos, self.range, opts)
+        let pre_pathfind_cpu = game::cpu::get_used();
+            let res = pathfinder::search(from, self.pos, self.range, opts);
+        *PATHFIND_CPU.lock().unwrap() += game::cpu::get_used() - pre_pathfind_cpu;
+
+        res
     }
 
     pub fn serialize_path(

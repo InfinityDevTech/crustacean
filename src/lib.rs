@@ -16,7 +16,7 @@ use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::Role;
 use movement::caching::generate_pathing_targets;
-use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
+use profiling::timing::{INTENTS_USED, PATHFIND_CPU, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::{self, hauling, traffic, RoomCache}, creeps::local::hauler::check_relay, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
@@ -163,22 +163,34 @@ pub fn game_loop() {
         }
     }
 
-    let pre_haul_cpu = game::cpu::get_used();
+    let mut match_cpu = 0.0;
+    let mut calculate_cpu = 0.0;
+    let mut chant_cpu = 0.0;
+
     for room in cache.my_rooms.clone().iter() {
-        hauling::match_haulers(&mut cache, &mut memory, room);
+        if game::rooms().get(*room).is_none() || !cache.rooms.contains_key(room) {
+            continue;
+        }
+
+        let pre_match = game::cpu::get_used();
+            hauling::match_haulers(&mut cache, &mut memory, room);
+        match_cpu += game::cpu::get_used() - pre_match;
 
         let game_room = game::rooms().get(*room);
         if game_room.is_none() {
             continue;
         }
-
         let game_room = game_room.unwrap();
 
-        spawn_manager::calculate_hauler_needs(
-            &game_room,
-            &mut memory,
-            &mut cache,
-        );
+        let pre_calc = game::cpu::get_used();
+            spawn_manager::calculate_hauler_needs(
+                &game_room,
+                &mut memory,
+                &mut cache,
+            );
+        calculate_cpu += game::cpu::get_used() - pre_calc;
+
+        let pre_chant = game::cpu::get_used();
 
         if !cache.rooms.contains_key(room) || !memory.rooms.contains_key(room) {
             continue;
@@ -215,13 +227,15 @@ pub fn game_loop() {
             // -- End creep chant stuffs
         }
 
+        chant_cpu += game::cpu::get_used() - pre_chant;
+
         //for hauler in room_cache.creeps.creeps_of_role.get(&Role::Hauler).unwrap_or(&Vec::new()).clone() {
         //    let creep = game::creeps().get(hauler.to_string()).unwrap();
 
             //check_relay(&creep, &mut memory, &mut cache);
         //}
     }
-    info!("[HAULING] Government wide hauling took {:.2} CPU.", game::cpu::get_used() - pre_haul_cpu);
+    info!("[GOVERNMENT] Government wide haul matching: {:.2}. Hauler needs calculations: {:.2}. Creep chant {:.2}", match_cpu, calculate_cpu, chant_cpu);
 
     run_global_goal_setters(&mut memory, &mut cache);
     run_goal_handlers(&mut memory, &mut cache);
@@ -331,10 +345,12 @@ pub fn game_loop() {
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
     let intents_used = *INTENTS_USED.lock().unwrap();
+    let pathfinder_cpu = *PATHFIND_CPU.lock().unwrap();
     heap().per_tick_cost_matrixes.lock().unwrap().clear();
     heap().needs_cachable_position_generation.lock().unwrap().clear();
     run_creep_says();
     *INTENTS_USED.lock().unwrap() = 0;
+    *PATHFIND_CPU.lock().unwrap() = 0.0;
 
     let heap = game::cpu::get_heap_statistics();
     let used = ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64)
@@ -382,7 +398,7 @@ pub fn game_loop() {
             total_highest_count = role_count as u32;
         }
     }
-
+    info!("  Pathfinder used {:.2} CPU this tick.", pathfinder_cpu);
     info!(
         "  {} non-owned rooms took {:.2} CPU. {} creeps took {:.2} CPU. - Highest role: {:?} with a whopping {:.2} AVG ({:.2} CPU across {} creeps)",
         cache.non_owned_count,

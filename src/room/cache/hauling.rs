@@ -524,11 +524,16 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
     // We have the output above, because we dont want to include intents from the creeps being matched.
 
+    let pre_exec_cpu = game::cpu::get_used();
+    let size = saved.len();
+
     for (creep_name, haul_task) in saved {
         let creep = game::creeps().get(creep_name.clone()).unwrap();
 
         execute_order(&creep, memory, room_cache, &haul_task);
     }
+
+    info!("[HAULING] Executing {} creeps took {:.2} CPU.", size, game::cpu::get_used() - pre_exec_cpu);
 }
 
 pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {

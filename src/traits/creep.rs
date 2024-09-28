@@ -255,7 +255,7 @@ impl CreepExtensions for screeps::Creep {
                             }
                             .caching_pathfind(self.pos(), memory);
 
-                            self.bsay("MV-CAPTH", false);
+                            self.bsay(format!("MV-CA-{}", target.incomplete()).as_str(), false);
 
                             if !target.incomplete() {
                                 if let Some(first) = target.path().first() {
@@ -289,6 +289,8 @@ impl CreepExtensions for screeps::Creep {
 
                                         if let Some(dir) = dir {
                                             path.set_xy(step.x().u8(), step.y().u8(), dir as u8);
+                                        } else {
+                                            info!("No dir between points {} and {} at index {}!", step, next, index);
                                         }
                                     }
                                 }

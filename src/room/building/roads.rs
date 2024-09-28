@@ -3,12 +3,14 @@
 use log::info;
 use screeps::{Source, StructureSpawn, HasPosition, pathfinder::{SearchOptions, MultiRoomCostResult, self}, RoomName, LocalCostMatrix, game, StructureType, find, StructureProperties, look};
 
-use crate::traits::intents_tracking::RoomExtensionsTracking;
+use crate::{profiling::timing::PATHFIND_CPU, traits::intents_tracking::RoomExtensionsTracking};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn source_to_spawn(source: &Source, spawn: &StructureSpawn) {
     let opts = SearchOptions::new(road_callback).max_ops(100000000).plain_cost(2).swamp_cost(5).max_rooms(1);
-    let path = pathfinder::search(spawn.pos(), source.pos(), 1, Some(opts));
+    let pre_pathfind_cpu = game::cpu::get_used();
+        let path = pathfinder::search(spawn.pos(), source.pos(), 1, Some(opts));
+    *PATHFIND_CPU.lock().unwrap() += game::cpu::get_used() - pre_pathfind_cpu;
     if !path.incomplete() {
         info!("Road complete");
         for pos in path.path() {

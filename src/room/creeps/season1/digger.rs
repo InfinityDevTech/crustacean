@@ -2,7 +2,7 @@ use std::{cmp, collections::HashMap, hash::Hash};
 
 use screeps::{creep, find, game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CircleStyle, CostMatrix, CostMatrixGet, CostMatrixSet, Creep, HasId, HasPosition, LocalCostMatrix, RoomName, SharedCreepProperties, StructureObject, StructureType, StructureWall};
 
-use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::new_xy};
+use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, profiling::timing::PATHFIND_CPU, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::new_xy};
 
 pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if let Some(flag) = game::flags().get("digHere".to_string()) {
@@ -36,7 +36,9 @@ pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             }
         }
 
-        let search = pathfinder::search(creep.pos(), flag.pos(), 0, Some(SearchOptions::new(|room_name| callback(&room_name).1).max_ops(60000)));
+        let pre_pathfind_cpu = game::cpu::get_used();
+            let search = pathfinder::search(creep.pos(), flag.pos(), 0, Some(SearchOptions::new(|room_name| callback(&room_name).1).max_ops(60000)));
+        *PATHFIND_CPU.lock().unwrap() += game::cpu::get_used() - pre_pathfind_cpu;
         let vis = creep.room().unwrap().visual();
 
         if !search.incomplete() {

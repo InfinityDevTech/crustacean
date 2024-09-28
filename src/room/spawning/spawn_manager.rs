@@ -190,7 +190,7 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
     //    return;
     //}
 
-    if game::cpu::bucket() > 250 && ((room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 200) || (room_memory.rcl < 2 && game::time() % 10 == 0)) {
+    if game::cpu::bucket() > 250 && ((room_memory.hauler_count == 0 || game::time() % 100 == 0 || room_memory.hauler_count > 300) || (room_memory.rcl < 2 && game::time() % 10 == 0)) {
         let body = crate::room::spawning::creep_sizing::hauler_body(room, owning_cache, true);
         let carry_count = body.iter().filter(|p| *p == &Part::Carry).count();
     

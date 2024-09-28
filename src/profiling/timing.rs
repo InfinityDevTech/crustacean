@@ -6,6 +6,7 @@ lazy_static::lazy_static! {
     pub static ref SUBTRACT_INTENTS: Mutex<bool> = Mutex::new(false);
 
     pub static ref INTENTS_USED: Mutex<u32> = Mutex::new(0);
+    pub static ref PATHFIND_CPU: Mutex<f64> = Mutex::new(0.0);
     pub static ref PROFILER_INTENT_TRACKING: Mutex<HashMap<String, u32>> = Mutex::new(HashMap::new());
 }
 

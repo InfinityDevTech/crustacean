@@ -11,7 +11,7 @@ use crate::{
 // TODO: optimize this bitch!
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_basehauler(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
-    if creep.spawning() || creep.tired() {
+    if creep.spawning() {
         creep.bsay("😴", false);
         return;
     }

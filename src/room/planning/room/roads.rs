@@ -6,7 +6,7 @@ use screeps::{
 };
 
 use crate::{
-    compression::{decode_pos_list, encode_pos_list}, constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK}, memory::ScreepsMemory, room::cache::RoomCache, traits::position::RoomXYExtensions
+    compression::{decode_pos_list, encode_pos_list}, constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK}, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, room::cache::RoomCache, traits::position::RoomXYExtensions
 };
 
 use super::construction::get_all_structure_plans;
@@ -137,6 +137,8 @@ pub fn path_roads_from_pos(
     let all = get_all_cached_road_positions(&source.room_name(), memory);
 
     for destination in destinations {
+        let pre_pathfind_cpu = game::cpu::get_used();
+
         let result = pathfinder::search(
             source,
             destination,
@@ -145,6 +147,8 @@ pub fn path_roads_from_pos(
                 room_callback(&room_name, cache, memory, new_roads.clone(), all.clone())
             })),
         );
+
+        *PATHFIND_CPU.lock().unwrap() += game::cpu::get_used() - pre_pathfind_cpu;
 
         let path = result.path();
 

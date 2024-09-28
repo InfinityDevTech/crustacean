@@ -16,7 +16,7 @@ use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::Role;
 use movement::caching::generate_pathing_targets;
-use profiling::timing::{INTENTS_USED, SUBTRACT_INTENTS};
+use profiling::timing::{INTENTS_USED, PATHFIND_CPU, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::{self, hauling, traffic, RoomCache}, creeps::local::hauler::check_relay, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
@@ -345,10 +345,12 @@ pub fn game_loop() {
 
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
     let intents_used = *INTENTS_USED.lock().unwrap();
+    let pathfinder_cpu = *PATHFIND_CPU.lock().unwrap();
     heap().per_tick_cost_matrixes.lock().unwrap().clear();
     heap().needs_cachable_position_generation.lock().unwrap().clear();
     run_creep_says();
     *INTENTS_USED.lock().unwrap() = 0;
+    *PATHFIND_CPU.lock().unwrap() = 0.0;
 
     let heap = game::cpu::get_heap_statistics();
     let used = ((heap.total_heap_size() as f64 + heap.externally_allocated_size() as f64)
@@ -396,7 +398,7 @@ pub fn game_loop() {
             total_highest_count = role_count as u32;
         }
     }
-
+    info!("  Pathfinder used {:.2} CPU this tick.", pathfinder_cpu);
     info!(
         "  {} non-owned rooms took {:.2} CPU. {} creeps took {:.2} CPU. - Highest role: {:?} with a whopping {:.2} AVG ({:.2} CPU across {} creeps)",
         cache.non_owned_count,

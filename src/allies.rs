@@ -8,7 +8,7 @@ pub fn is_ally(user: &str, room_name: Option<RoomName>) -> bool {
     let user = user.to_lowercase();
 
     if game::shard::name() == "shardSeason" {
-        if user == "volotsyouga" {
+        if user == "volotsyouga" || user == "maddokmike" {
             return true;
         }
     }

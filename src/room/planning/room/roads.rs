@@ -2,17 +2,28 @@ use std::collections::HashMap;
 
 use log::info;
 use screeps::{
-    game, pathfinder::{self, MultiRoomCostResult, SearchOptions}, CircleStyle, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, RoomXY, StructureProperties, StructureType
+    game,
+    pathfinder::{self, MultiRoomCostResult, SearchOptions},
+    CircleStyle, HasPosition, LocalCostMatrix, Position, Room, RoomCoordinate, RoomName, RoomXY,
+    StructureProperties, StructureType,
 };
 
 use crate::{
-    compression::{decode_pos_list, encode_pos_list}, constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK}, memory::ScreepsMemory, room::cache::RoomCache, traits::position::RoomXYExtensions
+    compression::{decode_pos_list, encode_pos_list},
+    constants::{SWAMP_MASK, WALKABLE_STRUCTURES, WALL_MASK},
+    memory::ScreepsMemory,
+    room::cache::RoomCache,
+    traits::position::RoomXYExtensions,
 };
 
 use super::construction::get_all_structure_plans;
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn plan_main_room_roads(room: &Room, cache: &mut RoomCache, memory: &mut ScreepsMemory) -> HashMap<RoomName, String> {
+pub fn plan_main_room_roads(
+    room: &Room,
+    cache: &mut RoomCache,
+    memory: &mut ScreepsMemory,
+) -> HashMap<RoomName, String> {
     let mut room_path_destinations = Vec::new();
 
     if let Some(owning_cache) = cache.rooms.get(&room.name()) {
@@ -45,7 +56,12 @@ pub fn plan_main_room_roads(room: &Room, cache: &mut RoomCache, memory: &mut Scr
         }
     }
 
-    let measure_pos = memory.rooms.get(&room.name()).unwrap().storage_center.as_position(&room.name());
+    let measure_pos = memory
+        .rooms
+        .get(&room.name())
+        .unwrap()
+        .storage_center
+        .as_position(&room.name());
 
     let mut closest_to_furthest = room_path_destinations.clone();
     closest_to_furthest.sort_by_key(|pos| pos.get_range_to(measure_pos));
@@ -64,7 +80,6 @@ pub fn plan_main_room_roads(room: &Room, cache: &mut RoomCache, memory: &mut Scr
     } else {
         encode_all_paths(p_f_to_c.clone())
     }
-
 }
 
 pub fn encode_all_paths(paths: HashMap<RoomName, Vec<Position>>) -> HashMap<RoomName, String> {
@@ -85,7 +100,11 @@ pub fn visualise_paths(paths: HashMap<RoomName, Vec<Position>>) {
             for pos in path {
                 let x = pos.x().u8() as f32;
                 let y = pos.y().u8() as f32;
-                vis.circle(x, y, Some(CircleStyle::default().fill("#ff0000").radius(0.3)));
+                vis.circle(
+                    x,
+                    y,
+                    Some(CircleStyle::default().fill("#ff0000").radius(0.3)),
+                );
             }
         }
     }
@@ -111,7 +130,10 @@ pub fn count_total_roads(paths: HashMap<RoomName, Vec<Position>>) -> usize {
     total
 }
 
-pub fn get_all_cached_positions(room_name: &RoomName, memory: &ScreepsMemory) -> HashMap<RoomName, Vec<Position>> {
+pub fn get_all_cached_positions(
+    room_name: &RoomName,
+    memory: &ScreepsMemory,
+) -> HashMap<RoomName, Vec<Position>> {
     let mut rooms = HashMap::new();
 
     if let Some(room_memory) = memory.rooms.get(room_name) {
@@ -126,7 +148,7 @@ pub fn get_all_cached_positions(room_name: &RoomName, memory: &ScreepsMemory) ->
 }
 
 pub fn path_roads_from_pos(
-    cache: &RoomCache,
+    cache: &mut RoomCache,
     memory: &ScreepsMemory,
     source: Position,
     destinations: Vec<Position>,
@@ -165,12 +187,42 @@ pub fn path_roads_from_pos(
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn room_callback(room_name: &RoomName, room_cache: &RoomCache, memory: &ScreepsMemory, new_roads: HashMap<RoomName, Vec<Position>>, existing_roads: HashMap<RoomName, Vec<Position>>) -> MultiRoomCostResult {
+fn room_callback(
+    room_name: &RoomName,
+    room_cache: &mut RoomCache,
+    memory: &ScreepsMemory,
+    new_roads: HashMap<RoomName, Vec<Position>>,
+    existing_roads: HashMap<RoomName, Vec<Position>>,
+) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::default();
     let terrain = game::map::get_room_terrain(*room_name)
         .unwrap()
         .get_raw_buffer()
         .to_vec();
+
+    for x in 0..50 {
+        for y in 0..50 {
+            let tile = terrain[y * 50 + x];
+
+            // FUCK pservers dude, like, what the hell.
+            if tile == 1 || tile == 3 {
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
+                continue;
+            }
+
+            if tile & WALL_MASK != 0 {
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
+            } else if tile & SWAMP_MASK != 0 {
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 12);
+            } else if tile == 0 {
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 10);
+            } else {
+                // Pserver wackiness
+                // Impassible.
+                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
+            }
+        }
+    }
 
     if let Some(roads) = new_roads.get(room_name) {
         for road in roads {
@@ -186,7 +238,7 @@ fn room_callback(room_name: &RoomName, room_cache: &RoomCache, memory: &ScreepsM
         }
     }
 
-    if let Some(room_cache) = room_cache.rooms.get(room_name) {
+    if let Some(room_cache) = room_cache.rooms.get_mut(room_name) {
         for road in room_cache.structures.roads.values() {
             let xy = road.pos().xy();
             matrix.set(xy, 1);
@@ -201,34 +253,10 @@ fn room_callback(room_name: &RoomName, room_cache: &RoomCache, memory: &ScreepsM
 
             if walkable {
                 let xy = structure.pos().xy();
-                matrix.set(xy, 7);
+                matrix.set(xy, 10);
             } else {
                 let xy = structure.pos().xy();
                 matrix.set(xy, 255);
-            }
-        }
-    }
-
-    for x in 0..50 {
-        for y in 0..50 {
-            let tile = terrain[y * 50 + x];
-
-            // FUCK pservers dude, like, what the hell.
-            if tile == 1 || tile == 3 {
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
-                continue;
-            }
-
-            if tile & WALL_MASK != 0 {
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
-            } else if tile & SWAMP_MASK != 0 {
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 7);
-            } else if tile == 0 {
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 5);
-            } else {
-                // Pserver wackiness
-                // Impassible.
-                matrix.set(unsafe { RoomXY::unchecked_new(x as u8, y as u8) }, 255);
             }
         }
     }
@@ -247,10 +275,13 @@ fn room_callback(room_name: &RoomName, room_cache: &RoomCache, memory: &ScreepsM
             let x = plan.0 as u8 + offset_x;
             let y = plan.1 as u8 + offset_y;
 
-            let xy = RoomXY::new(RoomCoordinate::new(x).unwrap(), RoomCoordinate::new(y).unwrap());
+            let xy = RoomXY::new(
+                RoomCoordinate::new(x).unwrap(),
+                RoomCoordinate::new(y).unwrap(),
+            );
 
             if WALKABLE_STRUCTURES.contains(&plan.2) {
-                matrix.set(xy, 3);
+                matrix.set(xy, 10);
             } else {
                 matrix.set(xy, 255);
             }

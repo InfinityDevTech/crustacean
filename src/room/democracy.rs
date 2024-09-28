@@ -2,11 +2,7 @@ use std::mem;
 
 use log::info;
 use screeps::{
-    game,
-    look::{self, LookResult},
-    pathfinder::MultiRoomCostResult,
-    HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate,
-    RoomName, RoomPosition, StructureType, Terrain,
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureObject, StructureProperties, StructureRoad, StructureType, Terrain
 };
 
 use crate::{
@@ -19,7 +15,7 @@ use crate::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
         planning::room::{
-            plan_room, remotes, roads::plan_main_room_roads, skippy_base::run_planner,
+            plan_room, remotes, roads::{self, plan_main_room_roads}, skippy_base::run_planner,
         },
         tower,
         visuals::run_full_visuals,
@@ -215,6 +211,31 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
             *hauler_cpu_usage += game::cpu::get_used() - pre_hauler_cpu;
         }
 
+        if let Some(flag) = game::flags().get("resetRoadPlans".to_string()) {
+            if flag.room().unwrap().name() == room.name() {
+                memory.rooms.get_mut(&room.name()).unwrap().planned_paths.clear();
+            }
+        }
+
+        if let Some(flag) = game::flags().get("visualiseRoads".to_string()) {
+            if flag.room().unwrap().name() == room.name() {
+                let all_paths = roads::get_all_cached_positions(&room.name(), memory);
+
+                for (room_name, spots) in all_paths {
+                    if let Some(room) = game::rooms().get(room_name) {
+                        let vis = room.visual();
+
+                        let assembled: Vec<(f32, f32)> = spots.iter().map(|spot| (spot.x().u8() as f32, spot.y().u8() as f32)).collect();
+
+                        for spot in assembled {
+                            vis.circle(spot.0, spot.1, None);
+                        }
+                    }
+                }
+            }
+        }
+
+        // TODO: why are we looping here?
         for flag in game::flags().values() {
             if flag.name().starts_with("forceSpawnCenter") {
                 let pos = flag.pos();
@@ -498,6 +519,14 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
 
             for csite in csites {
                 let _ = csite.remove();
+            }
+        }
+
+        if let Some(flag) = game::flags().get("deleteAllRoads".to_string()) {
+            let room_cache = cache.rooms.get(&room.name()).unwrap();
+
+            for road in room_cache.structures.roads.values() {
+                road.destroy();
             }
         }
 

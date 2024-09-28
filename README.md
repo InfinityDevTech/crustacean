@@ -1,32 +1,15 @@
+## List of flags and their purposes
 
-## init
-```sh
-# Install CLI dependency:
-cargo install cargo-screeps
-
-# Clone the starter
-git clone https://github.com/rustyscreeps/screeps-starter-rust.git
-cd screeps-starter-rust
-
-# Copy the example config, and set up at least one deployment mode
-cp example-screeps.toml screeps.toml
-nano screeps.toml
-# configure credentials (API key) if you'd like to upload directly,
-# or a directory to copy to if you'd prepfer to use the game client to deploy
-
-# build tool:
-cargo screeps --help
-# compile the module without deploying anywhere
-cargo screeps build
-# compile plus deploy to the configured 'upload' mode; any section name you
-# set up in your screeps.toml for different environments and servers can be used
-cargo screeps deploy -m upload
-# or if you've set a default mode in your configuration, simply use:
-cargo screeps deploy
-```
-
-[screeps]: https://screeps.com/
-[`wasm-pack`]: https://rustwasm.github.io/wasm-pack/
-[`cargo-screeps`]: https://github.com/rustyscreeps/cargo-screeps/
-[`screeps-game-api`]: https://github.com/rustyscreeps/screeps-game-api/
-[rustyscreeps]: https://github.com/rustyscreeps/
+- `reset_expansion` - Reset the expansion planners memory, and cancel any current expansion goals.
+- `forceCapExpansion-{number}` - Force the maximum rooms you want to claim
+- `claim` - Force a claim goal here
+- `forceClaimerPath` - Force a claimer to path here.
+- `forceExpansionDirection` - Expand in this direction!
+- `bulldozeRoom` - Spawn 4 bulldozers from EVERY room to go attack said room.
+- `deleteAllRoadCSites` - Delete all road construciton sites.
+- `resetRoadPlans` - Reset all the planned paths in a room
+- `deleteAllRoads` - Delete EVERY SINGLE ROAD WE OWN.
+- `visualiseRoads` - Visualise all roads in the room the flag is in.
+- `force_scout` - Force a room to be scouted
+- `forceSpawnCenter` - Force the spawn stamp center to be at the flag pos
+- `forceStorageCenter` - Force the storage stamp center to be at the flag pos

@@ -75,6 +75,8 @@ fn panic_hook(info: &PanicInfo) {
     let mut fmt_error = String::new();
     let _ = writeln!(fmt_error, "{}", info);
 
+    game::notify(info.to_string().as_str(), None);
+
     // this could be controlled with an env var at compilation instead
     const SHOW_BACKTRACE: bool = true;
 
@@ -82,6 +84,8 @@ fn panic_hook(info: &PanicInfo) {
         Error::stack_trace_limit(10000_f32);
         info!("Printing backtrace (10000 frames):");
         let stack = Error::new().stack();
+
+        let mut lines = Vec::new();
         // Skip all frames before the special symbol `__rust_end_short_backtrace`
         // and then skip that frame too.
         // Note: sometimes wasm-opt seems to delete that symbol.
@@ -92,13 +96,17 @@ fn panic_hook(info: &PanicInfo) {
                 .skip(1)
             {
                 let _ = writeln!(fmt_error, "{}", line);
+                lines.push(line.to_string());
             }
         } else {
             // If there was no `__rust_end_short_backtrace` symbol, use the whole stack
             // but skip the first line, it just says Error.
             let (_, stack) = stack.split_once('\n').unwrap();
             let _ = writeln!(fmt_error, "{}", stack);
+            lines.push(stack.to_string())
         }
+
+        game::notify(lines.join("\n").as_str(), None);
     }
 
     error!("{}", fmt_error);

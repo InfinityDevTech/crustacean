@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use log::info;
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, Tombstone
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, StructureWall, Tombstone
 };
 
 use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
@@ -57,6 +57,7 @@ pub struct RoomStructureCache {
     pub needs_repair: Vec<StructureObject>,
 
     pub ramparts: Vec<StructureRampart>,
+    pub constructed_walls: Vec<StructureWall>,
 
     pub ruins: HashMap<ObjectId<Ruin>, Ruin>,
     pub spawns: HashMap<ObjectId<StructureSpawn>, StructureSpawn>,
@@ -92,6 +93,8 @@ pub struct RoomStructureCache {
     tombstones: Option<HashMap<ObjectId<Tombstone>, Tombstone>>,
     classified_links: Option<CachedRoomLinks>,
     classified_containers: Option<CachedRoomContainers>,
+
+    all_structures: Vec<StructureObject>,
 }
 
 impl RoomStructureCache {
@@ -108,6 +111,7 @@ impl RoomStructureCache {
             needs_repair: Vec::new(),
 
             ramparts: Vec::new(),
+            constructed_walls: Vec::new(),
 
             ruins: HashMap::new(),
             towers: HashMap::new(),
@@ -142,6 +146,8 @@ impl RoomStructureCache {
             classified_links: Some(CachedRoomLinks::new()),
             construction_sites: Vec::new(),
             inactive_structures: Vec::new(),
+
+            all_structures: Vec::new(),
         };
 
         if let Some(controller) = room.controller() {
@@ -175,7 +181,11 @@ impl RoomStructureCache {
 
     // This is all to avoid a clone.
     // Plus, this makes it lazy.
-    pub fn all_structures(&self) -> Vec<StructureObject> {
+    pub fn all_structures(&mut self) -> Vec<StructureObject> {
+        if !self.all_structures.is_empty() {
+            return self.all_structures.clone();
+        }
+
         let mut vec = Vec::new();
 
         // Ramparts
@@ -211,6 +221,9 @@ impl RoomStructureCache {
         // Keeper Lairs
         vec.extend(self.keeper_lairs.values().map(|keeper_lair| StructureObject::from(keeper_lair.clone())));
 
+        // Constructed Walls
+        vec.extend(self.constructed_walls.iter().map(|wall| StructureObject::from(wall.clone())));
+
         // Roads
         vec.extend(self.roads.values().map(|road| StructureObject::from(road.clone())));
 
@@ -219,6 +232,8 @@ impl RoomStructureCache {
 
         // inactives
         vec.extend(self.inactive_structures.iter().cloned());
+
+        self.all_structures = vec.clone();
 
         vec
     }
@@ -320,6 +335,9 @@ impl RoomStructureCache {
             }
             StructureObject::StructureKeeperLair(keeper_lair) => {
                 self.keeper_lairs.insert(keeper_lair.id(), keeper_lair);
+            }
+            StructureObject::StructureWall(wall) => {
+                self.constructed_walls.push(wall);
             }
 
             _ => {}

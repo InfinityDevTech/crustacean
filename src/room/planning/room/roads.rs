@@ -130,7 +130,7 @@ pub fn count_total_roads(paths: HashMap<RoomName, Vec<Position>>) -> usize {
     total
 }
 
-pub fn get_all_cached_positions(
+pub fn get_all_cached_road_positions(
     room_name: &RoomName,
     memory: &ScreepsMemory,
 ) -> HashMap<RoomName, Vec<Position>> {
@@ -140,7 +140,7 @@ pub fn get_all_cached_positions(
         for (room_name, encoded_pos) in &room_memory.planned_paths {
             let positions = decode_pos_list(encoded_pos.to_string());
 
-            rooms.insert(room_name, positions);
+            rooms.insert(room_name.clone(), positions);
         }
     }
 

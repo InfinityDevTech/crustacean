@@ -232,7 +232,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
         if let Some(flag) = game::flags().get("visualiseRoads".to_string()) {
             if flag.room().unwrap().name() == room.name() {
-                let all_paths = roads::get_all_cached_positions(&room.name(), memory);
+                let all_paths = roads::get_all_cached_road_positions(&room.name(), memory);
 
                 for (room_name, spots) in all_paths {
                     if let Some(room) = game::rooms().get(room_name) {

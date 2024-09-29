@@ -15,13 +15,13 @@ use formation::formations::run_formations;
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::Role;
-use movement::caching::generate_pathing_targets;
+use movement::{caching::generate_pathing_targets, move_target::{path_call, MoveOptions}};
 use profiling::timing::{INTENTS_USED, PATHFIND_CPU, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::{self, hauling, traffic, RoomCache}, creeps::local::hauler::check_relay, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
-use screeps::{find, game, OwnedStructureProperties};
+use screeps::{find, game, pathfinder::{self, SearchOptions}, CircleStyle, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
 use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,
@@ -196,8 +196,28 @@ pub fn game_loop() {
             continue;
         }
 
+        let m = memory.clone();
+
         let room_cache = cache.rooms.get_mut(room).unwrap();
         let room_memory = memory.rooms.get_mut(room).unwrap();
+
+        if room_cache.room.name() == "E6S2" {
+            let start = Position::new(RoomCoordinate::new(14).unwrap(), RoomCoordinate::new(32).unwrap(), RoomName::new("E6S2").unwrap());
+            let end = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(30).unwrap(), RoomName::new("E6S2").unwrap());
+
+            game_room.visual().circle(start.x().u8() as f32, start.y().u8() as f32 - 0.25, Some(CircleStyle::default().fill("#ff0000")));
+            game_room.visual().circle(end.x().u8() as f32, end.y().u8() as f32 - 0.25, Some(CircleStyle::default().fill("#00ff00")));
+
+            let opts = SearchOptions::new(|room_name| path_call(room_name, start, &m, MoveOptions::default()))
+            .max_rooms(15)
+            .max_ops(200000);
+
+            let r = pathfinder::search(start, end, 0, Some(opts));
+
+            for step in r.path() {
+                game_room.visual().circle(step.x().u8() as f32, step.y().u8() as f32, None);
+            }
+        }
 
         // -- Begin creep chant stuffs
         if !room_cache.creeps.creeps_in_room.is_empty() {
@@ -346,7 +366,7 @@ pub fn game_loop() {
     let mut heap_lifetime = heap().heap_lifetime.lock().unwrap();
     let intents_used = *INTENTS_USED.lock().unwrap();
     let pathfinder_cpu = *PATHFIND_CPU.lock().unwrap();
-    heap().per_tick_cost_matrixes.lock().unwrap().clear();
+    //heap().per_tick_cost_matrixes.lock().unwrap().clear();
     heap().needs_cachable_position_generation.lock().unwrap().clear();
     run_creep_says();
     *INTENTS_USED.lock().unwrap() = 0;

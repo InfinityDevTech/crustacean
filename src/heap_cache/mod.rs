@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use crate::compression::compressed_matrix::CompressedMatrix;
+use crate::{compression::compressed_matrix::CompressedMatrix, movement::move_target::MoveOptions};
 use hauling::HeapHaulingCache;
 use heap_creep::HeapCreep;
 use heap_room::HeapRoom;
@@ -60,7 +60,7 @@ pub struct GlobalHeapCache {
 
     pub my_username: Mutex<String>,
 
-    pub per_tick_cost_matrixes: Mutex<HashMap<RoomName, LocalCostMatrix>>,
+    //pub per_tick_cost_matrixes: Mutex<HashMap<RoomName, HashMap<MoveOptions, LocalCostMatrix>>>,
     pub per_tick_creep_says: Mutex<HashMap<String, (bool, String)>>,
 
     pub flow_cache: Mutex<HashMap<RoomName, RoomHeapFlowCache>>,
@@ -83,7 +83,7 @@ impl GlobalHeapCache {
 
             my_username: Mutex::new(String::new()),
 
-            per_tick_cost_matrixes: Mutex::new(HashMap::new()),
+            //per_tick_cost_matrixes: Mutex::new(HashMap::new()),
             per_tick_creep_says: Mutex::new(HashMap::new()),
 
             flow_cache: Mutex::new(HashMap::new()),

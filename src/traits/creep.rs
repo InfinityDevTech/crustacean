@@ -258,7 +258,9 @@ impl CreepExtensions for screeps::Creep {
                             self.bsay(format!("MV-CA-{}", target.incomplete()).as_str(), false);
 
                             if !target.incomplete() {
-                                if let Some(first) = target.path().first() {
+                                // From my testing, the pathfinder returns .first() as the creeps position.
+                                // Idk why, but hey, it does!
+                                if let Some(first) = target.path().get(1) {
                                     let dir = self.pos().get_direction_to(*first);
 
                                     if let Some(dir) = dir {

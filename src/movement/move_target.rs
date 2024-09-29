@@ -1,3 +1,5 @@
+use std::{borrow::BorrowMut, collections::HashMap};
+
 use log::{info, warn};
 use screeps::{
     find, game,
@@ -266,14 +268,14 @@ pub fn path_call(
     let mut matrix = LocalCostMatrix::new();
 
     if !move_options.ignore_cached_cost_matrix {
-        if let Some(cached_matrix) = heap()
+        /*if let Some(cached_matrix) = heap()
             .per_tick_cost_matrixes
             .lock()
             .unwrap()
             .get(&room_name)
         {
             return MultiRoomCostResult::CostMatrix(cached_matrix.clone().into());
-        }
+        }*/
     }
 
     if move_options.avoid_hostile_remotes && from.room_name() != room_name {
@@ -502,12 +504,15 @@ pub fn path_call(
 
     *count += 1;*/
     // TODO: this can cause problems with different options, forgot about that
-    if !move_options.ignore_cached_cost_matrix {
+    /*if !move_options.ignore_cached_cost_matrix {
+        let entry = heap().per_tick_cost_matrixes.lock().unwrap().entry(room_name).or_insert(HashMap::new());
+
+        let t = heap().per_tick_cost_matrixes.lock().unwrap().get_mut(&room_name).unwrap().
         heap()
             .per_tick_cost_matrixes
             .lock()
             .unwrap()
             .insert(room_name, matrix.clone());
-    }
+    }*/
     MultiRoomCostResult::CostMatrix(matrix.into())
 }

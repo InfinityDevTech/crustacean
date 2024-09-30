@@ -4,6 +4,7 @@ use screeps::{find, game, Creep, HasPosition, ResourceType, SharedCreepPropertie
 
 use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::creep::CreepExtensions};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_scorer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
@@ -25,7 +26,7 @@ pub fn run_scorer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
 
                     return;
                 }
-                
+
                 creep.withdraw(storage, ResourceType::Score, None);
             } else {
                 if creep.ticks_to_live().unwrap_or(u32::MAX) <= creep.pos().get_range_to(storage.pos()) {

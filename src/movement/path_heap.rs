@@ -8,6 +8,7 @@ pub struct PathHeap {
     size: usize,
 }
 
+
 impl PathHeap {
     pub fn new() -> PathHeap {
         PathHeap {

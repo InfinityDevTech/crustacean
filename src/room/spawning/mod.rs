@@ -521,6 +521,7 @@ pub fn scout(
     ))
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn mineral_miner(
     room: &Room,
     cache: &CachedRoom,
@@ -1022,6 +1023,7 @@ pub fn base_hauler(
     Some(req)
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn storage_sitter(
     room: &Room,
     cache: &CachedRoom,

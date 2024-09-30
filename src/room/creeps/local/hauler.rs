@@ -92,7 +92,7 @@ pub fn run_hauler(
                         );
                     }
 
-                } else if haul_type == HaulingType::Offer || haul_type == HaulingType::Withdraw {
+                } else if haul_type == HaulingType::Offer || haul_type == HaulingType::Withdraw || haul_type == HaulingType::Pickup {
                     let free_capacity = creep.store().get_free_capacity(None);
                     let picked_up_amount = free_capacity.min(amount as i32);
 

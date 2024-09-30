@@ -4,6 +4,7 @@ use screeps::{find, game, HasHits, HasPosition, LocalCostMatrix, Room, RoomXY, T
 
 use crate::{constants, memory::ScreepsMemory, room::cache::CachedRoom, traits::{position::PositionExtensions, room::find_pos_in_rect}, utils};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn should_safemode(room: &Room, room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) -> bool {
     let mut only_invader = true;
     for attacker in &room_cache.creeps.enemy_creeps_with_attack {

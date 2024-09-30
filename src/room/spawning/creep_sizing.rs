@@ -77,6 +77,7 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, source_parts_needed: u8, forc
     (current_work_count >= source_parts_needed, parts)
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn mineral_miner_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
     let mut body = Vec::new();
     let stamp = vec![Part::Work, Part::Work, Part::Work, Part::Work, Part::Move];

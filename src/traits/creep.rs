@@ -18,7 +18,7 @@ use crate::{
 use log::info;
 use rand::{prelude::SliceRandom, rngs::StdRng, SeedableRng};
 use screeps::{
-    game, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
+    game, CircleStyle, Direction, HasPosition, MaybeHasId, Position, RoomXY, SharedCreepProperties, Terrain
 };
 
 use super::intents_tracking::CreepExtensionsTracking;
@@ -51,7 +51,7 @@ pub trait CreepExtensions {
     fn get_possible_moves(&self, room_cache: &CachedRoom) -> Vec<Direction>;
 }
 
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl CreepExtensions for screeps::Creep {
     // Movement
     fn better_move_by_path(&self, path: String, memory: &mut CreepMemory, cache: &mut CachedRoom) {
@@ -142,13 +142,12 @@ impl CreepExtensions for screeps::Creep {
         }
     }
 
-    fn set_working_area(
-        &self,
-        cache: &mut CachedRoom,
-        pos: Position,
-        range: u8
-    ) {
-        let entry = cache.traffic.working_areas.entry(self.try_id().unwrap()).or_insert((pos, range));
+    fn set_working_area(&self, cache: &mut CachedRoom, pos: Position, range: u8) {
+        let entry = cache
+            .traffic
+            .working_areas
+            .entry(self.try_id().unwrap())
+            .or_insert((pos, range));
 
         *entry = (pos, range)
     }
@@ -260,17 +259,35 @@ impl CreepExtensions for screeps::Creep {
                             if !target.incomplete() {
                                 // From my testing, the pathfinder returns .first() as the creeps position.
                                 // Idk why, but hey, it does!
-                                if let Some(first) = target.path().get(1) {
-                                    let dir = self.pos().get_direction_to(*first);
+                                if let Some(first) = target.path().first() {
+                                    if *first != self.pos() {
+                                        let dir = self.pos().get_direction_to(*first);
 
-                                    if let Some(dir) = dir {
-                                        self.move_request(dir, cache);
+                                        if let Some(dir) = dir {
+                                            self.move_request(dir, cache);
 
-                                        path.set_xy(
-                                            self.pos().x().u8(),
-                                            self.pos().y().u8(),
-                                            dir as u8,
-                                        );
+                                            self.room().unwrap().visual().circle(self.pos().x().u8() as f32, self.pos().y().u8() as f32, Some(CircleStyle::default().fill("#ff0000")));
+
+                                            path.set_xy(
+                                                self.pos().x().u8(),
+                                                self.pos().y().u8(),
+                                                dir as u8,
+                                            );
+                                        }
+                                    } else if let Some(first) = target.path().get(1) {
+                                        let dir = self.pos().get_direction_to(*first);
+
+                                        if let Some(dir) = dir {
+                                            self.move_request(dir, cache);
+
+                                            self.room().unwrap().visual().circle(self.pos().x().u8() as f32, self.pos().y().u8() as f32, Some(CircleStyle::default().fill("#ff0000")));
+
+                                            path.set_xy(
+                                                self.pos().x().u8(),
+                                                self.pos().y().u8(),
+                                                dir as u8,
+                                            );
+                                        }
                                     }
                                 }
 
@@ -282,7 +299,8 @@ impl CreepExtensions for screeps::Creep {
                                     // TODO: Make it do it for every step, even across rooms
                                     // Because it currently only works for the room the creep is in.
                                     // P.S. This was fixed by xTwistedx. (The guy with the bad bot.)
-                                    if target_pos.room_name() != step.room_name() {
+                                    if self.room().unwrap().name() != step.room_name() {
+                                        self.bsay(format!("BRK-{}", index).as_str(), false);
                                         break;
                                     }
 
@@ -290,9 +308,13 @@ impl CreepExtensions for screeps::Creep {
                                         let dir = step.get_direction_to(*next);
 
                                         if let Some(dir) = dir {
+                                            self.room().unwrap().visual().circle(self.pos().x().u8() as f32, self.pos().y().u8() as f32, Some(CircleStyle::default().fill("#00ff00")));
                                             path.set_xy(step.x().u8(), step.y().u8(), dir as u8);
                                         } else {
-                                            info!("No dir between points {} and {} at index {}!", step, next, index);
+                                            info!(
+                                                "No dir between points {} and {} at index {}!",
+                                                step, next, index
+                                            );
                                         }
                                     }
                                 }
@@ -499,19 +521,30 @@ impl CreepExtensions for screeps::Creep {
     }
 
     fn get_possible_moves_traffic(&self, room_cache: &mut CachedRoom) -> Vec<RoomXY> {
-        if room_cache.traffic.cached_ops.contains_key(&self.try_id().unwrap()) {
+        if room_cache
+            .traffic
+            .cached_ops
+            .contains_key(&self.try_id().unwrap())
+        {
             return room_cache.traffic.cached_ops[&self.try_id().unwrap()].clone();
         }
 
         let mut possible_moves = vec![self.pos().xy()];
         let mut out_of_area = vec![];
-        room_cache.traffic.cached_ops.insert(self.try_id().unwrap(), possible_moves.clone());
+        room_cache
+            .traffic
+            .cached_ops
+            .insert(self.try_id().unwrap(), possible_moves.clone());
 
         if self.tired() {
             return possible_moves;
         }
 
-        if room_cache.traffic.intended_move.contains_key(&self.try_id().unwrap()) {
+        if room_cache
+            .traffic
+            .intended_move
+            .contains_key(&self.try_id().unwrap())
+        {
             let mut new = vec![room_cache.traffic.intended_move[&self.try_id().unwrap()]];
             new.extend(possible_moves);
 
@@ -521,7 +554,10 @@ impl CreepExtensions for screeps::Creep {
         let x = self.pos().x().u8();
         let y = self.pos().y().u8();
 
-        let work = room_cache.traffic.working_areas.get(&self.try_id().unwrap());
+        let work = room_cache
+            .traffic
+            .working_areas
+            .get(&self.try_id().unwrap());
 
         for dir in Direction::iter() {
             let pos = dir_to_coords(*dir, x, y);

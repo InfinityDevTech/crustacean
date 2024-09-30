@@ -121,6 +121,7 @@ pub struct HaulingCache {
     iterator_salt: u32,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl HaulingCache {
     pub fn new() -> HaulingCache {
         HaulingCache {
@@ -251,6 +252,7 @@ impl HaulingCache {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, room_name: &RoomName) {
     let starting_cpu = game::cpu::get_used();
     let mut matched_creeps = Vec::new();
@@ -536,6 +538,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
     info!("[HAULING] Executing {} creeps took {:.2} CPU.", size, game::cpu::get_used() - pre_exec_cpu);
 }
 
+//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
     if order.no_distance_calc {
         order.priority
@@ -549,6 +552,7 @@ pub fn score_couple(order: &RoomHaulingOrder, creep: &Creep) -> f32 {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn clean_heap_hauling(memory: &mut ScreepsMemory) {
     let mut to_delete = Vec::new();
 
@@ -635,6 +639,7 @@ impl RoomHaulingOrder {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_spawn(room_cache: &mut CachedRoom) {
     let has_ff = room_cache
         .creeps
@@ -667,6 +672,7 @@ pub fn haul_spawn(room_cache: &mut CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_ruins(room_cache: &mut CachedRoom) {
     let ruins = &room_cache.structures.ruins;
 
@@ -686,6 +692,7 @@ pub fn haul_ruins(room_cache: &mut CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_tombstones(room_cache: &mut CachedRoom) {
     let tombstones = &room_cache.structures.tombstones();
 
@@ -716,6 +723,7 @@ pub fn haul_tombstones(room_cache: &mut CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_storage(room_cache: &mut CachedRoom) {
     let storage = &room_cache.structures.storage;
     let base_hauler_count = room_cache

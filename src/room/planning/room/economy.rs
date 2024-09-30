@@ -2,6 +2,7 @@ use screeps::Room;
 
 use crate::config;
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_required_energy_storage(room: &Room) -> u32 {
     let mut base_stock = config::ROOM_ENERGY_STOCKPILE;
     let controller = room.controller().unwrap();

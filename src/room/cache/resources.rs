@@ -54,6 +54,7 @@ pub struct RoomResourceCache {
     pub season1_score: Vec<ScoreContainer>,
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomResourceCache {
     pub fn new_from_room(
         room: &Room,
@@ -297,6 +298,7 @@ impl CachedSource {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     for remote_name in memory
         .rooms
@@ -380,6 +382,7 @@ pub fn haul_remotes(launching_room: &Room, memory: &mut ScreepsMemory, cache: &m
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_containers(cached_room: &mut CachedRoom) {
     if let Some(controller_container) = &cached_room.structures.containers().controller {
         let upgrader_count = cached_room.creeps.creeps_of_role(Role::Upgrader);
@@ -592,6 +595,7 @@ pub fn haul_containers(cached_room: &mut CachedRoom) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
     for resource in &cached_room.resources.dropped_energy {
         let amount = resource.amount();

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use screeps::{game, Direction, PolyStyle, Position, RoomName, RoomXY};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn visualise_path(path: Vec<Position>, _from_pos: Position, color: &str) {
     let style = PolyStyle::default()
     .stroke(color)
@@ -32,6 +33,7 @@ pub fn visualise_path(path: Vec<Position>, _from_pos: Position, color: &str) {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn num_to_dir(num: u8) -> Direction {
     match num {
         1 => Direction::Top,
@@ -63,6 +65,7 @@ pub fn dir_to_other_coord(source: RoomXY, dest: RoomXY) -> Direction {
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn dir_to_coords(dir: Direction, x: u8, y: u8) -> (u8, u8) {
     match dir {
         Direction::Top => (x, y - 1),

@@ -4,6 +4,7 @@ use screeps::{creep, find, game, pathfinder::{self, MultiRoomCostResult, PathFin
 
 use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, profiling::timing::PATHFIND_CPU, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::new_xy};
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     if let Some(flag) = game::flags().get("digHere".to_string()) {
         if creep.room().unwrap().name() != flag.pos().room_name() || creep.pos().get_range_to(flag.pos()) > 15 {
@@ -90,6 +91,7 @@ pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn callback(room_name: &RoomName) -> (LocalCostMatrix, MultiRoomCostResult) {
     let mut cm = LocalCostMatrix::new();
 

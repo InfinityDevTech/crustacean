@@ -20,7 +20,6 @@ use crate::{
     traits::room::RoomType,
 };
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_my_username() -> String {
     let mut heap_username = heap().my_username.lock().unwrap();
     if !heap_username.is_empty() {
@@ -56,7 +55,6 @@ pub fn get_my_username() -> String {
     panic!("Unable to determine my username!");
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_room_sign(remote: bool) -> String {
     let alliance_tag = config::ALLIANCE_TAG;
 
@@ -76,7 +74,6 @@ pub fn get_room_sign(remote: bool) -> String {
     sign.to_string()
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn room_type(name: &RoomName) -> RoomType {
     let x_coord = name.x_coord();
     let x_mod = if x_coord < 0 {
@@ -276,7 +273,6 @@ lazy_static! {
 /// Convert a string to its respective role
 /// **Example:** sm **=** Miner
 /// **Example:** mb **=** Hauler
-//#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn name_to_role(name: &str) -> Option<Role> {
     let role_tag = name.split("-").next().unwrap();
     for (role, tag) in ROLE_MAP.into_iter() {
@@ -288,6 +284,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     None
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn ticks_to_fill_bucket(bucket: i32) -> u32 {
     let max_cpu = game::cpu::tick_limit();
 
@@ -342,7 +339,6 @@ pub fn find_closest_owned_room(
     closest_room
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_unique_id() -> u128 {
     let mut lock = heap().unique_id.lock().unwrap();
     let id = *lock;
@@ -370,6 +366,7 @@ pub fn get_part_count(parts: &Vec<BodyPart>, part_type: Option<Part>) -> u8 {
     count
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
     let path = MoveTarget { pos, range: 1 }.pathfind(target, Some(SearchOptions::default()));
 
@@ -380,6 +377,7 @@ pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
     path.path().len() as u32
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn calculate_swamp_percentage(room_name: &RoomName) -> f64 {
     let terrain = game::map::get_room_terrain(*room_name).unwrap();
 
@@ -405,7 +403,6 @@ pub fn calculate_swamp_percentage(room_name: &RoomName) -> f64 {
     (swamp_tiles as f64 / total_tiles as f64) * 100.0
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_rampart_repair_rcl(rcl: u8) -> u32 {
     match rcl {
         1 => 500,
@@ -420,7 +417,6 @@ pub fn get_rampart_repair_rcl(rcl: u8) -> u32 {
     }
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
     let mut cost = 0;
 
@@ -431,6 +427,7 @@ pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
     cost
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn new_xy(x: u8, y: u8) -> RoomXY {
     RoomXY::new(
         RoomCoordinate::new(x.clamp(0, 49)).unwrap(),
@@ -438,6 +435,7 @@ pub fn new_xy(x: u8, y: u8) -> RoomXY {
     )
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn distance_transform(
     room_name: &RoomName,
     input_cm: Option<LocalCostMatrix>,

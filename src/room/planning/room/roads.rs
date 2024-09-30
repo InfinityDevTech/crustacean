@@ -78,6 +78,7 @@ pub fn plan_main_room_roads(
     }
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn encode_all_paths(paths: HashMap<RoomName, Vec<Position>>) -> HashMap<RoomName, String> {
     let mut encoded_paths = HashMap::new();
 
@@ -116,6 +117,7 @@ pub fn get_all_positions_from_paths(paths: HashMap<RoomName, Vec<Position>>) -> 
     all_positions
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn count_total_roads(paths: HashMap<RoomName, Vec<Position>>) -> usize {
     let mut total = 0;
 
@@ -126,6 +128,7 @@ pub fn count_total_roads(paths: HashMap<RoomName, Vec<Position>>) -> usize {
     total
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn get_all_cached_road_positions(
     room_name: &RoomName,
     memory: &ScreepsMemory,
@@ -143,6 +146,7 @@ pub fn get_all_cached_road_positions(
     rooms
 }
 
+#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_roads_from_pos(
     cache: &mut RoomCache,
     memory: &ScreepsMemory,

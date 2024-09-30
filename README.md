@@ -9,6 +9,8 @@
 - `deleteAllRoadCSites` - Delete all road construciton sites.
 - `resetRoadPlans` - Reset all the planned paths in a room
 - `deleteAllRoads` - Delete EVERY SINGLE ROAD WE OWN.
+- `cleanRoads` - Delete roads that ARENT planned.
+- `distanceTransform` - Do a distance transform (Requires visual.)
 - `visualiseRoads` - Visualise all roads in the room the flag is in.
 - `force_scout` - Force a room to be scouted
 - `forceSpawnCenter` - Force the spawn stamp center to be at the flag pos

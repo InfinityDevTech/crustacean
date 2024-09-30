@@ -2,7 +2,7 @@ use std::mem;
 
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureObject, StructureProperties, StructureRoad, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureObject, StructureProperties, StructureRoad, StructureType, Terrain
 };
 
 use crate::{
@@ -241,6 +241,8 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
                         let assembled: Vec<(f32, f32)> = spots.iter().map(|spot| (spot.x().u8() as f32, spot.y().u8() as f32)).collect();
 
                         for spot in assembled {
+                            let pos = Position::new(RoomCoordinate(spot.0 as u8), RoomCoordinate(spot.1 as u8), room_name);
+                            MapVisual::circle(pos, CircleStyle::default().radius(0.5));
                             vis.circle(spot.0, spot.1, None);
                         }
                     }
@@ -588,17 +590,28 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
 
             if let Some(owning_room) = planned_paths.get(&room.name()) {
                 for pos in decode_pos_list(owning_room.to_string()) {
+                    if let Some(room_cache) = cache.rooms.get(&pos.room_name()) {
+                        if let Some(entry) = room_cache.structures.structures_at_pos.get(&pos.xy()) {
+                            if entry.contains(&StructureType::Road) {
+                                continue;
+                            }
+                        }
+                    }
+
                     if road_count >= 50 {
                         break;
                     }
 
-                    road_count += 1;
-                    let _ = room.ITcreate_construction_site(
+                    let r = room.ITcreate_construction_site(
                         pos.x().u8(),
                         pos.y().u8(),
                         StructureType::Road,
                         None,
                     );
+
+                    if r.is_ok() {
+                        road_count += 1;
+                    }
                 }
             }
 

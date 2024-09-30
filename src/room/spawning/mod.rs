@@ -1,7 +1,6 @@
 use std::{cmp, collections::HashMap, vec};
 
 use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
-use log::info;
 use screeps::{
     find, game, HasHits, HasId, HasPosition, Part, Position, ResourceType, Room, RoomName,
     SharedCreepProperties,
@@ -770,7 +769,7 @@ pub fn upgrader(
         return None;
     }
 
-    let mut target_work_parts = match cache.rcl {
+    let target_work_parts = match cache.rcl {
         1 => 5,
         2 => 15,
         3 => 22,
@@ -1567,7 +1566,7 @@ pub fn season_scorer(
     cache: &RoomCache,
     memory: &mut ScreepsMemory,
 ) -> Option<SpawnRequest> {
-    use std::u32;
+    
 
     let flag = game::flags().get("depositScore".to_string());
 

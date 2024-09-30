@@ -1,8 +1,7 @@
-use std::mem;
 
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureObject, StructureProperties, StructureRoad, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureProperties, StructureType, Terrain
 };
 
 use crate::{

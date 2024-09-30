@@ -1,6 +1,5 @@
-use std::{borrow::BorrowMut, collections::HashMap};
 
-use log::{info, warn};
+use log::warn;
 use screeps::{
     find, game,
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
@@ -10,7 +9,7 @@ use screeps::{
 use screeps_utils::room_xy::{chebyshev_range_iter, GridIter, Order};
 
 use crate::{
-    constants::{SWAMP_MASK, WALL_MASK}, heap, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, traits::position::RoomXYExtensions, utils::{self, get_my_username, new_xy}
+    constants::{SWAMP_MASK, WALL_MASK}, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, utils::{self, get_my_username}
 };
 
 use super::movement_utils::visualise_path;

@@ -1,5 +1,5 @@
 use screeps::{
-    ConstructionSite, Creep, HasPosition, MaybeHasId, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties
+    ConstructionSite, Creep, HasPosition, Part, Position, ResourceType, RoomCoordinate, RoomName, SharedCreepProperties
 };
 
 use crate::{

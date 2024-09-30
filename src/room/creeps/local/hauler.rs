@@ -1,4 +1,3 @@
-use std::cmp;
 
 use js_sys::JsString;
 use screeps::{

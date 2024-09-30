@@ -15,13 +15,13 @@ use formation::formations::run_formations;
 use heap_cache::GlobalHeapCache;
 use log::*;
 use memory::Role;
-use movement::{caching::generate_pathing_targets, move_target::{path_call, MoveOptions}};
+use movement::caching::generate_pathing_targets;
 use profiling::timing::{INTENTS_USED, PATHFIND_CPU, SUBTRACT_INTENTS};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
-    cache::{self, hauling, traffic, RoomCache}, creeps::local::hauler::check_relay, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
+    cache::{hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
-use screeps::{find, game, pathfinder::{self, SearchOptions}, CircleStyle, OwnedStructureProperties, Position, RoomCoordinate, RoomName};
+use screeps::{find, game, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,
@@ -30,7 +30,6 @@ use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
-use talc::*;
 
 #[global_allocator]
 static ALLOCATOR: talc::Talck<talc::locking::AssumeUnlockable, talc::ClaimOnOom> = unsafe {

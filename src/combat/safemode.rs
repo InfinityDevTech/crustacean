@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, HasHits, HasPosition, LocalCostMatrix, Room, RoomXY, Terrain};
+use screeps::{find, game, HasHits, HasPosition, LocalCostMatrix, Room, Terrain};
 
 use crate::{constants, memory::ScreepsMemory, room::cache::CachedRoom, traits::{position::PositionExtensions, room::find_pos_in_rect}, utils};
 

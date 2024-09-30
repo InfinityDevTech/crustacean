@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{
     game, look, Creep, HasId, HasPosition, MaybeHasId, ObjectId, RawObjectId, ResourceType,
     RoomPosition, RoomXY, SharedCreepProperties, StructureContainer, StructureExtension,

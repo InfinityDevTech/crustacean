@@ -1,4 +1,3 @@
-use log::info;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;

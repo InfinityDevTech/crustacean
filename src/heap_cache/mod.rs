@@ -2,11 +2,11 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use crate::{compression::compressed_matrix::CompressedMatrix, movement::move_target::MoveOptions};
+use crate::compression::compressed_matrix::CompressedMatrix;
 use hauling::HeapHaulingCache;
 use heap_creep::HeapCreep;
 use heap_room::HeapRoom;
-use screeps::{game, LocalCostMatrix, Position, RoomName};
+use screeps::{game, Position, RoomName};
 
 use crate::memory::ScreepsMemory;
 

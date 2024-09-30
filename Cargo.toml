@@ -2,7 +2,6 @@
 name = "crustacean"
 version = "0.0.0"
 authors = []
-target_family = "wasm"
 edition = "2021"
 
 [lib]

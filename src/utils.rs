@@ -14,7 +14,7 @@ use screeps::{
 
 use crate::{
     config, heap,
-    memory::{self, Role},
+    memory::{Role},
     movement::move_target::MoveTarget,
     room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache},
     traits::room::RoomType,

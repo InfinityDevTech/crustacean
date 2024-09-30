@@ -19,11 +19,10 @@ use log::info;
 use screeps::{find, game, CircleStyle, CostMatrixSet, HasId, HasPosition, LocalCostMatrix, Room, StructureType, Terrain, TextStyle};
 
 use crate::{
-    memory::{RoomMemory, ScreepsMemory, SkippyMem},
-    room::visuals, utils::{self, new_xy},
+    memory::{RoomMemory, SkippyMem}, utils::{self, new_xy},
 };
 
-use super::structure_visuals::{self, RoomVisualExt};
+use super::structure_visuals::{RoomVisualExt};
 
 pub fn stamp_list() -> Vec<(u8, Vec<Vec<char>>)> {
     vec![

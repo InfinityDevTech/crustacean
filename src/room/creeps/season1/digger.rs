@@ -1,6 +1,6 @@
-use std::{cmp, collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
-use screeps::{creep, find, game, pathfinder::{self, MultiRoomCostResult, PathFinder, SearchOptions}, CircleStyle, CostMatrix, CostMatrixGet, CostMatrixSet, Creep, HasId, HasPosition, LocalCostMatrix, RoomName, SharedCreepProperties, StructureObject, StructureType, StructureWall};
+use screeps::{find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions}, CircleStyle, CostMatrixGet, CostMatrixSet, Creep, HasId, HasPosition, LocalCostMatrix, RoomName, SharedCreepProperties, StructureObject};
 
 use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, profiling::timing::PATHFIND_CPU, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::new_xy};
 

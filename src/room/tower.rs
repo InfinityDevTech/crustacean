@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{HasHits, HasId, ResourceType, StructureProperties};
 
 use crate::{

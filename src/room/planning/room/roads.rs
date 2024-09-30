@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{
     game,
     pathfinder::{self, MultiRoomCostResult, SearchOptions},

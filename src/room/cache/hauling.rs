@@ -559,7 +559,7 @@ pub fn clean_heap_hauling(memory: &mut ScreepsMemory) {
     let mut lock = heap().hauling.lock().unwrap();
 
     for hauling_order in lock.reserved_orders.values_mut() {
-        let mut game_obj = game::get_object_by_id_erased(&hauling_order.target_id);
+        let game_obj = game::get_object_by_id_erased(&hauling_order.target_id);
         let mut removed = Vec::new();
         // Remove creeps that are dead or have no task assigned
         // Then add them to the ^^^^^ removed list, so we can calculate carry parts.

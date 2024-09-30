@@ -1,4 +1,3 @@
-use log::info;
 use screeps::{game, Part, SharedCreepProperties};
 
 use crate::{allies, combat::goals::determine_single_attack_power, constants::{self, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::ScreepsMemory, room::cache::RoomCache};

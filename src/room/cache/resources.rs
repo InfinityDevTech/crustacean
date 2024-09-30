@@ -6,8 +6,6 @@ use screeps::{
 };
 
 #[cfg(feature = "season1")]
-use screeps::resource::ResourceType::Score;
-#[cfg(feature = "season1")]
 use screeps::ScoreContainer;
 
 use crate::{

@@ -1,6 +1,7 @@
 # Compiled source #
 ###################
 target
+dist
 
 # Packages #
 ############
@@ -43,3 +44,4 @@ package-lock.json
 
 # Remnants of pre-(0.22) screeps-game-api
 screeps.toml
+dist

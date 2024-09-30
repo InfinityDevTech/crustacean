@@ -23,10 +23,9 @@ getrandom = { version = "0.2.15", features = ["js"] }
 enum-map = "2.7.3"
 screeps-timing-annotate = { git = "https://github.com/InfinityDevTech/screeps-timing-annotate", optional = true }
 lazy_static = "1.5.0"
-#screeps-game-utils = "0.22.0"
-screeps-game-utils = { git = "https://github.com/khoover/screeps-game-utils", branch = "add-roomxy-iters" }
+screeps-game-utils = { git = "https://github.com/rustyscreeps/screeps-game-utils" }
 base65536 = "1.0.1"
-flate2 = "1.0.31"
+flate2 = "1.0.34"
 talc = { version = "4.4.1", features = ["counters", "lock_api"] }
 
 [dev-dependencies]

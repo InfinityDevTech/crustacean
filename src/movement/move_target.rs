@@ -443,7 +443,7 @@ pub fn path_call(
                         let tl = sk.saturating_add((-3, -3));
                         let br = sk.saturating_add((3, 3));
 
-                        for xy in GridIter::new(tl, br, Order::RowMajor) {
+                        for xy in GridIter::new(tl, br, Order::XMajor) {
                             matrix.set(xy, 255);
                         }
                     }

@@ -2,14 +2,13 @@ use std::collections::HashMap;
 
 use screeps::{game, Part, RoomName};
 
-use crate::memory::{self, Role, RoomStats, ScreepsMemory};
+use crate::memory::{self, Role, RoomCPUStats, RoomStats, ScreepsMemory};
 
 use super::structures::RoomStructureCache;
 
 #[derive(Debug, Clone, Default)]
 pub struct StatsCache {
     pub global_pathfinding: f64,
-
 
     pub rcl: u8,
     pub rcl_progress: Option<u32>,
@@ -20,9 +19,12 @@ pub struct StatsCache {
     pub creeps_by_role: HashMap<Role, u32>,
 
     pub cpu_creeps: f64,
-    pub cpu_traffic: f64,
     pub cpu_cache: f64,
+    pub cpu_traffic: f64,
     pub cpu_hauling_orders: f64,
+    pub cpu_links: f64,
+    pub cpu_towers: f64,
+    pub cpu_remotes: f64,
 
     pub energy: EnergyStats,
 }
@@ -102,10 +104,12 @@ impl StatsCache {
             room_stats.economy.spending_repair = self.energy.spending_repair;
 
             room_stats.cpu_used = cpu_used;
-            room_stats.cpu_traffic = self.cpu_traffic;
-            room_stats.cpu_creeps = self.cpu_creeps;
-            room_stats.cpu_hauling_orders = self.cpu_hauling_orders;
-            room_stats.cpu_cache = self.cpu_cache;
+            room_stats.cpu.cache = self.cpu_cache;
+            room_stats.cpu.remotes = self.cpu_remotes;
+            room_stats.cpu.creeps = self.cpu_creeps;
+            room_stats.cpu.hauling_orders = self.cpu_hauling_orders;
+            room_stats.cpu.links = self.cpu_links;
+            room_stats.cpu.towers = self.cpu_towers;
 
             room_stats.cpu_usage_by_role.clone_from(&self.cpu_usage_by_role);
             room_stats.creeps_by_role.clone_from(&self.creeps_by_role);
@@ -135,15 +139,21 @@ impl StatsCache {
                 spending_repair: self.energy.spending_repair,
             };
 
+            let cpu_stats = RoomCPUStats {
+                creeps: self.cpu_creeps,
+                cache: self.cpu_cache,
+                hauling_orders: self.cpu_hauling_orders,
+                links: self.cpu_links,
+                remotes: self.cpu_remotes,
+                towers: self.cpu_towers,
+            };
+
             let stats = RoomStats {
                 rcl: self.rcl,
                 rcl_progress: self.rcl_progress,
                 rcl_progress_total: self.rcl_progress_total,
 
-                cpu_creeps: self.cpu_creeps,
-                cpu_traffic: self.cpu_traffic,
-                cpu_cache: self.cpu_cache,
-                cpu_hauling_orders: self.cpu_hauling_orders,
+                cpu: cpu_stats,
 
                 cpu_used,
                 economy: energy,

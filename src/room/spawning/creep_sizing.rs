@@ -128,7 +128,7 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
         .len();
 
     // Every hundo = 1C 1M
-    let energy_for_haulers = match room.controller().unwrap().level() {
+    let mut energy_for_haulers = match room.controller().unwrap().level() {
         1 => 100,
         2 => 300,
         3 => 400,
@@ -141,6 +141,10 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
         8 => 3000,
         _ => 100,
     };
+
+    if !under_storage_gate(cache, 1.0) {
+        energy_for_haulers *= 2;
+    }
 
     let tile_usage = 100;
     let mut current_energy_usage = 0;

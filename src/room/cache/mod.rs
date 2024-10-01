@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::info;
 use screeps::{game, OwnedStructureProperties, ResourceType, Room, RoomName, RoomXY};
 use stats::StatsCache;
 use terminals::TerminalCache;
@@ -184,7 +185,7 @@ impl CachedRoom {
             }
         }
 
-        cached.stats.cpu_cache += game::cpu::get_used() - pre_cache_cpu;
+        cached.stats.cpu_cache = game::cpu::get_used() - pre_cache_cpu;
 
         cached
     }

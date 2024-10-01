@@ -359,10 +359,15 @@ structstruck::strike! {
             pub cpu_usage_by_role: HashMap<Role, f64>,
             pub creeps_by_role: HashMap<Role, u32>,
 
-            pub cpu_traffic: f64,
-            pub cpu_creeps: f64,
-            pub cpu_cache: f64,
-            pub cpu_hauling_orders: f64,
+            #[serde(default)]
+            pub cpu: pub struct RoomCPUStats {
+                pub cache: f64,
+                pub creeps: f64,
+                pub hauling_orders: f64,
+                pub links: f64,
+                pub towers: f64,
+                pub remotes: f64
+            },
 
             pub economy: pub struct EconomyStats {
                 pub energy_capacity: u32,

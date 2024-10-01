@@ -14,8 +14,8 @@ use screeps::{
 
 use crate::{
     config, heap,
-    memory::{Role},
-    movement::move_target::MoveTarget,
+    memory::Role,
+    movement::{flow_field::is_exit, move_target::MoveTarget},
     room::cache::{hauling::HaulingPriority, CachedRoom, RoomCache},
     traits::room::RoomType,
 };
@@ -439,6 +439,7 @@ pub fn new_xy(x: u8, y: u8) -> RoomXY {
 pub fn distance_transform(
     room_name: &RoomName,
     input_cm: Option<LocalCostMatrix>,
+    include_exits: bool,
     visual: bool,
 ) -> LocalCostMatrix {
     let mut cm = if let Some(input) = input_cm {
@@ -448,15 +449,19 @@ pub fn distance_transform(
 
         let mut cm = LocalCostMatrix::new();
 
-        for x in 0..50 {
-            for y in 0..50 {
+        for x in 0..=49 {
+            for y in 0..=49 {
                 let score = if terrain.get(x, y) == Terrain::Wall {
                     0
                 } else {
                     255
                 };
 
-                cm.set(new_xy(x, y), score)
+                cm.set(new_xy(x, y), score);
+
+                if include_exits && is_exit(x, y) {
+                    cm.set(new_xy(x, y), 0);
+                }
             }
         }
 
@@ -511,8 +516,8 @@ pub fn distance_transform(
     if visual {
         if let Some(game_room) = game::rooms().get(*room_name) {
             let vis = game_room.visual();
-            for x in 1..49 {
-                for y in 1..49 {
+            for x in 0..=49 {
+                for y in 0..=49 {
                     let score = cm.get(new_xy(x, y));
 
                     if score == 255 {

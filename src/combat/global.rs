@@ -15,5 +15,6 @@ pub fn run_global_goal_setters(memory: &mut ScreepsMemory, cache: &mut RoomCache
     setters::room_claim::determine_room_claim_needs(memory, cache);
 
     let post_goals = game::cpu::get_used();
+    memory.stats.cpu.goal_creation = post_goals - pre_goals;
     info!("[GOALS] Global goal creation took {:.2} CPU", post_goals - pre_goals);
 }

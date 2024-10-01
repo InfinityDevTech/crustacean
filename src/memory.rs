@@ -327,9 +327,24 @@ structstruck::strike! {
             pub used: f64,
             pub limit: u32,
 
+            #[serde(default)]
+            pub goal_creation: f64,
+            #[serde(default)]
+            pub goal_execution: f64,
             pub rooms: f64,
             pub memory: f64,
             pub market: f64,
+            #[serde(default)]
+            pub traffic_solving: f64,
+            #[serde(default)]
+            pub traffic_execution: f64,
+            #[serde(default)]
+            pub expansion: f64,
+            #[serde(default)]
+            pub hauler_matching: f64,
+            #[serde(default)]
+            pub spawning: f64,
+            pub creeps: f64,
             pub pathfinding: f64,
         },
 
@@ -499,8 +514,9 @@ impl ScreepsMemory {
     pub fn create_creep(&mut self, room_name: &RoomName, creep_name: &str, object: CreepMemory) {
         self.creeps.insert(creep_name.to_string(), object);
 
-        let room = self.rooms.get_mut(room_name).unwrap();
-        room.creeps.push(creep_name.to_string());
+        if let Some(room) = self.rooms.get_mut(room_name) {
+            room.creeps.push(creep_name.to_string());
+        }
     }
 
     pub fn create_room(&mut self, name: &RoomName, object: RoomMemory) {

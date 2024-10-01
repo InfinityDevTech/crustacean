@@ -1,3 +1,5 @@
+use std::mem;
+
 use log::info;
 use screeps::{game, Creep};
 
@@ -18,6 +20,7 @@ pub fn run_goal_handlers(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     room_claim::run_goal(memory, cache);
 
     let post_goals = game::cpu::get_used();
+    memory.stats.cpu.goal_execution = post_goals - pre_goals;
     info!("[GOALS] Goal handling took {:.2} CPU", post_goals - pre_goals);
 }
 

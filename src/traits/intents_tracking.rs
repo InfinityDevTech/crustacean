@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 #![allow(unused)]
-use js_sys::{Array, JsString};
-use screeps::{Attackable, Color, ConstructionSite, Creep, Direction, Dismantleable, ErrorCode, Harvestable, Healable, Repairable, Resource, ResourceType, Room, RoomName, RoomPosition, SharedCreepProperties, SpawnOptions, Structure, StructureController, StructureFactory, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureTower, StructureType, Transferable, Withdrawable};
+use std::ops::Mul;
 
-use crate::profiling::timing::INTENTS_USED;
+use js_sys::{Array, JsString};
+use screeps::{pathfinder::{self, MultiRoomCostResult, SearchResults}, Attackable, Color, ConstructionSite, Creep, Direction, Dismantleable, ErrorCode, Harvestable, Healable, Position, Repairable, Resource, ResourceType, Room, RoomName, RoomPosition, SharedCreepProperties, SpawnOptions, Structure, StructureController, StructureFactory, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureTower, StructureType, Transferable, Withdrawable};
+
+use crate::{movement::pathfinding::PathFinderSearchResult, profiling::timing::INTENTS_USED};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn track_intent() {

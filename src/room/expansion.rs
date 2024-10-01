@@ -502,7 +502,7 @@ pub fn nearby_source_keepers(room_name: &RoomName) -> f64 {
 // TODO:
 // Remove this check once we stop using bunkers.
 pub fn can_fit_base(room_name: &RoomName) -> (RoomXY, bool) {
-    let distance_transform = utils::distance_transform(room_name, None, false);
+    let distance_transform = utils::distance_transform(room_name, None, false, true);
 
     let mut highest_position = 0;
     let mut highest_xy = utils::new_xy(0, 0);

@@ -1,0 +1,1946 @@
+{
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 1,
+    "links": [],
+    "panels": [
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 3,
+        "panels": [],
+        "title": "Global Statistics",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "light-blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 2,
+          "x": 0,
+          "y": 1
+        },
+        "id": 1,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.gcl.level"
+          }
+        ],
+        "title": "GCL",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 52,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 14,
+          "x": 2,
+          "y": 1
+        },
+        "id": 21,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refCount": 0,
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.cpu.used, 5)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "B",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.cpu.memory, 5)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "C",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.cpu.pathfinding, 5)",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "D",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.cpu.rooms, 5)",
+            "textEditor": true
+          }
+        ],
+        "title": "CPU usage",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 50
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 3,
+          "x": 16,
+          "y": 1
+        },
+        "id": 17,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.memory_usage.used"
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "B",
+            "target": "screeps.stats.InfDev.$shard.memory_usage.total",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "name": "Expression",
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "($A / $B) * 100",
+            "hide": false,
+            "refId": "C",
+            "type": "math"
+          }
+        ],
+        "title": "Memory Usage",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "text",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 2,
+          "x": 19,
+          "y": 1
+        },
+        "id": 8,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.age"
+          }
+        ],
+        "title": "Time Alive",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineWidth": 1,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 3,
+          "x": 21,
+          "y": 1
+        },
+        "id": 9,
+        "options": {
+          "barRadius": 0,
+          "barWidth": 1,
+          "fullHighlight": false,
+          "groupWidth": 0.7,
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "orientation": "auto",
+          "showValue": "auto",
+          "stacking": "none",
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          },
+          "xField": "screeps.stats.InfDev.jaysee.market.credits",
+          "xTickLabelRotation": 0,
+          "xTickLabelSpacing": 0
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.market.credits"
+          }
+        ],
+        "title": "Market Items",
+        "type": "barchart"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "super-light-red",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 2,
+          "x": 0,
+          "y": 5
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.gpl"
+          }
+        ],
+        "title": "GPL",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "text",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 2,
+          "x": 19,
+          "y": 5
+        },
+        "id": 7,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.tick"
+          }
+        ],
+        "title": "Current Tick",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 50
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 3,
+          "x": 16,
+          "y": 7
+        },
+        "id": 18,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.heap_usage.used"
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "B",
+            "target": "screeps.stats.InfDev.$shard.heap_usage.total",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "name": "Expression",
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "($A / $B) * 100",
+            "hide": false,
+            "refId": "C",
+            "type": "math"
+          }
+        ],
+        "title": "Heap Usage",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 49,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "super-light-orange",
+                  "value": 2500
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 6500
+                },
+                {
+                  "color": "orange",
+                  "value": 8000
+                },
+                {
+                  "color": "green",
+                  "value": 9000
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 14,
+          "x": 2,
+          "y": 8
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.cpu.bucket"
+          }
+        ],
+        "title": "CPU Bucket",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 2,
+          "x": 0,
+          "y": 9
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "sum(screeps.stats.InfDev.$shard.rooms.*.creep_count)"
+          }
+        ],
+        "title": "Total Creeps",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "text",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 2,
+          "x": 19,
+          "y": 9
+        },
+        "id": 19,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.last_reset"
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "B",
+            "target": "screeps.stats.InfDev.$shard.tick",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "name": "Expression",
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$B - $A",
+            "hide": false,
+            "refId": "C",
+            "type": "math"
+          }
+        ],
+        "title": "Reset age",
+        "type": "stat"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 13
+        },
+        "id": 10,
+        "panels": [],
+        "title": "Room Stats",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 57,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 24,
+          "x": 0,
+          "y": 14
+        },
+        "id": 22,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refCount": 0,
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.cpu_used, 6)"
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "B",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.cpu_creeps, 6)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "C",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.cpu_traffic, 6)",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "D",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.cpu_hauling_orders, 6)",
+            "textEditor": true
+          }
+        ],
+        "title": "Room CPU usage",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 2,
+          "x": 0,
+          "y": 21
+        },
+        "id": 11,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.rooms.$room.rcl"
+          }
+        ],
+        "title": "RCL",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 51,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 2,
+          "y": 21
+        },
+        "id": 12,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "table",
+            "placement": "right",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.cpu_usage_by_role.*, 7)"
+          }
+        ],
+        "title": "CPU Usage by role",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 58,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 10,
+          "x": 14,
+          "y": 21
+        },
+        "id": 14,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "table",
+            "placement": "right",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refCount": 0,
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.income_energy, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "B",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.income_minerals, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "C",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.income_power, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "D",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.income_trading, 7)",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "E",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.income_other, 7)",
+            "textEditor": true
+          }
+        ],
+        "title": "Energy Income",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 2,
+          "x": 0,
+          "y": 27
+        },
+        "id": 16,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.0.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.rooms.$room.rcl_progress",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": true,
+            "refCount": 0,
+            "refId": "B",
+            "target": "screeps.stats.InfDev.$shard.rooms.$room.rcl_progress_total",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "name": "Expression",
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "($A / $B) * 100",
+            "hide": false,
+            "refId": "C",
+            "type": "math"
+          }
+        ],
+        "title": "RCL Percentage",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 54,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 2,
+          "y": 29
+        },
+        "id": 13,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "table",
+            "placement": "right",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.creeps_by_role.*, 7)",
+            "textEditor": true
+          }
+        ],
+        "title": "Creep Count by Role",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 43,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 10,
+          "x": 14,
+          "y": 29
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refCount": 0,
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.spending_construction, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "B",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.spending_repair, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "C",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.spending_spawning, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "D",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.spending_upgrading, 7)",
+            "textEditor": false
+          }
+        ],
+        "title": "Energy Expenditure",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 2,
+          "x": 0,
+          "y": 32
+        },
+        "id": 20,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.0.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.rooms.$room.creep_count"
+          }
+        ],
+        "title": "Creep Count",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "graphite",
+          "uid": "bdoe3hxp3db0ge"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 59,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 37
+        },
+        "id": 23,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "maxHeight": 600,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "refCount": 0,
+            "refId": "A",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.stored_energy, 7)",
+            "textEditor": false
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "B",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.dropped_energy, 7)",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "C",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.stored_energy_in_base_haulers, 7)",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "D",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.stored_energy_in_containers, 7)",
+            "textEditor": true
+          },
+          {
+            "datasource": {
+              "type": "graphite",
+              "uid": "bdoe3hxp3db0ge"
+            },
+            "hide": false,
+            "refCount": 0,
+            "refId": "E",
+            "target": "aliasByNode(screeps.stats.InfDev.$shard.rooms.$room.economy.stored_energy_in_haulers, 7)",
+            "textEditor": true
+          }
+        ],
+        "title": "Stored Energy",
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 39,
+    "tags": [],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "selected": true,
+            "text": "shard0",
+            "value": "shard0"
+          },
+          "datasource": {
+            "type": "graphite",
+            "uid": "bdoe3hxp3db0ge"
+          },
+          "definition": "screeps.stats.InfDev.*",
+          "description": "The name of which shard you intent to view.",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Shard",
+          "multi": false,
+          "name": "shard",
+          "options": [],
+          "query": {
+            "queryType": "Default",
+            "refId": "A",
+            "target": "screeps.stats.InfDev.*"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": false,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "graphite",
+            "uid": "bdoe3hxp3db0ge"
+          },
+          "definition": "screeps.stats.InfDev.$shard.rooms.*",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Room",
+          "multi": true,
+          "name": "room",
+          "options": [],
+          "query": {
+            "queryType": "Default",
+            "refId": "A",
+            "target": "screeps.stats.InfDev.$shard.rooms.*"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Screeps Statistics",
+    "uid": "ddofbupg5cyrkc",
+    "version": 17,
+    "weekStart": ""
+  }

@@ -126,7 +126,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
     if let Some(flag) = game::flags().get("distanceTransform".to_string()) {
         if flag.pos().room_name() == room.name() {
-            let available_positions = distance_transform(&room.name(), None, true);
+            let available_positions = distance_transform(&room.name(), None, true, true);
         }
     }
 
@@ -165,8 +165,9 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
 
             if should_safemode(&room, cached_room, memory) {
-                if let Some(controller) = &cached_room.structures.controller {
-                    controller.safe_mode();
+                if let Some(controller) = &room.controller() {
+                    game::notify(format!("Room {} popped a safemode.", room.name()).as_str(), None);
+                    let _ = controller.activate_safe_mode();
                 }
             }
 

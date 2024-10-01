@@ -144,6 +144,7 @@ pub fn game_loop() {
 
         start_government(room, &mut memory, &mut cache);
     }
+    memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu - cache.creep_cpu;
     info!("[GOVERNMENT] Global government execution took {:.2} CPU for {} rooms.", game::cpu::get_used() - pre_room_cpu, game::rooms().keys().count());
 
     if game::time() % 1500 == 0 {
@@ -234,6 +235,7 @@ pub fn game_loop() {
             //check_relay(&creep, &mut memory, &mut cache);
         //}
     }
+    memory.stats.cpu.hauler_matching = match_cpu;
     info!("[GOVERNMENT] Government wide haul matching: {:.2}. Hauler needs calculations: {:.2}. Creep chant {:.2}", match_cpu, calculate_cpu, chant_cpu);
     let measure_point = game::cpu::get_used();
 
@@ -241,9 +243,11 @@ pub fn game_loop() {
     run_goal_handlers(&mut memory, &mut cache);
     run_formations(&mut memory, &mut cache);
 
+    let pre_spawn_cpu = game::cpu::get_used();
     if game::cpu::bucket() > 100 {
         run_spawning(&mut memory, &mut cache);
     }
+    memory.stats.cpu.spawning = game::cpu::get_used() - pre_spawn_cpu;
 
     if game::time() % 100 == 0 {
         memory.filter_old_creeps();
@@ -255,6 +259,8 @@ pub fn game_loop() {
 
     let pre_traffic_cpu = game::cpu::get_used();
     let mut intent_count = 0;
+    memory.stats.cpu.traffic_execution = 0.0;
+    memory.stats.cpu.traffic_solving = 0.0;
 
     for room in game::rooms().keys() {
         let room = game::rooms().get(room).unwrap();
@@ -263,6 +269,8 @@ pub fn game_loop() {
             intent_count += traffic::run_movement(room_cache, &mut memory);
 
             if room.my() {
+                memory.stats.cpu.traffic_execution += room_cache.traffic.move_intents as f64 * 0.2;
+                memory.stats.cpu.traffic_solving += game::cpu::get_used() - start - (room_cache.traffic.move_intents as f64 * 0.2);
                 info!(
                     "[TRAFFIC] {} Rooms traffic took: {:.4} with {} intents, {:.4} without intents",
                     room.name().to_string(),
@@ -297,9 +305,6 @@ pub fn game_loop() {
         }
     }
 
-    memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu;
-
-    set_stats(&mut memory);
     decay_hate(&mut memory);
 
     if game::flags().get("reset_expansion".to_string()).is_some() {
@@ -307,6 +312,7 @@ pub fn game_loop() {
         memory.expansion = None;
     }
 
+    let pre_expansion_cpu = game::cpu::get_used();
     if game::cpu::bucket() > 2000 && can_expand(&memory) {
         attempt_expansion(&mut memory, &cache);
     } else if game::cpu::bucket() < 2000 {
@@ -314,6 +320,7 @@ pub fn game_loop() {
     } else if memory.expansion.is_some() {
         memory.expansion = None;
     }
+    memory.stats.cpu.expansion = game::cpu::get_used() - pre_expansion_cpu;
 
         // TODO:
     // Make it so we check if we arent in combat either, or we arent going to do anything
@@ -330,6 +337,9 @@ pub fn game_loop() {
         }
     }
 
+
+    set_stats(&mut memory);
+    memory.stats.cpu.creeps = cache.creep_cpu;
     info!("[GOVERNMENT] Pixel generation, expansion, and stats/hate all took {:.2} CPU.", game::cpu::get_used() - measure_point);
 
     // Bot is finished, write the stats and local copy of memory.
@@ -505,12 +515,13 @@ pub fn set_stats(memory: &mut ScreepsMemory) {
     stats.memory_usage.total = 2 * 1000000;
     stats.memory_usage.used = get_memory_usage_bytes();
 
-    stats.heap_usage.total = heap.heap_size_limit();
-    stats.heap_usage.used = heap.total_heap_size() + heap.externally_allocated_size();
+    stats.heap_usage.total = ALLOCATOR.lock().get_counters().available_bytes as u32;
+    stats.heap_usage.used = ALLOCATOR.lock().get_counters().allocated_bytes as u32;
 
     stats.cpu.used = game::cpu::get_used();
     stats.cpu.bucket = game::cpu::bucket();
     stats.cpu.limit = game::cpu::limit();
+    stats.cpu.pathfinding = *PATHFIND_CPU.lock().unwrap();
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

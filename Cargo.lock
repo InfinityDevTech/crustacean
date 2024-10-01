@@ -579,8 +579,8 @@ dependencies = [
 
 [[package]]
 name = "screeps-game-utils"
-version = "0.22.0"
-source = "git+https://github.com/rustyscreeps/screeps-game-utils#c58d75e17cb2d028f0e98e2124b2cfd3f2489820"
+version = "0.22.1"
+source = "git+https://github.com/rustyscreeps/screeps-game-utils#24bde8a070a8837cddb64e09aa43fc267697d0a6"
 dependencies = [
  "chrono",
  "screeps-game-api",

@@ -447,7 +447,7 @@ pub fn orth_wall_fill(room: &Room, memory: &mut SkippyMem) -> bool {
         }
     }
 
-    let dt_res = utils::distance_transform(&room.name(), Some(icm), false);
+    let dt_res = utils::distance_transform(&room.name(), Some(icm), true, false);
 
     for x in 0..50 {
         for y in 0..50 {

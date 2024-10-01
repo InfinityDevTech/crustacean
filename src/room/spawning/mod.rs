@@ -1213,6 +1213,7 @@ pub fn harvester(
         let (_filled, body) = creep_sizing::miner_body(
             room,
             cache,
+            false,
             parts_needed_on_source,
             can_replace,
             true,
@@ -1227,6 +1228,7 @@ pub fn harvester(
             let (_filled, body) = creep_sizing::miner_body(
                 room,
                 cache,
+                false,
                 parts_needed_on_source,
                 true,
                 true,
@@ -1366,6 +1368,7 @@ pub fn remote_harvester(
                 let (filled, body) = creep_sizing::miner_body(
                     room,
                     remote_cache,
+                    true,
                     parts_needed_on_source,
                     false,
                     owning_cache.rcl <= 3,
@@ -1380,6 +1383,7 @@ pub fn remote_harvester(
                     let (filled, body) = creep_sizing::miner_body(
                         room,
                         remote_cache,
+                        true,
                         parts_needed_on_source,
                         true,
                         owning_cache.rcl <= 3,
@@ -1434,7 +1438,7 @@ pub fn remote_harvester(
             if let Some(remote_memory) = memory.remote_rooms.get_mut(remote_name) {
                 if let Some(first_source) = remote_memory.sources.first() {
                     let (finished, body) =
-                        creep_sizing::miner_body(room, owning_cache, 3, false, owning_cache.rcl <= 3, false);
+                        creep_sizing::miner_body(room, owning_cache, true, 3, false, owning_cache.rcl <= 3, false);
 
                     let priority = 50.0;
                     let cost = get_body_cost(&body);

@@ -178,6 +178,13 @@ pub fn run_remoteharvester(creep: &Creep, memory: &mut ScreepsMemory, cache: &mu
         let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
         let mut rng = StdRng::seed_from_u64(game::time() as u64);
+
+        if !memory.rooms.contains_key(&creep_memory.owning_room) {
+            let _ = creep.suicide();
+
+            return;
+        }
+
         let remotes = memory
             .rooms
             .get(&creep_memory.owning_room)

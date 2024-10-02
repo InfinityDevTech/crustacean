@@ -825,14 +825,18 @@ pub fn upgrader(
     }
 
     let mut priority = 4.0;
-    priority += ((1.0 - current_work_parts / target_work_parts as f32) as f64) * 7.0;
+    priority += ((1.0 - current_work_parts / target_work_parts as f32) as f64) * 8.0;
 
     if !under_storage_gate(cache, 1.5) {
         priority *= 2.0;
     }
 
+    if !under_storage_gate(cache, 2.5) {
+        priority *= 2.0;
+    }
+
     if !under_storage_gate(cache, 5.0) {
-        priority *= 10.0;
+        priority *= 5.0;
     }
 
     Some(spawn_manager.create_room_spawn_request(

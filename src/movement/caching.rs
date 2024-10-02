@@ -63,8 +63,8 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
         let mut matrix = LocalCostMatrix::new();
         let terrain = game::map::get_room_terrain(room.name()).unwrap();
 
-        for x in 0..50 {
-            for y in 0..50 {
+        for x in 0..=49 {
+            for y in 0..=49 {
                 let pos = RoomXY::new(RoomCoordinate::new(x).unwrap(), RoomCoordinate::new(y).unwrap());
                 let terrain = terrain.get(x, y);
 
@@ -75,9 +75,9 @@ pub fn generate_storage_path(room: &Room, room_cache: &mut CachedRoom) -> Compre
                 }
 
                 // Add a border around the room.
-                if x == 0 || y == 0 || x == 49 || y == 49 {
-                    matrix.set(pos, 255);
-                }
+                //if x == 0 || y == 0 || x == 49 || y == 49 {
+                //    matrix.set(pos, 255);
+                //}
             }
         }
 

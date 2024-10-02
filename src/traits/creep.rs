@@ -172,8 +172,9 @@ impl CreepExtensions for screeps::Creep {
             && self.pos().y().u8() != 0
             && self.pos().y().u8() != 49;
 
-        if !move_options.ignore_cache && !move_options.fixing_stuck_creeps && not_on_exit {
-            /*if let Some(storage) = &cache.structures.storage {
+        if !move_options.ignore_cache && !move_options.fixing_stuck_creeps //&& not_on_exit
+        {
+            if let Some(storage) = &cache.structures.storage {
                 if storage.pos() == target_pos && self.move_to_storage(cache) {
                     if self.is_stuck(cache) {
                         self.bsay("ST-STUCK", false);
@@ -187,7 +188,7 @@ impl CreepExtensions for screeps::Creep {
                     //self.bsay(&format!("MV-STOR {}",).to_string(), false);
                     return;
                 }
-            }*/
+            }
 
             let heap_cache = heap().cachable_positions.lock().unwrap();
 

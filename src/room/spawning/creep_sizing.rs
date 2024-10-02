@@ -146,6 +146,11 @@ pub fn hauler_body(room: &Room, cache: &CachedRoom, scan_check: bool) -> Vec<Par
         energy_for_haulers *= 2;
     }
 
+    if !under_storage_gate(cache, 3.0) {
+        // energy_for_haulers * 2 * 1.5 (check above)
+        energy_for_haulers = (energy_for_haulers as f64 * 1.5).round() as u32;
+    }
+
     let tile_usage = 100;
     let mut current_energy_usage = 0;
 

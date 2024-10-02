@@ -250,14 +250,15 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
                     let xy = new_xy(x, y);
 
                     let score = available_positions.get(xy);
+                    let mut should_continue = false;
 
                     for exit in &xy_exits {
                         if exit.get_range_to(xy) <= 8 {
-                            continue;
+                            should_continue = true;
                         }
                     }
 
-                    if score >= 7 {
+                    if score >= 7 && !should_continue {
                         available_xy.push(xy);
                     }
                 }

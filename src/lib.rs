@@ -147,7 +147,7 @@ pub fn game_loop() {
     memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu - cache.creep_cpu;
     info!("[GOVERNMENT] Global government execution took {:.2} CPU for {} rooms.", game::cpu::get_used() - pre_room_cpu, game::rooms().keys().count());
 
-    if game::time() % 1500 == 0 {
+    if game::time() % 100 == 0 {
         for room in memory.rooms.clone().keys() {
             let groom = game::rooms().get(*room);
 

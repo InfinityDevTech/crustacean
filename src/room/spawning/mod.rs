@@ -831,10 +831,6 @@ pub fn upgrader(
         priority *= 2.0;
     }
 
-    if !under_storage_gate(cache, 2.5) {
-        priority *= 2.0;
-    }
-
     if !under_storage_gate(cache, 5.0) {
         priority *= 5.0;
     }

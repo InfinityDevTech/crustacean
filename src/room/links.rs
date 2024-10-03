@@ -33,6 +33,16 @@ pub fn balance_links(_room: &Room, room_cache: &mut CachedRoom) {
                     let _ = link.transfer_energy(fastfill_link, Some(transfer_amount));
                 }
             }
+
+            if let Some(controller_link) = &room_cache.structures.links().controller {
+                let controller_capacity = controller_link.store().get_free_capacity(Some(ResourceType::Energy));
+                let source_capacity = link.store().get_used_capacity(Some(ResourceType::Energy));
+
+                if controller_capacity > 0 && source_capacity > 0 {
+                    let transfer_amount = cmp::min(controller_link.store().get_used_capacity(Some(ResourceType::Energy)), link.store().get_used_capacity(Some(ResourceType::Energy)));
+                    let _ = link.transfer_energy(controller_link, Some(transfer_amount));
+                }
+            }
         }
     }
 

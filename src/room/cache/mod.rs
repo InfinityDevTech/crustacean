@@ -6,7 +6,7 @@ use stats::StatsCache;
 use terminals::TerminalCache;
 use traffic::traffic_cache::TrafficCache;
 
-use crate::{heap, heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, room::spawning::spawn_manager::SpawnManager};
+use crate::{heap, heap_cache::heap_room::HeapRoom, memory::{Role, ScreepsMemory}, room::spawning::spawn_manager::SpawnManager, traits::room::RoomExtensions};
 
 use self::{creeps::CreepCache, hauling::HaulingCache, resources::RoomResourceCache, structures::RoomStructureCache};
 
@@ -118,13 +118,23 @@ impl CachedRoom {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, owning_room: Option<RoomName>) -> CachedRoom {
         let pre_cache_cpu = game::cpu::get_used();
 
+        //if room.my() {
+        //   info!("[CACHE] Creating cache for {}", room.name());
+        //}
+
         let mut room_cache = heap().rooms.lock().unwrap();
 
         let mut room_heap = room_cache.remove(&room.name()).unwrap_or_default();
 
-        let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
-        let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
-        let creeps = CreepCache::new_from_room(room, memory, &structures, owning_room);
+        let pre_resource = game::cpu::get_used();
+            let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
+        let total_resource = game::cpu::get_used() - pre_resource;
+        let pre_structures = game::cpu::get_used();
+            let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let total_structures = game::cpu::get_used() - pre_structures;
+        let pre_creeps = game::cpu::get_used();
+            let creeps = CreepCache::new_from_room(room, memory, &structures, owning_room);
+        let total_creeps = game::cpu::get_used() - pre_creeps;
 
         let storage_status = storage_status(room, &mut structures);
         let mut stats =  StatsCache::default();
@@ -186,6 +196,11 @@ impl CachedRoom {
         }
 
         cached.stats.cpu_cache = game::cpu::get_used() - pre_cache_cpu;
+
+        //if cached.room.my() {
+        //    info!("  Creation for room {} took {:.2} CPU.", room.name(), game::cpu::get_used() - pre_cache_cpu);
+        //    info!("  Structures took {:.2} - Creeps took {:.2} - Resources took {:.2}", total_structures, total_creeps, total_resource);
+        //}
 
         cached
     }

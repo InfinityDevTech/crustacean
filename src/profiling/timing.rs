@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Mutex};
 
+use screeps::RawObjectId;
 use serde::*;
 
 lazy_static::lazy_static! {

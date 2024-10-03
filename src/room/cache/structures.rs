@@ -2,10 +2,19 @@ use std::collections::HashMap;
 
 use log::info;
 use screeps::{
-    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId, OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer, StructureController, StructureExtension, StructureExtractor, StructureFactory, StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker, StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart, StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower, StructureType, StructureWall, Tombstone
+    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
+    OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer,
+    StructureController, StructureExtension, StructureExtractor, StructureFactory,
+    StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker,
+    StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart,
+    StructureRoad, StructureSpawn, StructureStorage, StructureTerminal, StructureTower,
+    StructureType, StructureWall, Tombstone,
 };
 
-use crate::{constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory};
+use crate::{
+    constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory,
+    traits::room::RoomExtensions,
+};
 
 #[cfg(feature = "season1")]
 use screeps::ScoreCollector;
@@ -164,7 +173,8 @@ impl RoomStructureCache {
 
         cache.refresh_structure_cache(resource_cache, memory);
 
-        #[cfg(feature = "season1")] {
+        #[cfg(feature = "season1")]
+        {
             cache.season_score_collector();
         }
 
@@ -189,46 +199,104 @@ impl RoomStructureCache {
         let mut vec = Vec::new();
 
         // Ramparts
-        vec.extend(self.ramparts.iter().map(|rampart| StructureObject::from(rampart.clone())));
+        vec.extend(
+            self.ramparts
+                .iter()
+                .map(|rampart| StructureObject::from(rampart.clone())),
+        );
         // Spawns
-        vec.extend(self.spawns.values().map(|spawn| StructureObject::from(spawn.clone())));
+        vec.extend(
+            self.spawns
+                .values()
+                .map(|spawn| StructureObject::from(spawn.clone())),
+        );
         // Extensions
-        vec.extend(self.extensions.values().map(|extension| StructureObject::from(extension.clone())));
+        vec.extend(
+            self.extensions
+                .values()
+                .map(|extension| StructureObject::from(extension.clone())),
+        );
         // Containers
-        vec.extend(self.containers.values().map(|container| StructureObject::from(container.clone())));
+        vec.extend(
+            self.containers
+                .values()
+                .map(|container| StructureObject::from(container.clone())),
+        );
         // Links
-        vec.extend(self.links.values().map(|link| StructureObject::from(link.clone())));
+        vec.extend(
+            self.links
+                .values()
+                .map(|link| StructureObject::from(link.clone())),
+        );
         // Labs
-        vec.extend(self.labs.values().map(|lab| StructureObject::from(lab.clone())));
+        vec.extend(
+            self.labs
+                .values()
+                .map(|lab| StructureObject::from(lab.clone())),
+        );
         // Invader Core
-        if let Some(invader_core) = &self.invader_core { vec.push(StructureObject::from(invader_core.clone())); }
+        if let Some(invader_core) = &self.invader_core {
+            vec.push(StructureObject::from(invader_core.clone()));
+        }
         // Controller
-        if let Some(controller) = &self.controller { vec.push(StructureObject::from(controller.clone())); }
+        if let Some(controller) = &self.controller {
+            vec.push(StructureObject::from(controller.clone()));
+        }
         // Storage
-        if let Some(storage) = &self.storage { vec.push(StructureObject::from(storage.clone())); }
+        if let Some(storage) = &self.storage {
+            vec.push(StructureObject::from(storage.clone()));
+        }
         // Observer
-        if let Some(observer) = &self.observer { vec.push(StructureObject::from(observer.clone())); }
+        if let Some(observer) = &self.observer {
+            vec.push(StructureObject::from(observer.clone()));
+        }
         // Nuker
-        if let Some(nuker) = &self.nuker { vec.push(StructureObject::from(nuker.clone())); }
+        if let Some(nuker) = &self.nuker {
+            vec.push(StructureObject::from(nuker.clone()));
+        }
         // Terminal
-        if let Some(terminal) = &self.terminal { vec.push(StructureObject::from(terminal.clone())); }
+        if let Some(terminal) = &self.terminal {
+            vec.push(StructureObject::from(terminal.clone()));
+        }
         // Factory
-        if let Some(factory) = &self.factory { vec.push(StructureObject::from(factory.clone())); }
+        if let Some(factory) = &self.factory {
+            vec.push(StructureObject::from(factory.clone()));
+        }
         // Power Spawn
-        if let Some(power_spawn) = &self.power_spawn { vec.push(StructureObject::from(power_spawn.clone())); }
+        if let Some(power_spawn) = &self.power_spawn {
+            vec.push(StructureObject::from(power_spawn.clone()));
+        }
         // Extractor
-        if let Some(extractor) = &self.extractor { vec.push(StructureObject::from(extractor.clone())); }
+        if let Some(extractor) = &self.extractor {
+            vec.push(StructureObject::from(extractor.clone()));
+        }
         // Keeper Lairs
-        vec.extend(self.keeper_lairs.values().map(|keeper_lair| StructureObject::from(keeper_lair.clone())));
+        vec.extend(
+            self.keeper_lairs
+                .values()
+                .map(|keeper_lair| StructureObject::from(keeper_lair.clone())),
+        );
 
         // Constructed Walls
-        vec.extend(self.constructed_walls.iter().map(|wall| StructureObject::from(wall.clone())));
+        vec.extend(
+            self.constructed_walls
+                .iter()
+                .map(|wall| StructureObject::from(wall.clone())),
+        );
 
         // Roads
-        vec.extend(self.roads.values().map(|road| StructureObject::from(road.clone())));
+        vec.extend(
+            self.roads
+                .values()
+                .map(|road| StructureObject::from(road.clone())),
+        );
 
         // Towers
-        vec.extend(self.towers.values().map(|tower| StructureObject::from(tower.clone())));
+        vec.extend(
+            self.towers
+                .values()
+                .map(|tower| StructureObject::from(tower.clone())),
+        );
 
         // inactives
         vec.extend(self.inactive_structures.iter().cloned());
@@ -247,16 +315,6 @@ impl RoomStructureCache {
         self.room.find(find::STRUCTURES, None)
     }
 
-    fn repairables(&mut self) {
-        for structure in self.all_structures().into_iter() {
-            if let Some(damagable) = structure.as_attackable() {
-                if damagable.hits() < damagable.hits_max() {
-                    self.needs_repair.push(structure);
-                }
-            }
-        }
-    }
-
     fn skip_check(&mut self, can_be_placed: bool, structure: &StructureObject) -> bool {
         if !can_be_placed && !NO_RCL_PLACEABLES.contains(&structure.structure_type()) {
             return true;
@@ -270,7 +328,13 @@ impl RoomStructureCache {
         false
     }
 
-    fn classify_structure(&mut self, resource_cache: &mut RoomResourceCache, structure: StructureObject, has_links: &mut bool, has_containers: &mut bool) {
+    fn classify_structure(
+        &mut self,
+        resource_cache: &mut RoomResourceCache,
+        structure: StructureObject,
+        has_links: &mut bool,
+        has_containers: &mut bool,
+    ) {
         match structure {
             StructureObject::StructureTower(tower) => {
                 self.towers.insert(tower.id(), tower);
@@ -347,7 +411,7 @@ impl RoomStructureCache {
     pub fn refresh_structure_cache(
         &mut self,
         resource_cache: &mut RoomResourceCache,
-        memory: &mut ScreepsMemory
+        memory: &mut ScreepsMemory,
     ) {
         let room_memory = memory.rooms.get_mut(&self.room.name());
 
@@ -371,8 +435,15 @@ impl RoomStructureCache {
         let mut has_containers = false;
         let mut has_links = false;
 
+        let pre_structure = game::cpu::get_used();
+
+        // TODO:
+        // Roads decay every 1k ticks, and containers every 500 (100 in remotes), so we can probably cut down what we are iterating
         for structure in self.run_structure_find().into_iter() {
-            let entry = self.structures_at_pos.entry(structure.pos().xy()).or_default();
+            let entry = self
+                .structures_at_pos
+                .entry(structure.pos().xy())
+                .or_default();
             if !entry.contains(&structure.structure_type()) {
                 entry.push(structure.structure_type());
             }
@@ -392,6 +463,12 @@ impl RoomStructureCache {
                 continue;
             }
 
+            if let Some(repairable) = structure.as_repairable() {
+                if repairable.hits() < repairable.hits_max() {
+                    self.needs_repair.push(structure.clone());
+                }
+            }
+
             // TODO: Improve this code...
             if let Some(ownable) = structure.as_owned() {
                 if !ownable.my() && structure.structure_type() != StructureType::InvaderCore {
@@ -399,19 +476,29 @@ impl RoomStructureCache {
                 }
             }
 
-            self.classify_structure(resource_cache, structure, &mut has_links, &mut has_containers);
+            self.classify_structure(
+                resource_cache,
+                structure,
+                &mut has_links,
+                &mut has_containers,
+            );
         }
 
-        self.repairables();
+        let structure_used = game::cpu::get_used() - pre_structure;
 
+        let pre_container = game::cpu::get_used();
         if has_containers {
             self.process_containers(resource_cache);
         }
+        let container_used = game::cpu::get_used() - pre_container;
 
+        let pre_link = game::cpu::get_used();
         if has_links {
             self.process_links(resource_cache);
         }
+        let link_used = game::cpu::get_used() - pre_link;
 
+        let pre_csite = game::cpu::get_used();
         let mut csites = Vec::new();
         for csite in self.room.find(find::CONSTRUCTION_SITES, None) {
             let entry = self.structures_at_pos.entry(csite.pos().xy()).or_default();
@@ -422,11 +509,18 @@ impl RoomStructureCache {
             csites.push(csite)
         }
         self.construction_sites = csites;
+        let csite_used = game::cpu::get_used() - pre_csite;
 
+        let pre_ruin = game::cpu::get_used();
         let ruins = self.room.find(find::RUINS, None).into_iter();
         for ruin in ruins {
             self.ruins.insert(ruin.id(), ruin);
         }
+        let ruin_used = game::cpu::get_used() - pre_ruin;
+
+        //if self.room.my() {
+        //    info!("  Structures used: {:.2} - Containers: {:.2} - Links: {:.2} - Csites: {:.2} - Ruins: {:.2}", structure_used, container_used, link_used, csite_used, ruin_used);
+        //}
     }
 
     pub fn process_links(&mut self, resource_cache: &mut RoomResourceCache) {
@@ -475,7 +569,11 @@ impl RoomStructureCache {
             }
         }
 
-        let link_sources = if link_sources.is_empty() { None } else { Some(link_sources) };
+        let link_sources = if link_sources.is_empty() {
+            None
+        } else {
+            Some(link_sources)
+        };
 
         let classified = CachedRoomLinks {
             controller,
@@ -533,8 +631,16 @@ impl RoomStructureCache {
             }
         }
 
-        let fast_filler = if fast_filler.is_empty() { None } else { Some(fast_filler) };
-        let source_container = if source_container.is_empty() { None } else { Some(source_container) };
+        let fast_filler = if fast_filler.is_empty() {
+            None
+        } else {
+            Some(fast_filler)
+        };
+        let source_container = if source_container.is_empty() {
+            None
+        } else {
+            Some(source_container)
+        };
 
         let classified = CachedRoomContainers {
             controller,

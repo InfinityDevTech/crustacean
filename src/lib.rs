@@ -21,11 +21,11 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::{hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
-use screeps::{find, game, OwnedStructureProperties};
+use screeps::{find, game, HasId, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,
-}};
+}, store_proxy::get_capacity};
 use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
@@ -198,6 +198,26 @@ pub fn game_loop() {
 
         let room_cache = cache.rooms.get_mut(room).unwrap();
         let room_memory = memory.rooms.get_mut(room).unwrap();
+
+        // https://discord.com/channels/860665589738635336/865973531152744468/1291496073050980413
+        // HOW TF DOE STHE GAME BEAT THIS??
+
+        /*info!("STARTING CPU TEST ON ROOM {}", room_cache.room.name());
+        if let Some(storage) = &room_cache.structures.storage {
+            let pre_orig = game::cpu::get_used();
+            for i in 0..=100 {
+                info!("{} {}", i, storage.store().get_capacity(Some(screeps::ResourceType::Energy)))
+            }
+            let post_orig = game::cpu::get_used() - pre_orig;
+
+            let pre_new = game::cpu::get_used();
+            for i in 0..=100 {
+                info!("{} {}", i, get_capacity(storage.raw_id(), Some(screeps::ResourceType::Energy)))
+            }
+            let post_new = game::cpu::get_used() - pre_new;
+
+            info!("New used: {}   -   Old used: {}", post_new, post_orig);
+        }*/
 
         // -- Begin creep chant stuffs
         if !room_cache.creeps.creeps_in_room.is_empty() {

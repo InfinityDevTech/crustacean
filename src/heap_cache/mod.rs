@@ -6,7 +6,7 @@ use crate::compression::compressed_matrix::CompressedMatrix;
 use hauling::HeapHaulingCache;
 use heap_creep::HeapCreep;
 use heap_room::HeapRoom;
-use screeps::{game, Position, RoomName};
+use screeps::{game, Position, RawObjectId, RoomName};
 
 use crate::memory::ScreepsMemory;
 

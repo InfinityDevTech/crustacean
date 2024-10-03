@@ -95,6 +95,14 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
             }
         }
     }
+
+    if creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+        if let Some(terminal) = &room_cache.structures.terminal {
+            if terminal.store().get_used_capacity(Some(ResourceType::Energy)) > 50_000 {
+                let _ = creep.ITwithdraw(terminal, ResourceType::Energy, None);
+            }
+        }
+    }
     // end nuker stuffs.
 
     // Transfer what we didnt use.

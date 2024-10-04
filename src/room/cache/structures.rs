@@ -550,8 +550,6 @@ impl RoomStructureCache {
         let mut has_containers = false;
         let mut has_links = false;
 
-        let pre_structure = game::cpu::get_used();
-
         let (all_structures, repairables, containers, links) = do_find(&self.room.name());
 
         self.needs_repair = repairables;
@@ -604,21 +602,14 @@ impl RoomStructureCache {
             );
         }
 
-        let structure_used = game::cpu::get_used() - pre_structure;
-
-        let pre_container = game::cpu::get_used();
         if has_containers {
             self.process_containers(resource_cache);
         }
-        let container_used = game::cpu::get_used() - pre_container;
 
-        let pre_link = game::cpu::get_used();
         if has_links {
             self.process_links(resource_cache);
         }
-        let link_used = game::cpu::get_used() - pre_link;
 
-        let pre_csite = game::cpu::get_used();
         let mut csites = Vec::new();
         for csite in self.room.find(find::CONSTRUCTION_SITES, None) {
             let entry = self.structures_at_pos.entry(csite.pos().xy()).or_default();
@@ -629,18 +620,11 @@ impl RoomStructureCache {
             csites.push(csite)
         }
         self.construction_sites = csites;
-        let csite_used = game::cpu::get_used() - pre_csite;
 
-        let pre_ruin = game::cpu::get_used();
         let ruins = self.room.find(find::RUINS, None).into_iter();
         for ruin in ruins {
             self.ruins.insert(ruin.id(), ruin);
         }
-        let ruin_used = game::cpu::get_used() - pre_ruin;
-
-        //if self.room.my() {
-        //    info!("  Structures used: {:.2} - Containers: {:.2} - Links: {:.2} - Csites: {:.2} - Ruins: {:.2}", structure_used, container_used, link_used, csite_used, ruin_used);
-        //}
     }
 
     pub fn process_links(&mut self, resource_cache: &mut RoomResourceCache) {

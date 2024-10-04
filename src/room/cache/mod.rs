@@ -201,9 +201,9 @@ impl CachedRoom {
 
         cached.stats.cpu_cache = game::cpu::get_used() - pre_cache_cpu;
 
-        if cached.room.my() {
-            info!("[CACHE] Room {} took {} for old {} for new.", room.name(), total_structures, total_new_structures);
-        }
+        //if cached.room.my() {
+        //    info!("[CACHE] Room {} took {} for old {} for new.", room.name(), total_structures, total_new_structures);
+        //}
 
         //if cached.room.my() {
         //    info!("  Creation for room {} took {:.2} CPU.", room.name(), game::cpu::get_used() - pre_cache_cpu);

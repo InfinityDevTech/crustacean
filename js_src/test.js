@@ -1,4 +1,4 @@
-export function do_classify_find(room_name) {
+module.exports.do_classify_find = function (room_name) {
     let room = Game.rooms[room_name];
   
     if (room) {

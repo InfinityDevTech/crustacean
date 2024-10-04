@@ -19,7 +19,7 @@ use crate::{
 #[cfg(feature = "season1")]
 use screeps::ScoreCollector;
 
-use super::resources::RoomResourceCache;
+use super::{experimental_structures::do_find, resources::RoomResourceCache};
 
 #[derive(Debug, Clone)]
 pub struct CachedRoomContainers {
@@ -171,7 +171,7 @@ impl RoomStructureCache {
             cache.controller = Some(controller);
         }
 
-        cache.refresh_structure_cache(resource_cache, memory);
+        cache.new_refresh_structure_cache(resource_cache, memory);
 
         #[cfg(feature = "season1")]
         {
@@ -464,7 +464,7 @@ impl RoomStructureCache {
             }
 
             if let Some(repairable) = structure.as_repairable() {
-                if repairable.hits() < repairable.hits_max() {
+                if repairable.hits() < repairable.hits_max() && structure.structure_type() != StructureType::Wall {
                     self.needs_repair.push(structure.clone());
                 }
             }
@@ -472,6 +472,126 @@ impl RoomStructureCache {
             // TODO: Improve this code...
             if let Some(ownable) = structure.as_owned() {
                 if !ownable.my() && structure.structure_type() != StructureType::InvaderCore {
+                    continue;
+                }
+            }
+
+            self.classify_structure(
+                resource_cache,
+                structure,
+                &mut has_links,
+                &mut has_containers,
+            );
+        }
+
+        let structure_used = game::cpu::get_used() - pre_structure;
+
+        let pre_container = game::cpu::get_used();
+        if has_containers {
+            self.process_containers(resource_cache);
+        }
+        let container_used = game::cpu::get_used() - pre_container;
+
+        let pre_link = game::cpu::get_used();
+        if has_links {
+            self.process_links(resource_cache);
+        }
+        let link_used = game::cpu::get_used() - pre_link;
+
+        let pre_csite = game::cpu::get_used();
+        let mut csites = Vec::new();
+        for csite in self.room.find(find::CONSTRUCTION_SITES, None) {
+            let entry = self.structures_at_pos.entry(csite.pos().xy()).or_default();
+            if !entry.contains(&csite.structure_type()) {
+                entry.push(csite.structure_type());
+            }
+
+            csites.push(csite)
+        }
+        self.construction_sites = csites;
+        let csite_used = game::cpu::get_used() - pre_csite;
+
+        let pre_ruin = game::cpu::get_used();
+        let ruins = self.room.find(find::RUINS, None).into_iter();
+        for ruin in ruins {
+            self.ruins.insert(ruin.id(), ruin);
+        }
+        let ruin_used = game::cpu::get_used() - pre_ruin;
+
+        //if self.room.my() {
+        //    info!("  Structures used: {:.2} - Containers: {:.2} - Links: {:.2} - Csites: {:.2} - Ruins: {:.2}", structure_used, container_used, link_used, csite_used, ruin_used);
+        //}
+    }
+
+    pub fn new_refresh_structure_cache(
+        &mut self,
+        resource_cache: &mut RoomResourceCache,
+        memory: &mut ScreepsMemory,
+    ) {
+        let room_memory = memory.rooms.get_mut(&self.room.name());
+
+        /*
+        let mut can_structures_be_placed = true;
+        if let Some(controller) = self.room.controller() {
+            if !controller.my() {
+                can_structures_be_placed = false;
+            }
+        } else {
+            can_structures_be_placed = false;
+        }*/
+
+        let mut check_ownable = false;
+        if let Some(room_memory) = room_memory {
+            if room_memory.rcl < room_memory.max_rcl {
+                check_ownable = true;
+            }
+        }
+
+        let mut has_containers = false;
+        let mut has_links = false;
+
+        let pre_structure = game::cpu::get_used();
+
+        let (all_structures, repairables, containers, links) = do_find(&self.room.name());
+
+        self.needs_repair = repairables;
+        for container in containers {
+            self.containers.insert(container.id(), container);
+        }
+        for link in links {
+            self.links.insert(link.id(), link);
+        }
+
+        // TODO:
+        // Roads decay every 1k ticks, and containers every 500 (100 in remotes), so we can probably cut down what we are iterating
+        for structure in all_structures {
+            let ty = structure.structure_type();
+            let entry = self
+                .structures_at_pos
+                .entry(structure.pos().xy())
+                .or_default();
+            if !entry.contains(&ty) {
+                entry.push(ty);
+            }
+
+            //if self.skip_check(can_structures_be_placed, &structure) {
+            //    continue;
+            //}
+
+            // Dont to the is_active check UNLESS we downgraded.
+            // Its very expensive from what I have heard.
+            // This information has been reported by: Gadjung
+            if check_ownable && !structure.is_active() {
+                self.inactive_structures.push(structure);
+
+                info!("Inactive structure found: {:?}", false);
+
+                continue;
+            }
+
+            // TODO: Improve this code...
+            if let Some(ownable) = structure.as_owned() {
+                if !ownable.my() && ty != StructureType::InvaderCore {
                     continue;
                 }
             }

@@ -19,6 +19,7 @@ pub mod resources;
 pub mod traffic;
 pub mod terminals;
 pub mod stats;
+pub mod experimental_structures;
 
 pub struct RoomCache {
     pub rooms: HashMap<RoomName, CachedRoom>,
@@ -132,6 +133,9 @@ impl CachedRoom {
         let pre_structures = game::cpu::get_used();
             let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
         let total_structures = game::cpu::get_used() - pre_structures;
+        let pre_new_structures = game::cpu::get_used();
+            //structures.new_refresh_structure_cache(&mut resources, memory);
+        let total_new_structures = game::cpu::get_used() - pre_new_structures;
         let pre_creeps = game::cpu::get_used();
             let creeps = CreepCache::new_from_room(room, memory, &structures, owning_room);
         let total_creeps = game::cpu::get_used() - pre_creeps;
@@ -196,6 +200,10 @@ impl CachedRoom {
         }
 
         cached.stats.cpu_cache = game::cpu::get_used() - pre_cache_cpu;
+
+        if cached.room.my() {
+            info!("[CACHE] Room {} took {} for old {} for new.", room.name(), total_structures, total_new_structures);
+        }
 
         //if cached.room.my() {
         //    info!("  Creation for room {} took {:.2} CPU.", room.name(), game::cpu::get_used() - pre_cache_cpu);

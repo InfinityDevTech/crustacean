@@ -83,6 +83,7 @@ function run_wasm_pack(extra_options) {
 async function run_rollup(use_terser) {
   const bundle = await rollup({
     input: 'js_src/main.js',
+
     plugins: [
       commonjs(),
       nodeResolve(),

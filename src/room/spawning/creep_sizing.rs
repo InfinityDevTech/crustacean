@@ -97,23 +97,23 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, is_remote: bool, source_parts
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn mineral_miner_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
-    let mut body = Vec::new();
+    let mut body: Vec<Part> = Vec::new();
     let stamp = vec![Part::Work, Part::Work, Part::Work, Part::Work, Part::Move];
     let cost = get_body_cost(&stamp);
 
     let max_cost = room.energy_capacity_available();
-    let mut current_cost = cost;
+    let mut current_cost = 0;
 
     while current_cost < max_cost {
-        if current_cost + cost > max_cost {
+        if current_cost + cost > max_cost || body.len() >= 50 {
             break;
         }
 
-        body.extend_from_slice(&stamp);
+        body.extend(&stamp.clone());
         current_cost += cost;
     }
 
-    stamp
+    body
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

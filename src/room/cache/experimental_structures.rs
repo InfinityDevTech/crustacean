@@ -4,7 +4,7 @@ use js_sys::{Array, JsString};
 use screeps::{RoomName, StructureContainer, StructureLink, StructureObject};
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(module = "test")]
+#[wasm_bindgen(module = "/js_src/test.js")]
 extern "C" {
     // Returns an array 4 long:
     // 0 - All Structures

@@ -1,7 +1,9 @@
 
+use std::mem;
+
 use log::warn;
 use screeps::{
-    find, game,
+    find, game::{self, map::{FindRouteOptions, RouteStep}},
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
     HasPosition, LocalCostMatrix, OwnedStructureProperties, Part, Position, RoomName, RoomXY,
     StructureObject, StructureProperties, StructureType,
@@ -9,7 +11,7 @@ use screeps::{
 use screeps_utils::room_xy::{chebyshev_range_iter, GridIter, Order};
 
 use crate::{
-    constants::{SWAMP_MASK, WALL_MASK}, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, utils::{self, get_my_username}
+    constants::{SWAMP_MASK, WALL_MASK}, memory::ScreepsMemory, profiling::timing::PATHFIND_CPU, utils::{self, get_my_username, room_type}
 };
 
 use super::movement_utils::visualise_path;
@@ -142,7 +144,20 @@ impl MoveTarget {
                 }
         }*/
 
-        let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, move_options))
+        let range_between_rooms = utils::calc_room_distance(&from.room_name(), &self.pos.room_name(), false);
+        let route = if range_between_rooms >= 3 {
+            let res = game::map::find_route(from.room_name(), self.pos.room_name(), Some(FindRouteOptions::new().room_callback(|room_name: RoomName, from_room: RoomName| route_call(room_name, from_room, memory, move_options))));
+
+            if let Ok(res) = res {
+                Some(res.iter().map(|k| k.room).collect::<Vec<RoomName>>())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, move_options, route.clone()))
             .max_rooms(15)
             .max_ops(12000);
 
@@ -170,7 +185,7 @@ impl MoveTarget {
             .ignore_cached_cost_matrix(true)
             .avoid_hostile_rooms(true);
 
-        let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, options))
+        let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, options, None))
             .max_rooms(15)
             .max_ops(200000);
 
@@ -183,7 +198,7 @@ impl MoveTarget {
         memory: &mut ScreepsMemory,
         move_options: MoveOptions,
     ) -> u64 {
-        let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, move_options))
+        let opts = SearchOptions::new(|room_name| path_call(room_name, from, memory, move_options, None))
             .max_rooms(15)
             .max_ops(200000);
 
@@ -256,6 +271,36 @@ impl MoveTarget {
     }
 }
 
+pub fn route_call(room_name: RoomName, from_room: RoomName, memory: &mut ScreepsMemory, move_options: MoveOptions) -> f64 {
+
+    if let Some(scouting_data) = memory.scouted_rooms.get(&room_name) {
+        if move_options.avoid_hostile_rooms && scouting_data.owner.is_some() && scouting_data.owner.as_ref().unwrap().to_lowercase() != utils::get_my_username().to_lowercase() {
+            return f64::INFINITY;
+        }
+
+        if move_options.avoid_hostile_remotes && scouting_data.reserved.is_some() && scouting_data.reserved.as_ref().unwrap().to_lowercase() != utils::get_my_username().to_lowercase() {
+            return f64::INFINITY;
+        }
+
+        let room_type = room_type(&from_room);
+
+        let return_type = match room_type {
+            crate::traits::room::RoomType::Normal => 2.0,
+            crate::traits::room::RoomType::Highway => 1.0,
+            crate::traits::room::RoomType::Intersection => 1.0,
+            crate::traits::room::RoomType::SourceKeeper => 3.0,
+            crate::traits::room::RoomType::Center => 5.0,
+            crate::traits::room::RoomType::Unknown => f64::INFINITY,
+        };
+
+        if scouting_data.invader_core.is_some() {
+            return return_type + 10.0;
+        }
+    }
+
+    1.0
+}
+
 //pub const TEMP_COUNT: Mutex<u8> = Mutex::new(0);
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn path_call(
@@ -263,6 +308,7 @@ pub fn path_call(
     from: Position,
     memory: &ScreepsMemory,
     move_options: MoveOptions,
+    force_route: Option<Vec<RoomName>>
 ) -> MultiRoomCostResult {
     let mut matrix = LocalCostMatrix::new();
 
@@ -277,7 +323,13 @@ pub fn path_call(
         }*/
     }
 
-    if move_options.avoid_hostile_remotes && from.room_name() != room_name {
+    if let Some(ref forced_route) = force_route {
+        if !forced_route.contains(&room_name) && from.room_name() != room_name {
+            return MultiRoomCostResult::Impassable;
+        }
+    }
+
+    if move_options.avoid_hostile_remotes && from.room_name() != room_name && force_route.is_none() {
         if let Some(room) = game::rooms().get(room_name) {
             if let Some(room_controller) = room.controller() {
                 if room_controller.reservation().is_some()

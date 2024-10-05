@@ -648,7 +648,7 @@ impl RoomStructureCache {
 
         for link in self.links.values() {
             if let Some(room_controller) = &self.controller {
-                if link.pos().in_range_to(room_controller.pos(), 3) {
+                if link.pos().in_range_to(room_controller.pos(), 2) {
                     controller = Some(link.clone());
                 }
             }

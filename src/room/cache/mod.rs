@@ -127,18 +127,9 @@ impl CachedRoom {
 
         let mut room_heap = room_cache.remove(&room.name()).unwrap_or_default();
 
-        let pre_resource = game::cpu::get_used();
-            let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
-        let total_resource = game::cpu::get_used() - pre_resource;
-        let pre_structures = game::cpu::get_used();
-            let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
-        let total_structures = game::cpu::get_used() - pre_structures;
-        let pre_new_structures = game::cpu::get_used();
-            //structures.new_refresh_structure_cache(&mut resources, memory);
-        let total_new_structures = game::cpu::get_used() - pre_new_structures;
-        let pre_creeps = game::cpu::get_used();
-            let creeps = CreepCache::new_from_room(room, memory, &structures, owning_room);
-        let total_creeps = game::cpu::get_used() - pre_creeps;
+        let mut resources = RoomResourceCache::new_from_room(room, memory, &mut room_heap);
+        let mut structures = RoomStructureCache::new_from_room(room, &mut resources, memory, &mut room_heap);
+        let creeps = CreepCache::new_from_room(room, memory, &structures, owning_room);
 
         let storage_status = storage_status(room, &mut structures);
         let mut stats =  StatsCache::default();

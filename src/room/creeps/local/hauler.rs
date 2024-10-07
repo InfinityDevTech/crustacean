@@ -432,7 +432,10 @@ pub fn execute_order(
                     let result = creep.ITwithdraw(
                         target.unchecked_ref::<StructureStorage>(),
                         order.resource,
-                        Some(amount.try_into().unwrap_or(0)),
+                        None
+                        // TODO:
+                        // Same as the offer.
+                        //Some(amount.try_into().unwrap_or(0)),
                     );
 
                     cache.creeps_moving_stuff.insert(creep.name(), true);
@@ -551,7 +554,11 @@ pub fn execute_order(
                         creep.ITwithdraw(
                             target.unchecked_ref::<StructureStorage>(),
                             order.resource,
-                            Some(amount.try_into().unwrap()),
+                            None
+                            // TODO:
+                            // Make the order expand what the hauler will pick ujp if the hauler has the capacity.
+                            // Haulers are just leaving with like, no energy.
+                            //Some(amount.try_into().unwrap()),
                         )
                     };
 

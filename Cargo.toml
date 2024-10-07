@@ -44,12 +44,12 @@ lto = true
 # -O4 - optimize aggressively for performance
 # -Oz - optimize aggressively for code size
 # -g - leave debug info in place, allowing for more descriptive stack traces on panic
-# --disable-sign-ext - prevents opcodes that the screeps servers can't load (see 
+# --disable-sign-ext - prevents opcoAFdes that the screeps servers can't load (see 
 # --signext-lowering - removes opcodes that the screeps servers can't load (see 
 # https://github.com/rustyscreeps/screeps-game-api/issues/391)
 #wasm-opt = ["-O4", "--disable-sign-ext"]
-#wasm-opt = ["-O4", "--signext-lowering"]
-wasm-opt = ["-g", "--signext-lowering"]
+wasm-opt = ["-O4", "--signext-lowering"]
+#wasm-opt = ["-g", "--signext-lowering"]
 
 [features]
 default = ["season1"]

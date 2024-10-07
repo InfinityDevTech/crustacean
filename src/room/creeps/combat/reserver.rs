@@ -12,6 +12,10 @@ use crate::{
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_reserver(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+    if creep.spawning() {
+        return;
+    }
+    
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
     let current_room = &cache.rooms.get(&creep.pos().room_name()).unwrap().room;

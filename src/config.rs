@@ -17,7 +17,7 @@ pub const RESERVATION_GOAL_THRESHOLD: u32 = 4000;
 pub const ROOM_ENERGY_STOCKPILE: u32 = 20000;
 
 pub fn REMOTES_FOR_RCL(room_cache: &CachedRoom) -> u8 {
-    if utils::under_storage_gate(room_cache, 0.5) && room_cache.rcl >= 6 {
+    if utils::under_storage_gate(room_cache, 1.0) && room_cache.rcl >= 6 {
         return 7;
     }
 
@@ -29,7 +29,7 @@ pub fn REMOTES_FOR_RCL(room_cache: &CachedRoom) -> u8 {
         5 => 5,
         6 => 5,
         7 => 5,
-        8 => 3,
+        8 => 4,
         _ => 0,
     }
 }

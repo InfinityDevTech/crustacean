@@ -419,7 +419,7 @@ pub fn get_rcl_7_plan() -> Vec<(i8, i8, StructureType)> {
 pub fn get_rcl_8_plan() -> Vec<(i8, i8, StructureType)> {
     vec![
         (0, -1, StructureType::Link),
-        (0, 0, StructureType::Spawn),
+        (1, -2, StructureType::Spawn),
         (0, -3, StructureType::Observer),
         (0, 3, StructureType::Nuker),
         (1, 4, StructureType::PowerSpawn),
@@ -434,6 +434,7 @@ pub fn get_rcl_8_plan() -> Vec<(i8, i8, StructureType)> {
         (6, 1, StructureType::Extension),
         (-1, -6, StructureType::Extension),
         (-2, -6, StructureType::Extension),
+        (-4, -3, StructureType::Extension),
         (-3, -6, StructureType::Extension),
         (-4, -6, StructureType::Extension),
         (-5, -5, StructureType::Extension),

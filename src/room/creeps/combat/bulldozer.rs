@@ -100,6 +100,21 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 return;
             }
 
+            if let Some(structures_at_pos) = room_cache.structures.structures_at_pos.get(&flag.pos().xy()) {
+                if !structures_at_pos.is_empty() {
+                    let t = structure.iter().filter(|s| s.pos() == flag.pos() && s.structure_type() == *structures_at_pos.first().unwrap()).collect::<Vec<&StructureObject>>();
+                    let structure = t.first().unwrap();
+
+                    if creep.pos().is_near_to(structure.pos()) {
+                        let _ = creep.attack(structure.as_attackable().unwrap());
+                        return;
+                    } else {
+                        creep.better_move_to(memory, room_cache, structure.pos(), 1, MoveOptions::default().path_age(1));
+                        return;
+                    }
+                }
+            }
+
             if let Some(spawn) = structure.iter().filter(|s| s.structure_type() == StructureType::Spawn).map(|s| (s)).next() {
                 if creep.pos().is_near_to(spawn.pos()) {
                     let _ = creep.attack(spawn.as_attackable().unwrap());

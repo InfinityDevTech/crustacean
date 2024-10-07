@@ -114,6 +114,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
         }
 
         let energy_storage = room.energy_capacity_available();
+        let should_cap = under_storage_gate(cache.rooms.get(&room.name()).unwrap(), 0.5);
         let mut current_claim = 0;
 
         let body = if energy_storage >= 1300 {
@@ -124,7 +125,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
             let mut current_cost = 650;
 
             while current_cost < energy_storage {
-                if current_cost + stamp_cost > energy_storage || current_claim >= 3 {
+                if current_cost + stamp_cost > energy_storage || current_claim >= 5 || should_cap && current_claim >= 2 {
                     break;
                 }
 
@@ -182,7 +183,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
 
         if let Some(goal_cache) = cache.rooms.get_mut(&best_spawned) {
             if let Some(storage) = &goal_cache.structures.storage {
-                if under_storage_gate(&goal_cache, 0.5) {
+                if under_storage_gate(&goal_cache, 0.1) {
                     return None;
                 } else if storage.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy)) > 30_000 {
                     priority *= 2.0;

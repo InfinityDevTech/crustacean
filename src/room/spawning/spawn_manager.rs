@@ -365,6 +365,10 @@ pub fn calculate_hauler_needs(room: &Room, memory: &mut ScreepsMemory, cache: &m
             wanted_hauler_count *= 1.5;
         }
 
+        if owning_cache.rcl >= 8 {
+            wanted_hauler_count *= 0.75;
+        }
+
         let hauler_count = if wanted_hauler_count < 3.0 {
             3
         } else {

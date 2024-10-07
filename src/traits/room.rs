@@ -37,7 +37,6 @@ pub trait RoomExtensions {
     fn terrain_flood_fill(&self, seeds: Vec<(u8, u8)>) -> CostMatrix;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomExtensions for screeps::Room {
     fn name_str(&self) -> String {
         self.name().to_string()
@@ -87,7 +86,6 @@ impl RoomExtensions for screeps::Room {
 
     fn get_adjacent(&self, radius: i32) -> Vec<RoomName> {
         let split = self.split_name();
-        info!("room {} split is {:?}", self.name(), split);
         let horizdir = split.0;
         let horiznum = split.1 as i32;
         let vertdir = split.2;

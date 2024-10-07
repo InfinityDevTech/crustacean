@@ -2,7 +2,7 @@
 use log::info;
 use screeps::{game, Part, ResourceType, Room, RoomName, SharedCreepProperties};
 
-use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name}};
+use crate::{constants::{part_attack_weight, HOSTILE_PARTS}, goal_memory::{AttackingCreep, RemoteDefenseGoal}, memory::{CreepMemory, Role, ScreepsMemory}, room::cache::RoomCache, utils::{self, get_body_cost, get_unique_id, role_to_name, under_storage_gate}};
 
 use super::{determine_group_attack_power, determine_single_attack_power};
 
@@ -198,6 +198,7 @@ fn decrease_ttl(goal_room: &RoomName, memory: &mut ScreepsMemory) -> bool {
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, cache: &mut RoomCache) {
+    info!("----- Spawning from room {} for room {}", goal.defending_remote, responsible_room.name());
     let stamp = vec![Part::RangedAttack, Part::RangedAttack, Part::Heal, Part::Move, Part::Move, Part::Move];
     let stamp_cost = stamp.iter().map(|part| part.cost()).sum::<u32>();
     let stamp_power = stamp.iter().map(part_attack_weight).sum::<u32>();
@@ -219,7 +220,8 @@ fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, 
     }
 
     while current_cost < energy_available {
-        if current_cost + stamp_cost > energy_available || current_power + stamp_power > enemy_power {
+        info!("Remote defense spawning current: {}, stamp {}, available {}, current power {}, stamp power {}, enemy power {}", current_cost, stamp_cost, energy_available, current_power, stamp_power, enemy_power);
+        if current_cost + stamp_cost > energy_available || current_power > enemy_power {
             break;
         }
 
@@ -239,11 +241,20 @@ fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, 
             ..Default::default()
         };
 
-        let req = cache.spawning.create_room_spawn_request(Role::RemoteDefender, parts, 10.0, cost, responsible_room.name(), Some(creep_memory), None, Some(creep_name.clone()));
+        let mut prio = 10.0;
+        let responsible_cache = cache.rooms.get(&responsible_room.name()).unwrap();
+        if !under_storage_gate(responsible_cache, 1.0) {
+            prio *= 2.0;
+        }
+
+        info!("Spawning with body {:?} prio: {}, cost {}", parts, prio, cost);
+        let req = cache.spawning.create_room_spawn_request(Role::RemoteDefender, parts, prio, cost, responsible_room.name(), Some(creep_memory), None, Some(creep_name.clone()));
 
         if let Some(reqs) = cache.spawning.room_spawn_queue.get_mut(&responsible_room.name()) {
+            info!("Has queue, pushing");
             reqs.push(req);
         } else {
+            info!("No queue.");
             cache
                 .spawning
                 .room_spawn_queue
@@ -251,5 +262,9 @@ fn determine_spawn_needs(responsible_room: &Room, goal: &mut RemoteDefenseGoal, 
         }
 
         goal.creeps_assigned.push(creep_name);
+    } else {
+        info!("Goal, cant spawn because {:?} is empty", parts);
     }
+
+    info!("--------- Diff Goal");
 }

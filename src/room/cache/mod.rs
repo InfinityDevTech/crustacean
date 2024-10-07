@@ -119,9 +119,9 @@ impl CachedRoom {
     pub fn new_from_room(room: &Room, memory: &mut ScreepsMemory, owning_room: Option<RoomName>) -> CachedRoom {
         let pre_cache_cpu = game::cpu::get_used();
 
-        //if room.my() {
-        //   info!("[CACHE] Creating cache for {}", room.name());
-        //}
+        if room.my() {
+           info!("[CACHE] Creating cache for {}", room.name());
+        }
 
         let mut room_cache = heap().rooms.lock().unwrap();
 
@@ -192,9 +192,6 @@ impl CachedRoom {
 
         cached.stats.cpu_cache = game::cpu::get_used() - pre_cache_cpu;
 
-        //if cached.room.my() {
-        //    info!("[CACHE] Room {} took {} for old {} for new.", room.name(), total_structures, total_new_structures);
-        //}
 
         //if cached.room.my() {
         //    info!("  Creation for room {} took {:.2} CPU.", room.name(), game::cpu::get_used() - pre_cache_cpu);

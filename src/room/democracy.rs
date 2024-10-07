@@ -1,7 +1,7 @@
 
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureProperties, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, ResourceType, Room, RoomCoordinate, RoomName, RoomPosition, StructureProperties, StructureType, Terrain
 };
 
 use crate::{
@@ -239,6 +239,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
                 }
             }
         }
+
 
         // TODO: why are we looping here?
         for flag in game::flags().values() {
@@ -528,6 +529,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 let _ = csite.remove();
             }
         }
+
 
         if let Some(flag) = game::flags().get("deleteAllRoads".to_string()) {
             let room_cache = cache.rooms.get(&room.name()).unwrap();

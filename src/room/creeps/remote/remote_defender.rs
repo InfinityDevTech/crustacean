@@ -1,14 +1,12 @@
 use screeps::{Creep, HasPosition, Position, RoomCoordinate, SharedCreepProperties};
 
-use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}};
+use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if creep.hits() < creep.hits_max() {
-        let _ = creep.ITheal(creep);
-    }
+    let _ = creep.ITheal(creep);
 
     if let Some(target_room) = creep_memory.target_room {
         if creep.room().unwrap().name() != target_room {
@@ -19,7 +17,11 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
             let hostile_creeps = &cache.creeps.enemy_creeps_with_attack;
 
             if !hostile_creeps.is_empty() {
-                let target = hostile_creeps.first().unwrap();
+                let mut c = hostile_creeps.clone();
+                c.sort_by_key(|c| utils::get_part_count(&c.body(), Some(screeps::Part::RangedAttack)));
+                c.reverse();
+
+                let target = c.first().unwrap();
 
                 if creep.pos().get_range_to(target.pos()) >= 4 {
                     creep.better_move_to(memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
@@ -36,7 +38,12 @@ pub fn run_remotedefender(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut
                     creep.better_move_to(memory, cache, target.pos(), 1, MoveOptions::default().path_age(2));
                 }
             } else {
-                creep_memory.role = Role::Recycler;
+                if creep.pos().is_room_edge() {
+                    let position = Position::new(RoomCoordinate::new(25).unwrap(), RoomCoordinate::new(25).unwrap(), target_room);
+
+                    creep.better_move_to(memory, cache, position, 23, Default::default());
+                }
+                creep.bsay("No Targ", false);
             }
         }
     }

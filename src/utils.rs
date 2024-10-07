@@ -106,7 +106,7 @@ pub fn room_type(name: &RoomName) -> RoomType {
 /// Amount: The amount of resources in the target
 /// Priority: The priority of the task
 /// Reverse: Get priority based off of how empty the container is
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn scale_haul_priority(
     capacity: u32,
     amount: u32,
@@ -131,12 +131,12 @@ pub fn scale_haul_priority(
 /// Convert a role to its respective string
 /// **Example:** Miner **=** sm
 /// **Example:** Hauler **=** mb
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn role_to_name(role: Role) -> String {
     ROLE_MAP[role].to_string()
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn source_max_parts(source: &Source) -> u8 {
     let max_energy = source.energy_capacity();
 
@@ -147,7 +147,7 @@ pub fn source_max_parts(source: &Source) -> u8 {
     max_work_needed.clamp(0, u8::MAX as u32) as u8
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn under_storage_gate(room_cache: &CachedRoom, gate: f32) -> bool {
     let storage_gate = room_cache.storage_status.wanted_energy as f32 * gate;
 
@@ -164,14 +164,14 @@ pub fn under_storage_gate(room_cache: &CachedRoom, gate: f32) -> bool {
     false
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn calc_terminal_cost(amount: u32, source: &RoomName, dest: &RoomName) -> u32 {
     let dist = calc_room_distance(source, dest, true);
 
     (amount as f32 * (1.0 - E.powf(-dist as f32 / 30.0))).ceil() as u32
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -> i32 {
     let mut dx = (source.x_coord() - dest.x_coord()).abs();
     let mut dy = (source.y_coord() - dest.y_coord()).abs();
@@ -186,7 +186,7 @@ pub fn calc_room_distance(source: &RoomName, dest: &RoomName, continous: bool) -
     dx.max(dy)
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
     let total_capacity = store.get_used_capacity(None);
     let total_amount = store.get_used_capacity(Some(resource));
@@ -198,7 +198,7 @@ pub fn contains_other_than(store: &Store, resource: ResourceType) -> bool {
     total_capacity != total_amount
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
     let mut map = HashMap::new();
 
@@ -284,14 +284,14 @@ pub fn name_to_role(name: &str) -> Option<Role> {
     None
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn ticks_to_fill_bucket(bucket: i32) -> u32 {
     let max_cpu = game::cpu::tick_limit();
 
     (10000.0 / max_cpu).ceil() as u32
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn find_closest_owned_room(
     target_room: &RoomName,
     cache: &RoomCache,
@@ -366,7 +366,7 @@ pub fn get_part_count(parts: &Vec<BodyPart>, part_type: Option<Part>) -> u8 {
     count
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
     let path = MoveTarget { pos, range: 1 }.pathfind(target, Some(SearchOptions::default()));
 
@@ -377,7 +377,7 @@ pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
     path.path().len() as u32
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn calculate_swamp_percentage(room_name: &RoomName) -> f64 {
     let terrain = game::map::get_room_terrain(*room_name).unwrap();
 
@@ -427,7 +427,7 @@ pub fn get_body_cost(parts: &Vec<Part>) -> u32 {
     cost
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn new_xy(x: u8, y: u8) -> RoomXY {
     RoomXY::new(
         RoomCoordinate::new(x.clamp(0, 49)).unwrap(),
@@ -435,7 +435,7 @@ pub fn new_xy(x: u8, y: u8) -> RoomXY {
     )
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
+
 pub fn distance_transform(
     room_name: &RoomName,
     input_cm: Option<LocalCostMatrix>,

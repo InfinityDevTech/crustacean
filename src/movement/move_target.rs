@@ -1,7 +1,7 @@
 
 use std::mem;
 
-use log::warn;
+use log::{info, warn};
 use screeps::{
     find, game::{self, map::{FindRouteOptions, RouteStep}},
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
@@ -25,6 +25,7 @@ pub struct MoveOptions {
     pub avoid_sitters: bool,
     pub ignore_cached_cost_matrix: bool,
     pub visualize_path: bool,
+    pub force_find_route: bool,
     pub ignore_cache: bool,
     pub path_age: u8,
 
@@ -41,6 +42,7 @@ impl Default for MoveOptions {
             avoid_sitters: true,
             ignore_cached_cost_matrix: false,
             ignore_cache: false,
+            force_find_route: false,
             visualize_path: false,
             path_age: 8,
 
@@ -96,6 +98,11 @@ impl MoveOptions {
         *self
     }
 
+    pub fn force_find_route(&mut self, force_find_route: bool) -> Self {
+        self.force_find_route = force_find_route;
+        *self
+    }
+
     pub fn path_age(&mut self, path_age: u8) -> Self {
         self.path_age = path_age;
         *self
@@ -145,7 +152,7 @@ impl MoveTarget {
         }*/
 
         let range_between_rooms = utils::calc_room_distance(&from.room_name(), &self.pos.room_name(), false);
-        let route = if range_between_rooms >= 3 {
+        let route = if range_between_rooms >= 3 || move_options.force_find_route {
             let res = game::map::find_route(from.room_name(), self.pos.room_name(), Some(FindRouteOptions::new().room_callback(|room_name: RoomName, from_room: RoomName| route_call(room_name, from_room, memory, move_options))));
 
             if let Ok(res) = res {

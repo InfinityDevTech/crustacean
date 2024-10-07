@@ -5,7 +5,6 @@ pub trait PositionExtensions {
     fn is_room_edge(&self) -> bool;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl PositionExtensions for Position {
     fn get_accessible_positions_around(&self, range: u8) -> Vec<Position> {
         let mut positions = Vec::new();
@@ -36,7 +35,6 @@ pub trait RoomXYExtensions {
     fn possible(&self) -> bool;
 }
 
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
 impl RoomXYExtensions for RoomXY {
     fn as_position(&self, room_name: &RoomName) -> Position {
         Position::new(self.x, self.y, *room_name)

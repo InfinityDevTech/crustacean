@@ -26,7 +26,6 @@ pub fn fetch_possible_remotes(
         let rank = rank_remote_room(memory, &room_name, &room_cache.spawn_center.unwrap().as_position(&room.name()));
 
         if rank == u32::MAX {
-            info!("Cannot rank room {}", room_name);
             continue;
         }
 

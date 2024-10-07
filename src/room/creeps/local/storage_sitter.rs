@@ -23,6 +23,12 @@ pub fn run_storagesitter(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut 
         return;
     };
 
+    if let Some(terminal) = &room_cache.structures.terminal {
+        if terminal.store().get_used_capacity(Some(ResourceType::Energy)) == 0 && creep.store().get_used_capacity(Some(ResourceType::Energy)) == 0 {
+            let _ = creep.withdraw(terminal, ResourceType::Energy, None);
+        }
+    }
+
     // If we have less than 50 TTL, just dump everything into storage and die.
     if creep.ticks_to_live() <= Some(50) {
         if creep.pos().get_range_to(storage.pos()) > 1 {

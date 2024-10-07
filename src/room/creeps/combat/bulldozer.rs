@@ -181,7 +181,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 creep_memory.role = Role::Recycler;
             }
 
-            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true));
+            creep.better_move_to(memory, room_cache, flag.pos(), 2, MoveOptions::default().avoid_enemies(true).path_age(15).force_find_route(true));
         }
     } else {
         creep.bsay("❓", false);

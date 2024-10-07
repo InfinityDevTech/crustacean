@@ -419,6 +419,9 @@ structstruck::strike! {
         pub enemy_players: HashMap<String, EnemyPlayer>,
         pub scouted_rooms: HashMap<RoomName, ScoutedRoom>,
 
+        #[serde(default)]
+        pub adoption_queue: HashMap<Role, Vec<String>>,
+
         pub stats: StatsData,
     }
 }
@@ -446,6 +449,8 @@ impl ScreepsMemory {
                 formations: FormationMemory::default(),
                 goals: GoalMemory::default(),
                 expansion: None,
+
+                adoption_queue: HashMap::new(),
 
                 enemy_players: HashMap::new(),
                 scouted_rooms: HashMap::new(),
@@ -482,6 +487,8 @@ impl ScreepsMemory {
                         formations: FormationMemory::default(),
                         goals: GoalMemory::default(),
                         expansion: None,
+
+                        adoption_queue: HashMap::new(),
 
                         enemy_players: HashMap::new(),
                         scouted_rooms: HashMap::new(),

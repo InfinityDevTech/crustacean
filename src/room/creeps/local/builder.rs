@@ -35,7 +35,7 @@ pub fn run_builder(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
     }
 }
 
-pub fn get_all_remote_csites(
+pub fn _get_all_remote_csites(
     main_room: &RoomName,
     room_cache: &RoomCache,
     memory: &mut ScreepsMemory,
@@ -62,7 +62,7 @@ pub fn build(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let sites = room_cache.structures.construction_sites.clone();
     //sites.sort_by_key(|s| s.pos().get_range_to(creep.pos()));
 
-    let owning_room = creepmem.owning_room;
+    let _owning_room = creepmem.owning_room;
     //sites.append(&mut get_all_remote_csites(&owning_room, cache, memory));
 
     if creep.room().unwrap().name() != creepmem.owning_room {
@@ -198,10 +198,6 @@ pub fn find_energy(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
             containers.sort_by_key(|c| c.store().get_used_capacity(Some(ResourceType::Energy)));
 
             if let Some(container) = containers.first() {
-                if container.store().get_used_capacity(Some(ResourceType::Energy)) < 1000 {
-                    run = false;
-                }
-
                 if !creep.pos().is_near_to(container.pos()) {
                     creep.bsay("🚚", false);
                     creep.better_move_to(

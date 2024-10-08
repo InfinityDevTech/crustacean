@@ -107,7 +107,7 @@ pub fn run_scout(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCach
             &exit.0
         } else if let Some(exit) = last_scouted.first() {
             &exit.0
-        } else if let Some(exit) = status_unavailable.first() {
+        } else if let Some(_exit) = status_unavailable.first() {
             let mut rng = StdRng::seed_from_u64(game::time() as u64);
             status_unavailable.shuffle(&mut rng);
 

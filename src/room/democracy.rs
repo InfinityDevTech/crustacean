@@ -1,7 +1,7 @@
 
 use log::info;
 use screeps::{
-    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, ResourceType, Room, RoomCoordinate, RoomName, RoomPosition, StructureProperties, StructureType, Terrain
+    game, look::{self, LookResult}, pathfinder::MultiRoomCostResult, CircleStyle, HasPosition, LocalCostMatrix, MapTextStyle, MapVisual, Position, Room, RoomCoordinate, RoomName, RoomPosition, StructureProperties, StructureType, Terrain
 };
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     compression::decode_pos_list,
     config::{self, REMOTE_SCAN_FOR_RCL},
     heap,
-    memory::{Role, ScreepsMemory},
+    memory::ScreepsMemory,
     room::{
         cache::{hauling, resources, RoomCache},
         creeps::{organizer, recovery::recover_creeps},
@@ -50,7 +50,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
     }
 
     let starting_cpu = game::cpu::get_used();
-    let starting_creep_cpu = cache.creep_cpu.clone();
+    let starting_creep_cpu = cache.creep_cpu;
 
     let pos = Position::new(
         RoomCoordinate::new(4).unwrap(),
@@ -126,11 +126,11 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
     if let Some(flag) = game::flags().get("distanceTransform".to_string()) {
         if flag.pos().room_name() == room.name() {
-            let available_positions = distance_transform(&room.name(), None, true, true);
+            let _ = distance_transform(&room.name(), None, true, true);
         }
     }
 
-    #[cfg(feature = "season1")]
+    //#[cfg(feature = "season1")]
     //resources::haul_score_resources(&room.name(), cache, memory);
 
     if room.my() {
@@ -280,10 +280,7 @@ pub fn start_government(room: Room, memory: &mut ScreepsMemory, cache: &mut Room
 
             run_full_visuals(&room, memory, room_cache);
 
-            let mut lifetime = 0;
-            {
-                lifetime = *heap().heap_lifetime.lock().unwrap();
-            }
+            let lifetime = *heap().heap_lifetime.lock().unwrap();
 
             let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
             room_cache.stats.spawning_stats(&mut room_cache.structures);
@@ -519,7 +516,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
 
         let room_memory = memory.rooms.get_mut(&room.name()).unwrap();
 
-        if let Some(flag) = game::flags().get("deleteAllRoadCSites".to_string()) {
+        if let Some(_flag) = game::flags().get("deleteAllRoadCSites".to_string()) {
             let csites = game::construction_sites()
                 .values()
                 .filter(|cs| cs.structure_type() == StructureType::Road)
@@ -531,11 +528,11 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
         }
 
 
-        if let Some(flag) = game::flags().get("deleteAllRoads".to_string()) {
+        if let Some(_flag) = game::flags().get("deleteAllRoads".to_string()) {
             let room_cache = cache.rooms.get(&room.name()).unwrap();
 
             for road in room_cache.structures.roads.values() {
-                road.destroy();
+                let _ = road.destroy();
             }
         }
 

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::info;
 use rand::{rngs::StdRng, SeedableRng};
 use rand::prelude::SliceRandom;
-use screeps::{game, look, Creep, Direction, ErrorCode, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
+use screeps::{game, ErrorCode, HasPosition, Part, Position, Room, RoomName, SharedCreepProperties, SpawnOptions};
 
 use crate::movement::move_target::{MoveOptions, MoveTarget};
 use crate::room::cache::RoomCache;
@@ -11,7 +11,7 @@ use crate::traits::creep::CreepExtensions;
 use crate::traits::intents_tracking::{CreepExtensionsTracking, StructureSpawnExtensionsTracking};
 use crate::traits::position::RoomXYExtensions;
 use crate::utils::{self, get_body_cost, get_unique_id};
-use crate::{memory::{CreepMemory, Role, ScreepsMemory}, movement::movement_utils::dir_to_coords, room::cache::CachedRoom, utils::{name_to_role, role_to_name}};
+use crate::{memory::{CreepMemory, Role, ScreepsMemory}, room::cache::CachedRoom, utils::{name_to_role, role_to_name}};
 
 use super::{base_hauler, builder, create_spawn_requests_for_room, fast_filler, get_required_role_counts, harvester, hauler, repairer, scout, storage_sitter, upgrader};
 
@@ -22,7 +22,7 @@ pub struct SpawnRequest {
     priority: f64,
     cost: u32,
 
-    destination_room: Option<RoomName>,
+    _destination_room: Option<RoomName>,
 
     creep_memory: CreepMemory,
 
@@ -31,7 +31,7 @@ pub struct SpawnRequest {
 
 pub struct SpawnManager {
     pub room_spawn_queue: HashMap<RoomName, Vec<SpawnRequest>>,
-    pub global_spawn_queue: Vec<SpawnRequest>,
+    pub _global_spawn_queue: Vec<SpawnRequest>,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -39,7 +39,7 @@ impl SpawnManager {
     pub fn new() -> Self {
         Self {
             room_spawn_queue: HashMap::new(),
-            global_spawn_queue: Vec::new(),
+            _global_spawn_queue: Vec::new(),
         }
     }
 
@@ -86,7 +86,7 @@ impl SpawnManager {
             priority,
             cost,
 
-            destination_room: None,
+            _destination_room: None,
             creep_memory,
 
             spawn_options
@@ -424,7 +424,7 @@ pub fn run_spawning(memory: &mut ScreepsMemory, cache: &mut RoomCache) {
 
         info!("[SPAWNING] Running spawning for room {}", room.name());
 
-        let required_roles = get_required_role_counts(&room_cache.room.name(), &cache);
+        let required_roles = get_required_role_counts(&room_cache.room.name(), cache);
         let mut required_role_keys = required_roles.keys().collect::<Vec<_>>();
 
         // Sort the roles by their u8 vaules ascending
@@ -552,23 +552,4 @@ fn randomize_top_priorities(room: &Room, requests: Vec<SpawnRequest>) -> Vec<Spa
     top_scorers.shuffle(&mut StdRng::seed_from_u64(game::time() as u64));
 
     top_scorers
-}
-
-#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-fn dfs_clear_spawn(creep: &Creep, dir: Direction) {
-    let cur_x = creep.pos().x().u8();
-    let cur_y = creep.pos().y().u8();
-
-    let position = dir_to_coords(dir, cur_x, cur_y);
-
-    let potential_creep = creep.room().unwrap().look_for_at_xy(look::CREEPS, position.0, position.1);
-
-    if potential_creep.is_empty() {
-        let _ = creep.ITmove_direction(dir);
-    } else {
-        for creep in potential_creep {
-            //let random_dir = num_to_dir(rng.gen_range(1..9) as u8);
-            dfs_clear_spawn(&creep, dir);
-        }
-    }
 }

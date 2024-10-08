@@ -297,17 +297,17 @@ impl RoomVisualExt {
                 let extractor_line_style2 = extractor_line_style1.clone();
                 let extractor_line_style3 = extractor_line_style1.clone();
                 self.line(
-                    (x - 0.4, y - 0.692820323027551),
-                    (x + 0.4, y - 0.692820323027551),
+                    (x - 0.4, y - 0.692_820_3),
+                    (x + 0.4, y - 0.692_820_3),
                     Some(extractor_line_style1),
                 );
                 self.line(
                     (x + 0.8, y),
-                    (x + 0.4, y + 0.692820323027551),
+                    (x + 0.4, y + 0.692_820_3),
                     Some(extractor_line_style2),
                 );
                 self.line(
-                    (x - 0.4, y + 0.692820323027551),
+                    (x - 0.4, y + 0.692_820_3),
                     (x - 0.8, y),
                     Some(extractor_line_style3),
                 );
@@ -553,19 +553,19 @@ impl RoomVisualExt {
                 let factory_level_gaps_points = vec![
                     (0.0, 0.0),
                     (-0.08, -0.52),
-                    (0.06643048934977405, -0.5219070703532858),
+                    (0.066_430_49, -0.521_907_1),
                     (0.0, 0.0),
-                    (0.4698280289234841, -0.23677335837858496),
-                    (0.5168912703137297, -0.0980990044468282),
+                    (0.469_828_04, -0.236_773_36),
+                    (0.516_891_24, -0.098_099),
                     (0.0, 0.0),
-                    (0.3703696907420818, 0.37366601689157475),
-                    (0.25302588419222044, 0.46127855134261886),
+                    (0.370_369_7, 0.373_666_02),
+                    (0.253_025_9, 0.461_278_56),
                     (0.0, 0.0),
-                    (-0.24092697164209015, 0.4677116572583705),
-                    (-0.36051267384944263, 0.3831848274578801),
+                    (-0.240_926_97, 0.467_711_66),
+                    (-0.360_512_67, 0.383_184_82),
                     (0.0, 0.0),
-                    (-0.5192707480234756, -0.08460431577136027),
-                    (-0.47583497000628144, -0.22445730400038488),
+                    (-0.519_270_8, -0.084_604_315),
+                    (-0.475_834_97, -0.224_457_31),
                 ]
                     .into_iter()
                     .map(|(poly_x, poly_y)| (x + poly_x, y + poly_y))
@@ -593,7 +593,7 @@ impl RoomVisualExt {
         };
     }
 
-    pub fn structure_roomxy(&mut self, xy: RoomXY, structure_type: StructureType, opacity: f32) {
+    pub fn _structure_roomxy(&mut self, xy: RoomXY, structure_type: StructureType, opacity: f32) {
         self.structure(xy.x.u8() as f32, xy.y.u8() as f32, structure_type, opacity)
     }
 }

@@ -1,9 +1,7 @@
 
-use std::mem;
-
-use log::{info, warn};
+use log::warn;
 use screeps::{
-    find, game::{self, map::{FindRouteOptions, RouteStep}},
+    find, game::{self, map::FindRouteOptions},
     pathfinder::{self, MultiRoomCostResult, SearchOptions, SearchResults},
     HasPosition, LocalCostMatrix, OwnedStructureProperties, Part, Position, RoomName, RoomXY,
     StructureObject, StructureProperties, StructureType,

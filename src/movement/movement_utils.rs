@@ -48,7 +48,7 @@ pub fn num_to_dir(num: u8) -> Direction {
     }
 }
 
-pub fn dir_to_other_coord(source: RoomXY, dest: RoomXY) -> Direction {
+pub fn _dir_to_other_coord(source: RoomXY, dest: RoomXY) -> Direction {
     let x_diff = dest.x.u8() as i8 - source.x.u8() as i8;
     let y_diff = dest.y.u8() as i8 - source.y.u8() as i8;
 

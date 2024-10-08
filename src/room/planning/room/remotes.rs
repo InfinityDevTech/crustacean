@@ -88,13 +88,13 @@ pub fn fetch_possible_remotes(
             };
 
             if pre_existing.contains(remote_name) && !possible_remotes.clone().into_iter().take(config::REMOTES_FOR_RCL(room_cache).into()).map(|k| k.0).collect::<Vec<RoomName>>().contains(remote_name) {
-                if let Some(room_cache) = cache.rooms.get(&remote_name) {
+                if let Some(room_cache) = cache.rooms.get(remote_name) {
                     for csite in &room_cache.structures.construction_sites {
-                        csite.remove();
+                        let _ = csite.remove();
                     }
                 } else {
                     for csite in game::construction_sites().values().filter(|x| x.room().unwrap().name() == *remote_name) {
-                        csite.remove();
+                        let _ = csite.remove();
                     }
                 }
             }
@@ -148,9 +148,7 @@ pub fn rank_remote_room(
             let room = step.room;
 
             if let Some(scouted) = memory.scouted_rooms.get(&room) {
-                if scouted.owner.is_some() && *scouted.owner.as_ref().unwrap() != utils::get_my_username() {
-                    return u32::MAX;
-                } else if scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() != utils::get_my_username() && *scouted.reserved.as_ref().unwrap().to_lowercase() != constants::INVADER_USERNAME.to_lowercase() {
+                if (scouted.owner.is_some() && *scouted.owner.as_ref().unwrap() != utils::get_my_username()) || (scouted.reserved.is_some() && *scouted.reserved.as_ref().unwrap() != utils::get_my_username() && *scouted.reserved.as_ref().unwrap().to_lowercase() != constants::INVADER_USERNAME.to_lowercase()) {
                     return u32::MAX;
                 }
             }

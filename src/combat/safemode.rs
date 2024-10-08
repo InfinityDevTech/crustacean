@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
-use log::info;
 use screeps::{find, game, HasHits, HasPosition, LocalCostMatrix, Room, Terrain};
 
 use crate::{constants, memory::ScreepsMemory, room::cache::CachedRoom, traits::{position::PositionExtensions, room::find_pos_in_rect}, utils};
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn should_safemode(room: &Room, room_cache: &mut CachedRoom, memory: &mut ScreepsMemory) -> bool {
+pub fn should_safemode(room: &Room, room_cache: &mut CachedRoom, _memory: &mut ScreepsMemory) -> bool {
     let mut only_invader = true;
     for attacker in &room_cache.creeps.enemy_creeps_with_attack {
         if attacker.owner().username().to_lowercase() != constants::INVADER_USERNAME.to_lowercase() {
@@ -90,7 +89,7 @@ pub fn should_safemode(room: &Room, room_cache: &mut CachedRoom, memory: &mut Sc
             depth += 1;
         }
 
-        for (spawn_id, spawn) in &room_cache.structures.spawns {
+        for spawn in room_cache.structures.spawns.values() {
             let pos = spawn.pos().get_accessible_positions_around(1);
 
             for pos in pos {

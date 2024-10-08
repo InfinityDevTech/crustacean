@@ -1,5 +1,3 @@
-use std::u32;
-
 use screeps::{find, game, Creep, HasPosition, ResourceType, SharedCreepProperties};
 
 use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, room::cache::RoomCache, traits::creep::CreepExtensions};
@@ -8,11 +6,11 @@ use crate::{memory::{Role, ScreepsMemory}, movement::move_target::MoveOptions, r
 pub fn run_scorer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let creep_memory = memory.creeps.get_mut(&creep.name()).unwrap();
 
-    if let Some(flag) = game::flags().get("depositScore".to_string()) {
+    //if let Some(flag) = game::flags().get("depositScore".to_string()) {
         //if flag.pos().get_range_to(creep.pos()) < 5 && creep.store().get_used_capacity(Some(ResourceType::Score)) == 0 {
         //    creep.suicide();
         //}
-    }
+    //}
 
     if creep.store().get_used_capacity(Some(ResourceType::Score)) == 0 {
         let owning_cache = cache.rooms.get_mut(&creep_memory.owning_room).unwrap();
@@ -27,15 +25,15 @@ pub fn run_scorer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                     return;
                 }
 
-                creep.withdraw(storage, ResourceType::Score, None);
+                let _ = creep.withdraw(storage, ResourceType::Score, None);
             } else {
                 if creep.ticks_to_live().unwrap_or(u32::MAX) <= creep.pos().get_range_to(storage.pos()) {
-                    creep.suicide();
+                    let _ = creep.suicide();
                 }
 
                 creep.bsay("MV-STOR", false);
 
-                let pos = storage.pos().clone();
+                let pos = storage.pos();
                 creep.better_move_to(memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), pos, 1, MoveOptions::default().avoid_hostile_rooms(true));
 
                 return;
@@ -50,7 +48,7 @@ pub fn run_scorer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
             let sc = creep.room().unwrap().find(find::SCORE_COLLECTORS, None);
 
             if let Some(sc) = sc.first() {
-                creep.transfer(sc, ResourceType::Score, Some(creep.store().get_used_capacity(Some(ResourceType::Score))));
+                let _ = creep.transfer(sc, ResourceType::Score, Some(creep.store().get_used_capacity(Some(ResourceType::Score))));
             }
         }
     }

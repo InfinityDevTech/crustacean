@@ -1,4 +1,4 @@
-use std::{u32, vec};
+use std::vec;
 
 use log::info;
 use screeps::{
@@ -300,7 +300,7 @@ fn achieve_goal(goal_room: &RoomName, memory: &mut ScreepsMemory, cache: &mut Ro
             //    None,
             //    None,
             //);
-            expansion_game_room.ITcreate_construction_site(lowest_pos.unwrap().x().u8(), lowest_pos.unwrap().y().u8(), StructureType::Spawn, None);
+            let _ = expansion_game_room.ITcreate_construction_site(lowest_pos.unwrap().x().u8(), lowest_pos.unwrap().y().u8(), StructureType::Spawn, None);
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use screeps::{find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions}, CircleStyle, CostMatrixGet, CostMatrixSet, Creep, HasId, HasPosition, LocalCostMatrix, RoomName, SharedCreepProperties, StructureObject};
+use screeps::{find, game, pathfinder::{self, MultiRoomCostResult, SearchOptions}, CircleStyle, CostMatrixSet, Creep, HasId, HasPosition, LocalCostMatrix, RoomName, SharedCreepProperties, StructureObject};
 
 use crate::{memory::ScreepsMemory, movement::move_target::MoveOptions, profiling::timing::PATHFIND_CPU, room::cache::RoomCache, traits::{creep::CreepExtensions, intents_tracking::CreepExtensionsTracking}, utils::new_xy};
 
@@ -24,7 +24,7 @@ pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                 if !creep.pos().is_near_to(pos) {
                     creep.better_move_to(memory, cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap(), obj_id.pos(), 1, MoveOptions::default());
                 } else if let StructureObject::StructureWall(obj_id) = StructureObject::from(obj_id) {
-                    creep.dismantle(&obj_id);
+                    let _ = creep.dismantle(&obj_id);
                 } else {
                     creep_memory.repair_target = None;
 
@@ -68,8 +68,8 @@ pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                         vis.circle(step.pos().x().u8() as f32, step.pos().y().u8() as f32, Some(CircleStyle::default().fill("#00ffff")));
 
                         if let Some(dir) = dir {
-                            creep.say(&dir.to_string(), false);
-                            creep.ITmove_direction(dir);
+                            creep.bsay(&dir.to_string(), false);
+                            let _ = creep.ITmove_direction(dir);
 
                             return;
                         } else {
@@ -78,7 +78,7 @@ pub fn run_digger(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCac
                     } else {
                         let wall = sc_walls.get(&step.pos()).unwrap();
 
-                        creep.dismantle(wall.as_dismantleable().unwrap());
+                        let _ = creep.dismantle(wall.as_dismantleable().unwrap());
 
                         creep_memory.repair_target = Some(wall.as_structure().id());
                         vis.circle(step.pos().x().u8() as f32, step.pos().y().u8() as f32, Some(CircleStyle::default().fill("#00ff00")));

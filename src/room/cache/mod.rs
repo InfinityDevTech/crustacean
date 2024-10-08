@@ -111,7 +111,7 @@ pub struct CachedRoom {
     pub room_heap_cache: HeapRoom,
     pub stats: StatsCache,
 
-    pub creep_checked_relay: HashMap<String, bool>,
+    pub _creep_checked_relay: HashMap<String, bool>,
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
@@ -168,7 +168,7 @@ impl CachedRoom {
             stats,
 
             storage_status,
-            creep_checked_relay: HashMap::new(),
+            _creep_checked_relay: HashMap::new(),
         };
 
         if let Some(room_memory) = memory.rooms.get(&room.name()) {
@@ -203,7 +203,7 @@ impl CachedRoom {
 
     pub fn _refresh_cache(&mut self, room: &Room, memory: &mut ScreepsMemory, owning_room: Option<RoomName>) {
         self.resources.refresh_source_cache(room, &mut self.room_heap_cache);
-        self.structures.refresh_structure_cache(&mut self.resources, memory);
+        self.structures.new_refresh_structure_cache(&mut self.resources, memory);
 
         self.creeps.refresh_creep_cache(memory, room, &self.structures, owning_room);
 

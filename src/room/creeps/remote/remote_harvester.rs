@@ -210,7 +210,7 @@ pub fn build_container(
         if csite.structure_type() == screeps::StructureType::Container
             && csite.pos().is_near_to(source.pos())
         {
-            let _ = creep.ITbuild(&csite);
+            let _ = creep.ITbuild(csite);
             return true;
         }
     }

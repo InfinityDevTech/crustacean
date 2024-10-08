@@ -152,23 +152,3 @@ pub fn part_costs() -> &'static EnumMap<PartsCost, u32> {
         PartsCost::Tough => 10,
     })
 }
-
-#[derive(PartialEq)]
-pub enum SCREEPS_INTENTS {
-    Harvest,
-    Attack,
-    Build,
-    Repair,
-    Dismantle,
-    AttackController,
-    RangedHeal,
-    Heal,
-    RangedAttack,
-    RangedMassAttack,
-    UpgradeController,
-    Withdraw,
-    Transfer,
-    Drop,
-
-    Remove,
-}

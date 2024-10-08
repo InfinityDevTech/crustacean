@@ -185,7 +185,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
                     }
                 }
             } else if let Some(container) = &room_cache.structures.containers().controller {
-                container.destroy();
+                let _ = container.destroy();
             }
 
             let link_pos = if container_pos.is_some() {
@@ -220,7 +220,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
                         let p = find_pos_most_accessible(&container_pos.unwrap(), &measure_pos, 1, vec![]);
 
                         if let Some(pos) = p {
-                            let res = room.create_construction_site(
+                            let _ = room.create_construction_site(
                                 pos.x().u8(),
                                 pos.y().u8(),
                                 StructureType::Link,
@@ -236,7 +236,7 @@ pub fn plan_containers_and_links(room: &Room, room_cache: &CachedRoom) {
         if room_cache.rcl >= 6 && room_cache.structures.containers().controller.is_some() && room_cache.structures.links().controller.is_some() {
             let container = room_cache.structures.containers().controller.as_ref().unwrap();
 
-            container.destroy();
+            let _ = container.destroy();
         }
     }
 

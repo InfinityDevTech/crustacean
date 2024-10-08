@@ -89,7 +89,7 @@ pub fn encode_all_paths(paths: HashMap<RoomName, Vec<Position>>) -> HashMap<Room
     encoded_paths
 }
 
-pub fn visualise_paths(paths: HashMap<RoomName, Vec<Position>>) {
+pub fn _visualise_paths(paths: HashMap<RoomName, Vec<Position>>) {
     for (room_name, path) in paths {
         if let Some(game_room) = game::rooms().get(room_name) {
             let vis = game_room.visual();
@@ -106,7 +106,7 @@ pub fn visualise_paths(paths: HashMap<RoomName, Vec<Position>>) {
     }
 }
 
-pub fn get_all_positions_from_paths(paths: HashMap<RoomName, Vec<Position>>) -> Vec<Position> {
+pub fn _get_all_positions_from_paths(paths: HashMap<RoomName, Vec<Position>>) -> Vec<Position> {
     let mut all_positions = Vec::new();
 
     for (_room_name, path) in paths {
@@ -138,7 +138,7 @@ pub fn get_all_cached_road_positions(
         for (room_name, encoded_pos) in &room_memory.planned_paths {
             let positions = decode_pos_list(encoded_pos.to_string());
 
-            rooms.insert(room_name.clone(), positions);
+            rooms.insert(*room_name, positions);
         }
     }
 

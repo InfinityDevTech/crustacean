@@ -7,10 +7,8 @@ pub fn is_ally(user: &str, room_name: Option<RoomName>) -> bool {
 
     let user = user.to_lowercase();
 
-    if game::shard::name() == "shardSeason" {
-        if user == "volotsyouga" || user == "maddokmike" {
-            return true;
-        }
+    if game::shard::name() == "shardSeason" && (user == "volotsyouga" || user == "maddokmike") {
+        return true;
     }
 
     // This is an operation against all S0 OM users.

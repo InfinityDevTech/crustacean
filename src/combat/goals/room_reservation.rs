@@ -183,7 +183,7 @@ pub fn spawn_creep(goal: &RoomReservationGoal, cache: &mut RoomCache) -> Option<
 
         if let Some(goal_cache) = cache.rooms.get_mut(&best_spawned) {
             if let Some(storage) = &goal_cache.structures.storage {
-                if under_storage_gate(&goal_cache, 0.1) {
+                if under_storage_gate(goal_cache, 0.1) {
                     return None;
                 } else if storage.store().get_used_capacity(Some(screeps::constants::ResourceType::Energy)) > 30_000 {
                     priority *= 2.0;

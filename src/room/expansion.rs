@@ -1,4 +1,4 @@
-use std::{collections::HashMap, i32};
+use std::collections::HashMap;
 
 use log::info;
 use screeps::{
@@ -111,7 +111,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
 
             // TODO:
             // Improve scouts!!!
-            if percent_unscouted >= 70.0 && percent_unscouted < 100.0 {
+            if (70.0..100.0).contains(&percent_unscouted) {
                 info!(
                     "[EXPANSION] We havent scouted around {:.2}% of rooms, pausing expansion until we scout 70%.",
                     percent_unscouted
@@ -169,7 +169,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
             info!("[EXPANSION] Final touches on expansions.");
 
             let mut unchecked_rooms = Vec::new();
-            for (name, score) in &scores {
+            for name in scores.keys() {
                 if !fittable.contains_key(name) {
                     unchecked_rooms.push(*name);
                 }
@@ -181,7 +181,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
                     break;
                 }
 
-                let (pos, can_fit) = can_fit_base(room);
+                let (_pos, can_fit) = can_fit_base(room);
                 fittable.insert(*room, can_fit);
                 i += 1;
             }
@@ -261,7 +261,7 @@ pub fn find_expandable_rooms(
     let mut active_rooms = Vec::new();
     let mut available_rooms = Vec::new();
 
-    for (room_name, room_memory) in &memory.rooms {
+    for room_name in memory.rooms.keys() {
         available_rooms.append(&mut room_name.get_adjacent(config::MAX_CLAIM_DISTANCE as i32));
     }
 
@@ -332,8 +332,8 @@ pub fn find_expandable_rooms(
 pub fn get_needed_minerals(memory: &ScreepsMemory, cache: &RoomCache) -> Vec<ResourceType> {
     let mut current_minerals = Vec::new();
 
-    for (room_name, room_memory) in &memory.rooms {
-        if let Some(cache) = cache.rooms.get(&room_name) {
+    for room_name in memory.rooms.keys() {
+        if let Some(cache) = cache.rooms.get(room_name) {
             if let Some(mineral) = &cache.resources.mineral {
                 current_minerals.push(mineral.mineral_type());
             }
@@ -453,7 +453,7 @@ pub fn score_room(
         }
     }
 
-    if let Some(dist) = lowest {
+    if let Some(_dist) = lowest {
         score += lowest_range as f64 * 10.0;
     }
 
@@ -522,7 +522,7 @@ pub fn can_fit_base(room_name: &RoomName) -> (RoomXY, bool) {
 }
 
 pub fn scan_remote_accessibility(room_name: &RoomName) -> u32 {
-    let potential_remotes = room_name.get_adjacent(2 as i32);
+    let potential_remotes = room_name.get_adjacent(2_i32);
 
     let mut accessible = 0;
     for remote in potential_remotes {
@@ -537,7 +537,7 @@ pub fn scan_remote_accessibility(room_name: &RoomName) -> u32 {
 }
 
 pub fn score_remotes(room_name: &RoomName, memory: &ScreepsMemory) -> (f64, u32) {
-    let potential_remotes = room_name.get_adjacent(2 as i32);
+    let potential_remotes = room_name.get_adjacent(2_i32);
     let mut score = 0.0;
     let mut source_count = 0;
 
@@ -582,15 +582,12 @@ pub fn score_remotes(room_name: &RoomName, memory: &ScreepsMemory) -> (f64, u32)
     paths.reverse();
 
     let max = (ROOM_SIZE * 2) as f64;
-    let mut index = 0;
 
-    for path in paths.clone() {
+    for (index, path) in paths.clone().into_iter().enumerate() {
         let dist = (max - (path as f64).min(max - 1.0)).sqrt();
         let weight = (index / paths.len()) as f64 * 0.5 + 0.5;
 
         score += dist * weight;
-
-        index += 1;
     }
 
     (score, source_count)

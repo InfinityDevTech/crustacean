@@ -6,7 +6,7 @@ use screeps::{Position, RoomCoordinate, RoomName};
 
 pub mod compressed_matrix;
 
-pub fn compress_room_name(name: RoomName) -> String {
+pub fn _compress_room_name(name: RoomName) -> String {
     name.to_string()
 }
 
@@ -31,7 +31,7 @@ pub fn compress_pos_list(list: Vec<Position>) -> String {
 pub fn encode_pos_list(list: Vec<Position>) -> String {
     let encoded_pos = compress_pos_list(list);
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-    encoder.write_all(encoded_pos.as_bytes());
+    let _ = encoder.write_all(encoded_pos.as_bytes());
     if let Ok(compressed) = encoder.finish() {
         let compressed_string = base65536::encode(&compressed, None);
 
@@ -50,11 +50,11 @@ pub fn decode_pos_list(pos: String) -> Vec<Position> {
         let mut encoder = GzDecoder::new(&decoded_string[..]);
         let mut decoded_string = String::new();
 
-        if let Ok(_) = encoder.read_to_string(&mut decoded_string) {
+        if encoder.read_to_string(&mut decoded_string).is_ok() {
             let mut result = Vec::new();
             let parts: Vec<&str> = decoded_string.split(',').collect();
             for part in parts {
-                if part == "" {
+                if part.is_empty() {
                     continue;
                 }
 

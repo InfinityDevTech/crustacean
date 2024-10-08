@@ -1,5 +1,3 @@
-use std::mem;
-
 use log::info;
 use screeps::{game, Creep};
 

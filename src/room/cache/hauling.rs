@@ -366,7 +366,7 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
 
             // If we have a match, we do stuffs!
             if let Some(top_scorer) = top_scoring_order {
-                let responsible_creep = cache.hauling.orders_matched_to_creeps.get(&top_scorer.id);
+                let _responsible_creep = cache.hauling.orders_matched_to_creeps.get(&top_scorer.id);
 
                 // If we are a better match than the other creep, we take it.
                 // Fuck you other creep! This shit is mine!

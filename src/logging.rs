@@ -113,11 +113,11 @@ fn panic_hook(info: &PanicInfo) {
 }
 
 struct NotifyOOMHandler {
-    heap: Span,
+    _heap: Span,
 }
 
 impl OomHandler for NotifyOOMHandler {
-    fn handle_oom(talc: &mut talc::Talc<Self>, layout: std::alloc::Layout) -> Result<(), ()> {
+    fn handle_oom(talc: &mut talc::Talc<Self>, _layout: std::alloc::Layout) -> Result<(), ()> {
         // We dont have enough memory.
         // Well, fuck
 

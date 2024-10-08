@@ -1,6 +1,7 @@
+#![allow(unused)]
+
 use std::{collections::HashMap, sync::Mutex};
 
-use screeps::RawObjectId;
 use serde::*;
 
 lazy_static::lazy_static! {
@@ -75,14 +76,14 @@ struct BeginEvent {
     time: u64,
 }
 
-impl Into<TracingEvent> for BeginEvent {
-    fn into(self) -> TracingEvent {
+impl From<BeginEvent> for TracingEvent {
+    fn from(val: BeginEvent) -> Self {
         TracingEvent {
-            name: self.name,
+            name: val.name,
             process_id: 0,
             intents_used: 0,
             thread_id: 0,
-            timestamp: self.time,
+            timestamp: val.time,
         }
     }
 }

@@ -2,7 +2,6 @@
 #![allow(internal_features)]
 #![feature(map_many_mut)]
 #![feature(core_intrinsics)]
-#![feature(const_refs_to_static)]
 
 use std::{
     collections::HashMap,
@@ -21,18 +20,18 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use room::{
     cache::{hauling, traffic, RoomCache}, democracy::start_government, expansion::{attempt_expansion, can_expand}, spawning::spawn_manager::{self, run_spawning, SpawnManager}, visuals::visualise_scouted_rooms
 };
-use screeps::{find, game, HasId, OwnedStructureProperties};
+use screeps::{find, game, OwnedStructureProperties};
 use traits::{creep::CreepExtensions, intents_tracking::{
     ConstructionExtensionsTracking, CreepExtensionsTracking, StructureControllerExtensionsTracking,
     StructureObjectTracking,
-}, store_proxy::get_capacity};
+}};
 use wasm_bindgen::prelude::*;
 
 use crate::{memory::ScreepsMemory, traits::room::RoomExtensions};
 
 
 #[global_allocator]
-static ALLOCATOR: talc::Talck<talc::locking::AssumeUnlockable, talc::ClaimOnOom> = unsafe {
+static ALLOCATOR: talc::Talck<talc::locking::AssumeUnlockable, talc::ClaimOnOom> = {
     static mut MEMORY: [u8; 0x1F000000] = [0; 0x1F000000];
     let span = talc::Span::from_const_array(std::ptr::addr_of!(MEMORY));
     talc::Talc::new(unsafe { talc::ClaimOnOom::new(span) }).lock()
@@ -509,7 +508,7 @@ pub fn get_memory_usage_bytes() -> u32 {
 pub fn set_stats(memory: &mut ScreepsMemory) {
     let stats = &mut memory.stats;
 
-    let heap = game::cpu::get_heap_statistics();
+    let _heap = game::cpu::get_heap_statistics();
     let resources = game::resources();
 
     stats.tick = game::time();

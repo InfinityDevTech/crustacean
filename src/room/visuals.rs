@@ -37,7 +37,7 @@ pub fn visualise_scouted_rooms(memory: &mut ScreepsMemory) {
             let circle_position = Position::new(circle_x, circle_y, room.name);
             let text_position = Position::new(text_x, text_y, room.name);
 
-            let potential_owner = room
+            let _potential_owner = room
                 .owner
                 .clone()
                 .unwrap_or_else(|| room.reserved.clone().unwrap_or("None".to_string()));

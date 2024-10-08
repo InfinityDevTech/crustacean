@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::cmp;
 
 use log::info;

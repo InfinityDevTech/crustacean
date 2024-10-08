@@ -43,7 +43,7 @@ impl CreepCache {
         self.creeps_of_role.get(&role).unwrap_or(&Vec::new()).len() as u32
     }
 
-    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room, structures: &RoomStructureCache, owning_room: Option<RoomName>) {
+    pub fn refresh_creep_cache(&mut self, memory: &mut ScreepsMemory, room: &Room, structures: &RoomStructureCache, _owning_room: Option<RoomName>) {
         let creeps = room.find(find::CREEPS, None);
 
         for creep in creeps {

@@ -2,7 +2,7 @@ use core::f32;
 use std::collections::HashMap;
 
 use screeps::{
-    find, game, look::{self, LookResult}, ConstructionSite, RoomName, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, SharedCreepProperties, Source, StructureContainer, StructureLink, StructureProperties, StructureType, Terrain
+    find, game, look::{self, LookResult}, ConstructionSite, RoomName, Creep, HasId, HasPosition, MapTextStyle, MapVisual, MaybeHasId, Mineral, ObjectId, Part, Position, Resource, ResourceType, Room, RoomCoordinate, RoomXY, Source, StructureContainer, StructureLink, StructureProperties, StructureType, Terrain
 };
 
 #[cfg(feature = "season1")]
@@ -623,7 +623,7 @@ pub fn haul_dropped_resources(cached_room: &mut CachedRoom) {
 }
 
 #[cfg(feature = "season1")]
-pub fn haul_score_resources(room_name: &RoomName, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
+pub fn _haul_score_resources(room_name: &RoomName, cache: &mut RoomCache, memory: &mut ScreepsMemory) {
     use crate::utils::under_storage_gate;
 
     let responsible_room = utils::find_closest_owned_room(room_name, cache, Some(3));

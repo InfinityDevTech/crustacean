@@ -22,7 +22,7 @@ pub fn run_towers(cached_room: &mut CachedRoom) {
 
             let mut storage_blocked = false;
 
-            if let Some(storage) = &cached_room.structures.storage {
+            if let Some(_storage) = &cached_room.structures.storage {
                 storage_blocked = base_hauler_count < 1;
             }
 

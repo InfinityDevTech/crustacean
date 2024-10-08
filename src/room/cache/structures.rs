@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use log::info;
 use screeps::{
-    find, game, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
-    OwnedStructureProperties, ResourceType, Room, RoomXY, Ruin, StructureContainer,
+    find, ConstructionSite, HasId, HasPosition, LocalRoomTerrain, ObjectId,
+    ResourceType, Room, RoomXY, Ruin, StructureContainer,
     StructureController, StructureExtension, StructureExtractor, StructureFactory,
     StructureInvaderCore, StructureKeeperLair, StructureLab, StructureLink, StructureNuker,
     StructureObject, StructureObserver, StructurePowerSpawn, StructureProperties, StructureRampart,
@@ -13,7 +13,6 @@ use screeps::{
 
 use crate::{
     constants::NO_RCL_PLACEABLES, heap_cache::heap_room::HeapRoom, memory::ScreepsMemory,
-    traits::room::RoomExtensions,
 };
 
 #[cfg(feature = "season1")]
@@ -182,11 +181,11 @@ impl RoomStructureCache {
     }
 
     pub fn links(&self) -> &CachedRoomLinks {
-        return self.classified_links.as_ref().unwrap();
+        self.classified_links.as_ref().unwrap()
     }
 
     pub fn containers(&self) -> &CachedRoomContainers {
-        return self.classified_containers.as_ref().unwrap();
+        self.classified_containers.as_ref().unwrap()
     }
 
     // This is all to avoid a clone.
@@ -311,11 +310,11 @@ impl RoomStructureCache {
         self.season1_score_collectors = self.room.find(find::SCORE_COLLECTORS, None);
     }
 
-    fn run_structure_find(&mut self) -> Vec<StructureObject> {
+    fn _run_structure_find(&mut self) -> Vec<StructureObject> {
         self.room.find(find::STRUCTURES, None)
     }
 
-    fn skip_check(&mut self, can_be_placed: bool, structure: &StructureObject) -> bool {
+    fn _skip_check(&mut self, can_be_placed: bool, structure: &StructureObject) -> bool {
         if !can_be_placed && !NO_RCL_PLACEABLES.contains(&structure.structure_type()) {
             return true;
         } else if !can_be_placed {
@@ -408,7 +407,7 @@ impl RoomStructureCache {
         }
     }
 
-    pub fn refresh_structure_cache(
+    pub fn _refresh_structure_cache(
         &mut self,
         resource_cache: &mut RoomResourceCache,
         memory: &mut ScreepsMemory,
@@ -435,11 +434,9 @@ impl RoomStructureCache {
         let mut has_containers = false;
         let mut has_links = false;
 
-        let pre_structure = game::cpu::get_used();
-
         // TODO:
         // Roads decay every 1k ticks, and containers every 500 (100 in remotes), so we can probably cut down what we are iterating
-        for structure in self.run_structure_find().into_iter() {
+        for structure in self._run_structure_find().into_iter() {
             let entry = self
                 .structures_at_pos
                 .entry(structure.pos().xy())
@@ -484,21 +481,14 @@ impl RoomStructureCache {
             );
         }
 
-        let structure_used = game::cpu::get_used() - pre_structure;
-
-        let pre_container = game::cpu::get_used();
         if has_containers {
             self.process_containers(resource_cache);
         }
-        let container_used = game::cpu::get_used() - pre_container;
 
-        let pre_link = game::cpu::get_used();
         if has_links {
             self.process_links(resource_cache);
         }
-        let link_used = game::cpu::get_used() - pre_link;
 
-        let pre_csite = game::cpu::get_used();
         let mut csites = Vec::new();
         for csite in self.room.find(find::CONSTRUCTION_SITES, None) {
             let entry = self.structures_at_pos.entry(csite.pos().xy()).or_default();
@@ -509,14 +499,11 @@ impl RoomStructureCache {
             csites.push(csite)
         }
         self.construction_sites = csites;
-        let csite_used = game::cpu::get_used() - pre_csite;
 
-        let pre_ruin = game::cpu::get_used();
         let ruins = self.room.find(find::RUINS, None).into_iter();
         for ruin in ruins {
             self.ruins.insert(ruin.id(), ruin);
         }
-        let ruin_used = game::cpu::get_used() - pre_ruin;
 
         //if self.room.my() {
         //    info!("  Structures used: {:.2} - Containers: {:.2} - Links: {:.2} - Csites: {:.2} - Ruins: {:.2}", structure_used, container_used, link_used, csite_used, ruin_used);

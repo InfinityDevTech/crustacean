@@ -33,7 +33,7 @@ pub fn run_hauler(
     let creep_name = creep.name();
 
     let creep_memory = memory.creeps.get_mut(&creep_name).unwrap();
-    let owner = creep_memory.owning_room.clone();
+    let owner = creep_memory.owning_room;
 
     if relay_run.is_some() || cache.creeps_ran_post_relay.contains_key(&creep_name) {
         let v = cache.creeps_ran_post_relay.entry(creep_name.clone()).or_insert(true);
@@ -636,14 +636,14 @@ pub fn release_reservation(
     }
 }
 
-pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
+pub fn _check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCache) {
     let room_cache = cache.rooms.get_mut(&creep.room().unwrap().name()).unwrap();
 
-    if room_cache.creep_checked_relay.contains_key(&creep.name()) {
+    if room_cache._creep_checked_relay.contains_key(&creep.name()) {
         return;
     }
 
-    room_cache.creep_checked_relay.insert(creep.name(), true);
+    room_cache._creep_checked_relay.insert(creep.name(), true);
 
     let creep_moving_to = room_cache
         .traffic
@@ -683,7 +683,7 @@ pub fn check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
                 let my_task = &my_creep.hauling_task.clone();
                 let other_task = &other_creep.hauling_task.clone();
 
-                let reserved_orders = heap().hauling.lock().unwrap();
+                let _reserved_orders = heap().hauling.lock().unwrap();
 
                 other_creep.hauling_task = my_task.clone();
                 my_creep.hauling_task = other_task.clone();

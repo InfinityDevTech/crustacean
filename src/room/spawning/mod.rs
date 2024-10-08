@@ -3,7 +3,6 @@ use std::{cmp, collections::HashMap, vec};
 use creep_sizing::{base_hauler_body, mineral_miner_body, storage_sitter_body};
 use screeps::{
     find, game, HasHits, HasId, HasPosition, Part, Position, ResourceType, Room, RoomName,
-    SharedCreepProperties,
 };
 use spawn_manager::{SpawnManager, SpawnRequest};
 
@@ -179,7 +178,7 @@ pub fn get_required_role_counts(owning_name: &RoomName, cache: &RoomCache) -> Ha
     map
 }
 
-pub fn temp_duo_spawning(
+pub fn _temp_duo_spawning(
     room: &Room,
     cache: &RoomCache,
     memory: &mut ScreepsMemory,
@@ -527,8 +526,8 @@ pub fn mineral_miner(
     spawn_manager: &mut SpawnManager,
 ) -> Option<SpawnRequest> {
     let mineral = cache.resources.mineral.as_ref()?;
-    let extractor = cache.structures.extractor.as_ref()?;
-    let mineral_container = cache.structures.containers().mineral.as_ref()?;
+
+    cache.structures.extractor.as_ref()?;
 
     let body = mineral_miner_body(room, cache);
     let cost = get_body_cost(&body);
@@ -908,7 +907,7 @@ pub fn hauler(
         cnt * 9.0
     };
 
-    if (hauler_count as u32) < wanted_count as u32 / 2 {
+    if (hauler_count as u32) < wanted_count / 2 {
         prio *= 2.0;
     }
 
@@ -1312,12 +1311,6 @@ pub fn remote_harvester(
 
     let mut requests = Vec::new();
 
-    let measure_pos = Position::new(
-        owning_cache.spawn_center.unwrap().x,
-        owning_cache.spawn_center.unwrap().y,
-        owning_cache.room.name(),
-    );
-
     if game::cpu::bucket() < 500 {
         return vec![];
     }
@@ -1339,7 +1332,6 @@ pub fn remote_harvester(
 
         if let Some(remote_cache) = cache.rooms.get(remote_name) {
             for source in &remote_cache.resources.sources {
-                let max_parts_for_source = source.max_work_parts;
                 let parts_needed_on_source = source.parts_needed(remote_cache);
                 //let can_replace = source.can_replace_creep(measure_pos, &game::rooms().get(*remote_name).unwrap());
 
@@ -1365,7 +1357,7 @@ pub fn remote_harvester(
                     continue;
                 }
 
-                let (filled, body) = creep_sizing::miner_body(
+                let (_filled, body) = creep_sizing::miner_body(
                     room,
                     remote_cache,
                     true,
@@ -1380,7 +1372,7 @@ pub fn remote_harvester(
                 // Therefore, we can build the biggest one to try and replace it
                 // with a bigger one. CPU isnt cheap. This shit cost me $130.
                 if !source.creeps.is_empty() {
-                    let (filled, body) = creep_sizing::miner_body(
+                    let (_filled, body) = creep_sizing::miner_body(
                         room,
                         remote_cache,
                         true,
@@ -1436,8 +1428,8 @@ pub fn remote_harvester(
             }
         } else if !owning_cache.remotes_with_harvester.contains(remote_name) {
             if let Some(remote_memory) = memory.remote_rooms.get_mut(remote_name) {
-                if let Some(first_source) = remote_memory.sources.first() {
-                    let (finished, body) =
+                if let Some(_first_source) = remote_memory.sources.first() {
+                    let (_finished, body) =
                         creep_sizing::miner_body(room, owning_cache, true, 3, false, owning_cache.rcl <= 3, false);
 
                     let priority = 50.0;
@@ -1451,7 +1443,7 @@ pub fn remote_harvester(
                         room.name(),
                         Some(CreepMemory {
                             owning_room: room.name(),
-                            owning_remote: Some(remote_name.clone()),
+                            owning_remote: Some(*remote_name),
                             task_id: Some(0),
                             ..Default::default()
                         }),
@@ -1472,10 +1464,8 @@ pub fn remote_harvester(
 pub fn season_digger(
     room: &Room,
     cache: &RoomCache,
-    memory: &mut ScreepsMemory,
+    _memory: &mut ScreepsMemory,
 ) -> Option<SpawnRequest> {
-    use std::u32;
-
     let flag = game::flags().get("digHere".to_string());
 
     if let Some(flag) = flag {
@@ -1518,11 +1508,11 @@ pub fn season_digger(
 
             let mut body = Vec::new();
 
-            for i in 0..work_count {
+            for _i in 0..work_count {
                 body.push(Part::Work)
             }
 
-            for i in 0..move_count {
+            for _i in 0..move_count {
                 body.push(Part::Move)
             }
 
@@ -1568,7 +1558,7 @@ pub fn season_digger(
 pub fn season_scorer(
     room: &Room,
     cache: &RoomCache,
-    memory: &mut ScreepsMemory,
+    _memory: &mut ScreepsMemory,
 ) -> Option<SpawnRequest> {
     
 
@@ -1622,11 +1612,11 @@ pub fn season_scorer(
 
             let mut body = Vec::new();
 
-            for i in 0..carry_count {
+            for _ in 0..carry_count {
                 body.push(Part::Carry)
             }
 
-            for i in 0..move_count {
+            for _ in 0..move_count {
                 body.push(Part::Move)
             }
 

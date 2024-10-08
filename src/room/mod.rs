@@ -7,5 +7,4 @@ pub mod cache;
 pub mod links;
 pub mod visuals;
 pub mod spawning;
-pub mod terminal;
 pub mod expansion;

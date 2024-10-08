@@ -1,3 +1,6 @@
+#![allow(unused)]
+
+
 use std::{collections::HashMap, intrinsics::size_of};
 
 use log::info;
@@ -31,7 +34,7 @@ impl RoomInfo {
             return self.cost_matrix.get_xy(coord);
         }
 
-        return self.terrain.get_xy(coord) as u8;
+        self.terrain.get_xy(coord) as u8
     }
 }
 

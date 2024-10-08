@@ -19,7 +19,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
     // sort by lowest to highest hits
     nearby_creeps.sort_by_key(|c| c.hits());
 
-    let health_percent = if nearby_creeps.first().is_some() {
+    let health_percent = if !nearby_creeps.is_empty() {
         let nearby_creep = nearby_creeps.first().unwrap();
         
         nearby_creep.hits() as f32 / nearby_creep.hits_max() as f32 * 100.0
@@ -115,7 +115,7 @@ pub fn run_bulldozer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut Room
                 }
             }
 
-            if let Some(spawn) = structure.iter().filter(|s| s.structure_type() == StructureType::Spawn).map(|s| (s)).next() {
+            if let Some(spawn) = structure.iter().find(|s| s.structure_type() == StructureType::Spawn) {
                 if creep.pos().is_near_to(spawn.pos()) {
                     let _ = creep.attack(spawn.as_attackable().unwrap());
                     return;

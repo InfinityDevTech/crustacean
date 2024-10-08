@@ -1,4 +1,4 @@
-
+#![allow(unused)]
 
 use crate::constants::PATHFINDER_MAX_ROOMS;
 

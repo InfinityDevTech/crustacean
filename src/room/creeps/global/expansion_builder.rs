@@ -101,7 +101,7 @@ pub fn run_expansionbuilder(creep: &Creep, memory: &mut ScreepsMemory, cache: &m
                 }
 
                 if creep.pos().get_range_to(controller.pos()) <= 3 {
-                    creep.upgrade_controller(controller);
+                    let _ = creep.upgrade_controller(controller);
                 } else {
                     creep.better_move_to(memory, room_cache, controller.pos(), 3, MoveOptions::default());
                 }

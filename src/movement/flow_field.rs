@@ -92,7 +92,6 @@ impl FlowField {
                 let dir = self.directions.as_ref().unwrap()[index];
 
                 let (dx, dy) = dir_to_coords(num_to_dir(dir), x, y);
-                let pointing_to_exit = is_next_to_exit(dx, dy);
 
                 if dx >= 50 || dy >= 50 || dir > 8 {
                     cdm.set_xy(x, y, dir);
@@ -131,7 +130,7 @@ impl FlowField {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn visualise_field(room: &Room, field: &CompressedMatrix) {
+pub fn _visualise_field(room: &Room, field: &CompressedMatrix) {
     let vis = room.visual();
 
     for x in 0..50 {
@@ -147,10 +146,6 @@ pub fn visualise_field(room: &Room, field: &CompressedMatrix) {
             vis.text(from_pos.x().u8() as f32, from_pos.y().u8() as f32, dir.unwrap().to_string(), Some(TextStyle::default().align(screeps::TextAlign::Center)));
         }
     }
-}
-
-pub fn is_next_to_exit(x: u8, y: u8) -> bool {
-    x == 1 || y == 1 || x >= 48 || y >= 48
 }
 
 pub fn is_exit(x: u8, y: u8) -> bool {

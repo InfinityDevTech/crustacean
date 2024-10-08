@@ -84,7 +84,7 @@ pub fn plan_room(room: &Room, memory: &mut ScreepsMemory, cache: &mut RoomCache)
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn convert_path_to_roads(room: &Room, result: SearchResults) {
+pub fn _convert_path_to_roads(room: &Room, result: SearchResults) {
     if result.incomplete() {
         return;
     }

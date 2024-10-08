@@ -22,7 +22,7 @@ use crate::{
     memory::{RoomMemory, SkippyMem}, utils::{self, new_xy},
 };
 
-use super::structure_visuals::{RoomVisualExt};
+use super::structure_visuals::RoomVisualExt;
 
 pub fn stamp_list() -> Vec<(u8, Vec<Vec<char>>)> {
     vec![
@@ -99,8 +99,8 @@ pub fn setup_plan_room(room: &Room, memory: &mut SkippyMem) -> bool {
     let mut plan_arr = Vec::new();
 
     let terrain = room.get_terrain().get_raw_buffer().to_vec();
-    for i in 0..2500 {
-        if terrain[i] & 1 == 1 {
+    for item in terrain.iter().take(2500) {
+        if item & 1 == 1 {
             plan_arr.push('W');
         } else {
             plan_arr.push(' ');
@@ -149,7 +149,7 @@ pub fn run_planner(room: &Room, memory: &mut RoomMemory) {
         return;
     }
 
-    let mut plan_mem = &mut memory.skippy_planner.as_mut().unwrap();
+    let plan_mem = &mut memory.skippy_planner.as_mut().unwrap();
 
     if plan_mem.planned {
         if game::flags().get("visOrth".to_string()).is_some() {
@@ -207,12 +207,12 @@ pub fn run_planner(room: &Room, memory: &mut RoomMemory) {
     }
 
     let ret = match plan_mem.step {
-        0 => setup_plan_room(room, &mut plan_mem),
-        1 => source_fills(room, &mut plan_mem),
-        2 => controller_fill(room, &mut plan_mem),
-        3 => orth_wall_fill(room, &mut plan_mem),
-        4 => place_stamp(room, &mut plan_mem),
-        5 => finialize(room, &mut plan_mem),
+        0 => setup_plan_room(room, plan_mem),
+        1 => source_fills(room, plan_mem),
+        2 => controller_fill(room, plan_mem),
+        3 => orth_wall_fill(room, plan_mem),
+        4 => place_stamp(room, plan_mem),
+        5 => finialize(room, plan_mem),
         _ => {
             plan_mem.step = 0;
             false
@@ -252,7 +252,7 @@ pub fn source_fills(room: &Room, memory: &mut SkippyMem) -> bool {
             for i in 0..50 {
                 for j in [i, 2450 + i, i * 50, i * 50 + 49] {
                     if fill[&j] == 0 {
-                        fill.insert(j as i32, -1);
+                        fill.insert(j, -1);
                     }
                 }
             }
@@ -522,7 +522,7 @@ pub fn place_stamp(room: &Room, memory: &mut SkippyMem) -> bool {
         let anchor_x = best_spot % 50 - (current_stamp_size as i32 - 1) as i32;
         let anchor_y = (best_spot as f32 / 50.0).floor() as i32 - (current_stamp_size as i32 - 1) as i32;
 
-        for i in 0..current_stamp_layout.len() {
+        for (i, _) in current_stamp_layout.iter().enumerate() {
             for j in 0..current_stamp_layout[i].len() {
                 let x = anchor_x + j as i32;
                 let y = anchor_y + i as i32;
@@ -572,8 +572,8 @@ pub fn place_stamp(room: &Room, memory: &mut SkippyMem) -> bool {
     true
 }
 
-pub fn finialize(room: &Room, memory: &mut SkippyMem) -> bool {
+pub fn finialize(_room: &Room, memory: &mut SkippyMem) -> bool {
     memory.planned = true;
 
-    return false;
+    false
 }

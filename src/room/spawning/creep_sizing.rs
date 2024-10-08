@@ -53,15 +53,15 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, is_remote: bool, source_parts
     if !is_remote && cache.rcl >= 7 && room.energy_capacity_available() >= 2600 {
         let mut body = vec![];
 
-        for i in 0..=10 {
+        for _ in 0..=10 {
             body.push(Part::Move)
         }
 
-        for i in 0..=20 {
+        for _ in 0..=20 {
             body.push(Part::Work);
         }
 
-        for i in 0..=2 {
+        for _ in 0..=2 {
             body.push(Part::Carry);
         }
 
@@ -96,7 +96,7 @@ pub fn miner_body(room: &Room, cache: &CachedRoom, is_remote: bool, source_parts
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn mineral_miner_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+pub fn mineral_miner_body(room: &Room, _cache: &CachedRoom) -> Vec<Part> {
     let mut body: Vec<Part> = Vec::new();
     let stamp = vec![Part::Work, Part::Work, Part::Work, Part::Work, Part::Move];
     let cost = get_body_cost(&stamp);
@@ -262,7 +262,7 @@ pub fn base_hauler_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
 }
 
 #[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]
-pub fn storage_sitter_body(room: &Room, cache: &CachedRoom) -> Vec<Part> {
+pub fn storage_sitter_body(_room: &Room, _cache: &CachedRoom) -> Vec<Part> {
     vec![Part::Carry, Part::Carry, Part::Carry, Part::Carry, Part::Carry, Part::Move]
 }
 

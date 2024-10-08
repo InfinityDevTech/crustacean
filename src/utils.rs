@@ -106,7 +106,6 @@ pub fn room_type(name: &RoomName) -> RoomType {
 /// Amount: The amount of resources in the target
 /// Priority: The priority of the task
 /// Reverse: Get priority based off of how empty the container is
-
 pub fn scale_haul_priority(
     capacity: u32,
     amount: u32,
@@ -131,7 +130,6 @@ pub fn scale_haul_priority(
 /// Convert a role to its respective string
 /// **Example:** Miner **=** sm
 /// **Example:** Hauler **=** mb
-
 pub fn role_to_name(role: Role) -> String {
     ROLE_MAP[role].to_string()
 }
@@ -165,7 +163,7 @@ pub fn under_storage_gate(room_cache: &CachedRoom, gate: f32) -> bool {
 }
 
 
-pub fn calc_terminal_cost(amount: u32, source: &RoomName, dest: &RoomName) -> u32 {
+pub fn _calc_terminal_cost(amount: u32, source: &RoomName, dest: &RoomName) -> u32 {
     let dist = calc_room_distance(source, dest, true);
 
     (amount as f32 * (1.0 - E.powf(-dist as f32 / 30.0))).ceil() as u32
@@ -213,7 +211,9 @@ pub fn store_to_hashmap(store: &Store) -> HashMap<ResourceType, u32> {
 }
 
 pub fn get_most_held_resource(store: &Store) -> ResourceType {
-    let resource = if contains_other_than(store, ResourceType::Energy) {
+    
+
+    if contains_other_than(store, ResourceType::Energy) {
         let mut most_used = ResourceType::Energy;
         let mut most_used_amount = 0;
 
@@ -231,9 +231,7 @@ pub fn get_most_held_resource(store: &Store) -> ResourceType {
         most_used
     } else {
         ResourceType::Energy
-    };
-
-    resource
+    }
 }
 
 lazy_static! {
@@ -285,7 +283,7 @@ pub fn name_to_role(name: &str) -> Option<Role> {
 }
 
 
-pub fn ticks_to_fill_bucket(bucket: i32) -> u32 {
+pub fn ticks_to_fill_bucket(_bucket: i32) -> u32 {
     let max_cpu = game::cpu::tick_limit();
 
     (10000.0 / max_cpu).ceil() as u32
@@ -367,7 +365,7 @@ pub fn get_part_count(parts: &Vec<BodyPart>, part_type: Option<Part>) -> u8 {
 }
 
 
-pub fn get_pathfind_distance(pos: Position, target: Position) -> u32 {
+pub fn _get_pathfind_distance(pos: Position, target: Position) -> u32 {
     let path = MoveTarget { pos, range: 1 }.pathfind(target, Some(SearchOptions::default()));
 
     if path.incomplete() {

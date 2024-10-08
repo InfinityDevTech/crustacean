@@ -292,7 +292,7 @@ pub fn route_call(room_name: RoomName, from_room: RoomName, memory: &mut Screeps
         let room_type = room_type(&from_room);
 
         let return_type = match room_type {
-            crate::traits::room::RoomType::Normal => 2.0,
+            crate::traits::room::RoomType::Normal => 1.5,
             crate::traits::room::RoomType::Highway => 1.0,
             crate::traits::room::RoomType::Intersection => 1.0,
             crate::traits::room::RoomType::SourceKeeper => 3.0,

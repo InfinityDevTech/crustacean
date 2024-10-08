@@ -28,7 +28,7 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
         }, creep_memory.target_room.unwrap());
 
         if let Some(flag) = game::flags().get("forceClaimerPath".to_string()) {
-            creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(15));
+            creep.better_move_to(memory, room_cache, flag.pos(), 1, MoveOptions::default().visualize_path(true).avoid_enemies(true).ignore_cache(true).path_age(15));
 
             return;
         }
@@ -37,13 +37,13 @@ pub fn run_claimer(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomCa
             if scouting_data.controller.is_some() && creep_memory.scout_target.is_some() {
                 let pos = Position::new(scouting_data.controller.unwrap().x, scouting_data.controller.unwrap().y, creep_memory.scout_target.unwrap());
 
-                creep.better_move_to(memory, room_cache, pos, 1, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(15));
+                creep.better_move_to(memory, room_cache, pos, 1, MoveOptions::default().visualize_path(true).avoid_enemies(true).ignore_cache(true).path_age(15));
 
                 return;
             }
         }
 
-        creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().visualize_path(true).ignore_cache(true).path_age(15));
+        creep.better_move_to(memory, room_cache, pos, 23, MoveOptions::default().visualize_path(true).avoid_enemies(true).ignore_cache(true).path_age(15));
     } else {
         let controller = current_room.controller().unwrap();
 

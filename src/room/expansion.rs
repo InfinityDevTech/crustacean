@@ -100,7 +100,7 @@ pub fn attempt_expansion(memory: &mut ScreepsMemory, cache: &RoomCache) {
     match expansion_memory.current_status {
         ExpansionStatus::FindingCapable => {
             if expansion_memory.last_chcked + 10 > game::time() {
-                info!("[EXPANSION] We dont have enough scouting data! This is a test.");
+                info!("[EXPANSION] We dont have enough scouting data!");
                 return;
             }
 

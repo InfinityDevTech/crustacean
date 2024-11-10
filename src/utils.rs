@@ -529,9 +529,9 @@ pub fn distance_transform(
                         1.0,
                         Some(
                             RectStyle::default().fill(
-                                &format!(
+                                format!(
                                     "hsl({}, 100%, 60%)",
-                                    200 * cm.get(new_xy(x as u8, y as u8)) / 10
+                                    200 * cm.get(new_xy(x, y)) / 10
                                 )
                                 .as_str(),
                             ),

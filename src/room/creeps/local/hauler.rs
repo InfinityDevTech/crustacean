@@ -664,11 +664,15 @@ pub fn _check_relay(creep: &Creep, memory: &mut ScreepsMemory, cache: &mut RoomC
                 let creeps = memory
                     .creeps
                     .get_many_mut([&creep_at_pos.name(), &creep.name()]);
-                if creeps.is_none() {
+
+                let [other_creep, my_creep] = creeps;
+
+                if other_creep.is_none()  || my_creep.is_none() {
                     return;
                 }
 
-                let [other_creep, my_creep] = creeps.unwrap();
+                let other_creep = other_creep.unwrap();
+                let my_creep = my_creep.unwrap();
 
                 if other_creep.role != Role::Hauler || my_creep.role != Role::Hauler {
                     return;

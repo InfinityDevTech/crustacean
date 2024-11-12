@@ -7,6 +7,8 @@ pub fn get_required_energy_storage(room: &Room) -> u32 {
     let mut base_stock = config::ROOM_ENERGY_STOCKPILE;
     let controller = room.controller().unwrap();
 
+    // Unplug test
+
     if controller.level() >= 6 {
         base_stock += 90000;
     }

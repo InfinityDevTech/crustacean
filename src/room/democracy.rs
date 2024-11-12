@@ -606,7 +606,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                 }
             }
 
-            /*
+            
             for (room_name, path) in memory.rooms.get(&room.name()).unwrap().planned_paths.iter() {
                 if let Some(game_room) = game::rooms().get(*room_name) {
                     for pos in decode_pos_list(path.to_string()) {
@@ -618,7 +618,7 @@ pub fn run_crap_planner_code(room: &Room, memory: &mut ScreepsMemory, cache: &mu
                         let _ = game_room.ITcreate_construction_site(pos.x().u8(), pos.y().u8(), StructureType::Road, None);
                     }
                 }
-            }*/
+            }
         }
 
         for structure in get_containers() {

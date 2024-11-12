@@ -516,14 +516,6 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
         }
     }
 
-    info!(
-        "[HAULING] Room {} matched {} haulers to {} orders in {:.2} CPU",
-        room_name,
-        matched_creeps.len(),
-        count,
-        game::cpu::get_used() - starting_cpu
-    );
-
     // We have the output above, because we dont want to include intents from the creeps being matched.
 
     let pre_exec_cpu = game::cpu::get_used();
@@ -535,7 +527,15 @@ pub fn match_haulers(room_cache: &mut RoomCache, memory: &mut ScreepsMemory, roo
         execute_order(&creep, memory, room_cache, &haul_task);
     }
 
-    info!("[HAULING] Executing {} creeps took {:.2} CPU.", size, game::cpu::get_used() - pre_exec_cpu);
+    info!(
+        "[HAULING] Room {} matched {} haulers to {} orders in {:.2} CPU. Ran {} haulers in {:.2} CPU.",
+        room_name,
+        matched_creeps.len(),
+        count,
+        game::cpu::get_used() - starting_cpu,
+        size,
+        game::cpu::get_used() - pre_exec_cpu,
+    );
 }
 
 //#[cfg_attr(feature = "profile", screeps_timing_annotate::timing)]

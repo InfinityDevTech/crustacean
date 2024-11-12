@@ -144,7 +144,7 @@ pub fn game_loop() {
         start_government(room, &mut memory, &mut cache);
     }
     memory.stats.cpu.rooms = game::cpu::get_used() - pre_room_cpu - cache.creep_cpu;
-    info!("[GOVERNMENT] Global government execution took {:.2} CPU for {} rooms.", game::cpu::get_used() - pre_room_cpu, game::rooms().keys().count());
+    info!("[GOVERNMENT] Global government execution took {:.2} CPU for {} rooms. {:.2} Overhead without creeps.", game::cpu::get_used() - pre_room_cpu, game::rooms().keys().count(), game::cpu::get_used() - pre_room_cpu - cache.creep_cpu);
 
     if game::time() % 100 == 0 {
         for room in memory.rooms.clone().keys() {

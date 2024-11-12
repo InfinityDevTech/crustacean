@@ -1531,7 +1531,7 @@ pub fn season_digger(
                     .get_range_to(digger.pos().into()) as u32;
                 let ttl = digger.ticks_to_live().unwrap_or(u32::MAX);
 
-                !(ttl > spawn_time + range)
+                ttl <= spawn_time + range
             } else {
                 true
             };

@@ -5,6 +5,8 @@ use enum_map::{enum_map, Enum, EnumMap};
 use screeps::{Part, ResourceType};
 
 // navigator.clipboard.writeText(`$TO_COPY`);
+// Hmmm, I want to optimize this so it automatically works.
+// Specifically, button to copy. 
 pub const COPY_TEXT: &str = "
 <script>function selectText() { const text = document.getElementById(`to-select-$TIME`); text.focus(); text.select(); }</script>
 <div style='display: flex; flex-direction: row; justify-content: flex-start; margin: 0; padding: 0;'>
